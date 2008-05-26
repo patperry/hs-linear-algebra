@@ -48,6 +48,8 @@ library
                         
                         BLAS.Vector
                         
+                        Data.Vector.Dense.Internal
+                        
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
                         
