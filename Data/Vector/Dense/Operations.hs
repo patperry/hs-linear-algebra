@@ -27,7 +27,7 @@ module Data.Vector.Dense.Operations (
     -- * Vector arithmetic
     -- ** Pure
     shift,
-    (*>),
+    scale,
     invScale,
     plus,
     minus,
@@ -77,7 +77,7 @@ import BLAS.C hiding ( copy, swap, iamax, conj, axpy, acxpy )
 import qualified BLAS.C as BLAS
 import qualified BLAS.C.Types as T
 
-infixl 7 <.>, `times`, `divide`, *>, `invScale`
+infixl 7 <.>, `times`, `divide`, `scale`, `invScale`
 infixl 6 `plus`, `minus`, `shift`
 infixl 1 +=, -=, *=, //=
 
@@ -324,9 +324,9 @@ shift k x = unsafePerformIO $ getShifted k x
 {-# NOINLINE shift #-}
 
 -- | Scale every element by the given value.
-(*>) :: (BLAS1 e) => e -> Vector n e -> Vector n e
-(*>) k x = unsafePerformIO $ getScaled k x
-{-# NOINLINE (*>) #-}
+scale :: (BLAS1 e) => e -> Vector n e -> Vector n e
+scale k x = unsafePerformIO $ getScaled k x
+{-# NOINLINE scale #-}
 
 -- | Divide every element by a value.
 invScale :: (BLAS1 e) => e -> Vector n e -> Vector n e
