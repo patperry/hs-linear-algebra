@@ -18,6 +18,8 @@ class Vector x where
     -- | Get the dimension of the vector.
     dim :: x n e -> Int
     
-    -- | Get the complex conjugate of a vector.
+    -- | Returns a view into an existing vector that takes the complex 
+    -- conjugate of every element.  For real vectors, this should compile
+    -- to a no-op.
     conj :: (Elem e) => x n e -> x n e
      
