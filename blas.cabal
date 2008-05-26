@@ -25,7 +25,9 @@ build-type:      Custom
 tested-with:     GHC ==6.8.2
 
 library
-    exposed-modules:    BLAS.C
+    exposed-modules:    BLAS.Access
+        
+                        BLAS.C
                         BLAS.C.Types
                         BLAS.C.Level1
                         BLAS.C.Level2
