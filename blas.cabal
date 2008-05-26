@@ -20,43 +20,36 @@ license-file:    LICENSE
 copyright:       (c) 2008. Patrick Perry <patperry@stanford.edu>
 author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@stanford.edu>
-cabal-version: >= 1.2.0
+cabal-version:   >= 1.2.0
 build-type:      Custom
-tested-with:     GHC ==6.8.2
+tested-with:     GHC == 6.8.2
 
 extra-source-files:     tests/Vector.hs
 
 library
     exposed-modules:    BLAS.Access
-        
                         BLAS.C
-                        BLAS.C.Types
-                        BLAS.C.Level1
-                        BLAS.C.Level2
-                        BLAS.C.Level3
-
+                            BLAS.C.Level1
+                            BLAS.C.Level2
+                            BLAS.C.Level3
+                            BLAS.C.Types
                         BLAS.Elem
-                        BLAS.Elem.Base
-                        
+                            BLAS.Elem.Base
                         BLAS.Internal
-                      
                         BLAS.Matrix
-                        
                         BLAS.Tensor
-                        BLAS.Tensor.Base
-                        BLAS.Tensor.Scalable
-                        BLAS.Tensor.Immutable
-                        BLAS.Tensor.ReadOnly
-                        BLAS.Tensor.Mutable
-                        
+                            BLAS.Tensor.Base
+                            BLAS.Tensor.Immutable
+                            BLAS.Tensor.ReadOnly
+                            BLAS.Tensor.Mutable
+                            BLAS.Tensor.Scalable
                         BLAS.Types
-                        
                         BLAS.Vector
                         
                         Data.Vector.Dense
-                        Data.Vector.Dense.IO
-                        Data.Vector.Dense.Operations
-                        Data.Vector.Dense.Internal
+                            Data.Vector.Dense.IO
+                            Data.Vector.Dense.Operations
+                            Data.Vector.Dense.Internal
                         
                         Test.QuickCheck.Complex
                         Test.QuickCheck.Vector
