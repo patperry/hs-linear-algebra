@@ -55,6 +55,7 @@ library
                         
                         Test.QuickCheck.Complex
                         Test.QuickCheck.Vector
+                        Test.QuickCheck.Vector.Dense
                         
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
