@@ -11,10 +11,9 @@
 module BLAS.C.Level1
     where
      
-import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with, peekElemOff )
+import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with )
 import Foreign.Storable.Complex ()
 import Data.Complex
-import System.IO.Unsafe ( unsafeInterleaveIO )
 
 import BLAS.Elem.Base
 import BLAS.C.Double  
@@ -36,12 +35,6 @@ class (Elem a) => BLAS1 a where
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
-    -- | get the 1-norm of a vector
-    nrm1  :: Int -> Ptr a -> Int -> IO Double    
-
-    -- | get the index of the element with maximum norm, and the value of the norm.
-    inmax :: Int -> Ptr a -> Int -> IO (Int, Double)
-
     -- | conjugate all elements of a vector
     conj  :: Int -> Ptr a -> Int -> IO ()
 
@@ -61,11 +54,6 @@ instance BLAS1 Double where
     scal  = dscal
     rotg  = drotg
     rot   = drot
-    nrm1  = dasum
-    inmax n pX incX = do
-        i <- idamax n pX incX
-        e <- peekElemOff pX (i*incX) >>= return . abs
-        i `seq` e `seq` return (i,e)
     conj _ _ _ = return ()
     acxpy = daxpy
 
@@ -97,35 +85,6 @@ instance BLAS1 (Complex Double) where
     rotg  = zrotg
 
     rot = zdrot
-
-    nrm1 = go 0 where
-        go s n pX incX
-            | s `seq` n `seq` pX `seq` incX `seq` False = undefined
-            | n <= 0 = return $! s
-            | otherwise = do
-                e <- unsafeInterleaveIO $ peek pX
-                let s'  = s + magnitude e
-                    n'  = n - 1
-                    pX' = pX `advancePtr` incX
-                go s' n' pX' incX
-
-    inmax n pX incX
-        | n <= 0 = return (-1,0)
-        | otherwise = do
-            e <- peek pX >>= return . magnitude
-            go (0,e) 1 (pX `advancePtr` incX)
-        
-        where
-            go (im,m) i pX'
-                | im `seq` m `seq` i `seq` pX' `seq` False = undefined
-                | i >= n = return $! (im,m)
-                | otherwise = do
-                    e <- unsafeInterleaveIO $ peek pX' >>= return . magnitude
-                    let (im',m') = if e > m then (i,e) else (im,m)
-                        i'       = i + 1
-                        pX''     = pX' `advancePtr` incX
-                    go (im',m') i' pX''
-
 
     conj n pX incX =
         let pXI   = (castPtr pX) `advancePtr` 1
@@ -163,7 +122,4 @@ instance BLAS1 (Complex Double) where
                         pY'' = pY' `advancePtr` incY
                         
                     go n'' pX'' pY''
-                    
-            
-
         
