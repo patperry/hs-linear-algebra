@@ -7,8 +7,7 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
-
--- | Types for access control.
+-- Types for access control.
 module BLAS.Access (
     Mut,
     Imm
