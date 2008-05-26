@@ -33,6 +33,7 @@ library
                         BLAS.C.Double
                         BLAS.C.Zomplex
 
+                        BLAS.Elem
                         BLAS.Elem.Base
                         
                         BLAS.Tensor
