@@ -40,6 +40,7 @@ library
                         
                         BLAS.Tensor
                         BLAS.Tensor.Base
+                        BLAS.Tensor.Scalable
                         BLAS.Tensor.Immutable
                         BLAS.Tensor.ReadOnly
                         BLAS.Tensor.Mutable
