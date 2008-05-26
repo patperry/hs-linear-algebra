@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem
+-- Module     : BLAS.Elem.Base
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Elem (
+module BLAS.Elem.Base (
     Elem(..)
     ) where
 
@@ -16,6 +16,7 @@ import Data.Complex             ( Complex(..), conjugate, magnitude )
 import Foreign                  ( Storable )
 import Foreign.Storable.Complex ()
 
+-- | The base class for elements.
 class (Storable e, Fractional e) => Elem e where
     -- | Take the complex conjugate of a value.  For real values
     -- this is equal to @id@.
