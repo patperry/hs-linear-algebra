@@ -15,7 +15,6 @@ module Test.QuickCheck.Vector.Dense (
     
     dvector,
     rawVector,
-    scaledVector,
     conjVector,
     subVector
     ) where
@@ -34,9 +33,8 @@ data VectorTriple n e = Triple (Vector n e) (Vector n e) (Vector n e) deriving (
 
 dvector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 dvector n =
-    frequency [ (5, rawVector n)  
+    frequency [ (3, rawVector n)  
               , (2, conjVector n)
-              , (2, scaledVector n)
               , (1, subVector n    >>= \(SubVector s x o _) -> 
                     return $ subvectorWithStride s x o n)
               ]    
@@ -45,12 +43,6 @@ rawVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 rawVector n = do
     es <- QC.vector n
     return $ listVector n es
-
-scaledVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
-scaledVector n = do
-    k <- resize 2 arbitrary
-    x <- dvector n
-    return $ (k *> x)
 
 conjVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 conjVector n = do
@@ -63,9 +55,7 @@ subVector n = do
     s <- choose (1,5)
     e <- choose (0,5)
     x <- dvector (o + s*n + e)
-        
     return (SubVector s x o n)
-
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (TestVector n e) where
     arbitrary = sized $ \m ->
