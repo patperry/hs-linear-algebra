@@ -16,7 +16,7 @@ import Foreign.Storable.Complex ()
 import Data.Complex
 import System.IO.Unsafe ( unsafeInterleaveIO )
 
-import BLAS.Elem
+import BLAS.Elem.Base
 import BLAS.C.Double  
 import BLAS.C.Zomplex
         
