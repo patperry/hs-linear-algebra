@@ -34,10 +34,13 @@ library
                         BLAS.C.Zomplex
 
                         BLAS.Elem
+                        
+                        BLAS.Tensor
                         BLAS.Tensor.Base
                         BLAS.Tensor.Immutable
                         BLAS.Tensor.ReadOnly
                         BLAS.Tensor.Mutable
+                        
                         BLAS.Types
                         
     other-modules:      
