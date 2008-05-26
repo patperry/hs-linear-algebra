@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.ITensor
+-- Module     : BLAS.Tensor.Immutable
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.ITensor (
+module BLAS.Tensor.Immutable (
     ITensor(..),
     (!),
     ) where
