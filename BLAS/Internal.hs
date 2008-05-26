@@ -14,10 +14,15 @@ module BLAS.Internal (
     clearArray,
     bzero,
     inlinePerformIO,
+    checkedSubvector,
+    checkedSubvectorWithStride,
+    checkVecVecOp,
     ) where
 
+import Data.Ix     ( inRange )
 import Foreign                  ( Ptr, Storable, castPtr, sizeOf )
 import Foreign.C.Types          ( CSize )
+import Text.Printf ( printf )
 
 #if defined(__GLASGOW_HASKELL__)
 import GHC.Base                 ( realWorld# )
@@ -56,3 +61,46 @@ inlinePerformIO = unsafePerformIO
 #endif
 {-# INLINE inlinePerformIO #-}
 
+checkedSubvector :: Int -> (Int -> Int -> v) -> Int -> Int -> v
+checkedSubvector n sub o n'
+    | (o < 0) && (n' /= 0) = 
+        error $ printf 
+            "tried to create a subvector starting at a negative offset: `%d'" o
+    | n' < 0 = 
+        error $ printf 
+            "tried to create a subvector with a negative length `%d'" n'
+    | n' + o > n = 
+        error $ printf
+            ("tried to create a subvector of length `%d' and offset `%d' "
+             ++ " from a vector of length `%d'") n' o n
+    | otherwise =
+        sub o n'
+        
+
+checkedSubvectorWithStride :: Int -> Int -> (Int -> Int -> v)
+    -> Int -> Int -> v
+checkedSubvectorWithStride s n sub o n'
+    | (o < 0) && (n' /= 0) =
+        error $ printf
+            "Tried to create a subvector starting at a negative offset: `%d'" o
+    | n' < 0 =
+        error $ printf
+            "Tried to create a subvector with a negative length `%d'" n'
+    | s <= 0 =
+        error $ printf
+            "Tried to create a subvector with non-positive stride `%d'" s
+    | not $ inRange (-1,n) (o + s * n') =
+        error $ printf
+            ("tried to create a subvector of length `%d',  offset `%d',"
+             ++ " and stride '%d' from a vector of length `%d'") n' o s n
+    | otherwise =
+        sub o n'
+
+checkVecVecOp :: String -> Int -> Int -> IO ()
+checkVecVecOp name n1 n2
+    | n1 /= n2 =
+        ioError $ userError $ printf
+            ("%s: x and y have different dimensions.  x has dimension `%d',"
+             ++ " and y has dimension `%d'") name n1 n2
+    | otherwise =
+        return ()
