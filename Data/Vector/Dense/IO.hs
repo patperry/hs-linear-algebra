@@ -12,7 +12,9 @@ module Data.Vector.Dense.IO (
     IOVector,
     DVector(..),
     module BLAS.Vector,
-    module BLAS.Tensor,
+    module BLAS.Tensor.Base,
+    module BLAS.Tensor.ReadOnly,
+    module BLAS.Tensor.Mutable,
     
     -- * Creating vectors
     newVector, 
@@ -53,5 +55,7 @@ module Data.Vector.Dense.IO (
 import Data.Vector.Dense.Internal
 import Data.Vector.Dense.Operations hiding ( axpy, sumAbs, norm2, whichMaxAbs, 
     (<.>), shift, scale, invScale, plus, minus, times, divide )
-import BLAS.Tensor hiding ( ITensor(..), (!) )
 import BLAS.Vector hiding ( Vector )
+import BLAS.Tensor.Base
+import BLAS.Tensor.ReadOnly
+import BLAS.Tensor.Mutable
