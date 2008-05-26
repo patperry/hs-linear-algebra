@@ -34,8 +34,8 @@ library
                         BLAS.C.Zomplex
 
                         BLAS.Elem
-                        BLAS.ITensor
-                        BLAS.Tensor
+                        BLAS.Tensor.Base
+                        BLAS.Tensor.Immutable
                         BLAS.Types
                         
     other-modules:      
