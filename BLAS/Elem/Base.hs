@@ -25,6 +25,9 @@ class (Storable e, Fractional e) => Elem e where
     -- | Get the magnitude of a value.
     norm :: e -> Double
     
+    -- | Get the l1 norm of a value.
+    norm1 :: e -> Double
+    
     -- | Convert a double to an element
     fromReal :: Double -> e
 
@@ -35,12 +38,14 @@ class (Storable e, Fractional e) => Elem e where
 instance Elem Double where
     conj     = id
     norm     = abs
+    norm1    = abs
     fromReal = id
     toReal   = id
     
 instance Elem (Complex Double) where
     conj             = conjugate
     norm             = magnitude
+    norm1 (x :+ y)   = abs x + abs y
     fromReal x       = x :+ 0
     toReal  (x :+ _) = x
     
