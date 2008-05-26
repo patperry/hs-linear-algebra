@@ -36,6 +36,7 @@ library
                         BLAS.Elem
                         BLAS.Tensor.Base
                         BLAS.Tensor.Immutable
+                        BLAS.Tensor.ReadOnly
                         BLAS.Types
                         
     other-modules:      
