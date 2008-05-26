@@ -42,6 +42,8 @@ library
                         
                         BLAS.Types
                         
+                        BLAS.Vector
+                        
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
                         
