@@ -53,6 +53,8 @@ library
                         Data.Vector.Dense.Operations
                         Data.Vector.Dense.Internal
                         
+                        Test.QuickCheck.Complex
+                        
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
                         
