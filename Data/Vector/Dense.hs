@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Vector.Dense
@@ -11,6 +11,7 @@ module Data.Vector.Dense (
     Vector,
     module BLAS.Vector,
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Scalable,
     module BLAS.Tensor.Immutable,
 
     -- * Creating vectors
@@ -32,7 +33,7 @@ module Data.Vector.Dense (
 
     -- * Vector arithmetic
     shift,
-    (*>),
+    scale,
     invScale,
 
     -- * Converting to and from lists
@@ -57,6 +58,7 @@ import BLAS.Access
 import BLAS.Elem ( BLAS1, BLAS2 )
 import BLAS.Vector hiding ( Vector )
 import BLAS.Tensor.Base
+import BLAS.Tensor.Scalable
 import BLAS.Tensor.Immutable
 
 
@@ -93,6 +95,8 @@ fromList :: (BLAS1 e) => [e] -> Vector n e
 fromList es = listVector (length es) es
 {-# INLINE fromList #-}
 
+instance (BLAS1 e) => Scalable (DVector Imm n) e where
+    (*>) = scale
         
 instance (BLAS2 e) => Num (DVector Imm n e) where
     (+)         = plus
