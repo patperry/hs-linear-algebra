@@ -30,8 +30,6 @@ library
                         BLAS.C.Level1
                         BLAS.C.Level2
                         BLAS.C.Level3
-                        BLAS.C.Double
-                        BLAS.C.Zomplex
 
                         BLAS.Elem
                         BLAS.Elem.Base
@@ -44,7 +42,8 @@ library
                         
                         BLAS.Types
                         
-    other-modules:      
+    other-modules:      BLAS.C.Double
+                        BLAS.C.Zomplex    
                         
     ghc-options:        -Wall                   
     extensions:         BangPatterns, EmptyDataDecls, FlexibleInstances, 
