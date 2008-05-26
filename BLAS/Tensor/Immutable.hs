@@ -13,7 +13,7 @@ module BLAS.Tensor.Immutable (
     (!),
     ) where
 
-import BLAS.Tensor
+import BLAS.Tensor.Base
 import BLAS.Elem
 import Data.Ix
 
