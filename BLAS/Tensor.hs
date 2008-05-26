@@ -9,12 +9,14 @@
 
 module BLAS.Tensor (
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Scalable,
     module BLAS.Tensor.Immutable,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable
     ) where
 
 import BLAS.Tensor.Base
+import BLAS.Tensor.Scalable
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.ReadOnly
 import BLAS.Tensor.Mutable
