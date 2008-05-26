@@ -1,0 +1,48 @@
+name:            blas
+Version:         0.4
+homepage:        http://stat.stanford.edu/~patperry/code/blas
+synopsis:        Bindings to the BLAS library.
+description:
+    The BLAS (Basic Linear Algebra Subprograms) are routines that provide
+    standard building blocks for performing basic vector and matrix operations. 
+    The Level 1 BLAS perform scalar, vector and vector-vector operations, the 
+    Level 2 BLAS perform matrix-vector operations, and the Level 3 BLAS perform
+    matrix-matrix operations. Because the BLAS are efficient, portable, and
+    widely available, they are commonly used in the development of high quality
+    linear algebra software, LAPACK for example.
+    .
+    For more information, see the Netlib BLAS webpage:
+    <http://www.netlib.org/blas/> 
+    .
+category:        Math
+license:         BSD3
+license-file:    LICENSE
+copyright:       (c) 2008. Patrick Perry <patperry@stanford.edu>
+author:          Patrick Perry
+maintainer:      Patrick Perry <patperry@stanford.edu>
+cabal-version: >= 1.2.0
+build-type:      Custom
+tested-with:     GHC ==6.8.2
+
+library
+    exposed-modules:    BLAS.C
+                        BLAS.C.Types
+                        BLAS.C.Level1
+                        BLAS.C.Level2
+                        BLAS.C.Level3
+                        BLAS.C.Double
+                        BLAS.C.Zomplex
+
+                        BLAS.Elem
+                        BLAS.Types
+                        
+    other-modules:      
+                        
+    ghc-options:        -Wall                   
+    extensions:         BangPatterns, EmptyDataDecls, FlexibleInstances, 
+                        ForeignFunctionInterface, FunctionalDependencies
+                        MultiParamTypeClasses
+    build-depends:      base, ieee, storable-complex, QuickCheck
+
+    extra-libraries:    blas
+    
