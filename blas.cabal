@@ -39,6 +39,8 @@ library
                         BLAS.Elem.Base
                         
                         BLAS.Internal
+                      
+                        BLAS.Matrix
                         
                         BLAS.Tensor
                         BLAS.Tensor.Base
