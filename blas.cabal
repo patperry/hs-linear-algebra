@@ -48,6 +48,7 @@ library
                         
                         BLAS.Vector
                         
+                        Data.Vector.Dense
                         Data.Vector.Dense.IO
                         Data.Vector.Dense.Operations
                         Data.Vector.Dense.Internal
