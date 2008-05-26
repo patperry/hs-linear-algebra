@@ -48,8 +48,9 @@ library
                         
                         BLAS.Vector
                         
-                        Data.Vector.Dense.Internal
+                        Data.Vector.Dense.IO
                         Data.Vector.Dense.Operations
+                        Data.Vector.Dense.Internal
                         
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
