@@ -11,6 +11,7 @@ module Data.Vector.Dense.IO (
     -- * Mutable dense vector data type
     IOVector,
     DVector(..),
+    
     module BLAS.Vector,
     module BLAS.Tensor.Base,
     module BLAS.Tensor.ReadOnly,
