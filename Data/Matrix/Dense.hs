@@ -12,7 +12,7 @@ module Data.Matrix.Dense (
     -- * Dense matrix type
     Matrix,
     
-    module BLAS.Matrix,
+    module BLAS.Matrix.Base,
     module BLAS.Tensor.Base,
     module BLAS.Tensor.Immutable,
     module BLAS.Tensor.Scalable,
@@ -68,7 +68,7 @@ import System.IO.Unsafe            ( unsafePerformIO )
 
 import BLAS.Access
 import BLAS.Elem ( BLAS1, BLAS2 )
-import BLAS.Matrix hiding ( Matrix )
+import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.Scalable
