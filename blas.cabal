@@ -47,6 +47,7 @@ library
                         BLAS.Vector
                         
                         Data.Matrix.Dense.Internal
+                        Data.Matrix.Dense.Operations
                         
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
