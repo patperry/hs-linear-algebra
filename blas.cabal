@@ -24,7 +24,8 @@ cabal-version:   >= 1.2.0
 build-type:      Custom
 tested-with:     GHC == 6.8.2
 
-extra-source-files:     tests/Vector.hs
+extra-source-files:     tests/Matrix.hs
+                        tests/Vector.hs
 
 library
     exposed-modules:    BLAS.Access
