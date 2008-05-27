@@ -12,7 +12,7 @@ module Data.Matrix.Dense.IO (
     DMatrix(..),
     IOMatrix,
     
-    module BLAS.Matrix,
+    module BLAS.Matrix.Base,
     module BLAS.Tensor.Base,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable,
@@ -79,7 +79,7 @@ import Data.Matrix.Dense.Internal
 import Data.Matrix.Dense.Operations hiding ( gemv, gemm, apply, applyMat,
     sapply, sapplyMat, add, plus, minus, times, divide )
     
-import BLAS.Matrix hiding ( Matrix )
+import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Tensor.Base
 import BLAS.Tensor.ReadOnly
 import BLAS.Tensor.Mutable
