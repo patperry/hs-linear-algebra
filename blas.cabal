@@ -37,6 +37,7 @@ library
                             BLAS.Elem.Base
                         BLAS.Internal
                         BLAS.Matrix.Base
+                        BLAS.Matrix.Immutable
                         BLAS.Tensor
                             BLAS.Tensor.Base
                             BLAS.Tensor.Immutable
