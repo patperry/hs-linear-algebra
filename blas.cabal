@@ -63,6 +63,7 @@ library
                         Test.QuickCheck.Vector
                         Test.QuickCheck.Vector.Dense
                         Test.QuickCheck.Matrix
+                        Test.QuickCheck.Matrix.Dense
                         
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
