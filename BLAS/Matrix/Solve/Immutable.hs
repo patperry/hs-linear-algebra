@@ -24,5 +24,5 @@ class IMatrix a e => ISolve a e where
     (<\>) :: a (m,n) e -> Vector m e -> Vector n e
     
     -- | Solve for a matrix
-    (<\\>) :: a (m,k) e -> Matrix (m,n) e -> Matrix (k,n) e
+    (<\\>) :: a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 
