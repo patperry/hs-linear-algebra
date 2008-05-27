@@ -55,6 +55,8 @@ library
                             Data.Matrix.Dense.Internal
                             Data.Matrix.Dense.Operations
                         
+                        Data.Matrix.Tri
+                        
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
                             Data.Vector.Dense.Internal
