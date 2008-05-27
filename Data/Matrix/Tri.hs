@@ -16,6 +16,11 @@ module Data.Matrix.Tri (
     toBase,
     mapTri,
 
+    lower,
+    lowerU,
+    upper,
+    upperU,
+
     ) where
 
 import qualified BLAS.Elem as E
@@ -34,6 +39,18 @@ fromBase = Tri
 toBase :: Tri a (n,n) e -> (UpLo, Diag, e, a (n,n) e)
 toBase (Tri u d e a) = (u,d,e,a)
 
+lower :: (Num e) => a (n,n) e -> Tri a (n,n) e
+lower = Tri Lower NonUnit 1
+
+lowerU :: (Num e) => a (n,n) e -> Tri a (n,n) e
+lowerU = Tri Lower Unit 1
+
+upper :: (Num e) => a (n,n) e -> Tri a (n,n) e
+upper = Tri Upper NonUnit 1
+
+upperU :: (Num e) => a (n,n) e -> Tri a (n,n) e
+upperU = Tri Upper Unit 1
+      
 instance Matrix a => Matrix (Tri a) where
     numRows (Tri _ _ _ a) = numRows a
     numCols (Tri _ _ _ a) = numCols a
