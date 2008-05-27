@@ -46,9 +46,10 @@ library
                         BLAS.Types
                         BLAS.Vector
                         
-                        Data.Matrix.Dense.IO
-                        Data.Matrix.Dense.Internal
-                        Data.Matrix.Dense.Operations
+                        Data.Matrix.Dense
+                            Data.Matrix.Dense.IO
+                            Data.Matrix.Dense.Internal
+                            Data.Matrix.Dense.Operations
                         
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
