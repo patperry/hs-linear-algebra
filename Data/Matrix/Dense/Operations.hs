@@ -23,6 +23,8 @@ module Data.Matrix.Dense.Operations (
     -- ** Impure
     getApply,
     getApplyMat,
+    getSApply,
+    getSApplyMat,
 
     -- * Matrix Arithmetic
     -- ** Pure
@@ -95,21 +97,29 @@ unsafeSwapMatrices :: (BLAS1 e) => IOMatrix (m,n) e -> IOMatrix (m,n) e -> IO ()
 unsafeSwapMatrices = liftV2 (V.unsafeSwapVectors)
 
 -- | Multiply a matrix by a vector.
-getApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getApply alpha a x = checkMatVecMult (shape a) (V.dim x) >> unsafeGetApply alpha a x
+getApply :: (BLAS2 e) => DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+getApply = getSApply 1
 
-unsafeGetApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-unsafeGetApply alpha a x = do
+-- | Multiply a scaled matrix by a vector.
+getSApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+getSApply alpha a x = checkMatVecMult (shape a) (V.dim x) >> unsafeGetSApply alpha a x
+
+unsafeGetSApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+unsafeGetSApply alpha a x = do
     y <- V.newZero (numRows a)
     gemv alpha a x 0 y
     return (unsafeCoerce y)
 
 -- | Multiply a matrix by a matrix.
-getApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getApplyMat alpha a b = checkMatMatMult (shape a) (shape b) >> unsafeGetApplyMat alpha a b
+getApplyMat :: (BLAS3 e) => DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
+getApplyMat = getSApplyMat 1
 
-unsafeGetApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-unsafeGetApplyMat alpha a b = do
+-- | Multiply a scaled matrix by a matrix.
+getSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
+getSApplyMat alpha a b = checkMatMatMult (shape a) (shape b) >> unsafeGetSApplyMat alpha a b
+
+unsafeGetSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
+unsafeGetSApplyMat alpha a b = do
     c <- newZero (numRows a, numCols b)
     gemm alpha a b 0 c
     return (unsafeCoerce c)
@@ -271,12 +281,12 @@ apply = sapply 1
 
 -- | Multiply a scaled matrix by a vector.
 sapply :: (BLAS2 e) => e -> Matrix (m,n) e -> Vector n e -> Vector m e
-sapply alpha a x = unsafePerformIO $ getApply alpha a x
+sapply alpha a x = unsafePerformIO $ getSApply alpha a x
 {-# NOINLINE sapply #-}
 
 -- | Multiply a scaled matrix by a matrix.
 sapplyMat :: (BLAS3 e) => e -> Matrix (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-sapplyMat alpha a b = unsafePerformIO $ getApplyMat alpha a b
+sapplyMat alpha a b = unsafePerformIO $ getSApplyMat alpha a b
 {-# NOINLINE sapplyMat #-}
     
 -- | Multiply a matrix by a matrix.
