@@ -42,6 +42,7 @@ library
                             BLAS.Matrix.Immutable
                             BLAS.Matrix.ReadOnly
                             BLAS.Matrix.Solve.Immutable
+                            BLAS.Matrix.Solve.ReadOnly
                         BLAS.Tensor
                             BLAS.Tensor.Base
                             BLAS.Tensor.Immutable
