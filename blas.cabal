@@ -59,6 +59,7 @@ library
                             Data.Matrix.Dense.Operations
                         
                         Data.Matrix.Tri
+                            Data.Matrix.Tri.Dense
                         
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
