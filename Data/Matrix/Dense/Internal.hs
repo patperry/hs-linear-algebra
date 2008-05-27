@@ -14,7 +14,7 @@ module Data.Matrix.Dense.Internal (
     IOMatrix,
     Matrix,
 
-    module BLAS.Matrix,
+    module BLAS.Matrix.Base,
     module BLAS.Tensor,
 
     -- * Converting to and from foreign pointers
@@ -89,8 +89,8 @@ import BLAS.Internal ( inlinePerformIO, checkedRow, checkedCol, checkedDiag,
     checkedSubmatrix, diagStart, diagLen )
 import BLAS.Elem ( Elem, BLAS1 )
 import qualified BLAS.Elem as E
-import BLAS.Matrix hiding ( Matrix )
-import qualified BLAS.Matrix as C
+import BLAS.Matrix.Base hiding ( Matrix )
+import qualified BLAS.Matrix.Base as C
 import BLAS.Tensor
 import BLAS.Types
 
