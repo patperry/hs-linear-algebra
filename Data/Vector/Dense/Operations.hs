@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Vector.Dense.Operations
@@ -29,6 +30,7 @@ module Data.Vector.Dense.Operations (
     shift,
     scale,
     invScale,
+    add,
     plus,
     minus,
     times,
@@ -179,13 +181,15 @@ getSum :: (BLAS1 e) => e -> DVector s n e -> e -> DVector t n e -> IO (DVector r
 getSum alpha x beta y = checkVecVecOp "getSum" (dim x) (dim y) >> unsafeGetSum alpha x beta y
 
 unsafeGetSum :: (BLAS1 e) => e -> DVector s n e -> e -> DVector t n e -> IO (DVector r n e)
+unsafeGetSum 1 x beta y
+    | beta /= 1 = unsafeGetSum beta y 1 x
 unsafeGetSum alpha (C x) beta y = do
     s <- unsafeGetSum (E.conj alpha) x (E.conj beta) (conj y)
     return (conj s)
 unsafeGetSum alpha x@(DV _ _ _ _) beta y = do
-    s <- newCopy x
-    scaleBy alpha (unsafeThaw s)
-    axpy beta y (unsafeThaw s)
+    s <- newCopy y
+    scaleBy beta (unsafeThaw s)
+    axpy alpha x (unsafeThaw s)
     return (unsafeCoerce s)
             
 -- | Computes the difference of two vectors.
@@ -333,10 +337,13 @@ invScale :: (BLAS1 e) => e -> Vector n e -> Vector n e
 invScale k x = unsafePerformIO $ getInvScaled k x
 {-# NOINLINE invScale #-}
 
+add :: (BLAS1 e) => e -> Vector n e -> e -> Vector n e -> Vector n e
+add alpha x beta y = unsafePerformIO $ getSum alpha x beta y
+{-# NOINLINE add #-}
+
 -- | Sum of two vectors.
 plus :: (BLAS1 e) => Vector n e -> Vector n e -> Vector n e
-plus x y = unsafePerformIO $ getSum 1 x 1 y
-{-# NOINLINE plus #-}
+plus x y = add 1 x 1 y
 
 -- | Difference of vectors.
 minus :: (BLAS1 e) => Vector n e -> Vector n e -> Vector n e
@@ -352,3 +359,15 @@ times x y = unsafePerformIO $ getProduct x y
 divide :: (BLAS2 e) => Vector n e -> Vector n e -> Vector n e
 divide x y =  unsafePerformIO $ getRatio x y
 {-# NOINLINE divide #-}
+
+
+{-# RULES
+"scale/plus"   forall k l x y. plus (scale k x) (scale l y) = add k x l y
+"scale1/plus"  forall k x y.   plus (scale k x) y = add k x 1 y
+"scale2/plus"  forall k x y.   plus x (scale k y) = add 1 x k y
+
+"scale/minus"  forall k l x y. minus (scale k x) (scale l y) = add k x (-l) y
+"scale1/minus" forall k x y.   minus (scale k x) y = add k x (-1) y
+"scale2/minus" forall k x y.   minus x (scale k y) = add 1 x (-k) y
+  #-}
+  
