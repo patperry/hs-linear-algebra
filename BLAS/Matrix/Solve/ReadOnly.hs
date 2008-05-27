@@ -22,5 +22,4 @@ class RMatrix a e => RSolve a e where
     getSolve :: a (m,n) e -> DVector t m e -> DVector r n e
     
     -- | Solve for a matrix
-    getSolveMat :: a (m,k) e -> DMatrix t (m,n) e -> DMatrix r (k,n) e
-
+    getSolveMat :: a (m,n) e -> DMatrix t (m,k) e -> DMatrix r (n,k) e
