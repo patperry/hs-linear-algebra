@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Tri
@@ -58,3 +58,16 @@ instance Matrix a => Matrix (Tri a) where
     
 instance (Num e) => Scalable (Tri a nn) e where
     (*>) k (Tri u d e a) = Tri u d (k*e) a
+
+instance (Show (a mn e), Show e, Num e) => Show (Tri a mn e) where
+    show (Tri u d k a) 
+        | k /= 1 = "(" ++ show k ++ ") *> " ++ show (Tri u d 1 a)
+        | otherwise =
+            constructor ++ " (" ++ show a ++ ")"
+        where
+          constructor = case (u,d) of
+              (Lower, NonUnit) -> "lower"
+              (Lower, Unit   ) -> "lowerU"
+              (Upper, NonUnit) -> "upper"
+              (Upper, Unit   ) -> "upperU"
+        
