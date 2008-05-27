@@ -52,8 +52,8 @@ library
                         
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
-                            Data.Vector.Dense.Operations
                             Data.Vector.Dense.Internal
+                            Data.Vector.Dense.Operations
                         
                         Test.QuickCheck.Complex
                         Test.QuickCheck.Vector
