@@ -38,6 +38,7 @@ library
                         BLAS.Internal
                         BLAS.Matrix.Base
                         BLAS.Matrix.Immutable
+                        BLAS.Matrix.ReadOnly
                         BLAS.Tensor
                             BLAS.Tensor.Base
                             BLAS.Tensor.Immutable
