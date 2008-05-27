@@ -19,16 +19,16 @@ import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
 import Data.Matrix.Dense.Operations ( apply, applyMat )
 
-infixl 7 <*>, <>
+infixl 7 <*>, <**>
 
 class Base.Matrix a => IMatrix a e where
     -- | Apply to a vector
     (<*>) :: a (m,n) e -> Vector n e -> Vector m e
     
     -- | Apply to a matrix
-    (<>) :: a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+    (<**>) :: a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
 instance (BLAS3 e) => IMatrix (DMatrix Imm) e where
     (<*>) = apply
-    (<>)  = applyMat
+    (<**>)  = applyMat
     
