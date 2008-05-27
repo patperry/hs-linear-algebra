@@ -19,7 +19,7 @@ import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
 import Data.Matrix.Dense.Operations ( apply, applyMat )
 
-infixl 7 <*>
+infixl 7 <*>, <>
 
 class Base.Matrix a => IMatrix a e where
     -- | Apply to a vector
