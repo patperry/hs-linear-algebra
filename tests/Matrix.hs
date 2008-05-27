@@ -196,20 +196,20 @@ prop_apply_linear (MultMVPair (a :: M) x y) =
 
 prop_compose_id_right (a :: M) =
     let n = numCols a
-    in a <> (identity (n,n) :: M) ~== a
+    in a <**> (identity (n,n) :: M) ~== a
 prop_compose_id_left (a :: M) =
     let m = numRows a
-    in (identity (m,m) :: M) <> a ~== a
+    in (identity (m,m) :: M) <**> a ~== a
 prop_compose_scale_left (MultMM (a:: M) b) k =
-    a <> (scale k b) ~== scale k (a <> b)    
+    a <**> (k *> b) ~== k *> (a <**> b)    
 prop_compose_scale_right (MultMM (a:: M) b) k =
-    (scale k a) <> b ~== scale k (a <> b)
+    (k *> a) <**> b ~== k *> (a <**> b)
 prop_compose_linear (MultMMPair (a :: M) b c) =
-    a <> (b + c) ~== a <> b + a <> c
+    a <**> (b + c) ~== a <**> b + a <**> c
 prop_compose_herm (MultMM (a :: M) b) =
-    herm b <> herm a ~== herm (a <> b)
+    herm b <**> herm a ~== herm (a <**> b)
 prop_compose_cols (MultMM (a :: M) b) =
-    cols (a <> b) ~== map (a <*> ) (cols b)
+    cols (a <**> b) ~== map (a <*> ) (cols b)
 
 prop_shift k (a :: M) =
     shift k a ~== a + constant (shape a) k
