@@ -1,19 +1,19 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix
+-- Module     : BLAS.Matrix.Base
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix (
+module BLAS.Matrix.Base (
     Matrix(..)
     ) where
 
 import BLAS.Elem.Base ( Elem )
 
--- | A class for matrices.
+-- | A base class for matrices.
 class Matrix a where
     -- | The number of rows in the matrix.
     numRows :: a (m,n) e -> Int
