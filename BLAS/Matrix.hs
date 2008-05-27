@@ -11,8 +11,10 @@ module BLAS.Matrix (
     module BLAS.Matrix.Base,
     module BLAS.Matrix.Immutable,
     module BLAS.Matrix.ReadOnly,
+    module BLAS.Matrix.Solve,
     ) where
 
 import BLAS.Matrix.Base
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
+import BLAS.Matrix.Solve
