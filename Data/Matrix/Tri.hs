@@ -26,7 +26,7 @@ module Data.Matrix.Tri (
 import qualified BLAS.Elem as E
 import BLAS.Matrix
 import BLAS.Tensor
-import BLAS.Types ( UpLo(..), Diag(..) )
+import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
 
 data Tri a nn e = Tri UpLo Diag e (a nn e)
 
@@ -54,7 +54,7 @@ upperU = Tri Upper Unit 1
 instance Matrix a => Matrix (Tri a) where
     numRows (Tri _ _ _ a) = numRows a
     numCols (Tri _ _ _ a) = numCols a
-    herm    (Tri u d e a) = Tri u d (E.conj e) (herm a)
+    herm    (Tri u d e a) = Tri (flipUpLo u) d (E.conj e) (herm a)
     
 instance (Num e) => Scalable (Tri a nn) e where
     (*>) k (Tri u d e a) = Tri u d (k*e) a
