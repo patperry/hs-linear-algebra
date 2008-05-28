@@ -13,11 +13,9 @@ import qualified Test.QuickCheck as QC
 
 import Data.Complex ( Complex(..) )
 
-import BLAS.Access
 import qualified BLAS.Elem as E
 import Data.Vector.Dense
 import Data.Matrix.Dense
-import Data.Matrix.Dense.IO ( DMatrix )
 import Data.Matrix.Tri.Dense  
 
 import Data.AEq
@@ -41,7 +39,7 @@ isUndef = isUndefR
 
 type V = Vector Int E
 type M = Matrix (Int,Int) E
-type TM = Tri (DMatrix Imm) (Int,Int) E
+type TM = Tri (Matrix) (Int,Int) E
 
 instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
     arbitrary   = arbitrary >>= \(TestComplex x) -> return x
