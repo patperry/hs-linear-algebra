@@ -24,13 +24,6 @@ class (Tensor x i e, Monad m) => RTensor x i e m where
     -- | Get a copy of the tensor.
     newCopy :: x e -> m (x e)
     
-    -- | Creates a new tensor with elements all initialized to zero.
-    newZero :: i -> m (x e)
-    
-    -- | Creates a new tensor with elements all initialized to the 
-    -- given value.
-    newConstant :: i -> e -> m (x e)
-    
     -- | Get the value at the specified index, without doing any 
     -- range-checking.
     unsafeReadElem :: x e -> i -> m e
