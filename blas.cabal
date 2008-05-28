@@ -48,6 +48,9 @@ library
                                 BLAS.Matrix.Solve.ReadOnly
                         BLAS.Tensor
                             BLAS.Tensor.Base
+                            BLAS.Tensor.Dense
+                                BLAS.Tensor.Dense.Immutable
+                                BLAS.Tensor.Dense.ReadOnly
                             BLAS.Tensor.Immutable
                             BLAS.Tensor.ReadOnly
                             BLAS.Tensor.Mutable
