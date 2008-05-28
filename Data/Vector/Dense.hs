@@ -11,8 +11,9 @@ module Data.Vector.Dense (
     Vector,
     module BLAS.Vector,
     module BLAS.Tensor.Base,
-    module BLAS.Tensor.Scalable,
+    module BLAS.Tensor.Dense.Immutable,
     module BLAS.Tensor.Immutable,
+    module BLAS.Tensor.Scalable,
 
     -- * Creating vectors
     vector, 
@@ -58,8 +59,9 @@ import BLAS.Access
 import BLAS.Elem ( BLAS1, BLAS2 )
 import BLAS.Vector hiding ( Vector )
 import BLAS.Tensor.Base
-import BLAS.Tensor.Scalable
+import BLAS.Tensor.Dense.Immutable
 import BLAS.Tensor.Immutable
+import BLAS.Tensor.Scalable
 
 
 -- | Create a vector with the given dimension and elements.  The elements
