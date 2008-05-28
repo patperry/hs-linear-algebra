@@ -36,7 +36,7 @@ import BLAS.Elem ( BLAS3 )
 import qualified BLAS.Elem as E
 import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
     noTrans, conjTrans, leftSide, rightSide )
-import BLAS.Types ( Trans(..), flipTrans )
+import BLAS.Types ( Trans(..), flipTrans, flipUpLo )
                                    
 import qualified BLAS.C as BLAS
 import qualified BLAS.C.Types as BLAS
@@ -94,8 +94,8 @@ trmv t x
 trmv t x =
     let (u,d,alpha,a) = toBase t
         order     = colMajor
-        uploA     = cblasUpLo u
-        transA    = if isHerm a then conjTrans else noTrans
+        (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+        uploA     = cblasUpLo u'
         diagA     = cblasDiag d
         n         = numCols a
         ldA       = ldaOf a
@@ -112,13 +112,13 @@ trmm _ b
 trmm t b =
     let (u,d,alpha,a) = toBase t
         order     = colMajor
-        h         = if isHerm a then ConjTrans else NoTrans
+        (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if M.isHerm b
                         then (rightSide, flipTrans h, n, m, E.conj alpha)
                         else (leftSide , h          , m, n, alpha       )
-        uploA     = cblasUpLo u
+        uploA     = cblasUpLo u'
         transA    = cblasTrans h'
         diagA     = cblasDiag d
         ldA       = ldaOf a
@@ -137,8 +137,8 @@ trsv t x
 trsv t x =
     let (u,d,alpha,a) = toBase t
         order     = colMajor
-        uploA     = cblasUpLo u
-        transA    = if isHerm a then conjTrans else noTrans
+        (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+        uploA     = cblasUpLo u'
         diagA     = cblasDiag d
         n         = numCols a
         ldA       = ldaOf a
@@ -154,13 +154,13 @@ trsm _ b
 trsm t b =
     let (u,d,alpha,a) = toBase t
         order     = colMajor
-        h         = if isHerm a then ConjTrans else NoTrans
+        (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHerm b
                         then (rightSide, flipTrans h, n, m, E.conj alpha)
                         else (leftSide , h          , m, n, alpha       )
-        uploA     = cblasUpLo u
+        uploA     = cblasUpLo u'
         transA    = cblasTrans h'
         diagA     = cblasDiag d
         ldA       = ldaOf a
