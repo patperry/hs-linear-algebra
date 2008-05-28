@@ -14,6 +14,7 @@ module Data.Vector.Dense.IO (
     
     module BLAS.Vector,
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Dense.ReadOnly,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable,
     
@@ -58,5 +59,6 @@ import Data.Vector.Dense.Operations hiding ( axpy, sumAbs, norm2, whichMaxAbs,
     (<.>), shift, scale, invScale, plus, minus, times, divide )
 import BLAS.Vector hiding ( Vector )
 import BLAS.Tensor.Base
+import BLAS.Tensor.Dense.ReadOnly
 import BLAS.Tensor.ReadOnly
 import BLAS.Tensor.Mutable
