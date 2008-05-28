@@ -9,7 +9,7 @@
 --
 
 module Data.Matrix.Dense.Internal (
-    -- * Mutable dense matrix data type
+    -- * Dense matrix data types
     DMatrix(..),
     IOMatrix,
     Matrix,
@@ -388,8 +388,6 @@ instance C.Matrix (DMatrix t) where
     herm a = case a of
         (H a')   -> coerceMatrix a'
         _        -> H (coerceMatrix a)
-
-
     
 instance Tensor (DMatrix t (m,n)) (Int,Int) e where
     shape a = case a of
