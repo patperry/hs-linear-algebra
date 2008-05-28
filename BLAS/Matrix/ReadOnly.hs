@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.Matrix.ReadOnly
