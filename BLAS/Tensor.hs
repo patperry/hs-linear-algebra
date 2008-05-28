@@ -9,6 +9,7 @@
 
 module BLAS.Tensor (
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Dense,
     module BLAS.Tensor.Scalable,
     module BLAS.Tensor.Immutable,
     module BLAS.Tensor.ReadOnly,
@@ -16,6 +17,7 @@ module BLAS.Tensor (
     ) where
 
 import BLAS.Tensor.Base
+import BLAS.Tensor.Dense
 import BLAS.Tensor.Scalable
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.ReadOnly
