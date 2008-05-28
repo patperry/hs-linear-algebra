@@ -15,6 +15,7 @@ module Data.Matrix.Dense (
     module BLAS.Matrix.Base,
     module BLAS.Matrix.Immutable,
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Dense.Immutable,
     module BLAS.Tensor.Immutable,
     module BLAS.Tensor.Scalable,
 
@@ -74,6 +75,7 @@ import BLAS.Elem ( BLAS1, BLAS2 )
 import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Matrix.Immutable
 import BLAS.Tensor.Base
+import BLAS.Tensor.Dense.Immutable
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.Scalable
 
