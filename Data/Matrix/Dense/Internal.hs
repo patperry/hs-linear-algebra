@@ -107,8 +107,8 @@ data DMatrix t mn e =
          }
     | H !(DMatrix t mn e)           -- ^ a transposed and conjugated matrix
 
-type Matrix mn e = DMatrix Imm mn e
-type IOMatrix mn e = DMatrix Mut mn e
+type Matrix = DMatrix Imm
+type IOMatrix = DMatrix Mut
 
 unsafeFreeze :: DMatrix t mn e -> Matrix mn e
 unsafeFreeze = unsafeCoerce
