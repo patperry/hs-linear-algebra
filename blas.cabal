@@ -77,9 +77,9 @@ library
                         BLAS.C.Zomplex    
                         
     ghc-options:        -Wall                   
-    extensions:         BangPatterns, EmptyDataDecls, FlexibleInstances, 
-                        ForeignFunctionInterface, FunctionalDependencies
-                        MultiParamTypeClasses
+    extensions:         BangPatterns, EmptyDataDecls, FlexibleContexts, 
+                        FlexibleInstances, ForeignFunctionInterface, 
+                        FunctionalDependencies, MultiParamTypeClasses
     build-depends:      base, ieee, storable-complex, QuickCheck
 
     extra-libraries:    blas
