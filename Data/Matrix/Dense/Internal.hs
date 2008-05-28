@@ -399,12 +399,6 @@ instance Tensor (DMatrix t (m,n)) (Int,Int) e where
 instance (BLAS1 e) => ITensor (DMatrix Imm (m,n)) (Int,Int) e where
     size a = (numRows a * numCols a)
     
-    zero = unsafePerformIO . newZero
-    {-# NOINLINE zero #-}
-     
-    constant mn = unsafePerformIO . newConstant mn
-    {-# NOINLINE constant #-}
-     
     unsafeAt a = inlinePerformIO . unsafeReadElem a
     {-# INLINE unsafeAt #-}
     
@@ -443,6 +437,14 @@ replaceHelp set x ies =
         mapM_ (uncurry $ set y) ies
         return y
 {-# NOINLINE replaceHelp #-}
+
+
+instance (BLAS1 e) => IDTensor (DMatrix Imm (m,n)) (Int,Int) e where
+    zero = unsafePerformIO . newZero
+    {-# NOINLINE zero #-}
+     
+    constant mn = unsafePerformIO . newConstant mn
+    {-# NOINLINE constant #-}
      
      
 instance (BLAS1 e) => RTensor (DMatrix t (m,n)) (Int,Int) e IO where
@@ -454,16 +456,6 @@ instance (BLAS1 e) => RTensor (DMatrix t (m,n)) (Int,Int) e IO where
             a' <- newMatrix_ (shape a)
             liftV2 V.copyVector (unsafeThaw a') a
             return a'
-    
-    newZero mn = do
-        a <- newMatrix_ mn
-        setZero (unsafeThaw a)
-        return a
-    
-    newConstant mn e = do
-        a <- newMatrix_ mn
-        setConstant e (unsafeThaw a)
-        return a
     
     unsafeReadElem a (i,j) = case a of
         (H a')   -> unsafeReadElem a' (j,i) >>= return . E.conj
@@ -492,6 +484,18 @@ instance (BLAS1 e) => RTensor (DMatrix t (m,n)) (Int,Int) e IO where
                       ijes = go cs (j+1)
                   in ije ++ ijes
     {-# NOINLINE getAssocs #-}
+
+
+instance (BLAS1 e) => RDTensor (DMatrix t (m,n)) (Int,Int) e IO where
+    newZero mn = do
+        a <- newMatrix_ mn
+        setZero (unsafeThaw a)
+        return a
+    
+    newConstant mn e = do
+        a <- newMatrix_ mn
+        setConstant e (unsafeThaw a)
+        return a
     
     
 instance (BLAS1 e) => MTensor (DMatrix Mut (m,n)) (Int,Int) e IO where 
