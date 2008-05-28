@@ -272,12 +272,6 @@ instance Tensor (DVector t n) Int e where
 instance (BLAS1 e) => ITensor (DVector Imm n) Int e where
     size = dim
     
-    zero n = unsafeFreeze $ unsafePerformIO $ newZero n
-    {-# NOINLINE zero #-}
-    
-    constant n e = unsafeFreeze $ unsafePerformIO $ newConstant n e
-    {-# NOINLINE constant #-}
-    
     indices = range . bounds
     {-# INLINE indices #-}
 
@@ -313,6 +307,14 @@ replaceHelp set x ies =
 {-# NOINLINE replaceHelp #-}
 
 
+instance (BLAS1 e) => IDTensor (DVector Imm n) Int e where
+    zero n = unsafeFreeze $ unsafePerformIO $ newZero n
+    {-# NOINLINE zero #-}
+    
+    constant n e = unsafeFreeze $ unsafePerformIO $ newConstant n e
+    {-# NOINLINE constant #-}
+
+
 instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
     getSize = return . dim
     
@@ -328,10 +330,6 @@ instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
                     in copy n pX incX pY incY >> 
                        return y
                        
-    newZero n = newVector_ n >>= (\x -> setZero (unsafeThaw x) >> return x)
-    
-    newConstant n e = newVector_ n >>= (\x -> setConstant e (unsafeThaw x) >> return x)
-    
     getIndices = return . indices . unsafeFreeze
     {-# INLINE getIndices #-}
     
@@ -361,6 +359,12 @@ instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
                         ies  = go n f incX ptr' i'
                     in e `seq` ((i,e):ies)
     {-# NOINLINE getAssocs #-}
+
+
+instance (BLAS1 e) => RDTensor (DVector t n) Int e IO where
+    newZero n = newVector_ n >>= (\x -> setZero (unsafeThaw x) >> return x)
+    
+    newConstant n e = newVector_ n >>= (\x -> setConstant e (unsafeThaw x) >> return x)
     
     
 instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
