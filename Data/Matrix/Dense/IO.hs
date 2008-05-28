@@ -15,6 +15,7 @@ module Data.Matrix.Dense.IO (
     module BLAS.Matrix.Base,
     module BLAS.Matrix.ReadOnly,
     module BLAS.Tensor.Base,
+    module BLAS.Tensor.Dense.ReadOnly,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable,
     
@@ -83,5 +84,6 @@ import Data.Matrix.Dense.Operations hiding ( gemv, gemm, apply, applyMat,
 import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Matrix.ReadOnly
 import BLAS.Tensor.Base
+import BLAS.Tensor.Dense.ReadOnly
 import BLAS.Tensor.ReadOnly
 import BLAS.Tensor.Mutable
