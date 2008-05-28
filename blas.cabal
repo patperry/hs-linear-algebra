@@ -25,6 +25,7 @@ build-type:      Custom
 tested-with:     GHC == 6.8.2
 
 extra-source-files:     tests/Matrix.hs
+                        tests/TriMatrix.hs
                         tests/Vector.hs
 
 library
