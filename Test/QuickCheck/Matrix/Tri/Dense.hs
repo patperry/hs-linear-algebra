@@ -11,8 +11,6 @@
 module Test.QuickCheck.Matrix.Tri.Dense
     where
 
-import BLAS.Access 
-import Data.Matrix.Dense.Internal ( DMatrix )
 import Data.Ix ( range )
 
 import Test.QuickCheck hiding ( vector )
@@ -93,7 +91,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMM m n e) where
     coarbitrary = undefined
         
 data TriMatrixSV n e = 
-    TriMatrixSV (Tri (DMatrix Imm) (n,n) e) (Vector n e) deriving (Show)
+    TriMatrixSV (Tri Matrix (n,n) e) (Vector n e) deriving (Show)
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV n e) where
     arbitrary = do
@@ -115,7 +113,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV n e) where
 
 
 data TriMatrixSM m n e = 
-    TriMatrixSM (Tri (DMatrix Imm) (m,m) e) (Matrix (m,n) e) 
+    TriMatrixSM (Tri Matrix (m,m) e) (Matrix (m,n) e) 
     deriving (Show)
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m n e) where
