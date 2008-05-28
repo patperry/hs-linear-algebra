@@ -7,6 +7,8 @@
 >     system "runhaskell -lblas -DCOMPLEX tests/Vector.hs"
 >     system "runhaskell -lblas -DREAL    tests/Matrix.hs"
 >     system "runhaskell -lblas -DCOMPLEX tests/Matrix.hs"
+>     system "runhaskell -lblas -DREAL    tests/TriMatrix.hs"
+>     system "runhaskell -lblas -DCOMPLEX tests/TriMatrix.hs"
 >     return ()
 >
 > main = defaultMainWithHooks defaultUserHooks{ runTests=testing }
