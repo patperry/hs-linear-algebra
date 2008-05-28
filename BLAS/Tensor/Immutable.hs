@@ -24,12 +24,6 @@ class (Elem e, Tensor x i e) => ITensor x i e where
     -- | Get the numer of elements stored in the tensor.
     size :: x e -> Int
     
-    -- | Get a zero tensor of the given shape.
-    zero :: i -> x e
-    
-    -- | Get a new constant tensor of the given shape.
-    constant :: i -> e -> x e
-    
     -- | Get a new tensor by replacing the elements at the given indices.
     (//) :: x e -> [(i,e)] -> x e
 
