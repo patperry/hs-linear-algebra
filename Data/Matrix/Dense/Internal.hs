@@ -341,13 +341,13 @@ maybeFromCol x@(V.DV _ _ _ _)
     | otherwise =
         Nothing
 
-maybeToVector :: (BLAS1 e) => DMatrix t (m,n) e -> Maybe (Order, DVector t k e)
-maybeToVector   (H a)   = maybeToVector a >>= (\(o,x) -> return (flipOrder o, conj x))
-maybeToVector a@(DM _ _ _ _ _)
-    | lda a == size1 a =
-        Just $ (ColMajor, V.fromForeignPtr (fptr a) (offset a) (size $ unsafeFreeze a) 1)
-    | size1 a == 1 =
-        Just $ (ColMajor, V.fromForeignPtr (fptr a) (offset a) (size2 a) (lda a))
+maybeToVector :: (Elem e) => DMatrix t (m,n) e -> Maybe (Order, DVector t k e)
+maybeToVector (H a)   = maybeToVector a >>= (\(o,x) -> return (flipOrder o, conj x))
+maybeToVector (DM f o m n ld)
+    | ld == m =
+        Just $ (ColMajor, V.fromForeignPtr f o (m*n) 1)
+    | m == 1 =
+        Just $ (ColMajor, V.fromForeignPtr f o n    ld)
     | otherwise =
         Nothing
 
@@ -356,7 +356,7 @@ maybeToVector a@(DM _ _ _ _ _)
 
 
 -- | Take a unary elementwise vector operation and apply it to the elements of a matrix.
-liftV :: (BLAS1 e) => (DVector t k e -> IO ()) -> DMatrix t (m,n) e -> IO ()
+liftV :: (Elem e) => (DVector t k e -> IO ()) -> DMatrix t (m,n) e -> IO ()
 liftV f a =
     case maybeToVector a of
         Just (_,x) -> f x
@@ -368,7 +368,7 @@ liftV f a =
 
 -- | Take a binary elementwise vector operation and apply it to the elements of a pair
 -- of matrices.
-liftV2 :: (BLAS1 e) => (DVector s k e -> DVector t k e -> IO ()) 
+liftV2 :: (Elem e) => (DVector s k e -> DVector t k e -> IO ()) 
        -> DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO ()
 liftV2 f a b =
     case (maybeToVector a, maybeToVector b) of
