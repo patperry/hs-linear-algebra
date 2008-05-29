@@ -419,7 +419,7 @@ instance (BLAS1 e) => ITensor (DMatrix Imm (m,n)) (Int,Int) e where
 
     azipWith f a b
         | shape b /= mn =
-            error ("amap2: matrix shapes differ; first has shape `"
+            error ("azipWith: matrix shapes differ; first has shape `"
                    ++ show mn ++ "' and second has shape `" 
                    ++ show (shape b) ++ "'")
         | otherwise =
@@ -512,6 +512,7 @@ instance (BLAS1 e) => MTensor (DMatrix Mut (m,n)) (Int,Int) e IO where
                         pokeElemOff ptr (indexOf a (i,j)) e
     
     modifyWith f = liftV (modifyWith f)       
+
 
 instance (BLAS1 e, Show e) => Show (DMatrix Imm (m,n) e) where
     show a = case a of
