@@ -194,4 +194,5 @@ checkMatMatMult mk kn
             (show mk) (show kn)
     | otherwise =
         return ()
+
         
