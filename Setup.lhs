@@ -3,14 +3,14 @@
 > import System.Cmd
 >
 > testing _ _ _ _ = do
->     system "runhaskell -lblas -DREAL    tests/Vector.hs"
->     system "runhaskell -lblas -DCOMPLEX tests/Vector.hs"
->     system "runhaskell -lblas -DREAL    tests/Matrix.hs"
->     system "runhaskell -lblas -DCOMPLEX tests/Matrix.hs"
->     system "runhaskell -lblas -DREAL    tests/HermMatrix.hs"
->     system "runhaskell -lblas -DCOMPLEX tests/HermMatrix.hs"
->     system "runhaskell -lblas -DREAL    tests/TriMatrix.hs"
->     system "runhaskell -lblas -DCOMPLEX tests/TriMatrix.hs"
+>     system "runhaskell -lcblas -DREAL    tests/Vector.hs"
+>     system "runhaskell -lcblas -DCOMPLEX tests/Vector.hs"
+>     system "runhaskell -lcblas -DREAL    tests/Matrix.hs"
+>     system "runhaskell -lcblas -DCOMPLEX tests/Matrix.hs"
+>     system "runhaskell -lcblas -DREAL    tests/HermMatrix.hs"
+>     system "runhaskell -lcblas -DCOMPLEX tests/HermMatrix.hs"
+>     system "runhaskell -lcblas -DREAL    tests/TriMatrix.hs"
+>     system "runhaskell -lcblas -DCOMPLEX tests/TriMatrix.hs"
 >     return ()
 >
 > main = defaultMainWithHooks defaultUserHooks{ runTests=testing }
