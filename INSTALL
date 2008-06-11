@@ -1,0 +1,97 @@
+
+                   INSTALLING THE blas LIBRARY
+
+This document tells you how to build and install the blas library, and how
+to build and run the tests for the library.  
+
+TABLE OF CONTENTS
+I.   Prerequisites
+II.  Configuring
+III. Building and Installing
+IV.  Verifying the Installation
+V.   Building and Running the Tests
+VI.  Custom CBLAS Configurations
+
+
+I. PREREQUISITES
+
+Installing blas requires a working CBLAS to be installed on your system.  If you
+do not have a CBLAS installed and you are not too concerned about performance,
+probably the easiest one to install is the one that comes with the GNU 
+Scientific Library (GSL), available at http://www.gnu.org/software/gsl/.  If
+you care about performance, a better option is to use ATLAS, available at
+http://math-atlas.sourceforge.net/.  Other options include the Goto BLAS and
+Intel's MKL library.  If you are running Mac OS X, you can use vecLib, which
+is part of the Accelerate framework.
+
+
+II. CONFIGURING
+
+To configure blas, first decide which CBLAS you want to link to and figure out
+the appropriate flag.  The default flags are as follows:
+
+    CBLAS Vendor                                 Flag
+    ------------------------------------------------------
+    ATLAS                                        -fatlas
+    GSL                                          -fgsl
+    Intel MKL                                    -fmkl
+    vecLib                                       -fveclib
+    Other vendor or non-standard installation    -fcustom
+    
+Now, run the command "runhaskell Setup.lhs configure" with the appropriate 
+flag.  For example, to link with ATLAS, you would run the command:
+
+# runhaskell Setup.lhs configure -fatlas
+
+You can also pass additional arguments to the configure script.  To see a full
+list, do "runhaskell Setup.lhs configure --help".  If you do not pass a flag
+to the configure script, ATLAS is used by default.  Do not try passing more than
+one CBLAS flag to the script.
+
+
+III. BUILDING AND INSTALLING
+
+To build the library, execute the command
+
+# runhaskell Setup.lhs build
+
+To build the haddock documentation, run
+
+# runhaskell Setup.lhs haddock
+
+Lastly, to install the library, do
+
+# runhaskell Setup.lhs install
+
+
+IV. VERIFYING THE INSTALLATION
+
+Once you have installed blas, try running the command "ghci -package blas".  You
+should not get any "unknown symbol" errors.
+
+
+V. BUILDING AND RUNNING THE TESTS
+
+If you have verified that blas is installed correctly, you can try building and
+running the tests.  These are in the "tests" directory, and are in the form of
+QuickCheck properties.  To build and run them, just run "make" in the tests
+directory.
+
+
+VI. CUSTOM CBLAS CONFIGURATIONS
+
+If your CBLAS is not one of the defaults listed above or it is not installed in
+a standard location, you need to edit the blas.cabal file to tell the 
+installation script where it lives.  At the end of the file, you will see the
+following three lines:
+
+if flag(custom)
+    extra-libraries:    *** CUSTOM CBLAS LIBS GO HERE        ***
+    extra-lib-dirs:     *** PATH TO CUSTOM LIB DIR GOES HERE ***
+    
+You need to fill in the names and locations of your CBLAS libraries.  If your
+CBLAS is in a library with dependencies, make sure you list the dependencies
+*after* the libraries that depend on them.    
+
+Once you have edited blas.cabal, build and install as normal, using the 
+"-fcustom" flag when you configure the library.
