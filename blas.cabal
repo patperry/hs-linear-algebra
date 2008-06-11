@@ -24,7 +24,8 @@ cabal-version:   >= 1.2.0
 build-type:      Custom
 tested-with:     GHC == 6.8.2
 
-extra-source-files:     tests/Matrix.hs
+extra-source-files:     tests/Makefile
+                        tests/Matrix.hs
                         tests/HermMatrix.hs
                         tests/TriMatrix.hs
                         tests/Vector.hs
