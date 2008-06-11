@@ -83,11 +83,14 @@ VI. CUSTOM CBLAS CONFIGURATIONS
 If your CBLAS is not one of the defaults listed above or it is not installed in
 a standard location, you need to edit the blas.cabal file to tell the 
 installation script where it lives.  At the end of the file, you will see the
-following three lines:
+following lines:
 
-if flag(custom)
-    extra-libraries:    *** CUSTOM CBLAS LIBS GO HERE        ***
-    extra-lib-dirs:     *** PATH TO CUSTOM LIB DIR GOES HERE ***
+    if flag(custom)
+        -- CUSTOM CBLAS LIBS GO HERE
+        extra-libraries:    
+        
+        -- PATH TO CUSTOM LIB DIR GOES HERE 
+        extra-lib-dirs:     
     
 You need to fill in the names and locations of your CBLAS libraries.  If your
 CBLAS is in a library with dependencies, make sure you list the dependencies
