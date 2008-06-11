@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-excess-precision #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.C.Level1
