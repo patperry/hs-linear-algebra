@@ -29,6 +29,34 @@ extra-source-files:     tests/Matrix.hs
                         tests/TriMatrix.hs
                         tests/Vector.hs
 
+
+-- Below are the flags for specifying which CBLAS to link with.  If no flag
+-- is specified, the default is to use ATLAS.  To use the "other" flag, you
+-- must edit the section at the end of the file with the name and location
+-- of the CBLAS library you want to use.
+
+flag atlas
+    description:    Link with ATLAS.
+    default:        False
+
+flag gsl
+    description:    Link with GSL unoptimized CBLAS.
+    default:        False
+
+flag mkl
+    description:    Link with Intel MKL.
+    default:        False
+
+flag veclib
+    description:    Link with Mac OS X vecLib.
+    default:        False
+    
+flag other
+    description:    Link with a custom CBLAS.  
+    default:        False
+    -- You must edit this file below to use this option.  Replace the text
+    -- "*** CUSTOM CBLAS LIBS GO HERE ***" with the libraries you want to use.
+
 library
     exposed-modules:    BLAS.Access
                         BLAS.C
@@ -93,5 +121,27 @@ library
                         FunctionalDependencies, MultiParamTypeClasses
     build-depends:      base, ieee, storable-complex, QuickCheck
 
-    extra-libraries:    blas
+    
+    if flag(atlas)
+        extra-libraries:    atlas cblas
+      
+    if flag(gsl)
+        extra-libraries:    gsl_cblas
+
+    if flag(mkl)
+      if arch(x86_64)
+        extra-libraries:    mkl_lapack mkl_intel_lp64 mkl_sequential mkl_core
+      else
+        extra-libraries:    mkl_lapack mkl_intel mkl_sequential mkl_core
+
+    if flag(veclib)
+        extra-libraries:    blas
+
+    if flag(other)
+        extra-libraries:    *** CUSTOM CBLAS LIBS GO HERE        ***
+        extra-lib-dirs:     *** PATH TO CUSTOM LIB DIR GOES HERE ***
+    
+    -- fall back to ATLAS if no flag is specified
+    if !flag(atlas) && !flag(gsl) && !flag(mkl) && !flag(veclib) && !flag(other)
+        extra-libraries:    atlas cblas    
     
