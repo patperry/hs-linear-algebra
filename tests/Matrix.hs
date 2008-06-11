@@ -153,7 +153,7 @@ prop_assocs (a :: M) =
     assocs a === zip (indices a) (elems a)
 
 prop_scale_elems (a :: M) k =
-    and $ zipWith (===) (elems (scale k a)) (map (k*) (elems a))
+    and $ zipWith (~==) (elems (k *> a)) (map (k*) (elems a))
 prop_herm_elem (MatAt (a :: M) (i,j)) =
     (herm a) ! (j,i) == E.conj (a!(i,j))
 prop_herm_scale (a :: M) k =
