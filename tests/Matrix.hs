@@ -7,7 +7,6 @@
 -- Stability  : experimental
 --
 
-import Debug.Trace ( trace )
 
 import qualified Data.Array as Array
 import Data.Ix   ( inRange, range )
@@ -17,14 +16,12 @@ import System.Environment ( getArgs )
 import Test.QuickCheck.Parallel hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import BLAS.Access
 import Data.Matrix.Dense
-import Data.Vector.Dense.Internal ( DVector )
-import Data.Matrix.Dense.Internal ( DMatrix )
 import Data.Vector.Dense hiding ( shift, scale, invScale )
-import qualified Data.Vector.Dense as V
-import BLAS.Elem ( Elem, BLAS1 )
+
+import BLAS.Elem ( BLAS1 )
 import qualified BLAS.Elem as E
+
 import Data.Complex ( Complex(..) )
 
 import Data.AEq
@@ -35,8 +32,6 @@ import Test.QuickCheck.Vector hiding ( Assocs )
 import Test.QuickCheck.Vector.Dense hiding ( Pair )
 import Test.QuickCheck.Matrix
 import Test.QuickCheck.Matrix.Dense
-
-import Debug.Trace
         
 
 #ifdef COMPLEX
@@ -54,11 +49,11 @@ instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
     arbitrary   = arbitrary >>= \(TestComplex x) -> return x
     coarbitrary = coarbitrary . TestComplex
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (DVector Imm n e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
     arbitrary   = arbitrary >>= \(TestVector x) -> return x
     coarbitrary = coarbitrary . TestVector
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (DMatrix Imm (m,n) e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (Matrix (m,n) e) where
     arbitrary   = arbitrary >>= \(TestMatrix x) -> return x
     coarbitrary = coarbitrary . TestMatrix
 
@@ -96,12 +91,12 @@ prop_identity_diag (IndexPair (m,n)) =
     diag (identity (m,n) :: M) 0 === (constant (min m n) 1)
 prop_identity_row (Basis m i) (Basis n _) =
     if i < min m n 
-        then row (identity (m,n) :: M) i === V.basis n i
-        else row (identity (m,n) :: M) i === V.zero n
+        then row (identity (m,n) :: M) i === basis n i
+        else row (identity (m,n) :: M) i === zero n
 prop_identity_col (Basis m _) (Basis n j) =
     if j < min m n
-        then col (identity (m,n) :: M) j === V.basis m j
-        else col (identity (m,n) :: M) j === V.zero m
+        then col (identity (m,n) :: M) j === basis m j
+        else col (identity (m,n) :: M) j === zero m
 
 prop_replace_elems (a :: M) (Assocs _ ijes) =
     let ijes' = filter (\((i,j),_) -> i < numRows a && j < numCols a) ijes
@@ -115,9 +110,9 @@ prop_replace_elems (a :: M) (Assocs _ ijes) =
 prop_submatrix_shape (SubMatrix a ij mn) =
     shape (submatrix a ij mn :: M) == mn
 prop_submatrix_rows (SubMatrix a (i,j) (m,n)) =
-    rows (submatrix a (i,j) (m,n) :: M) === map (\k -> V.subvector (row a (i+k)) j n) [0..(m-1)]
+    rows (submatrix a (i,j) (m,n) :: M) === map (\k -> subvector (row a (i+k)) j n) [0..(m-1)]
 prop_submatrix_cols (SubMatrix a (i,j) (m,n)) (Index l) =
-    cols (submatrix a (i,j) (m,n) :: M) === map (\l -> V.subvector (col a (j+l)) i m) [0..(n-1)]
+    cols (submatrix a (i,j) (m,n) :: M) === map (\l -> subvector (col a (j+l)) i m) [0..(n-1)]
 
 prop_shape (a :: M) = 
     shape a == (numRows a, numCols a)
@@ -132,23 +127,23 @@ prop_at (MatAt (a :: M) (i,j)) =
     in (a!ij) === ((elems a) !! k)
     
 prop_row_dim (MatAt (a :: M) (i,_)) =
-    V.dim (row a i) == numCols a
+    dim (row a i) == numCols a
 prop_col_dim (MatAt (a :: M) (_,j)) =
-    V.dim (col a j) == numRows a
+    dim (col a j) == numRows a
 prop_rows_len (a :: M) =
     length (rows a) == numRows a
 prop_cols_len (a :: M) =
     length (cols a) == numCols a
 prop_rows_dims (a :: M) =
-    map (V.dim) (rows a) == replicate (numRows a) (numCols a)
+    map dim (rows a) == replicate (numRows a) (numCols a)
 prop_cols_dims (a :: M) =
-    map (V.dim) (cols a) == replicate (numCols a) (numRows a)
+    map dim (cols a) == replicate (numCols a) (numRows a)
 
 prop_indices (a :: M) =
     let (m,n) = shape a
     in indices a == [(i,j) | j <- range (0,n-1), i <- range(0,m-1)]
 prop_elems (a :: M) =
-    and $ zipWith (===) (elems a) $ concatMap V.elems (cols a)
+    and $ zipWith (===) (elems a) $ concatMap elems (cols a)
 prop_assocs (a :: M) = 
     assocs a === zip (indices a) (elems a)
 
@@ -157,40 +152,40 @@ prop_scale_elems (a :: M) k =
 prop_herm_elem (MatAt (a :: M) (i,j)) =
     (herm a) ! (j,i) == E.conj (a!(i,j))
 prop_herm_scale (a :: M) k =
-    herm (scale k a) === scale (E.conj k) (herm a)
+    herm (k *> a) === (E.conj k) *> (herm a)
 
 prop_herm_shape (a :: M) =
     shape (herm a) == (numCols a, numRows a)
 prop_herm_rows (a :: M) =
-    rows (herm a) === map (V.conj) (cols a)
+    rows (herm a) === map conj (cols a)
 prop_herm_cols (a :: M) = 
-    cols (herm a) === map (V.conj) (rows a)
+    cols (herm a) === map conj (rows a)
 
 prop_herm_herm (a :: M) =
     herm (herm a) === a
 
 prop_diag_herm1 (MatAt (a :: M) (k,_)) =
-    diag a (-k) === V.conj (diag (herm a) k)
+    diag a (-k) === conj (diag (herm a) k)
 prop_diag_herm2 (MatAt (a :: M) (_,k)) =
-    diag a k === V.conj (diag (herm a) (-k))
+    diag a k === conj (diag (herm a) (-k))
 
 prop_fromRow_shape (x :: V) =
-    shape (fromRow x :: M) == (1,V.dim x)
+    shape (fromRow x :: M) == (1,dim x)
 prop_fromRow_elems (x :: V) =
-    elems (fromRow x :: M) === V.elems x
+    elems (fromRow x :: M) === elems x
 
 prop_fromCol_shape (x :: V) =
-    shape (fromCol x :: M) == (V.dim x,1)
+    shape (fromCol x :: M) == (dim x,1)
 prop_fromCol_elems (x :: V) =
-    elems (fromCol x :: M) === V.elems x
+    elems (fromCol x :: M) === elems x
 
 
 prop_apply_basis (MatAt (a :: M) (_,j)) =
-    a <*> (V.basis (numCols a) j :: V) ~== col a j
+    a <*> (basis (numCols a) j :: V) ~== col a j
 prop_apply_herm_basis (MatAt (a :: M) (i,_)) =
-    (herm a) <*> (V.basis (numRows a) i :: V) ~== V.conj (row a i)
+    (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
 prop_apply_scale k (MultMV (a :: M) x) =
-    a <*> (V.scale k x) ~== V.scale k (a <*> x)
+    a <*> (k *> x) ~== k *> (a <*> x)
 prop_apply_linear (MultMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
@@ -214,7 +209,7 @@ prop_compose_cols (MultMM (a :: M) b) =
 prop_shift k (a :: M) =
     shift k a ~== a + constant (shape a) k
 prop_scale k (a :: M) =
-    scale k a ~== a * constant (shape a) k
+    k *> a ~== a * constant (shape a) k
 prop_invScale k (a :: M) =
     invScale k a ~== a / constant (shape a) k
 
@@ -228,7 +223,7 @@ prop_divide (Pair (a :: M) b) =
     elems (a / b) ~== zipWith (/) (elems a) (elems b)
 
 prop_negate (a :: M) =
-    negate a ~== scale (-1) a
+    negate a ~== (-1) *> a
     
 prop_abs (a :: M) =
     elems (abs a) ~== map abs (elems a)
