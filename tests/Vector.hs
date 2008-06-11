@@ -29,8 +29,6 @@ import Test.QuickCheck.Vector
 import Test.QuickCheck.Vector.Dense
 
 
-import Debug.Trace
-
 #ifdef COMPLEX
 field = "Complex Double"
 type E = Complex Double
