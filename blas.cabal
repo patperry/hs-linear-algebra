@@ -136,7 +136,7 @@ library
         extra-libraries:    mkl_lapack mkl_intel mkl_sequential mkl_core
 
     if flag(veclib)
-        extra-libraries:    blas
+        extra-libraries:    cblas
 
     if flag(custom)
         extra-libraries:    *** CUSTOM CBLAS LIBS GO HERE        ***
