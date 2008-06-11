@@ -56,8 +56,7 @@ flag veclib
 flag custom
     description:    Link with a custom CBLAS.  
     default:        False
-    -- You must edit this file below to use this option.  Replace the text
-    -- "*** CUSTOM CBLAS LIBS GO HERE ***" with the libraries you want to use.
+    -- You must edit this file below to use this option.  
 
 library
     exposed-modules:    BLAS.Access
@@ -140,8 +139,11 @@ library
         extra-libraries:    cblas
 
     if flag(custom)
-        extra-libraries:    *** CUSTOM CBLAS LIBS GO HERE        ***
-        extra-lib-dirs:     *** PATH TO CUSTOM LIB DIR GOES HERE ***
+        -- CUSTOM CBLAS LIBS GO HERE
+        extra-libraries:    
+        
+        -- PATH TO CUSTOM LIB DIR GOES HERE 
+        extra-lib-dirs:     
     
     -- fall back to ATLAS if no flag is specified
     if !flag(atlas) && !flag(gsl) && !flag(mkl) && !flag(veclib) && !flag(custom)
