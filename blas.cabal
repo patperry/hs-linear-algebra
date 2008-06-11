@@ -127,7 +127,7 @@ library
         extra-libraries:    cblas atlas
       
     if flag(gsl)
-        extra-libraries:    gsl_cblas
+        extra-libraries:    gslcblas
 
     if flag(mkl)
       if arch(x86_64)
