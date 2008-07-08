@@ -63,6 +63,7 @@ module Data.Matrix.Dense.Operations (
     
     ) where
 
+import Data.Maybe ( fromJust )
 import System.IO.Unsafe
 import Unsafe.Coerce
 
@@ -97,14 +98,14 @@ unsafeSwapMatrices :: (BLAS1 e) => IOMatrix (m,n) e -> IOMatrix (m,n) e -> IO ()
 unsafeSwapMatrices = liftV2 (V.unsafeSwapVectors)
 
 -- | Multiply a matrix by a vector.
-getApply :: (BLAS2 e) => DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+getApply :: (BLAS3 e) => DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 getApply = getSApply 1
 
 -- | Multiply a scaled matrix by a vector.
-getSApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+getSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 getSApply alpha a x = checkMatVecMult (shape a) (V.dim x) >> unsafeGetSApply alpha a x
 
-unsafeGetSApply :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
+unsafeGetSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 unsafeGetSApply alpha a x = do
     y <- V.newZero (numRows a)
     gemv alpha a x 0 y
@@ -212,18 +213,26 @@ flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@
-gemv :: (BLAS2 e) => e -> DMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
+gemv :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
 gemv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
         return ()
-    | V.isConj y = do
-        V.doConj y
-        gemv alpha a x beta (V.conj y)
-        V.doConj y
-    | V.isConj x = do
-        x' <- V.newCopy (V.unsafeThaw x)
-        V.doConj x'
-        gemv alpha a (V.conj x') beta y
+    | isConj x =
+        let b = fromJust $ maybeFromCol x
+        in case maybeFromCol y of
+               Just c  -> gemm alpha a b beta c
+               Nothing -> do
+                   V.doConj y
+                   gemm alpha a b beta (fromJust $ maybeFromCol $ V.conj y)
+                   V.doConj y
+    | isConj y = 
+        let c = fromJust $ maybeFromCol y
+        in case maybeFromCol x of
+               Just b  -> gemm alpha a b beta c
+               Nothing -> do
+                   x' <- V.newCopy (V.unsafeThaw x)
+                   V.doConj x'
+                   gemm alpha a (fromJust $ maybeFromCol $ V.conj x') beta c
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
@@ -276,11 +285,11 @@ binaryOp name f a b =
         
         
 -- | Multiply a matrix by a vector.
-apply :: (BLAS2 e) => Matrix (m,n) e -> Vector n e -> Vector m e
+apply :: (BLAS3 e) => Matrix (m,n) e -> Vector n e -> Vector m e
 apply = sapply 1
 
 -- | Multiply a scaled matrix by a vector.
-sapply :: (BLAS2 e) => e -> Matrix (m,n) e -> Vector n e -> Vector m e
+sapply :: (BLAS3 e) => e -> Matrix (m,n) e -> Vector n e -> Vector m e
 sapply alpha a x = unsafePerformIO $ getSApply alpha a x
 {-# NOINLINE sapply #-}
 
