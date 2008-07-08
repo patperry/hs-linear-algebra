@@ -87,6 +87,7 @@ library
                         BLAS.Types
                         BLAS.Vector
                         
+                        Data.Matrix.Banded.IO
                         Data.Matrix.Banded.Internal
                         
                         Data.Matrix.Dense
