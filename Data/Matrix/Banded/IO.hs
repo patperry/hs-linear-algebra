@@ -41,13 +41,7 @@ module Data.Matrix.Banded.IO (
     -- ** @ForeignPtr@s
     toForeignPtr,
     fromForeignPtr,
-    ldaOf,
-    isHerm,
 
-    -- ** Dense matrices
-    toMatrix,
-    fromMatrix,
-    
     -- * Bandwith properties
     bandwidth,
     numLower,
