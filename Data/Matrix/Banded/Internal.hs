@@ -253,14 +253,14 @@ diag a = checkedDiag (shape a) (unsafeDiag a)
 
 
 indexOf :: BMatrix t (m,n) e -> (Int,Int) -> Int
-indexOf a@(BM _ off _ _ _ ku ld h) (i,j) =
+indexOf (BM _ off _ _ _ ku ld h) (i,j) =
     let (i',j') = if h then (j,i) else (i,j)
     in off + ku + (i' - j') + j' * ld
     --off + i' * tda + (j' - i' + kl)
            
 
 hasStorage :: BMatrix t (m,n) e -> (Int,Int) -> Bool
-hasStorage a@(BM _ _ m n kl ku _ h) (i,j) =
+hasStorage (BM _ _ m n kl ku _ h) (i,j) =
     let (i',j') = if h then (j,i) else (i,j)
     in (  inRange (0,m-1) i'
        && inRange (0,n-1) j'
