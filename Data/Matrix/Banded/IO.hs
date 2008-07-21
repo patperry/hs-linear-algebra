@@ -54,7 +54,7 @@ module Data.Matrix.Banded.IO (
     numUpper,
     
     -- * Coercing
-    coerceMatrix,
+    coerceBanded,
     
     -- * Unsafe operations
     unsafeNewBanded,
