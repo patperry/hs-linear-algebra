@@ -26,6 +26,7 @@ tested-with:     GHC == 6.8.2
 
 extra-source-files:     INSTALL
                         tests/Makefile
+                        tests/Banded.hs
                         tests/Matrix.hs
                         tests/HermMatrix.hs
                         tests/TriMatrix.hs
