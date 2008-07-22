@@ -21,3 +21,8 @@ class (ITensor x i e) => (IDTensor x i e) where
     
     -- | Get a new constant tensor of the given shape.
     constant :: i -> e -> x e
+
+    -- | Apply a function to pairs of elements of tensors that are the 
+    -- same shape.
+    azipWith :: (ITensor x i f, ITensor x i g) => (e -> f -> g) -> x e -> x f -> x g
+    
