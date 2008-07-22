@@ -164,13 +164,13 @@ getRatio :: (BLAS2 e) => DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r
 getRatio = binaryOp "getRatio" (//=)
 
 -- | Conjugate every element in a matrix.
-doConj  :: (BLAS1 e) => IOMatrix (m,n) e -> IO (IOMatrix (m,n) e)
+doConj  :: (BLAS1 e) => IOMatrix (m,n) e -> IO ()
 doConj (H a) = do
-    a' <- doConj a
-    return (H a')
+    doConj a
+    -- return (H a')
 doConj a@(DM _ _ _ _ _) = do
     liftV (\x -> V.doConj x >> return ()) a
-    return a
+    -- return a
 
 -- | Scale every element in a matrix by the given value.
 scaleBy :: (BLAS1 e) => e -> IOMatrix (m,n) e -> IO ()
