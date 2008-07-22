@@ -417,16 +417,6 @@ instance (BLAS1 e) => ITensor (DMatrix Imm (m,n)) (Int,Int) e where
 
     amap f a = listMatrix (shape a) (map f $ elems a)
 
-    azipWith f a b
-        | shape b /= mn =
-            error ("azipWith: matrix shapes differ; first has shape `"
-                   ++ show mn ++ "' and second has shape `" 
-                   ++ show (shape b) ++ "'")
-        | otherwise =
-            listMatrix mn (zipWith f (elems a) (elems b))
-        where
-            mn = shape a
-
 
 replaceHelp :: (BLAS1 e) => 
        (IOMatrix (m,n) e -> (Int,Int) -> e -> IO ())
@@ -445,6 +435,16 @@ instance (BLAS1 e) => IDTensor (DMatrix Imm (m,n)) (Int,Int) e where
      
     constant mn = unsafePerformIO . newConstant mn
     {-# NOINLINE constant #-}
+     
+    azipWith f a b
+        | shape b /= mn =
+            error ("azipWith: matrix shapes differ; first has shape `"
+                   ++ show mn ++ "' and second has shape `" 
+                   ++ show (shape b) ++ "'")
+        | otherwise =
+            listMatrix mn (zipWith f (elems a) (elems b))
+        where
+            mn = shape a
      
      
 instance (BLAS1 e) => RTensor (DMatrix t (m,n)) (Int,Int) e IO where
