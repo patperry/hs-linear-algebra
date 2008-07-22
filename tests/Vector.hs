@@ -7,7 +7,6 @@
 -- Stability  : experimental
 --
 
-
 import qualified Data.Array as Array
 import Data.Ix   ( inRange )
 import Data.List ( nub, sortBy )
@@ -96,11 +95,13 @@ prop_subvectorWithStride_dim (SubVector s (x :: V) o n) =
     dim (subvectorWithStride s x o n) == n
     
 prop_subvectorWithStride_elems (SubVector s (x :: V) o n) =
-    elems (subvectorWithStride s x o n) === 
-        (map snd $ filter (\(i,_) -> (i - o >= 0) 
-                                  && ((i - o) `mod` s == 0) 
-                                  && ((i - o) `div` s <= n))
-                          (assocs x))
+    let expected = (map snd $ filter (\(i,_) -> (i - o >= 0) 
+                              && ((i - o) `mod` s == 0) 
+                              && ((i - o) `div` s < n))
+                      (assocs x))
+        actual = elems (subvectorWithStride s x o n) 
+    in expected === actual
+        
 
 prop_dim (x :: V) = 
     dim x == length (elems x)
