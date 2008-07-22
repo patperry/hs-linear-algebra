@@ -283,16 +283,6 @@ instance (BLAS1 e) => ITensor (DVector Imm n) Int e where
     
     amap f x = listVector (dim x) (map f $ elems x)
     
-    azipWith f x y
-        | dim y /= n =
-            error ("amap2: vector lengths differ; first has length `" ++
-                    show n ++ "' and second has length `" ++
-                    show (dim y) ++ "'")
-        | otherwise =
-            listVector n (zipWith f (elems x) (elems y))
-      where
-        n = dim x
-    
     (//) = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
 
@@ -314,6 +304,16 @@ instance (BLAS1 e) => IDTensor (DVector Imm n) Int e where
     constant n e = unsafeFreeze $ unsafePerformIO $ newConstant n e
     {-# NOINLINE constant #-}
 
+    azipWith f x y
+        | dim y /= n =
+            error ("amap2: vector lengths differ; first has length `" ++
+                    show n ++ "' and second has length `" ++
+                    show (dim y) ++ "'")
+        | otherwise =
+            listVector n (zipWith f (elems x) (elems y))
+      where
+        n = dim x
+    
 
 instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
     getSize = return . dim
