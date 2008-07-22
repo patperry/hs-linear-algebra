@@ -49,10 +49,6 @@ class (BLAS1 e, Tensor x i e) => ITensor x i e where
     -- | Apply a function elementwise to a tensor.
     amap :: (ITensor x i e') => (e -> e') -> x e -> x e'
     
-    -- | Apply a function to pairs of elements of tensors that are the 
-    -- same shape.
-    azipWith :: (ITensor x i f, ITensor x i g) => (e -> f -> g) -> x e -> x f -> x g
-    
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
 
