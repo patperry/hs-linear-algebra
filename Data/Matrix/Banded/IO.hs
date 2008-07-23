@@ -35,7 +35,7 @@ module Data.Matrix.Banded.IO (
     diag,
     
     -- * Operations
-    -- module Data.Matrix.Dense.Operations,
+    module Data.Matrix.Banded.Operations,
     
     -- * Converting to and from banded matrices
     -- ** @ForeignPtr@s
@@ -64,8 +64,8 @@ module Data.Matrix.Banded.IO (
     ) where
 
 import Data.Matrix.Banded.Internal
--- import Data.Matrix.Banded.Operations hiding ( gemv, gemm, apply, applyMat,
---    sapply, sapplyMat, add, plus, minus, times, divide, getApply, getApplyMat )
+import Data.Matrix.Banded.Operations hiding ( apply, applyMat,
+    sapply, sapplyMat, getApply, getApplyMat )
     
 import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Matrix.ReadOnly
