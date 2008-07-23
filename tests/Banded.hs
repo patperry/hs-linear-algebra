@@ -22,7 +22,7 @@ import BLAS.Elem ( BLAS1 )
 import qualified BLAS.Elem as E
 
 import Data.Complex ( Complex(..) )
-import Data.Vector.Dense
+import Data.Vector.Dense hiding ( invScale )
 
 import Data.AEq
 import Numeric.IEEE
@@ -150,27 +150,26 @@ prop_assocs (a :: B) =
 prop_assocs_at (a :: B) =
     all (\(ij,e) -> a!ij === e) $ assocs a
 
-{-
-prop_scale_elems (a :: M) k =
+prop_scale_elems (a :: B) k =
     and $ zipWith (~==) (elems (k *> a)) (map (k*) (elems a))
-prop_herm_elem (BandedAt (a :: M) (i,j)) =
+prop_herm_elem (BandedAt (a :: B) (i,j)) =
     (herm a) ! (j,i) == E.conj (a!(i,j))
-prop_herm_scale (a :: M) k =
+prop_herm_scale (a :: B) k =
     herm (k *> a) === (E.conj k) *> (herm a)
 
-prop_herm_shape (a :: M) =
+prop_herm_shape (a :: B) =
     shape (herm a) == (numCols a, numRows a)
-prop_herm_rows (a :: M) =
+prop_herm_rows (a :: B) =
     rows (herm a) === map conj (cols a)
-prop_herm_cols (a :: M) = 
+prop_herm_cols (a :: B) = 
     cols (herm a) === map conj (rows a)
 
-prop_herm_herm (a :: M) =
+prop_herm_herm (a :: B) =
     herm (herm a) === a
 
-prop_diag_herm1 (BandedAt (a :: M) (k,_)) =
+prop_diag_herm1 (BandedAt (a :: B) (k,_)) =
     diag a (-k) === conj (diag (herm a) k)
-prop_diag_herm2 (BandedAt (a :: M) (_,k)) =
+prop_diag_herm2 (BandedAt (a :: B) (_,k)) =
     diag a k === conj (diag (herm a) (-k))
 
 {-
