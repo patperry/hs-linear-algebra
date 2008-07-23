@@ -227,15 +227,15 @@ instance C.Vector (DVector t) where
              in x { isConj=c' }
     {-# INLINE conj #-}
 
-{-# RULES 
-    "conj/Float"  conj = conjFloat 
-    "conj/Double" conj = conjDouble
-  #-}
 conjFloat :: DVector t n Float -> DVector t n Float
 conjFloat = id
 
 conjDouble :: DVector t n Double -> DVector t n Double
 conjDouble = id
+
+{-# RULES "conj/Float"  conj = conjFloat #-}
+{-# RULES "conj/Double" conj = conjDouble #-}
+
 
 
 
