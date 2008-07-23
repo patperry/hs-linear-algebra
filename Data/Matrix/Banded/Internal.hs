@@ -246,7 +246,8 @@ unsafeDiag a d
             off    = indexOf a (diagStart d)
             len    = diagLen (shape a) d
             stride = ldaOf a
-        in V.fromForeignPtr f off len stride
+            c      = False
+        in V.fromForeignPtr f off len stride c
         
 diag :: (Elem e) => BMatrix t (m,n) e -> Int -> DVector t k e
 diag a = checkedDiag (shape a) (unsafeDiag a) 
@@ -324,8 +325,8 @@ unsafeColView a@(BM f off m _ kl ku ld _) j
             stride = 1
             len    = m - (nb + na)
         in if len >= 0
-            then (nb, V.fromForeignPtr f off' len stride, na)
-            else (m , V.fromForeignPtr f off' 0   stride,  0)
+            then (nb, V.fromForeignPtr f off' len stride False, na)
+            else (m , V.fromForeignPtr f off' 0   stride False,  0)
 
 
 unsafeRowView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
@@ -341,8 +342,8 @@ unsafeRowView a@(BM f off _ n kl ku ld _) i
             stride = ld - 1
             len    = n - (nb + na)
         in if len >= 0 
-            then (nb, V.fromForeignPtr f off' len stride, na)
-            else (n , V.fromForeignPtr f off' 0   stride,  0)
+            then (nb, V.fromForeignPtr f off' len stride False, na)
+            else (n , V.fromForeignPtr f off' 0   stride False,  0)
 
 
 rowView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
