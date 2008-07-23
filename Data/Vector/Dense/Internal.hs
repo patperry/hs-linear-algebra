@@ -20,8 +20,6 @@ module Data.Vector.Dense.Internal (
     -- * Conversion to and from @ForeignPtr@s.
     fromForeignPtr,
     toForeignPtr,
-    isConj,
-    strideOf,
     
     -- * Creating new vectors
     newVector, 
@@ -76,12 +74,12 @@ import BLAS.C.Level1  ( BLAS1, copy )
 -- element type.  A @DVector@ @x@ stores @dim x@ elements.  Indices into
 -- the vector are @0@-based.
 data DVector t n e = 
-      DV { fptr   :: !(ForeignPtr e) -- ^ a pointer to the storage region
-         , offset :: !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
-         , len    :: !Int            -- ^ the length of the vector
-         , stride :: !Int            -- ^ the stride (in elements, not bytes) between elements.
+      DV { storageOf :: !(ForeignPtr e) -- ^ a pointer to the storage region
+         , offsetOf  :: !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
+         , lengthOf  :: !Int            -- ^ the length of the vector
+         , strideOf  :: !Int            -- ^ the stride (in elements, not bytes) between elements.
+         , isConj    :: !Bool
          }
-    | C !(DVector t n e)            -- ^ a conjugated vector
 
 type Vector n e = DVector Imm n e
 type IOVector n e = DVector Mut n e
@@ -90,37 +88,18 @@ type IOVector n e = DVector Mut n e
 coerceVector :: DVector t n e -> DVector t m e
 coerceVector = unsafeCoerce
 
--- | Gets the pointer to the storage block
-storageOf :: DVector t n e -> ForeignPtr e
-storageOf (C x)          = storageOf x
-storageOf x@(DV _ _ _ _) = fptr x
-
--- | Gets the stride of the vector.
-strideOf :: DVector t n e -> Int
-strideOf (C x)          = strideOf x
-strideOf x@(DV _ _ _ _) = stride x
-{-# INLINE strideOf #-}
-
--- | Indicates whether or not the vector has been conjugated.  For 
--- newly-created vectors, this will be @False@.
-isConj :: (Elem e) => DVector t n e -> Bool
-isConj (C x)        = not (isConj x)
-isConj (DV _ _ _ _) = False
-{-# INLINE isConj #-}
-
--- | @fromForeignPtr fptr offset n inc@ creates a vector view of a
+-- | @fromForeignPtr fptr offset n inc c@ creates a vector view of a
 -- region in memory starting at the given offset and having dimension @n@,
--- with a stride of @inc@.
-fromForeignPtr :: ForeignPtr e -> Int -> Int -> Int -> DVector t n e
+-- with a stride of @inc@, and with @isConj@ set to @c@.
+fromForeignPtr :: ForeignPtr e -> Int -> Int -> Int -> Bool -> DVector t n e
 fromForeignPtr = DV
 {-# INLINE fromForeignPtr #-}
 
--- | Gets the tuple @(fptr,offset,n,inc)@, where @n@ is the dimension and 
--- @inc@ is the stride of the vector.  Note that this does not return the
--- conjugacy information of the vector.  For that information, use @isConj@.
-toForeignPtr :: DVector t n e -> (ForeignPtr e, Int, Int, Int)
-toForeignPtr (C x)        = toForeignPtr x
-toForeignPtr (DV f o n s) = (f, o, n, s)
+-- | Gets the tuple @(fptr,offset,n,inc,c)@, where @n@ is the dimension and 
+-- @inc@ is the stride of the vector, and @c@ indicates whether or not the
+-- vector is conjugated.
+toForeignPtr :: DVector t n e -> (ForeignPtr e, Int, Int, Int, Bool)
+toForeignPtr (DV f o n s c) = (f, o, n, s, c)
 {-# INLINE toForeignPtr #-}
 
 -- | @subvector x o n@ creates a subvector view of @x@ starting at index @o@ 
@@ -140,14 +119,14 @@ subvectorWithStride s x =
     
 -- | Same as 'subvectorWithStride' but arguments are not range-checked.
 unsafeSubvectorWithStride :: Int -> DVector t n e -> Int -> Int -> DVector t m e
-unsafeSubvectorWithStride s (C x)   o n = C   $ unsafeSubvectorWithStride s x o n
-unsafeSubvectorWithStride s x@(DV _ _ _ _) o n =
-    let f  = fptr x
+unsafeSubvectorWithStride s x o n =
+    let f  = storageOf x
         o' = indexOf x o
         n' = n
-        s' = s * (stride x)
+        s' = s * (strideOf x)
+        c  = isConj x
     in 
-        fromForeignPtr f o' n' s'
+        fromForeignPtr f o' n' s' c
 
 -- | Creates a new vector of the given length.  The elements will be 
 -- uninitialized.
@@ -158,7 +137,7 @@ newVector_ n
             "Tried to create a vector with `" ++ show n ++ "' elements."
     | otherwise = do
         arr <- mallocForeignPtrArray n
-        return $ fromForeignPtr arr 0 n 1
+        return $ fromForeignPtr arr 0 n 1 False
 
 -- | Creates a new vector of the given dimension with the given elements.
 -- If the list has length less than the passed-in dimenson, the tail of
@@ -166,7 +145,7 @@ newVector_ n
 newListVector :: (Elem e) => Int -> [e] -> IO (DVector t n e)
 newListVector n es = do
     x <- newVector_ n
-    withForeignPtr (fptr x) $ flip pokeArray $ take n es
+    withForeignPtr (storageOf x) $ flip pokeArray $ take n es
     return x
 
 -- | @listVector n es@ is equivalent to @vector n (zip [0..(n-1)] es)@, except
@@ -217,8 +196,7 @@ setBasis i x
         unsafeWriteElem x i 1 
 
 indexOf :: DVector t n e -> Int -> Int
-indexOf (C x)   i         = indexOf x i
-indexOf x@(DV _ _ _ _) i  = offset x + i * stride x
+indexOf x i = offsetOf x + i * strideOf x
 {-# INLINE indexOf #-}
 
 -- | Evaluate a function with a pointer to the value stored at the given
@@ -240,14 +218,11 @@ unsafeThaw :: DVector t n e -> IOVector n e
 unsafeThaw = unsafeCoerce
 
 instance C.Vector (DVector t) where
-    dim x = case x of
-        (C x')   -> dim x'
-        _        -> len x
+    dim = lengthOf
     {-# INLINE dim #-}
 
-    conj x = case x of
-        (C x')   -> x'
-        _        -> C x
+    conj x = let c' = (not . isConj) x 
+             in x { isConj=c' }
     {-# INLINE conj #-}
 
 {-# RULES 
@@ -318,9 +293,10 @@ instance (BLAS1 e) => IDTensor (DVector Imm n) Int e where
 instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
     getSize = return . dim
     
-    newCopy x = case x of
-        (C x')   -> newCopy x' >>= return . C
-        _        -> do
+    newCopy x
+        | isConj x = 
+            newCopy (conj x) >>= return . conj
+        | otherwise = do
             y <- newVector_ (dim x)
             unsafeWithElemPtr x 0 $ \pX ->
                 unsafeWithElemPtr y 0 $ \pY ->
@@ -333,17 +309,21 @@ instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
     getIndices = return . indices . unsafeFreeze
     {-# INLINE getIndices #-}
     
-    unsafeReadElem x i = case x of
-        (C x')   -> unsafeReadElem x' i >>= return . E.conj
-        _        -> withForeignPtr (fptr x) $ \ptr ->
-                        peekElemOff ptr (indexOf x i) 
+    unsafeReadElem x i
+        | isConj x = 
+            unsafeReadElem (conj x) i >>= return . E.conj
+        | otherwise =
+            withForeignPtr (storageOf x) $ \ptr ->
+                peekElemOff ptr (indexOf x i) 
 
-    getAssocs x = case x of
-        (C x')   -> getAssocs x' >>= return . map (\(i,e) -> (i,E.conj e))
-        _        -> let (f,o,n,incX) = toForeignPtr x
-                        ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
-                    in return $ go n f incX ptr 0
-          where
+    getAssocs x
+        | isConj x =
+            getAssocs (conj x) >>= return . map (\(i,e) -> (i,E.conj e))
+        | otherwise =
+            let (f,o,n,incX,_) = toForeignPtr x
+                ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
+            in return $ go n f incX ptr 0
+      where
             go !n !f !incX !ptr !i 
                 | i >= n = 
                      -- This is very important since we are doing unsafe IO.
@@ -372,9 +352,9 @@ instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
         | strideOf x == 1 = unsafeWithElemPtr x 0 $ flip clearArray (dim x)
         | otherwise       = setConstant 0 x
 
-    setConstant e x = case x of
-        (C x')   -> setConstant (E.conj e) x'
-        _        -> unsafeWithElemPtr x 0 $ go (dim x)
+    setConstant e x 
+        | isConj x  = setConstant (E.conj e) (conj x)
+        | otherwise = unsafeWithElemPtr x 0 $ go (dim x)
       where
         go !n !ptr | n <= 0 = return ()
                    | otherwise = let ptr' = ptr `advancePtr` (strideOf x)
@@ -382,17 +362,17 @@ instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
                                  in poke ptr e >> 
                                     go n' ptr'
     
-    unsafeWriteElem x i e = case x of
-        (C x')   -> unsafeWriteElem x' i $ E.conj e
-        _        -> withForeignPtr (fptr x) $ \ptr -> 
-                        pokeElemOff ptr (indexOf x i) e
+    unsafeWriteElem x i e =
+        let e' = if isConj x then E.conj e else e
+        in withForeignPtr (storageOf x) $ \ptr -> 
+               pokeElemOff ptr (indexOf x i) e'
                         
     canModifyElem x i = return $ inRange (bounds x) i
     {-# INLINE canModifyElem #-}
     
-    modifyWith f x = case x of
-        (C x')   -> modifyWith (E.conj . f . E.conj) x'
-        _        -> withForeignPtr (fptr x) $ go (dim x)
+    modifyWith f x
+        | isConj x  = modifyWith (E.conj . f . E.conj) (conj x)
+        | otherwise = withForeignPtr (storageOf x) $ go (dim x)
       where
         go !n !ptr | n <= 0 = return ()
                    | otherwise = do
@@ -403,10 +383,11 @@ instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
     
 compareHelp :: (BLAS1 e) => 
     (e -> e -> Bool) -> Vector n e -> Vector n e -> Bool
-compareHelp cmp (C x) (C y) =
-    compareHelp cmp x y
-compareHelp cmp x y =
-    (dim x == dim y) && (and $ zipWith cmp (elems x) (elems y))
+compareHelp cmp x y
+    | isConj x && isConj y =
+        compareHelp cmp (conj x) (conj y)
+    | otherwise =
+        (dim x == dim y) && (and $ zipWith cmp (elems x) (elems y))
 
 instance (BLAS1 e, Eq e) => Eq (DVector Imm n e) where
     (==) = compareHelp (==)
@@ -416,7 +397,7 @@ instance (BLAS1 e, AEq e) => AEq (DVector Imm n e) where
     (~==) = compareHelp (~==)
 
 instance (BLAS1 e, Show e) => Show (DVector Imm n e) where
-    show x = case x of
-        (C x')   -> "conj (" ++ show x' ++ ")"
-        _        -> "listVector " ++ show (dim x) ++ " " ++ show (elems x)
+    show x
+        | isConj x  = "conj (" ++ show (conj x) ++ ")"
+        | otherwise = "listVector " ++ show (dim x) ++ " " ++ show (elems x)
     
