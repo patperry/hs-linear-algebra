@@ -377,7 +377,7 @@ instance (BLAS1 e) => ITensor (BMatrix Imm (m,n)) (Int,Int) e where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
 
-    amap f a = banded (shape a) (bandwidth a) ies
+    amap f a = banded (shape a) (numLower a, numUpper a) ies
       where
         ies = map (second f) (assocs a)
 
