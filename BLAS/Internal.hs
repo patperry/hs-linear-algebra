@@ -112,6 +112,7 @@ checkVecVecOp name n1 n2
              ++ " and y has dimension `%d'") name n1 n2
     | otherwise =
         return ()
+{-# INLINE checkVecVecOp #-}
 
 checkedRow ::  (Int,Int) -> (Int -> v) -> Int -> v
 checkedRow (m,n) row i 
