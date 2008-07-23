@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, FlexibleInstances, MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Vector.Dense.Internal
@@ -74,11 +75,11 @@ import BLAS.C.Level1  ( BLAS1, copy )
 -- element type.  A @DVector@ @x@ stores @dim x@ elements.  Indices into
 -- the vector are @0@-based.
 data DVector t n e = 
-      DV { storageOf :: !(ForeignPtr e) -- ^ a pointer to the storage region
-         , offsetOf  :: !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
-         , lengthOf  :: !Int            -- ^ the length of the vector
-         , strideOf  :: !Int            -- ^ the stride (in elements, not bytes) between elements.
-         , isConj    :: !Bool
+      DV { storageOf :: {-# UNPACK #-} !(ForeignPtr e) -- ^ a pointer to the storage region
+         , offsetOf  :: {-# UNPACK #-} !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
+         , lengthOf  :: {-# UNPACK #-} !Int            -- ^ the length of the vector
+         , strideOf  :: {-# UNPACK #-} !Int            -- ^ the stride (in elements, not bytes) between elements.
+         , isConj    :: {-# UNPACK #-} !Bool           -- ^ indicates whether or not the vector is conjugated
          }
 
 type Vector n e = DVector Imm n e
