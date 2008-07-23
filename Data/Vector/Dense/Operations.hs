@@ -58,6 +58,7 @@ module Data.Vector.Dense.Operations (
     -- * Unsafe operations
     unsafeCopyVector,
     unsafeSwapVectors,
+    unsafeGetDot,
     
     -- * BLAS calls
     axpy,
