@@ -80,7 +80,7 @@ import Unsafe.Coerce
 import Data.AEq
 
 import Data.Vector.Dense.Internal hiding ( toForeignPtr, fromForeignPtr,
-    unsafeFreeze, unsafeThaw, fptr, offset, unsafeWithElemPtr )
+    unsafeFreeze, unsafeThaw, storageOf, offsetOf, unsafeWithElemPtr )
 import qualified Data.Vector.Dense.Internal as V
 import qualified Data.Vector.Dense.Operations as V
 
@@ -262,7 +262,8 @@ unsafeRow a@(DM _ _ _ _ _) i =
         o = indexOf a (i,0)
         n = size2 a
         s = lda a
-    in V.fromForeignPtr f o n s
+        c = False
+    in V.fromForeignPtr f o n s c
 
 -- | Same as 'col', but does not do any bounds checking.
 unsafeCol :: (Elem e) => DMatrix t (m,n) e -> Int -> DVector t m e
@@ -272,7 +273,8 @@ unsafeCol a@(DM _ _ _ _ _) j =
         o = indexOf a (0,j)
         m = size1 a
         s = 1
-    in V.fromForeignPtr f o m s
+        c = False
+    in V.fromForeignPtr f o m s c
 
 -- | @diag a 0@ gets a vector view of the main diagonal of @a@.  @diag a k@ for 
 -- @k@ positive gets a view of the @k@th superdiagonal.  For @k@ negative, it
@@ -288,7 +290,8 @@ unsafeDiag a@(DM _ _ _ _ _) i =
         o = indexOf a (diagStart i)
         n = diagLen (shape a) i
         s = lda a + 1
-    in V.fromForeignPtr f o n s
+        c = False
+    in V.fromForeignPtr f o n s c
 
 -- | @submatrix a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
@@ -306,35 +309,34 @@ unsafeSubmatrix a@(DM _ _ _ _ _) (i,j) mn' =
     
 
 -- | Create a matrix view of a row vector.  This will fail if the
--- stride is not @1@ and the vector is conjugated.
+-- vector is conjugated and the stride is not @1@.
 maybeFromRow :: (Elem e) => DVector t m e -> Maybe (DMatrix t (one,m) e)
-maybeFromRow (V.C   (V.C x))   = maybeFromRow x
-maybeFromRow (V.C x@(V.DV _ _ _ _))
-    | V.stride x == 1 =
-        let f = V.fptr x
-            o = V.offset x
-            n = V.dim x
+maybeFromRow x
+    | isConj x && strideOf x == 1 =
+        let f = V.storageOf x
+            o = V.offsetOf x
+            n = dim x
             l = max 1 n
         in Just $ herm $ fromForeignPtr f o (n,1) l
+    | (not . isConj) x =
+        let f = V.storageOf x
+            o = V.offsetOf x
+            n = dim x
+            s = strideOf x
+            l = max 1 s
+        in Just $ fromForeignPtr f o (1,n) l
     | otherwise =
         Nothing
-maybeFromRow x@(V.DV _ _ _ _) =
-    let f = V.fptr x
-        o = V.offset x
-        n = V.dim x
-        s = V.stride x
-        l = max 1 s
-    in Just $ fromForeignPtr f o (1,n) l
 
 
 -- | Possibly create a matrix view of a column vector.  This will fail
 -- if the stride of the vector is not @1@ and the vector is not conjugated.
 maybeFromCol :: (Elem e) => DVector t n e -> Maybe (DMatrix t (n,one) e)
-maybeFromCol   (V.C x)   = maybeFromRow x >>= return . herm
-maybeFromCol x@(V.DV _ _ _ _)
-    | V.stride x == 1 =
-        let f = V.fptr x
-            o = V.offset x
+maybeFromCol x
+    | isConj x = maybeFromRow (conj x) >>= return . herm
+    | strideOf x == 1 =
+        let f = V.storageOf x
+            o = V.offsetOf x
             m = dim x
             l = max 1 m
         in Just $ fromForeignPtr f o (m,1) l
@@ -345,9 +347,9 @@ maybeToVector :: (Elem e) => DMatrix t (m,n) e -> Maybe (Order, DVector t k e)
 maybeToVector (H a)   = maybeToVector a >>= (\(o,x) -> return (flipOrder o, conj x))
 maybeToVector (DM f o m n ld)
     | ld == m =
-        Just $ (ColMajor, V.fromForeignPtr f o (m*n) 1)
+        Just $ (ColMajor, V.fromForeignPtr f o (m*n) 1 False)
     | m == 1 =
-        Just $ (ColMajor, V.fromForeignPtr f o n    ld)
+        Just $ (ColMajor, V.fromForeignPtr f o n    ld False)
     | otherwise =
         Nothing
 
