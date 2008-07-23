@@ -88,6 +88,7 @@ type IOVector n e = DVector Mut n e
 -- | Cast the phantom length type.
 coerceVector :: DVector t n e -> DVector t m e
 coerceVector = unsafeCoerce
+{-# INLINE coerceVector #-}
 
 -- | @fromForeignPtr fptr offset n inc c@ creates a vector view of a
 -- region in memory starting at the given offset and having dimension @n@,
