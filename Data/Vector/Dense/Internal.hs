@@ -227,17 +227,6 @@ instance C.Vector (DVector t) where
              in x { isConj=c' }
     {-# INLINE conj #-}
 
-conjFloat :: DVector t n Float -> DVector t n Float
-conjFloat = id
-
-conjDouble :: DVector t n Double -> DVector t n Double
-conjDouble = id
-
-{-# RULES "conj/Float"  conj = conjFloat #-}
-{-# RULES "conj/Double" conj = conjDouble #-}
-
-
-
 
 instance Tensor (DVector t n) Int e where
     shape = dim
