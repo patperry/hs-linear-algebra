@@ -143,6 +143,7 @@ getWhichMaxAbs x =
 -- | Computes the dot product of two vectors.
 getDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
 getDot x y = checkVecVecOp "dot" (dim x) (dim y) >> unsafeGetDot x y
+{-# INLINE getDot #-}
 
 unsafeGetDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
 unsafeGetDot x y =
@@ -151,6 +152,14 @@ unsafeGetDot x y =
         (True , False) -> call2 dotu x y
         (False, True ) -> call2 dotu x y >>= return . E.conj
         (True , True)  -> call2 dotc x y >>= return . E.conj
+{-# INLINE unsafeGetDot #-}
+
+unsafeGetDotDouble :: DVector s n Double -> DVector t n Double -> IO Double
+unsafeGetDotDouble x y = call2 dotc x y
+{-# INLINE unsafeGetDotDouble #-}
+
+{-# RULES "unsafeGetDot/Double" unsafeGetDot = unsafeGetDotDouble #-}
+
 
 -- | Create a new vector by adding a value to every element in a vector.
 getShifted :: (BLAS1 e) => e -> DVector t n e -> IO (DVector r n e)
@@ -272,6 +281,7 @@ call f x =
     let n    = dim x
         incX = strideOf x
     in unsafeWithElemPtr x 0 $ \pX -> f n pX incX
+{-# INLINE call #-}
 
 call2 :: (Elem e) => 
        (Int -> Ptr e -> Int -> Ptr e -> Int -> IO a) 
@@ -283,6 +293,7 @@ call2 f x y =
     in unsafeWithElemPtr x 0 $ \pX ->
            unsafeWithElemPtr y 0 $ \pY ->
                f n pX incX pY incY
+{-# INLINE call2 #-}
 
 binaryOp :: (BLAS1 e) => String -> (IOVector n e -> DVector t n e -> IO ()) 
     -> DVector s n e -> DVector t n e -> IO (DVector r n e)
