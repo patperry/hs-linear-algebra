@@ -78,7 +78,7 @@ module Data.Matrix.Dense.IO (
     ) where
 
 import Data.Matrix.Dense.Internal
-import Data.Matrix.Dense.Operations hiding ( gemv, gemm, apply, applyMat,
+import Data.Matrix.Dense.Operations hiding ( apply, applyMat,
     sapply, sapplyMat, add, plus, minus, times, divide, getApply, getApplyMat )
     
 import BLAS.Matrix.Base hiding ( Matrix )
