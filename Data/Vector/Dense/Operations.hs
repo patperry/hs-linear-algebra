@@ -91,14 +91,14 @@ copyVector x y = checkVecVecOp "copyVector" (dim x) (dim y) >> unsafeCopyVector 
 
 -- | Same as 'copyVector' but does not check the dimensions of the arguments.
 unsafeCopyVector :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
-unsafeCopyVector (C x) (C y) =
-    unsafeCopyVector x y
-unsafeCopyVector x@(DV _ _ _ _) y@(DV _ _ _ _) =
-    call2 BLAS.copy y x
-unsafeCopyVector x y = do
-    forM_ [0..(dim x - 1)] $ \i -> do
-        unsafeReadElem y i >>= unsafeWriteElem x i
-
+unsafeCopyVector x y 
+    | isConj x && isConj y =
+        unsafeCopyVector (conj x) (conj y)
+    | isConj x || isConj y =
+        forM_ [0..(dim x - 1)] $ \i -> do
+            unsafeReadElem y i >>= unsafeWriteElem x i
+    | otherwise =
+        call2 BLAS.copy y x
 
 -- | @swapVectors x y@ replaces the elements in @x@ with the values from @y@, and 
 -- replaces the elements in @y@ with the values from @x@.  This may result in 
@@ -108,15 +108,16 @@ swapVectors x y = checkVecVecOp "swapVectors" (dim x) (dim y) >> unsafeSwapVecto
 
 -- | Same as 'swap' but does not check the dimensions of the arguments.
 unsafeSwapVectors :: (BLAS1 e) => IOVector n e -> IOVector n e -> IO ()
-unsafeSwapVectors (C x) (C y) =
-    unsafeSwapVectors x y
-unsafeSwapVectors x@(DV _ _ _ _) y@(DV _ _ _ _) =
-    call2 BLAS.swap x y
-unsafeSwapVectors x y = do
-    forM_ [0..(dim x - 1)] $ \i -> do
-        tmp <- unsafeReadElem x i
-        unsafeReadElem y i >>= unsafeWriteElem x i
-        unsafeWriteElem y i tmp
+unsafeSwapVectors x y
+    | isConj x && isConj y =
+        unsafeSwapVectors (conj x) (conj y)
+    | isConj x || isConj y =
+        forM_ [0..(dim x - 1)] $ \i -> do
+            tmp <- unsafeReadElem x i
+            unsafeReadElem y i >>= unsafeWriteElem x i
+            unsafeWriteElem y i tmp
+    | otherwise =
+        call2 BLAS.swap x y
 
 -- | Gets the sum of the absolute values of the vector entries.
 getSumAbs :: (BLAS1 e) => DVector t n e -> IO Double
@@ -143,16 +144,12 @@ getDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
 getDot x y = checkVecVecOp "dot" (dim x) (dim y) >> unsafeGetDot x y
 
 unsafeGetDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
-unsafeGetDot x@(DV _ _ _ _) y@(DV _ _ _ _) =
-    call2 dotc x y
-unsafeGetDot (C x@(DV _ _ _ _)) (y@(DV _ _ _ _)) =
-    call2 dotu x y
-unsafeGetDot (x@(DV _ _ _ _)) (C y@(DV _ _ _ _)) =
-    call2 dotu x y >>= return . E.conj
-unsafeGetDot x@(DV _ _ _ _) (C (C y)) = 
-    unsafeGetDot x y
-unsafeGetDot (C x) y = 
-    unsafeGetDot x (conj y) >>= return . E.conj
+unsafeGetDot x y =
+    case (isConj x, isConj y) of
+        (False, False) -> call2 dotc x y
+        (True , False) -> call2 dotu x y
+        (False, True ) -> call2 dotu x y >>= return . E.conj
+        (True , True)  -> call2 dotc x y >>= return . E.conj
 
 -- | Create a new vector by adding a value to every element in a vector.
 getShifted :: (BLAS1 e) => e -> DVector t n e -> IO (DVector r n e)
@@ -183,14 +180,15 @@ getSum alpha x beta y = checkVecVecOp "getSum" (dim x) (dim y) >> unsafeGetSum a
 unsafeGetSum :: (BLAS1 e) => e -> DVector s n e -> e -> DVector t n e -> IO (DVector r n e)
 unsafeGetSum 1 x beta y
     | beta /= 1 = unsafeGetSum beta y 1 x
-unsafeGetSum alpha (C x) beta y = do
-    s <- unsafeGetSum (E.conj alpha) x (E.conj beta) (conj y)
-    return (conj s)
-unsafeGetSum alpha x@(DV _ _ _ _) beta y = do
-    s <- newCopy y
-    scaleBy beta (unsafeThaw s)
-    axpy alpha x (unsafeThaw s)
-    return (unsafeCoerce s)
+unsafeGetSum alpha x beta y
+    | isConj x = do
+        s <- unsafeGetSum (E.conj alpha) (conj x) (E.conj beta) (conj y)
+        return (conj s)
+    | otherwise = do
+        s <- newCopy y
+        scaleBy beta (unsafeThaw s)
+        axpy alpha x (unsafeThaw s)
+        return (unsafeCoerce s)
             
 -- | Computes the difference of two vectors.
 getDiff :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO (DVector r n e)
@@ -210,36 +208,33 @@ doConj = call BLAS.conj
             
 -- | Add a value to every element in a vector.
 shiftBy :: (BLAS1 e) => e -> IOVector n e -> IO ()
-shiftBy alpha (C x) = shiftBy (E.conj alpha) x
-shiftBy alpha x     = modifyWith (alpha+) x
+shiftBy alpha x | isConj x  = shiftBy (E.conj alpha) (conj x)
+                | otherwise = modifyWith (alpha+) x
 
 -- | Scale every element in the vector by the given value, and return a view
 -- to the scaled vector.  See also 'scale'.
 scaleBy :: (BLAS1 e) => e -> IOVector n e -> IO ()
 scaleBy 1 _ = return ()
-scaleBy k (C x) = do
-    scaleBy (E.conj k) x
-scaleBy k x@(DV _ _ _ _) =
-    call (flip scal k) x
+scaleBy k x | isConj x  = scaleBy (E.conj k) (conj x)
+            | otherwise = call (flip scal k) x
 
 -- | Divide every element by a value.
 invScaleBy :: (BLAS1 e) => e -> IOVector n e -> IO ()
-invScaleBy k (C x) = invScaleBy (E.conj k) x
-invScaleBy k x     = modifyWith (/k) x
+invScaleBy k x | isConj x  = invScaleBy (E.conj k) (conj x)
+               | otherwise = modifyWith (/k) x
 
 -- | @y += x@ replaces @y@ by @y + x@.
 (+=) :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
 (+=) y x = checkVecVecOp "(+=)" (dim y) (dim x) >> axpy 1 x y
 
 axpy :: (BLAS1 e) => e -> DVector t n e -> IOVector n e -> IO ()
-axpy alpha x@(DV _ _ _ _) y@(DV _ _ _ _) =
-    call2 (flip BLAS.axpy alpha) x y
-axpy alpha (C x@(DV _ _ _ _))  y@(DV _ _ _ _) =
-    call2 (flip BLAS.acxpy alpha) x y
-axpy alpha (C (C x)) y = 
-    axpy alpha x y
-axpy alpha x (C y) =
-    axpy (E.conj alpha) (conj x) y
+axpy alpha x y
+    | isConj y =
+        axpy (E.conj alpha) (conj x) (conj y)
+    | isConj x =
+        call2 (flip BLAS.acxpy alpha) x y
+    | otherwise =
+        call2 (flip BLAS.axpy alpha) x y
 
 -- | @y -= x@ replaces @y@ by @y - x@.
 (-=) :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
@@ -250,28 +245,26 @@ axpy alpha x (C y) =
 (*=) y x = checkVecVecOp "(*=)" (dim y) (dim x) >> timesEquals y x
 
 timesEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-timesEquals y@(DV _ _ _ _) x@(DV _ _ _ _) =
-    call2 (flip (tbmv T.colMajor T.upper T.noTrans T.nonUnit) 0) x y
-timesEquals y@(DV _ _ _ _) (C x@(DV _ _ _ _)) =
-    call2 (flip (tbmv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y    
-timesEquals y@(DV _ _ _ _) (C (C x)) = 
-    timesEquals y x
-timesEquals (C y) x =
-    timesEquals y (conj x)
+timesEquals y x
+    | isConj y =
+        timesEquals (conj y) (conj x)
+    | isConj x =
+        call2 (flip (tbmv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y    
+    | otherwise =
+        call2 (flip (tbmv T.colMajor T.upper T.noTrans T.nonUnit) 0) x y
 
 -- | @y //= x@ replaces @y@ by @y / x@, the elementwise ratio.
 (//=) :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
 (//=) y x = checkVecVecOp "(//=)" (dim y) (dim x) >> divideEquals y x
 
 divideEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-divideEquals y@(DV _ _ _ _) x@(DV _ _ _ _) =
-    call2 (flip (tbsv T.colMajor T.upper T.noTrans T.nonUnit) 0) x y
-divideEquals y@(DV _ _ _ _) (C x@(DV _ _ _ _)) =
-    call2 (flip (tbsv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y
-divideEquals y@(DV _ _ _ _) (C (C x)) = 
-    divideEquals y x
-divideEquals (C y) x =
-    divideEquals y (conj x)
+divideEquals y x
+    | isConj y =
+        divideEquals (conj y) (conj x)
+    | isConj x =
+        call2 (flip (tbsv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y
+    | otherwise =
+        call2 (flip (tbsv T.colMajor T.upper T.noTrans T.nonUnit) 0) x y
                
 call :: (Elem e) => (Int -> Ptr e -> Int -> IO a) -> DVector t n e -> IO a
 call f x =
