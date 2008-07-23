@@ -173,16 +173,7 @@ prop_diag_herm1 (BandedAt (a :: M) (k,_)) =
 prop_diag_herm2 (BandedAt (a :: M) (_,k)) =
     diag a k === conj (diag (herm a) (-k))
 
-prop_fromRow_shape (x :: V) =
-    shape (fromRow x :: M) == (1,dim x)
-prop_fromRow_elems (x :: V) =
-    elems (fromRow x :: M) === elems x
-
-prop_fromCol_shape (x :: V) =
-    shape (fromCol x :: M) == (dim x,1)
-prop_fromCol_elems (x :: V) =
-    elems (fromCol x :: M) === elems x
-
+{-
 
 prop_apply_basis (BandedAt (a :: M) (_,j)) =
     a <*> (basis (numCols a) j :: V) ~== col a j
@@ -209,32 +200,13 @@ prop_compose_herm (MultMM (a :: M) b) =
     herm b <**> herm a ~== herm (a <**> b)
 prop_compose_cols (MultMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
-
-prop_scale k (a :: M) =
-    k *> a ~== a * constant (shape a) k
-prop_invScale k (a :: M) =
-    invScale k a ~== a / constant (shape a) k
-
-prop_plus (Pair (a :: M) b) =
-    elems (a + b) ~== zipWith (+) (elems a) (elems b)
-prop_minus (Pair (a :: M) b) =
-    elems (a - b) ~== zipWith (-) (elems a) (elems b)
-prop_times (Pair (a :: M) b) =
-    elems (a * b) ~== zipWith (*) (elems a) (elems b)
-prop_divide (Pair (a :: M) b) =
-    elems (a / b) ~== zipWith (/) (elems a) (elems b)
-
-prop_negate (a :: M) =
-    negate a ~== (-1) *> a
-    
-prop_abs (a :: M) =
-    elems (abs a) ~== map abs (elems a)
-prop_signum (a :: M) =
-    elems (signum a) === map signum (elems a)
-prop_recip (a :: M) =
-    elems (recip a) ~== (map recip $ elems a)
-
 -}
+
+prop_scale k (a :: B) =
+    k *> a ~== amap (\e -> e * k) a
+prop_invScale k (a :: B) =
+    invScale k a ~== amap (\e -> e / k) a
+
 
 properties =
     [ ("shape of banded"       , pDet prop_banded_shape)
@@ -266,7 +238,6 @@ properties =
     , ("assocs"                , pDet prop_assocs)
     , ("assocs/at"             , pDet prop_assocs_at)
 
-{-    
     , ("elems of scale"        , pDet prop_scale_elems)
     , ("elem of herm"          , pDet prop_herm_elem)
     , ("herm/scale"            , pDet prop_herm_scale)
@@ -280,11 +251,7 @@ properties =
     , ("subdiag . herm"        , pDet prop_diag_herm1)
     , ("superdiag . herm"      , pDet prop_diag_herm2)
                                
-    , ("shape . fromRow"       , pDet prop_fromRow_shape)
-    , ("elems . fromRow"       , pDet prop_fromRow_elems)
-    , ("shape . fromCol"       , pDet prop_fromCol_shape)
-    , ("elems . fromCol"       , pDet prop_fromCol_elems)
-                               
+{-    
     , ("apply basis"           , pDet prop_apply_basis)
     , ("apply herm basis"      , pDet prop_apply_herm_basis)
     , ("apply scale"           , pDet prop_apply_scale)
@@ -297,20 +264,11 @@ properties =
     , ("compose linear"        , pDet prop_compose_linear)
     , ("compose herm"          , pDet prop_compose_herm)
     , ("compose cols"          , pDet prop_compose_cols)
+-}
     
     , ("scale"                 , pDet prop_scale)
     , ("invScale"              , pDet prop_invScale)
     
-    , ("plus"                  , pDet prop_plus)
-    , ("minus"                 , pDet prop_minus)
-    , ("times"                 , pDet prop_times)
-    , ("divide"                , pDet prop_divide)
-    
-    , ("negate"                , pDet prop_negate)
-    , ("abs"                   , pDet prop_abs)
-    , ("signum"                , pDet prop_signum)
-    , ("recip"                 , pDet prop_recip)
--}
     ]
 
 
