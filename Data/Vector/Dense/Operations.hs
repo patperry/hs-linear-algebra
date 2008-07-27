@@ -37,6 +37,7 @@ module Data.Vector.Dense.Operations (
     divide,
     
     -- ** Impure
+    getConj,
     getShifted,
     getScaled,
     getInvScaled,
@@ -160,6 +161,18 @@ unsafeGetDotDouble x y = call2 dotc x y
 
 {-# RULES "unsafeGetDot/Double" unsafeGetDot = unsafeGetDotDouble #-}
 
+
+-- | Create a new vector by taking the conjugate of a vector.  The
+-- resulting vector will have 'isConj' equal to 'False'.
+getConj :: (BLAS1 e) => DVector t n e -> IO (DVector r n e)
+getConj x 
+    | isConj x = do
+        y <- newCopy x
+        doConj (unsafeThaw y)
+        return (unsafeCoerce $ conj y)
+    | otherwise = do
+        y <- newCopy x
+        return (unsafeCoerce y)
 
 -- | Create a new vector by adding a value to every element in a vector.
 getShifted :: (BLAS1 e) => e -> DVector t n e -> IO (DVector r n e)
