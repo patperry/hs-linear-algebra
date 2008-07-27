@@ -48,15 +48,16 @@ import Unsafe.Coerce
 
 import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
 import Data.Matrix.Banded.Internal
-import Data.Matrix.Dense.Internal ( DMatrix(..), Matrix, IOMatrix )
+import Data.Matrix.Dense.Internal ( DMatrix(..), Matrix, IOMatrix)
 import Data.Vector.Dense.Internal hiding ( unsafeWithElemPtr, unsafeThaw, 
     unsafeFreeze )
--- import qualified Data.Vector.Dense.Operations as V
+import qualified Data.Vector.Dense.Operations as V
 import qualified Data.Vector.Dense.Internal as V
+import qualified Data.Matrix.Dense.Internal as M
 import qualified Data.Matrix.Dense.Operations as M
 
--- import BLAS.C ( CBLASTrans, colMajor, noTrans, conjTrans )
--- import qualified BLAS.C as BLAS
+import BLAS.C ( CBLASTrans, colMajor, noTrans, conjTrans )
+import qualified BLAS.C as BLAS
 import BLAS.Elem ( BLAS1, BLAS2  )
 import qualified BLAS.Elem as E
 
@@ -117,7 +118,6 @@ invScaleBy k a =
         k' = if h then E.conj k else k
     in M.invScaleBy k' a'
 
-{-
 blasTransOf :: BMatrix t (m,n) e -> CBLASTrans
 blasTransOf a = 
     case (isHerm a) of
@@ -126,65 +126,41 @@ blasTransOf a =
 
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
--}
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@
 gbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
-gbmv = undefined -- alpha a x beta y =
-{-
+gbmv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
         return ()
-    | isConj x =
-        let b = fromJust $ maybeFromCol x
-        in case maybeFromCol y of
-               Just c  -> gemm alpha a b beta c
-               Nothing -> do
-                   V.doConj y
-                   gemm alpha a b beta (fromJust $ maybeFromCol $ V.conj y)
-                   V.doConj y
-    | isConj y = 
-        let c = fromJust $ maybeFromCol y
-        in case maybeFromCol x of
-               Just b  -> gemm alpha a b beta c
-               Nothing -> do
-                   x' <- V.newCopy (V.unsafeThaw x)
-                   V.doConj x'
-                   gemm alpha a (fromJust $ maybeFromCol $ V.conj x') beta c
+    | isConj x = do
+        x' <- V.getConj (conj x)
+        gbmv alpha a x' beta y
+    | isConj y = do
+        V.doConj y
+        gbmv alpha a x beta (conj y)
+        V.doConj y
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
             (m,n)  = case (isHerm a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
+            (kl,ku) = case (isHerm a) of
+                          False -> (numLower a, numUpper a)
+                          True  -> (numUpper a, numLower a)
             ldA    = ldaOf a
             incX   = V.strideOf x
             incY   = V.strideOf y
         in unsafeWithElemPtr a (0,0) $ \pA ->
                V.unsafeWithElemPtr x 0 $ \pX ->
                     V.unsafeWithElemPtr y 0 $ \pY -> do
-                        BLAS.gemv order transA m n alpha pA ldA pX incX beta pY incY
--}
+                        BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
-gbmm = undefined -- alpha a b beta c
-{-
-    | numRows a == 0 || numCols a == 0 || numCols b == 0 = return ()
-    | isHerm c = gemm (E.conj alpha) (herm b) (herm a) (E.conj beta) (herm c)
-    | otherwise =
-        let order  = colMajor
-            transA = blasTransOf a
-            transB = blasTransOf b
-            (m,n)  = shape c
-            k      = numCols a
-            ldA    = ldaOf a
-            ldB    = ldaOf b
-            ldC    = ldaOf c
-        in unsafeWithElemPtr a (0,0) $ \pA ->
-               unsafeWithElemPtr b (0,0) $ \pB ->
-                   unsafeWithElemPtr c (0,0) $ \pC ->
-                       BLAS.gemm order transA transB m n k alpha pA ldA pB ldB beta pC ldC
--}
+gbmm alpha a b beta c =
+    sequence_ $
+        zipWith (\x y -> gbmv alpha a x beta y) (M.cols b) (M.cols c)
 
 unaryOp :: (BLAS1 e) => (IOBanded (m,n) e -> IO ()) 
     -> BMatrix t (m,n) e -> IO (BMatrix r (m,n) e)
