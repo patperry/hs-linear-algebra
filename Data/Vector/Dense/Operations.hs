@@ -167,11 +167,11 @@ unsafeGetDotDouble x y = call2 dotc x y
 getConj :: (BLAS1 e) => DVector t n e -> IO (DVector r n e)
 getConj x 
     | isConj x = do
-        y <- newCopy x
-        doConj (unsafeThaw y)
-        return (unsafeCoerce $ conj y)
+        y <- newCopy (conj x)
+        return (unsafeCoerce y)
     | otherwise = do
         y <- newCopy x
+        doConj (unsafeThaw y)
         return (unsafeCoerce y)
 
 -- | Create a new vector by adding a value to every element in a vector.
