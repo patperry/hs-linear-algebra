@@ -99,6 +99,7 @@ library
                             Data.Matrix.Dense.Operations
                         
                         Data.Matrix.Herm
+                            Data.Matrix.Herm.Banded
                             Data.Matrix.Herm.Dense
                         
                         Data.Matrix.Tri
