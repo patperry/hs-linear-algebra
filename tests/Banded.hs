@@ -23,6 +23,8 @@ import qualified BLAS.Elem as E
 
 import Data.Complex ( Complex(..) )
 import Data.Vector.Dense hiding ( invScale )
+import Data.Matrix.Dense ( Matrix, identity )
+import qualified Data.Matrix.Dense as M
 
 import Data.AEq
 import Numeric.IEEE
@@ -44,6 +46,7 @@ type E = Double
 #endif
 
 type V = Vector Int E
+type M = Matrix (Int,Int) E
 type B = Banded (Int,Int) E
 
 instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
@@ -172,34 +175,24 @@ prop_diag_herm1 (BandedAt (a :: B) (k,_)) =
 prop_diag_herm2 (BandedAt (a :: B) (_,k)) =
     diag a k === conj (diag (herm a) (-k))
 
-{-
 
-prop_apply_basis (BandedAt (a :: M) (_,j)) =
+prop_apply_basis (BandedAt (a :: B) (_,j)) =
     a <*> (basis (numCols a) j :: V) ~== col a j
-prop_apply_herm_basis (BandedAt (a :: M) (i,_)) =
+prop_apply_herm_basis (BandedAt (a :: B) (i,_)) =
     (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
-prop_apply_scale k (MultMV (a :: M) x) =
+prop_apply_scale k (BandedMV (a :: B) x) =
     a <*> (k *> x) ~== k *> (a <*> x)
-prop_apply_linear (MultMVPair (a :: M) x y) =
+prop_apply_linear (BandedMVPair (a :: B) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
-prop_compose_id_right (a :: M) =
-    let n = numCols a
-    in a <**> (identity (n,n) :: M) ~== a
-prop_compose_id_left (a :: M) =
-    let m = numRows a
-    in (identity (m,m) :: M) <**> a ~== a
-prop_compose_scale_left (MultMM (a:: M) b) k =
+prop_applyMat_scale_left (BandedMM (a:: B) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
-prop_compose_scale_right (MultMM (a:: M) b) k =
+prop_applyMat_scale_right (BandedMM (a:: B) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
-prop_compose_linear (MultMMPair (a :: M) b c) =
+prop_applyMat_linear (BandedMMPair (a :: B) b c) =
     a <**> (b + c) ~== a <**> b + a <**> c
-prop_compose_herm (MultMM (a :: M) b) =
-    herm b <**> herm a ~== herm (a <**> b)
-prop_compose_cols (MultMM (a :: M) b) =
-    cols (a <**> b) ~== map (a <*> ) (cols b)
--}
+prop_applyMat_cols (BandedMM (a :: B) b) =
+    M.cols (a <**> b) ~== map (a <*> ) (M.cols b)
 
 prop_scale k (a :: B) =
     k *> a ~== amap (\e -> e * k) a
@@ -250,20 +243,15 @@ properties =
     , ("subdiag . herm"        , pDet prop_diag_herm1)
     , ("superdiag . herm"      , pDet prop_diag_herm2)
                                
-{-    
     , ("apply basis"           , pDet prop_apply_basis)
     , ("apply herm basis"      , pDet prop_apply_herm_basis)
     , ("apply scale"           , pDet prop_apply_scale)
     , ("apply linear"          , pDet prop_apply_linear)
     
-    , ("compose id left"       , pDet prop_compose_id_left)
-    , ("compose id right"      , pDet prop_compose_id_right)
-    , ("compose scale left"    , pDet prop_compose_scale_left)
-    , ("compose scale right"   , pDet prop_compose_scale_right)
-    , ("compose linear"        , pDet prop_compose_linear)
-    , ("compose herm"          , pDet prop_compose_herm)
-    , ("compose cols"          , pDet prop_compose_cols)
--}
+    , ("applyMat scale left"   , pDet prop_applyMat_scale_left)
+    , ("applyMat scale right"  , pDet prop_applyMat_scale_right)
+    , ("applyMat linear"       , pDet prop_applyMat_linear)
+    , ("applyMat cols"         , pDet prop_applyMat_cols)
     
     , ("scale"                 , pDet prop_scale)
     , ("invScale"              , pDet prop_invScale)
