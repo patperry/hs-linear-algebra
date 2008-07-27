@@ -62,6 +62,7 @@ module Data.Matrix.Banded.Internal (
     unsafeFreeze,
     unsafeThaw,
     unsafeWithElemPtr,
+    unsafeWithBasePtr,
     unsafeDiag,
     unsafeGetRow,
     unsafeGetCol,
@@ -274,6 +275,11 @@ unsafeWithElemPtr a (i,j) f
     | isHerm a  = unsafeWithElemPtr (herm a) (j,i) f
     | otherwise = withForeignPtr (fptrOf a) $ \ptr ->
                       f $ ptr `advancePtr` (indexOf a (i,j))
+
+unsafeWithBasePtr :: (Elem e) => BMatrix t (m,n) e -> (Ptr e -> IO a) -> IO a
+unsafeWithBasePtr a f =
+    withForeignPtr (fptrOf a) $ \ptr ->
+        f $ ptr `advancePtr` (offsetOf a)
 
 row :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector n e
 row a = checkedRow (shape a) (unsafeRow a)
