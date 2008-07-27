@@ -15,9 +15,11 @@ import Control.Monad( forM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
--- import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
+import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
+import Test.QuickCheck.Matrix.Dense ( dmatrix )
 
--- import Data.Vector.Dense ( Vector, dim )
+import Data.Vector.Dense ( Vector, dim )
+import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
 import BLAS.Elem ( Elem, BLAS1 )
 
@@ -116,57 +118,60 @@ instance (Arbitrary e, Elem e) => Arbitrary (MatrixPair m n e) where
             return $ Pair a b
         
     coarbitrary = undefined
+-}  
   
-data MultMV m n e = MultMV (Matrix (m,n) e) (Vector n e) deriving (Eq, Show)
+data BandedMV m n e = BandedMV (Banded (m,n) e) (Vector n e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MultMV m n e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMV m n e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
             m <- choose (0,k')
             n <- choose (0,k')
-            a <- dmatrix (m,n)
+            kl <- if m == 0 then return 0 else choose (0,m-1)
+            ku <- if n == 0 then return 0 else choose (0,n-1)
+            a <- bmatrix (m,n) (kl,ku)             
             x <- dvector n
-            return $ MultMV a x
+            return $ BandedMV a x
             
     coarbitrary = undefined
 
-data MultMVPair m n e = MultMVPair (Matrix (m,n) e) (Vector n e) (Vector n e) 
+data BandedMVPair m n e = BandedMVPair (Banded (m,n) e) (Vector n e) (Vector n e) 
     deriving (Eq, Show)
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MultMVPair m n e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMVPair m n e) where
     arbitrary = do
-        (MultMV a x) <- arbitrary
+        (BandedMV a x) <- arbitrary
         y <- dvector (dim x)
-        return $ MultMVPair a x y
+        return $ BandedMVPair a x y
         
-    coarbitrary (MultMVPair a x y) =
-        coarbitrary (MultMV a x, TestVector y)
+    coarbitrary (BandedMVPair a x y) =
+        coarbitrary (BandedMV a x, TestVector y)
         
-data MultMM m n k e = MultMM (Matrix (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
+data BandedMM m n k e = BandedMM (Banded (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
 
-instance (Arbitrary e, Elem e) => Arbitrary (MultMM m n k e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMM m n k e) where
     arbitrary = sized $ \s ->
         let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
         in do
             m <- choose (0,s')
-            n <- choose (0,s')
             k <- choose (0,s')
-            a <- dmatrix (m,k)
+            n <- choose (0,s')
+            kl <- if m == 0 then return 0 else choose (0,m-1)
+            ku <- if k == 0 then return 0 else choose (0,k-1)
+            a <- bmatrix (m,k) (kl,ku)             
             b <- dmatrix (k,n)
-            return $ MultMM a b
+            return $ BandedMM a b
             
     coarbitrary = undefined
         
-data MultMMPair m n k e = MultMMPair (Matrix (m,k) e) (Matrix (k,n) e) (Matrix (k,n) e)
+data BandedMMPair m n k e = BandedMMPair (Banded (m,k) e) (Matrix (k,n) e) (Matrix (k,n) e)
     deriving (Eq, Show)
     
-instance (Arbitrary e, Elem e) => Arbitrary (MultMMPair m n k e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMMPair m n k e) where
     arbitrary = do
-        (MultMM a b) <- arbitrary
+        (BandedMM a b) <- arbitrary
         c <- dmatrix (shape b)
-        return $ MultMMPair a b c
+        return $ BandedMMPair a b c
         
     coarbitrary = undefined
-
--}
