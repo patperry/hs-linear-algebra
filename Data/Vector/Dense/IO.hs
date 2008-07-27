@@ -36,8 +36,6 @@ module Data.Vector.Dense.IO (
     -- * Conversion to and from @ForeignPtr@s
     fromForeignPtr,
     toForeignPtr,
-    isConj,
-    strideOf,
     
     -- * Converting between mutable and immutable vectors
     unsafeFreeze,
