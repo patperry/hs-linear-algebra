@@ -42,7 +42,6 @@ module Data.Matrix.Banded.Operations (
     
     ) where
 
--- import Data.Maybe ( fromJust )
 import System.IO.Unsafe
 import Unsafe.Coerce
 
@@ -151,7 +150,7 @@ gbmv alpha a x beta y
             ldA    = ldaOf a
             incX   = V.strideOf x
             incY   = V.strideOf y
-        in unsafeWithElemPtr a (0,0) $ \pA ->
+        in unsafeWithBasePtr a $ \pA ->
                V.unsafeWithElemPtr x 0 $ \pX ->
                     V.unsafeWithElemPtr y 0 $ \pY -> do
                         BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
@@ -211,4 +210,4 @@ invScale k a = unsafePerformIO $ getInvScaled k a
 "scale.apply/sapply"       forall k a x. apply (scale k a) x = sapply k a x
 "scale.applyMat/sapplyMat" forall k a b. applyMat (scale k a) b = sapplyMat k a b
   #-}
-  
+    
