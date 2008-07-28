@@ -96,5 +96,4 @@ hbmv alpha h x beta y
 
 hbmm :: (BLAS2 e) => e -> Herm (BMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
 hbmm alpha h b beta c =
-    sequence_ $
-        zipWith (\x y -> hbmv alpha h x beta y) (M.cols b) (M.cols c)
+    zipWithM_ (\x y -> hbmv alpha h x beta y) (M.cols b) (M.cols c)
