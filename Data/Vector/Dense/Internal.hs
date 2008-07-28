@@ -363,7 +363,8 @@ instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
     
     modifyWith f x
         | isConj x  = modifyWith (E.conj . f . E.conj) (conj x)
-        | otherwise = withForeignPtr (storageOf x) $ go (dim x)
+        | otherwise = withForeignPtr (storageOf x) $ 
+                          \ptr -> go (dim x) (ptr `advancePtr` offsetOf x)
       where
         go !n !ptr | n <= 0 = return ()
                    | otherwise = do
