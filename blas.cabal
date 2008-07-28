@@ -104,6 +104,7 @@ library
                             Data.Matrix.Herm.Dense
                         
                         Data.Matrix.Tri
+                            Data.Matrix.Tri.Banded
                             Data.Matrix.Tri.Dense
                         
                         Data.Vector.Dense
