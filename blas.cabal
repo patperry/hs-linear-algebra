@@ -29,6 +29,7 @@ extra-source-files:     INSTALL
                         tests/Banded.hs
                         tests/Matrix.hs
                         tests/HermMatrix.hs
+                        tests/HermBanded.hs
                         tests/TriMatrix.hs
                         tests/Vector.hs
 
