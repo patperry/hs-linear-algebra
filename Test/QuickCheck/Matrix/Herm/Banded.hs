@@ -10,6 +10,8 @@
 module Test.QuickCheck.Matrix.Herm.Banded 
     where
 
+import Control.Monad ( replicateM )
+
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Vector.Dense ( dvector )
@@ -63,13 +65,15 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMV n e) where
             u <- elements [ Upper, Lower ]
             n <- choose (0,s')
             k <- if n == 0 then return 0 else choose (0,n-1)
+            l <- if n == 0 then return 0 else choose (0,n-1)
             
             h <- hermBanded n k
             
+            junk <- replicateM l $ QC.vector n
             let (_,_,ds) = toLists h
                 a = case u of
-                        Upper -> listsBanded (n,n) (0,k) (drop k ds)
-                        Lower -> listsBanded (n,n) (k,0) (take (k+1) ds)
+                        Upper -> listsBanded (n,n) (l,k) $ junk ++ (drop k ds)
+                        Lower -> listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk
                         
             x <- dvector n
             
