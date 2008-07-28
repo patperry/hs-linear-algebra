@@ -95,25 +95,6 @@ hbmv alpha h x beta y
                         BLAS.hbmv order uploA n k alpha'' pA ldA pX incX beta pY incY
 
 hbmm :: (BLAS2 e) => e -> Herm (BMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
-hbmm = undefined {- alpha h b beta c
-    | numRows b == 0 || numCols b == 0 || numCols c == 0 = return ()
-    | (isHerm a) /= (isHerm c) || (isHerm a) /= (isHerm b) =
-        zipWithM_ (\x y -> hemv alpha h x beta y) (cols b) (cols c)
-    | otherwise =
-        let order   = colMajor
-            (m,n)   = shape c
-            alpha'  = alpha * e
-            (side,u',m',n', alpha'')
-                    = if isHerm a
-                          then (rightSide, flipUpLo u, n, m, E.conj alpha')
-                          else (leftSide,  u, m, n, alpha')
-            uploA   = cblasUpLo u'
-            ldA     = ldaOf a
-            ldB     = ldaOf b
-            ldC     = ldaOf c
-        in M.unsafeWithElemPtr a (0,0) $ \pA ->
-               M.unsafeWithElemPtr b (0,0) $ \pB ->
-                   M.unsafeWithElemPtr c (0,0) $ \pC ->
-                       BLAS.hemm order side uploA m' n' alpha'' pA ldA pB ldB beta pC ldC
-    where
-      (u,e,a) = toBase h -}
+hbmm alpha h b beta c =
+    sequence_ $
+        zipWith (\x y -> hbmv alpha h x beta y) (M.cols b) (M.cols c)
