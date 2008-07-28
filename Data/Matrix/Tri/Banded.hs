@@ -114,21 +114,31 @@ tbmv t x =
 tbmm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
 tbmm t b = mapM_ (\x -> tbmv t x) (M.cols b)
 
-tbsv :: (BLAS2 e) =>Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-tbsv = undefined {- t x =
+tbsv :: (BLAS2 e) => Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
+tbsv t x | isConj x = do
+    V.doConj x
+    tbsv t (conj x)
+    V.doConj x
+    
+tbsv t x = 
     let (u,d,alpha,a) = toBase t
         order     = colMajor
         (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
         uploA     = cblasUpLo u'
         diagA     = cblasDiag d
         n         = numCols a
+        k         = case u of Upper -> numUpper a 
+                              Lower -> numLower a        
         ldA       = ldaOf a
         incX      = strideOf x
-    in M.unsafeWithElemPtr a (0,0) $ \pA ->
+        withPtrA  = case u' of 
+                        Upper -> B.unsafeWithBasePtr a
+                        Lower -> B.unsafeWithElemPtr a (0,0)
+    in withPtrA $ \pA ->
            V.unsafeWithElemPtr x 0 $ \pX -> do
-               BLAS.trsv order uploA transA diagA n pA ldA pX incX
+               BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
                when (alpha /= 1) $ V.invScaleBy alpha x
--}
+
 
 tbsm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
 tbsm t b = mapM_ (\x -> tbsv t x) (M.cols b)
