@@ -17,12 +17,12 @@ I. PREREQUISITES
 
 Installing blas requires a working CBLAS to be installed on your system.  If you
 do not have a CBLAS installed and you are not too concerned about performance,
-probably the easiest one to install is the one that comes with the GNU 
-Scientific Library (GSL), available at http://www.gnu.org/software/gsl/.  If
-you care about performance, a better option is to use ATLAS, available at
+probably the easiest to install is the one that comes with the GNU Scientific
+Library (GSL), available at http://www.gnu.org/software/gsl/.  If you care about
+performance, a better option is to use ATLAS, available at 
 http://math-atlas.sourceforge.net/.  Other options include the Goto BLAS and
 Intel's MKL library.  If you are running Mac OS X, you can use vecLib, which
-is part of the Accelerate framework.
+is part of the Accelerate framework and is installed by default.
 
 
 II. CONFIGURING
@@ -75,7 +75,8 @@ V. BUILDING AND RUNNING THE TESTS
 If you have verified that blas is installed correctly, you can try building and
 running the tests.  These are in the "tests" directory, and are in the form of
 QuickCheck properties.  To build and run them, just run "make" in the tests
-directory.
+directory.  You must have the "pqc" package installed (available on hackage)
+to build and run the tests.
 
 
 VI. CUSTOM CBLAS CONFIGURATIONS
