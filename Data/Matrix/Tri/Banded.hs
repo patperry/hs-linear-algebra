@@ -33,14 +33,10 @@ import qualified Data.Vector.Dense.Internal as V
 import qualified Data.Vector.Dense.Operations as V
 
 import BLAS.Access
-import BLAS.Elem ( BLAS2 )
--- import qualified BLAS.Elem as E
-import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
-    noTrans, conjTrans, leftSide, rightSide )
-import BLAS.Types ( Trans(..), flipTrans, flipUpLo )
-                                   
+import BLAS.Types ( flipUpLo )
+
+import BLAS.C ( BLAS2, cblasDiag, cblasUpLo, colMajor, noTrans, conjTrans )                                   
 import qualified BLAS.C as BLAS
--- import qualified BLAS.C.Types as BLAS
 
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
