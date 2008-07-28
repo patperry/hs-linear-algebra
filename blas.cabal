@@ -30,6 +30,7 @@ extra-source-files:     INSTALL
                         tests/Matrix.hs
                         tests/HermMatrix.hs
                         tests/HermBanded.hs
+                        tests/TriBanded.hs
                         tests/TriMatrix.hs
                         tests/Vector.hs
 
