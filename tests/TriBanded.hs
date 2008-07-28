@@ -15,6 +15,7 @@ import Data.Complex ( Complex(..) )
 
 import qualified BLAS.Elem as E
 import Data.Vector.Dense
+import Data.Matrix.Dense
 import Data.Matrix.Banded
 import Data.Matrix.Tri.Banded  
 
@@ -38,6 +39,7 @@ isUndef = isUndefR
 #endif        
 
 type V = Vector Int E
+type M = Matrix (Int,Int) E
 type B = Banded (Int,Int) E
 type TB = Tri Banded (Int,Int) E
 
@@ -77,15 +79,14 @@ prop_herm_scale_tri_compose k (TriBandedMM (t :: TB) a b) =
     (herm $ k *> t) <**> b ~== (herm $ k *> a) <**> b
 
 
-{-
-prop_tri_solve (TriBandedSV (t :: TM) y) =
+prop_tri_solve (TriBandedSV (t :: TB) y) =
     let x = t <\> y
     in t <*> x ~== y || (any isUndef $ elems x)
 
-prop_tri_invCompose (TriBandedSM (t :: TM) b) =
+prop_tri_invCompose (TriBandedSM (t :: TB) b) =
     let a = t <\\> b
     in t <**> a ~== b || (any isUndef $ elems a)
--}
+
 
 properties =
     [ ("tri apply"             , pDet prop_tri_apply)
@@ -100,10 +101,8 @@ properties =
     , ("scale herm tri compose", pDet prop_scale_herm_tri_compose)
     , ("herm scale tri compose", pDet prop_herm_scale_tri_compose)
     
-    {-
     , ("tri solve"             , pDet prop_tri_solve)
     , ("tri invCompose"        , pDet prop_tri_invCompose)
-    -}
     ]
 
 
