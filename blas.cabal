@@ -120,6 +120,7 @@ library
                         Test.QuickCheck.Matrix.Dense
                         Test.QuickCheck.Matrix.Herm.Banded
                         Test.QuickCheck.Matrix.Herm.Dense
+                        Test.QuickCheck.Matrix.Tri.Banded
                         Test.QuickCheck.Matrix.Tri.Dense
                         
     other-modules:      BLAS.C.Double

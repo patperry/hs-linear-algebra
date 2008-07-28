@@ -89,7 +89,11 @@ hbmv alpha h x beta y
             ldA     = ldaOf a
             incX    = strideOf x
             incY    = strideOf y
-        in B.unsafeWithBasePtr a  $ \pA ->
+            withPtrA 
+                    = case u' of Upper -> B.unsafeWithBasePtr a
+                                 Lower -> B.unsafeWithElemPtr a (0,0)
+                    
+        in withPtrA  $ \pA ->
                V.unsafeWithElemPtr x 0 $ \pX ->
                     V.unsafeWithElemPtr y 0 $ \pY -> do
                         BLAS.hbmv order uploA n k alpha'' pA ldA pX incX beta pY incY
