@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Internal
@@ -20,8 +21,6 @@ module Data.Matrix.Dense.Internal (
     -- * Converting to and from foreign pointers
     toForeignPtr,
     fromForeignPtr,
-    ldaOf,
-    isHerm,
 
     -- * Creating new matrices
     newMatrix,
@@ -99,13 +98,13 @@ import BLAS.Types
 -- column-major order, or provide a view into another matrix.  The view 
 -- transposes and conjugates the underlying matrix.
 data DMatrix t mn e =
-      DM { fptr   :: !(ForeignPtr e) -- ^ a pointer to the storage region
-         , offset :: !Int            -- ^ an offset (in elements, not bytes) to the first element in the matrix. 
-         , size1  :: !Int            -- ^ the number of rows in the matrix
-         , size2  :: !Int            -- ^ the number of columns in the matrix
-         , lda    :: !Int            -- ^ the leading dimension size of the matrix
+      DM { storageOf :: {-# UNPACK #-} !(ForeignPtr e) -- ^ a pointer to the storage region
+         , offsetOf  :: {-# UNPACK #-} !Int            -- ^ an offset (in elements, not bytes) to the first element in the matrix. 
+         , size1     :: {-# UNPACK #-} !Int            -- ^ the number of rows in the matrix
+         , size2     :: {-# UNPACK #-} !Int            -- ^ the number of columns in the matrix
+         , ldaOf     :: {-# UNPACK #-} !Int            -- ^ the leading dimension size of the matrix
+         , isHerm    :: {-# UNPACK #-} !Bool           -- ^ indicates whether or not the matrix is transposed and conjugated
          }
-    | H !(DMatrix t mn e)           -- ^ a transposed and conjugated matrix
 
 type Matrix = DMatrix Imm
 type IOMatrix = DMatrix Mut
@@ -120,42 +119,26 @@ unsafeThaw = unsafeCoerce
 coerceMatrix :: DMatrix t mn e -> DMatrix t kl e
 coerceMatrix = unsafeCoerce
 
--- | @fromForeignPtr f o mn l@ creates a matrix view of the data pointed to
--- by @f@ starting at offset @o@ and having shape @mn@ and lda @l@.
-fromForeignPtr :: ForeignPtr e -> Int -> (Int,Int) -> Int -> DMatrix t (m,n) e
-fromForeignPtr f o (m,n) l = DM f o m n l
+-- | @fromForeignPtr f o mn l h@ creates a matrix view of the data pointed to
+-- by @f@ starting at offset @o@ and having shape @mn@ and lda @l@.  If @h@
+-- is @True@ the matrix is interpreted as transposed and conjugated.
+fromForeignPtr :: ForeignPtr e -> Int -> (Int,Int) -> Int -> Bool -> DMatrix t (m,n) e
+fromForeignPtr f o (m,n) l h = DM f o m n l h
 
--- | Convert a dense matrix to a pointer, offset, size, and lda.  Note that this
--- does not give the conjugacy/transpose information.  For that, use 'isHerm'.
-toForeignPtr :: DMatrix t (m,n) e -> (ForeignPtr e, Int, (Int,Int), Int)
-toForeignPtr   (H a)            = toForeignPtr a
-toForeignPtr a@(DM _ _ _ _ _)   = (fptr a, offset a, (size1 a, size2 a), lda a)
-
--- | Get the lda of a matrix, defined as the number of elements in the underlying
--- array that separate two consecutive elements in the same row of the matrix.
-ldaOf :: DMatrix t (m,n) e -> Int
-ldaOf   (H a)          = ldaOf a
-ldaOf a@(DM _ _ _ _ _) = lda a
-
+-- | Convert a dense matrix to a pointer, offset, size, lda, herm.
+toForeignPtr :: DMatrix t (m,n) e -> (ForeignPtr e, Int, (Int,Int), Int, Bool)
+toForeignPtr a = (storageOf a, offsetOf a, (size1 a, size2 a), ldaOf a, isHerm a)
 
 indexOf :: DMatrix t (m,n) e -> (Int,Int) -> Int
-indexOf   (H a)          (i,j) = indexOf a (j,i)
-indexOf a@(DM _ _ _ _ _) (i,j) = 
-    let o = offset a
-        l = lda a
-    in o + i + j*l
+indexOf a (i,j) = 
+    let (i',j') = case isHerm a of
+                        True  -> (j,i)
+                        False -> (i,j)
+        o = offsetOf a
+        l = ldaOf a
+    in o + i' + j'*l
+{-# INLINE indexOf #-}
     
--- | Get the storage order of the matrix.  If 'isTrans' is true, this 
--- will be 'RowMajor'.  Otherwise, it will be 'ColMajor'.
-orderOf :: DMatrix t (m,n) e -> Order
-orderOf (H a)          = flipOrder (orderOf a)
-orderOf (DM _ _ _ _ _) = ColMajor
-
--- | Get whether or not the matrix is transposed and conjugated.
-isHerm :: DMatrix t (m,n) e -> Bool
-isHerm (H a)          = not (isHerm a)
-isHerm (DM _ _ _ _ _) = False
-
 -- | Create a new matrix of the given size and initialize the given elements to
 -- the given values.  All other elements get initialized to zero.
 newMatrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> IO (DMatrix t (m,n) e)
@@ -181,7 +164,7 @@ newMatrix_ (m,n)
             "Tried to create a matrix with shape `" ++ show (m,n) ++ "'"
     | otherwise = do
         f <- mallocForeignPtrArray (m*n)
-        return $ fromForeignPtr f 0 (m,n) (max 1 m)
+        return $ fromForeignPtr f 0 (m,n) (max 1 m) False
 
 -- | Create a new matrix with the given elements in column-major order.
 newListMatrix :: (Elem e) => (Int,Int) -> [e] -> IO (DMatrix t (m,n) e)
@@ -232,9 +215,8 @@ newRowsMatrix (m,n) rs = do
 -- at the given index.  It may be necessary to conjugate or scale values before
 -- reading or writing to or from the location.
 unsafeWithElemPtr :: (Elem e) => DMatrix t (m,n) e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
-unsafeWithElemPtr   (H a) (i,j) f = unsafeWithElemPtr a (j,i) f
-unsafeWithElemPtr a@(DM _ _ _ _ _) ij f =
-    withForeignPtr (fptr a) $ \ptr ->
+unsafeWithElemPtr a ij f =
+    withForeignPtr (storageOf a) $ \ptr ->
         let ptr' = ptr `advancePtr` (indexOf a ij)
         in f ptr'
         
@@ -256,25 +238,29 @@ col a = checkedCol (shape a) (unsafeCol a)
 
 -- | Same as 'row', but does not do any bounds checking.
 unsafeRow ::  (Elem e) => DMatrix t (m,n) e -> Int -> DVector t n e
-unsafeRow a@(H _)          i = conj $ unsafeCol (herm a) i
-unsafeRow a@(DM _ _ _ _ _) i =
-    let f = fptr a
-        o = indexOf a (i,0)
-        n = size2 a
-        s = lda a
-        c = False
-    in V.fromForeignPtr f o n s c
+unsafeRow a i
+    | isHerm a =
+        conj $ unsafeCol (herm a) i
+    | otherwise =
+        let f = storageOf a
+            o = indexOf a (i,0)
+            n = numCols a
+            s = ldaOf a
+            c = False
+        in V.fromForeignPtr f o n s c
 
 -- | Same as 'col', but does not do any bounds checking.
 unsafeCol :: (Elem e) => DMatrix t (m,n) e -> Int -> DVector t m e
-unsafeCol a@(H _)          j = conj $ unsafeRow (herm a) j
-unsafeCol a@(DM _ _ _ _ _) j =
-    let f = fptr a
-        o = indexOf a (0,j)
-        m = size1 a
-        s = 1
-        c = False
-    in V.fromForeignPtr f o m s c
+unsafeCol a j 
+    | isHerm a =
+        conj $ unsafeRow (herm a) j
+    | otherwise =
+        let f = storageOf a
+            o = indexOf a (0,j)
+            m = numRows a
+            s = 1
+            c = False
+        in V.fromForeignPtr f o m s c
 
 -- | @diag a 0@ gets a vector view of the main diagonal of @a@.  @diag a k@ for 
 -- @k@ positive gets a view of the @k@th superdiagonal.  For @k@ negative, it
@@ -284,14 +270,16 @@ diag a = checkedDiag (shape a) (unsafeDiag a)
 
 -- | Same as 'diag', but does not do any bounds checking.
 unsafeDiag :: (Elem e) => DMatrix t (m,n) e -> Int -> DVector t k e
-unsafeDiag   (H a)          i = conj $ unsafeDiag a (negate i)
-unsafeDiag a@(DM _ _ _ _ _) i =
-    let f = fptr a
-        o = indexOf a (diagStart i)
-        n = diagLen (shape a) i
-        s = lda a + 1
-        c = False
-    in V.fromForeignPtr f o n s c
+unsafeDiag a i 
+    | isHerm a = 
+        conj $ unsafeDiag (herm a) (negate i)
+    | otherwise =            
+        let f = storageOf a
+            o = indexOf a (diagStart i)
+            n = diagLen (shape a) i
+            s = ldaOf a + 1
+            c = False
+        in V.fromForeignPtr f o n s c
 
 -- | @submatrix a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
@@ -300,12 +288,14 @@ submatrix a = checkedSubmatrix (shape a) (unsafeSubmatrix a)
 
 -- | Same as 'submatrix' but does not do any bounds checking.
 unsafeSubmatrix :: (Elem e) => DMatrix t (m,n) e -> (Int,Int) -> (Int,Int) -> DMatrix t (k,l) e
-unsafeSubmatrix a@(H _)          (i,j) (m',n') = herm $ unsafeSubmatrix (herm a) (j,i) (n',m')
-unsafeSubmatrix a@(DM _ _ _ _ _) (i,j) mn' =
-    let f = fptr a
-        o = indexOf a (i,j)
-        l = lda a
-    in fromForeignPtr f o mn' l
+unsafeSubmatrix a (i,j) (m,n)
+    | isHerm a  = 
+        herm $ unsafeSubmatrix (herm a) (j,i) (n,m)
+    | otherwise =
+        let f = storageOf a
+            o = indexOf a (i,j)
+            l = ldaOf a
+        in fromForeignPtr f o (m,n) l False
     
 
 -- | Create a matrix view of a row vector.  This will fail if the
@@ -317,14 +307,16 @@ maybeFromRow x
             o = V.offsetOf x
             n = dim x
             l = max 1 n
-        in Just $ herm $ fromForeignPtr f o (n,1) l
+            h = True
+        in Just $ fromForeignPtr f o (n,1) l h
     | (not . isConj) x =
         let f = V.storageOf x
             o = V.offsetOf x
             n = dim x
             s = strideOf x
             l = max 1 s
-        in Just $ fromForeignPtr f o (1,n) l
+            h = False
+        in Just $ fromForeignPtr f o (1,n) l h
     | otherwise =
         Nothing
 
@@ -339,22 +331,20 @@ maybeFromCol x
             o = V.offsetOf x
             m = dim x
             l = max 1 m
-        in Just $ fromForeignPtr f o (m,1) l
+        in Just $ fromForeignPtr f o (m,1) l False
     | otherwise =
         Nothing
 
 maybeToVector :: (Elem e) => DMatrix t (m,n) e -> Maybe (Order, DVector t k e)
-maybeToVector (H a)   = maybeToVector a >>= (\(o,x) -> return (flipOrder o, conj x))
-maybeToVector (DM f o m n ld)
+maybeToVector a@(DM f o m n ld h) 
+    | h = 
+        maybeToVector (herm a) >>= (\(ord,x) -> return (flipOrder ord, conj x))
     | ld == m =
-        Just $ (ColMajor, V.fromForeignPtr f o (m*n) 1 False)
+        Just $ (ColMajor, V.fromForeignPtr f o (m*n) 1  False)
     | m == 1 =
-        Just $ (ColMajor, V.fromForeignPtr f o n    ld False)
+        Just $ (ColMajor, V.fromForeignPtr f o n     ld False)
     | otherwise =
         Nothing
-
--- | Modify each element in-place by applying a function to it.
--- modifyWith :: (Elem e) => (e -> e) -> IOMatrix (m,n) e -> IO ()
 
 
 -- | Take a unary elementwise vector operation and apply it to the elements of a matrix.
@@ -363,9 +353,9 @@ liftV f a =
     case maybeToVector a of
         Just (_,x) -> f x
         _ -> 
-            let xs  = case orderOf a of
-                          RowMajor -> rows (coerceMatrix a)
-                          ColMajor -> cols (coerceMatrix a)
+            let xs  = case isHerm a of
+                          True  -> rows (coerceMatrix a)
+                          False -> cols (coerceMatrix a)
             in mapM_ f xs
 
 -- | Take a binary elementwise vector operation and apply it to the elements of a pair
@@ -377,9 +367,9 @@ liftV2 f a b =
         (Just (RowMajor,x), Just (RowMajor,y)) -> f x y
         (Just (ColMajor,x), Just (ColMajor,y)) -> f x y
         _ -> 
-            let (xs,ys) = case orderOf a of
-                               RowMajor -> (rows (coerceMatrix a), rows (coerceMatrix b))
-                               ColMajor -> (cols (coerceMatrix a), cols (coerceMatrix b))
+            let (xs,ys) = case isHerm a of
+                               True  -> (rows (coerceMatrix a), rows (coerceMatrix b))
+                               False -> (cols (coerceMatrix a), cols (coerceMatrix b))
             in zipWithM_ f xs ys
 
 
@@ -387,14 +377,11 @@ instance C.Matrix (DMatrix t) where
     numRows = fst . shape
     numCols = snd . shape
 
-    herm a = case a of
-        (H a')   -> coerceMatrix a'
-        _        -> H (coerceMatrix a)
+    herm a = a{ isHerm=(not . isHerm) a }
     
 instance Tensor (DMatrix t (m,n)) (Int,Int) e where
-    shape a = case a of
-        (H a')   -> case shape a' of (m,n) -> (n,m)
-        _        -> (size1 a, size2 a)
+    shape a | isHerm a  = (size2 a, size1 a)
+            | otherwise = (size1 a, size2 a)
     
     bounds a = let (m,n) = shape a in ((0,0), (m-1,n-1))
 
@@ -452,17 +439,17 @@ instance (BLAS1 e) => IDTensor (DMatrix Imm (m,n)) (Int,Int) e where
 instance (BLAS1 e) => RTensor (DMatrix t (m,n)) (Int,Int) e IO where
     getSize a = return (numRows a * numCols a)
     
-    newCopy a = case a of
-        (H a')   -> newCopy a' >>= return . H
-        _        -> do
-            a' <- newMatrix_ (shape a)
-            liftV2 V.copyVector (unsafeThaw a') a
-            return a'
-    
-    unsafeReadElem a (i,j) = case a of
-        (H a')   -> unsafeReadElem a' (j,i) >>= return . E.conj
-        _        -> withForeignPtr (fptr a) $ \ptr ->
-                        peekElemOff ptr (indexOf a (i,j))
+    newCopy a | isHerm a  = 
+                  newCopy (herm a) >>= return . herm
+              | otherwise = do
+                  a' <- newMatrix_ (shape a)
+                  liftV2 V.copyVector (unsafeThaw a') a
+                  return a'
+           
+    unsafeReadElem a (i,j)
+        | isHerm a  = unsafeReadElem (herm a) (j,i) >>= return . E.conj
+        | otherwise = withForeignPtr (storageOf a) $ \ptr ->
+                          peekElemOff ptr (indexOf a (i,j))
     {-# INLINE unsafeReadElem #-}
     
     getIndices = return . indices . unsafeFreeze
@@ -508,18 +495,19 @@ instance (BLAS1 e) => MTensor (DMatrix Mut (m,n)) (Int,Int) e IO where
         return $ inRange (bounds a) ij
     {-# INLINE canModifyElem #-}
 
-    unsafeWriteElem a (i,j) e = case a of
-        (H a')   -> unsafeWriteElem a' (j,i) $ E.conj e
-        _        -> withForeignPtr (fptr a) $ \ptr ->
-                        pokeElemOff ptr (indexOf a (i,j)) e
+    unsafeWriteElem a (i,j) e
+        | isHerm a  = unsafeWriteElem (herm a) (j,i) $ E.conj e
+        | otherwise = withForeignPtr (storageOf a) $ \ptr ->
+                          pokeElemOff ptr (indexOf a (i,j)) e
     
     modifyWith f = liftV (modifyWith f)       
 
 
 instance (BLAS1 e, Show e) => Show (DMatrix Imm (m,n) e) where
-    show a = case a of
-        (H a')   -> "herm (" ++ show a' ++ ")"
-        _        -> "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
+    show a | isHerm a = 
+                "herm (" ++ show (herm a) ++ ")"
+           | otherwise =
+                "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
         
 compareHelp :: (BLAS1 e) => 
     (e -> e -> Bool) -> Matrix (m,n) e -> Matrix (m,n) e -> Bool
