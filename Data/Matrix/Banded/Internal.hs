@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded.Internal
@@ -101,14 +102,14 @@ import qualified Data.Vector.Dense.Internal as V
 
         
 data BMatrix t mn e 
-    = BM { fptrOf   :: !(ForeignPtr e)
-         , offsetOf :: !Int
-         , size1    :: !Int
-         , size2    :: !Int
-         , lowBW    :: !Int
-         , upBW     :: !Int
-         , ldaOf    :: !Int
-         , isHerm   :: !Bool
+    = BM { fptrOf   :: {-# UNPACK #-} !(ForeignPtr e)
+         , offsetOf :: {-# UNPACK #-} !Int
+         , size1    :: {-# UNPACK #-} !Int
+         , size2    :: {-# UNPACK #-} !Int
+         , lowBW    :: {-# UNPACK #-} !Int
+         , upBW     :: {-# UNPACK #-} !Int
+         , ldaOf    :: {-# UNPACK #-} !Int
+         , isHerm   :: {-# UNPACK #-} !Bool
          }
 
 type Banded = BMatrix Imm
