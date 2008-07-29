@@ -147,13 +147,13 @@ toLists a = ( (m,n)
 
 toRawMatrix :: (Elem e) => BMatrix t (m,n) e -> ((Int,Int), (Int,Int), DMatrix t (m',n') e, Bool)
 toRawMatrix (BM f o m n kl ku ld h) = 
-    ((m,n), (kl,ku), M.fromForeignPtr f o (kl+1+ku,n) ld, h)
+    ((m,n), (kl,ku), M.fromForeignPtr f o (kl+1+ku,n) ld False, h)
 
 fromRawMatrix :: (Elem e) => (Int,Int) -> (Int,Int) -> DMatrix t (m,n) e -> Bool -> Maybe (BMatrix t (m',n') e)
 fromRawMatrix (m,n) (kl,ku) a h = 
     if M.isHerm a 
         then Nothing
-        else let (f,o,(m',n'),ld) = M.toForeignPtr a
+        else let (f,o,(m',n'),ld,_) = M.toForeignPtr a
              in case undefined of
                  _ | m' /= kl+1+ku -> 
                      error $ "fromMatrix: number of rows must be equal to number of diagonals"
