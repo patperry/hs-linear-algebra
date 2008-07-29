@@ -47,7 +47,7 @@ import Unsafe.Coerce
 
 import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
 import Data.Matrix.Banded.Internal
-import Data.Matrix.Dense.Internal ( DMatrix(..), Matrix, IOMatrix)
+import Data.Matrix.Dense.Internal ( DMatrix, Matrix, IOMatrix)
 import Data.Vector.Dense.Internal hiding ( unsafeWithElemPtr, unsafeThaw, 
     unsafeFreeze )
 import qualified Data.Vector.Dense.Operations as V
