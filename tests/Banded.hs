@@ -35,15 +35,18 @@ import Test.QuickCheck.Vector.Dense hiding ( Pair )
 import Test.QuickCheck.Matrix
 import Test.QuickCheck.Matrix.Banded
         
-import Debug.Trace
-
+isUndefR x = isNaN x || isInfinite x
+isUndefC (x :+ y) = isUndefR x || isUndefR y
+        
 #ifdef COMPLEX
 field = "Complex Double"
 type E = Complex Double
+isUndef = isUndefC
 #else
 field = "Double"
 type E = Double
-#endif
+isUndef = isUndefR
+#endif        
 
 type V = Vector Int E
 type M = Matrix (Int,Int) E
@@ -178,6 +181,7 @@ prop_diag_herm2 (BandedAt (a :: B) (_,k)) =
 
 prop_apply_basis (BandedAt (a :: B) (_,j)) =
     a <*> (basis (numCols a) j :: V) ~== col a j
+    || (any isUndef $ elems a)
 prop_apply_herm_basis (BandedAt (a :: B) (i,_)) =
     (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
 prop_apply_scale k (BandedMV (a :: B) x) =
@@ -190,7 +194,8 @@ prop_applyMat_scale_left (BandedMM (a:: B) b) k =
 prop_applyMat_scale_right (BandedMM (a:: B) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
 prop_applyMat_linear (BandedMMPair (a :: B) b c) =
-    a <**> (b + c) ~== a <**> b + a <**> c
+    (a <**> (b + c) ~== a <**> b + a <**> c)
+    || (any isUndef $ elems (a <**> b + a <**> c))
 prop_applyMat_cols (BandedMM (a :: B) b) =
     M.cols (a <**> b) ~== map (a <*> ) (M.cols b)
 
