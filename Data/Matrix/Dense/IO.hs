@@ -59,8 +59,6 @@ module Data.Matrix.Dense.IO (
     -- ** @ForeignPtr@s
     toForeignPtr,
     fromForeignPtr,
-    ldaOf,
-    isHerm,
     
     -- ** Coercing
     coerceMatrix,
