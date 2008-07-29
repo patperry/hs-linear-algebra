@@ -143,13 +143,14 @@ getSum alpha a beta b = checkMatMatOp "getSum" (shape a) (shape b)
     >> unsafeGetSum alpha a beta b
 
 unsafeGetSum :: (BLAS1 e) => e -> DMatrix s (m,n) e -> e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
-unsafeGetSum alpha a@(H _) beta b = do
-    s <- unsafeGetSum (E.conj alpha) (herm a) (E.conj beta) (herm b)
-    return (herm s)
-unsafeGetSum alpha a@(DM _ _ _ _ _) beta b = do
-    s <- getScaled alpha a
-    axpy beta b (unsafeThaw s)
-    return (unsafeCoerce s)
+unsafeGetSum alpha a beta b 
+    | isHerm a = do
+        s <- unsafeGetSum (E.conj alpha) (herm a) (E.conj beta) (herm b)
+        return (herm s)
+    | otherwise = do
+        s <- getScaled alpha a
+        axpy beta b (unsafeThaw s)
+        return (unsafeCoerce s)
 
 -- | Create a new matrix by taking the elementwise difference of two matrices.
 getDiff :: (BLAS1 e) => DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
@@ -165,12 +166,8 @@ getRatio = binaryOp "getRatio" (//=)
 
 -- | Conjugate every element in a matrix.
 doConj  :: (BLAS1 e) => IOMatrix (m,n) e -> IO ()
-doConj (H a) = do
-    doConj a
-    -- return (H a')
-doConj a@(DM _ _ _ _ _) = do
-    liftV (\x -> V.doConj x >> return ()) a
-    -- return a
+doConj a | isHerm a  = doConj (herm a)
+         | otherwise = liftV (\x -> V.doConj x >> return ()) a
 
 -- | Scale every element in a matrix by the given value.
 scaleBy :: (BLAS1 e) => e -> IOMatrix (m,n) e -> IO ()
