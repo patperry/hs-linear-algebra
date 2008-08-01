@@ -85,14 +85,16 @@ infixl 1 +=, -=, *=, //=
 
 -- | @copy dst src@ copies the elements from the second argument to the first.
 copyMatrix :: (BLAS1 e) => IOMatrix (m,n) e -> DMatrix t (m,n) e -> IO ()
-copyMatrix a b = checkMatMatOp "copyMatrix" (shape a) (shape b) >> unsafeCopyMatrix a b
+copyMatrix a b = 
+    checkMatMatOp "copyMatrix" (shape a) (shape b) $ unsafeCopyMatrix a b
 
 unsafeCopyMatrix :: (BLAS1 e) => IOMatrix (m,n) e -> DMatrix t (m,n) e -> IO ()
 unsafeCopyMatrix = liftV2 (V.unsafeCopyVector)
 
 -- | @swap a b@ exchanges the elements stored in two matrices.
 swapMatrices :: (BLAS1 e) => IOMatrix (m,n) e -> IOMatrix (m,n) e -> IO ()
-swapMatrices a b = checkMatMatOp "swapMatrices" (shape a) (shape b) >> unsafeSwapMatrices a b
+swapMatrices a b = 
+    checkMatMatOp "swapMatrices" (shape a) (shape b) $ unsafeSwapMatrices a b
 
 unsafeSwapMatrices :: (BLAS1 e) => IOMatrix (m,n) e -> IOMatrix (m,n) e -> IO ()
 unsafeSwapMatrices = liftV2 (V.unsafeSwapVectors)
@@ -103,7 +105,8 @@ getApply = getSApply 1
 
 -- | Multiply a scaled matrix by a vector.
 getSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getSApply alpha a x = checkMatVecMult (shape a) (V.dim x) >> unsafeGetSApply alpha a x
+getSApply alpha a x = 
+    checkMatVecMult (shape a) (V.dim x) $ unsafeGetSApply alpha a x
 
 unsafeGetSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 unsafeGetSApply alpha a x = do
@@ -117,7 +120,8 @@ getApplyMat = getSApplyMat 1
 
 -- | Multiply a scaled matrix by a matrix.
 getSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getSApplyMat alpha a b = checkMatMatMult (shape a) (shape b) >> unsafeGetSApplyMat alpha a b
+getSApplyMat alpha a b = 
+    checkMatMatMult (shape a) (shape b) $ unsafeGetSApplyMat alpha a b
 
 unsafeGetSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
 unsafeGetSApplyMat alpha a b = do
@@ -139,8 +143,8 @@ getInvScaled k = unaryOp (invScaleBy k)
 
 -- | Create a new matrix by taking the elementwise sum of two matrices.
 getSum :: (BLAS1 e) => e -> DMatrix s (m,n) e -> e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
-getSum alpha a beta b = checkMatMatOp "getSum" (shape a) (shape b) 
-    >> unsafeGetSum alpha a beta b
+getSum alpha a beta b = 
+    checkMatMatOp "getSum" (shape a) (shape b) $ unsafeGetSum alpha a beta b
 
 unsafeGetSum :: (BLAS1 e) => e -> DMatrix s (m,n) e -> e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
 unsafeGetSum alpha a beta b 
@@ -154,7 +158,7 @@ unsafeGetSum alpha a beta b
 
 -- | Create a new matrix by taking the elementwise difference of two matrices.
 getDiff :: (BLAS1 e) => DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
-getDiff a b = checkMatMatOp "minus" (shape a) (shape b) >> unsafeGetSum 1 a (-1) b
+getDiff a b = checkMatMatOp "minus" (shape a) (shape b) $ unsafeGetSum 1 a (-1) b
 
 -- | Create a new matrix by taking the elementwise product of two matrices.
 getProduct :: (BLAS2 e) => DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
@@ -275,7 +279,7 @@ unaryOp f a = do
 binaryOp :: (BLAS1 e) => String -> (IOMatrix (m,n) e -> DMatrix t (m,n) e -> IO ()) 
     -> DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
 binaryOp name f a b = 
-    checkMatMatOp name (shape a) (shape b) >> do
+    checkMatMatOp name (shape a) (shape b) $ do
         a' <- newCopy a
         f (unsafeThaw a') b
         return (unsafeCoerce a')

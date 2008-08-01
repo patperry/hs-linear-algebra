@@ -55,14 +55,19 @@ module Data.Vector.Dense.Operations (
     (-=),
     (*=),
     (//=),
+
+    -- * BLAS calls
+    axpy,
     
     -- * Unsafe operations
     unsafeCopyVector,
     unsafeSwapVectors,
     unsafeGetDot,
-    
-    -- * BLAS calls
-    axpy,
+    unsafeAxpy,
+    unsafePlusEquals,
+    unsafeMinusEquals,
+    unsafeTimesEquals,
+    unsafeDivideEquals,
     
     ) where
   
@@ -89,7 +94,8 @@ infixl 1 +=, -=, *=, //=
 -- | @copyVector dst src@ replaces the elements in @dst@ with the values from @src@.
 -- This may result in a loss of precision.
 copyVector :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
-copyVector x y = checkVecVecOp "copyVector" (dim x) (dim y) >> unsafeCopyVector x y
+copyVector x y = 
+    checkVecVecOp "copyVector" (dim x) (dim y) $ unsafeCopyVector x y
 
 -- | Same as 'copyVector' but does not check the dimensions of the arguments.
 unsafeCopyVector :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
@@ -106,7 +112,8 @@ unsafeCopyVector x y
 -- replaces the elements in @y@ with the values from @x@.  This may result in 
 -- a loss of precision.
 swapVectors :: (BLAS1 e) => IOVector n e -> IOVector n e -> IO ()
-swapVectors x y = checkVecVecOp "swapVectors" (dim x) (dim y) >> unsafeSwapVectors x y
+swapVectors x y = 
+    checkVecVecOp "swapVectors" (dim x) (dim y) $ unsafeSwapVectors x y
 
 -- | Same as 'swap' but does not check the dimensions of the arguments.
 unsafeSwapVectors :: (BLAS1 e) => IOVector n e -> IOVector n e -> IO ()
@@ -143,7 +150,7 @@ getWhichMaxAbs x =
 
 -- | Computes the dot product of two vectors.
 getDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
-getDot x y = checkVecVecOp "dot" (dim x) (dim y) >> unsafeGetDot x y
+getDot x y = checkVecVecOp "dot" (dim x) (dim y) $ unsafeGetDot x y
 {-# INLINE getDot #-}
 
 unsafeGetDot :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO e
@@ -198,7 +205,7 @@ getInvScaled k x = do
 
 -- | Computes the sum of two vectors.
 getSum :: (BLAS1 e) => e -> DVector s n e -> e -> DVector t n e -> IO (DVector r n e)
-getSum alpha x beta y = checkVecVecOp "getSum" (dim x) (dim y) >> unsafeGetSum alpha x beta y
+getSum alpha x beta y = checkVecVecOp "getSum" (dim x) (dim y) $ unsafeGetSum alpha x beta y
 
 unsafeGetSum :: (BLAS1 e) => e -> DVector s n e -> e -> DVector t n e -> IO (DVector r n e)
 unsafeGetSum 1 x beta y
@@ -215,7 +222,7 @@ unsafeGetSum alpha x beta y
             
 -- | Computes the difference of two vectors.
 getDiff :: (BLAS1 e) => DVector s n e -> DVector t n e -> IO (DVector r n e)
-getDiff x y = checkVecVecOp "getDiff" (dim x) (dim y) >> unsafeGetSum 1 x (-1) y
+getDiff x y = checkVecVecOp "getDiff" (dim x) (dim y) $ unsafeGetSum 1 x (-1) y
 
 -- | Computes the elementwise product of two vectors.
 getProduct :: (BLAS2 e) => DVector s n e -> DVector t n e -> IO (DVector r n e)
@@ -246,12 +253,11 @@ invScaleBy :: (BLAS1 e) => e -> IOVector n e -> IO ()
 invScaleBy k x | isConj x  = invScaleBy (E.conj k) (conj x)
                | otherwise = modifyWith (/k) x
 
--- | @y += x@ replaces @y@ by @y + x@.
-(+=) :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
-(+=) y x = checkVecVecOp "(+=)" (dim y) (dim x) >> axpy 1 x y
-
 axpy :: (BLAS1 e) => e -> DVector t n e -> IOVector n e -> IO ()
-axpy alpha x y
+axpy alpha x y = checkVecVecOp "axpy" (dim x) (dim y) $ unsafeAxpy alpha x y
+
+unsafeAxpy :: (BLAS1 e) => e -> DVector t n e -> IOVector n e -> IO ()
+unsafeAxpy alpha x y
     | isConj y =
         axpy (E.conj alpha) (conj x) (conj y)
     | isConj x =
@@ -259,18 +265,28 @@ axpy alpha x y
     | otherwise =
         call2 (flip BLAS.axpy alpha) x y
 
+-- | @y += x@ replaces @y@ by @y + x@.
+(+=) :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
+(+=) y x = checkVecVecOp "(+=)" (dim y) (dim x) $ unsafePlusEquals y x
+
+unsafePlusEquals :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
+unsafePlusEquals y x = axpy 1 x y
+
 -- | @y -= x@ replaces @y@ by @y - x@.
 (-=) :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
-(-=) y x = checkVecVecOp "(-=)" (dim y) (dim x) >> axpy (-1) x y
+(-=) y x = checkVecVecOp "(-=)" (dim y) (dim x) $ unsafeMinusEquals y x
+
+unsafeMinusEquals :: (BLAS1 e) => IOVector n e -> DVector t n e -> IO ()
+unsafeMinusEquals y x = unsafeAxpy (-1) x y
 
 -- | @y *= x@ replaces @y@ by @x * y@, the elementwise product.
 (*=) :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-(*=) y x = checkVecVecOp "(*=)" (dim y) (dim x) >> timesEquals y x
+(*=) y x = checkVecVecOp "(*=)" (dim y) (dim x) $ unsafeTimesEquals y x
 
-timesEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-timesEquals y x
+unsafeTimesEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
+unsafeTimesEquals y x
     | isConj y =
-        timesEquals (conj y) (conj x)
+        unsafeTimesEquals (conj y) (conj x)
     | isConj x =
         call2 (flip (tbmv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y    
     | otherwise =
@@ -278,12 +294,12 @@ timesEquals y x
 
 -- | @y //= x@ replaces @y@ by @y / x@, the elementwise ratio.
 (//=) :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-(//=) y x = checkVecVecOp "(//=)" (dim y) (dim x) >> divideEquals y x
+(//=) y x = checkVecVecOp "(//=)" (dim y) (dim x) $ unsafeDivideEquals y x
 
-divideEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
-divideEquals y x
+unsafeDivideEquals :: (BLAS2 e) => IOVector n e -> DVector t n e -> IO ()
+unsafeDivideEquals y x
     | isConj y =
-        divideEquals (conj y) (conj x)
+        unsafeDivideEquals (conj y) (conj x)
     | isConj x =
         call2 (flip (tbsv T.colMajor T.upper T.conjTrans T.nonUnit) 0) x y
     | otherwise =
@@ -311,7 +327,7 @@ call2 f x y =
 binaryOp :: (BLAS1 e) => String -> (IOVector n e -> DVector t n e -> IO ()) 
     -> DVector s n e -> DVector t n e -> IO (DVector r n e)
 binaryOp name f x y =
-    checkVecVecOp name (dim x) (dim y) >> do
+    checkVecVecOp name (dim x) (dim y) $ do
         x' <- newCopy x >>= return . unsafeThaw
         f x' y
         return $! (unsafeCoerce x')

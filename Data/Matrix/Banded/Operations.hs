@@ -68,7 +68,8 @@ getApply = getSApply 1
 
 -- | Multiply a scaled matrix by a vector.
 getSApply :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getSApply alpha a x = checkMatVecMult (shape a) (V.dim x) >> unsafeGetSApply alpha a x
+getSApply alpha a x = 
+    checkMatVecMult (shape a) (V.dim x) $ unsafeGetSApply alpha a x
 
 unsafeGetSApply :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 unsafeGetSApply alpha a x = do
@@ -82,7 +83,8 @@ getApplyMat = getSApplyMat 1
 
 -- | Multiply a scaled matrix by a matrix.
 getSApplyMat :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getSApplyMat alpha a b = checkMatMatMult (shape a) (shape b) >> unsafeGetSApplyMat alpha a b
+getSApplyMat alpha a b = 
+    checkMatMatMult (shape a) (shape b) $ unsafeGetSApplyMat alpha a b
 
 unsafeGetSApplyMat :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
 unsafeGetSApplyMat alpha a b = do

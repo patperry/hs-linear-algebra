@@ -104,14 +104,13 @@ checkedSubvectorWithStride s n sub o n'
     | otherwise =
         sub o n'
 
-checkVecVecOp :: String -> Int -> Int -> IO ()
+checkVecVecOp :: String -> Int -> Int -> a -> a
 checkVecVecOp name n1 n2
     | n1 /= n2 =
-        ioError $ userError $ printf
+        error $ printf
             ("%s: x and y have different dimensions.  x has dimension `%d',"
              ++ " and y has dimension `%d'") name n1 n2
-    | otherwise =
-        return ()
+    | otherwise = id
 {-# INLINE checkVecVecOp #-}
 
 checkedRow ::  (Int,Int) -> (Int -> v) -> Int -> v
@@ -169,31 +168,28 @@ checkedSubmatrix (m,n) sub (i,j) (m',n')
         sub (i,j) (m',n')
 
 
-checkMatMatOp :: String -> (Int,Int) -> (Int,Int) -> IO ()
+checkMatMatOp :: String -> (Int,Int) -> (Int,Int) -> a -> a
 checkMatMatOp name mn1 mn2
     | mn1 /= mn2 =
-        ioError $ userError $ printf
+        error $ printf
             ("%s: x and y have different shapes.  x has shape `%s',"
              ++ " and y has shape `%s'") name (show mn1) (show mn2)
-    | otherwise =
-        return ()
+    | otherwise = id
         
-checkMatVecMult :: (Int,Int) -> Int -> IO ()
+checkMatVecMult :: (Int,Int) -> Int -> a -> a
 checkMatVecMult mn n
     | snd mn /= n =
-        ioError $ userError $ printf
+        error $ printf
             ("Tried to multiply a matrix with shape `%s' by a vector of dimension `%d'")
             (show mn) n
-    | otherwise =
-        return ()
+    | otherwise = id
         
-checkMatMatMult :: (Int,Int) -> (Int,Int) -> IO ()
+checkMatMatMult :: (Int,Int) -> (Int,Int) -> a -> a
 checkMatMatMult mk kn
     | snd mk /= fst kn =
-        ioError $ userError $ printf
+        error $ printf
             ("Tried to multiply a matrix with shape `%s' by a matrix with shape `%s'")
             (show mk) (show kn)
-    | otherwise =
-        return ()
+    | otherwise = id
 
         
