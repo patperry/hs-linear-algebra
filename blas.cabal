@@ -100,6 +100,8 @@ library
                             Data.Matrix.Dense.Internal
                             Data.Matrix.Dense.Operations
                         
+                        Data.Matrix.Perm
+                        
                         Data.Matrix.Herm
                             Data.Matrix.Herm.Banded
                             Data.Matrix.Herm.Dense
@@ -131,7 +133,7 @@ library
     extensions:         BangPatterns, EmptyDataDecls, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses
-    build-depends:      base, ieee, storable-complex, QuickCheck
+    build-depends:      base, ieee, permutation, storable-complex, QuickCheck
 
     
     if flag(atlas)
