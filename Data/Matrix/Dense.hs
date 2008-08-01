@@ -40,12 +40,6 @@ module Data.Matrix.Dense (
     -- * Augmenting matrices
     submatrix,
 
-    -- * Matrix multiplication
-    apply,
-    applyMat,
-    sapply,
-    sapplyMat,
-
     -- * Matrix arithmetic
     shift,
     scale,
@@ -81,8 +75,8 @@ import BLAS.Tensor.Scalable
 
 import Data.Matrix.Dense.Internal
 import qualified Data.Matrix.Dense.Internal as M
-import Data.Matrix.Dense.Operations ( apply, applyMat, sapply, sapplyMat,
-    shift, scale, invScale, plus, minus, times, divide )
+import Data.Matrix.Dense.Operations ( shift, scale, invScale, plus, minus, 
+    times, divide )
 import Data.Vector.Dense hiding ( scale, invScale, shift )
 
 

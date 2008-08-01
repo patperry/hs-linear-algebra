@@ -24,6 +24,10 @@ module BLAS.Internal (
     checkMatMatOp,
     checkMatVecMult,
     checkMatMatMult,
+    checkMatVecMultAdd,
+    checkMatMatMultAdd,
+    checkMatVecSolv,
+    checkMatMatSolv,
     diagStart,
     diagLen,    
     ) where
@@ -192,4 +196,42 @@ checkMatMatMult mk kn
             (show mk) (show kn)
     | otherwise = id
 
+checkMatVecMultAdd :: (Int,Int) -> Int -> Int -> a -> a
+checkMatVecMultAdd mn n m
+    | snd mn /= n =
+        error $ printf
+            ("Tried to multiply a matrix with shape `%s' by a vector of dimension `%d'")
+            (show mn) n
+    | fst mn /= m =
+        error $ printf
+            ("Tried to add a vector of dimension `%d' to a vector of dimension `%d'")
+            (fst mn) m
+    | otherwise = id
+
+checkMatMatMultAdd :: (Int,Int) -> (Int,Int) -> (Int,Int) -> a -> a
+checkMatMatMultAdd mk kn mn
+    | snd mk /= fst kn =
+        error $ printf
+            ("Tried to multiply a matrix with shape `%s' by a matrix with shape `%s'")
+            (show mk) (show kn)
+    | (fst mk, snd kn) /= mn =
+        error $ printf
+            ("Tried to add a matrix with shape `%s' to a matrix with shape `%s'")
+            (show (fst mk, snd kn)) (show mn)
+    | otherwise = id
+
+checkMatVecSolv :: (Int,Int) -> Int -> a -> a
+checkMatVecSolv mn m
+    | fst mn /= m =
+        error $ printf
+            ("Tried to solve a matrix with shape `%s' for a vector of dimension `%d'")
+            (show mn) m
+    | otherwise = id
         
+checkMatMatSolv :: (Int,Int) -> (Int,Int) -> a -> a
+checkMatMatSolv mn mk
+    | fst mn /= fst mk =
+        error $ printf
+            ("Tried to solve a matrix with shape `%s' for a matrix with shape `%s'")
+            (show mn) (show mk)
+    | otherwise = id

@@ -15,16 +15,12 @@ module Data.Matrix.Dense.Operations (
 
     -- * Matrix multiplication
     -- ** Pure
-    apply,
-    applyMat,
-    sapply,
-    sapplyMat,
+    unsafeSApply,
+    unsafeSApplyMat,
     
     -- ** Impure
-    getApply,
-    getApplyMat,
-    getSApply,
-    getSApplyMat,
+    unsafeGetSApply,
+    unsafeGetSApplyMat,
 
     -- * Matrix Arithmetic
     -- ** Pure
@@ -61,13 +57,17 @@ module Data.Matrix.Dense.Operations (
     gemv,
     gemm,
     
+    -- * Unsafe operations
+    unsafeGemv,
+    unsafeGemm,
+    
     ) where
 
 import Data.Maybe ( fromJust )
 import System.IO.Unsafe
 import Unsafe.Coerce
 
-import BLAS.Internal ( checkMatMatOp, checkMatVecMult, checkMatMatMult )
+import BLAS.Internal ( checkMatMatOp, checkMatVecMultAdd, checkMatMatMultAdd )
 import Data.Matrix.Dense.Internal
 import Data.Vector.Dense.Internal hiding ( unsafeWithElemPtr, unsafeThaw, 
     unsafeFreeze )
@@ -79,7 +79,7 @@ import qualified BLAS.C as BLAS
 import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
 import qualified BLAS.Elem as E
 
-infixl 7 `apply`, `applyMat`, `scale`, `invScale`
+infixl 7 `scale`, `invScale`
 infixl 6 `shift`
 infixl 1 +=, -=, *=, //=
 
@@ -99,34 +99,16 @@ swapMatrices a b =
 unsafeSwapMatrices :: (BLAS1 e) => IOMatrix (m,n) e -> IOMatrix (m,n) e -> IO ()
 unsafeSwapMatrices = liftV2 (V.unsafeSwapVectors)
 
--- | Multiply a matrix by a vector.
-getApply :: (BLAS3 e) => DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getApply = getSApply 1
-
--- | Multiply a scaled matrix by a vector.
-getSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getSApply alpha a x = 
-    checkMatVecMult (shape a) (V.dim x) $ unsafeGetSApply alpha a x
-
 unsafeGetSApply :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
 unsafeGetSApply alpha a x = do
     y <- V.newZero (numRows a)
-    gemv alpha a x 0 y
+    unsafeGemv alpha a x 0 y
     return (unsafeCoerce y)
-
--- | Multiply a matrix by a matrix.
-getApplyMat :: (BLAS3 e) => DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getApplyMat = getSApplyMat 1
-
--- | Multiply a scaled matrix by a matrix.
-getSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getSApplyMat alpha a b = 
-    checkMatMatMult (shape a) (shape b) $ unsafeGetSApplyMat alpha a b
 
 unsafeGetSApplyMat :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
 unsafeGetSApplyMat alpha a b = do
     c <- newZero (numRows a, numCols b)
-    gemm alpha a b 0 c
+    unsafeGemm alpha a b 0 c
     return (unsafeCoerce c)
 
 -- | Form a new matrix by adding a value to every element in a matrix.
@@ -215,7 +197,11 @@ flipShape (m,n) = (n,m)
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@
 gemv :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
-gemv alpha a x beta y
+gemv alpha a x beta y =
+    checkMatVecMultAdd (shape a) (dim x) (dim y) $ unsafeGemv alpha a x beta y
+
+unsafeGemv :: (BLAS3 e) => e -> DMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
+unsafeGemv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
         return ()
     | isConj x =
@@ -251,7 +237,11 @@ gemv alpha a x beta y
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gemm :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
-gemm alpha a b beta c
+gemm alpha a b beta c =
+    checkMatMatMultAdd (shape a) (shape b) (shape c) $ unsafeGemm alpha a b beta c
+
+unsafeGemm :: (BLAS3 e) => e -> DMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
+unsafeGemm alpha a b beta c
     | numRows a == 0 || numCols a == 0 || numCols b == 0 = return ()
     | isHerm c = gemm (E.conj alpha) (herm b) (herm a) (E.conj beta) (herm c)
     | otherwise =
@@ -285,24 +275,16 @@ binaryOp name f a b =
         return (unsafeCoerce a')
         
         
--- | Multiply a matrix by a vector.
-apply :: (BLAS3 e) => Matrix (m,n) e -> Vector n e -> Vector m e
-apply = sapply 1
-
 -- | Multiply a scaled matrix by a vector.
-sapply :: (BLAS3 e) => e -> Matrix (m,n) e -> Vector n e -> Vector m e
-sapply alpha a x = unsafePerformIO $ getSApply alpha a x
-{-# NOINLINE sapply #-}
+unsafeSApply :: (BLAS3 e) => e -> Matrix (m,n) e -> Vector n e -> Vector m e
+unsafeSApply alpha a x = unsafePerformIO $ unsafeGetSApply alpha a x
+{-# NOINLINE unsafeSApply #-}
 
 -- | Multiply a scaled matrix by a matrix.
-sapplyMat :: (BLAS3 e) => e -> Matrix (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-sapplyMat alpha a b = unsafePerformIO $ getSApplyMat alpha a b
-{-# NOINLINE sapplyMat #-}
+unsafeSApplyMat :: (BLAS3 e) => e -> Matrix (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+unsafeSApplyMat alpha a b = unsafePerformIO $ unsafeGetSApplyMat alpha a b
+{-# NOINLINE unsafeSApplyMat #-}
     
--- | Multiply a matrix by a matrix.
-applyMat :: (BLAS3 e) => Matrix (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-applyMat = sapplyMat 1
-
 -- | Create a new matrix by scaling another matrix by the given value.
 scale :: (BLAS1 e) => e -> Matrix (m,n) e -> Matrix (m,n) e
 scale k a = unsafePerformIO $ getScaled k a
@@ -350,8 +332,5 @@ divide a b = unsafePerformIO $ getRatio a b
 "scale.minus/add"  forall k l x y. minus (scale k x) (scale l y) = add k x (-l) y
 "scale1.minus/add" forall k x y.   minus (scale k x) y = add k x (-1) y
 "scale2.minus/add" forall k x y.   minus x (scale k y) = add 1 x (-k) y
-
-"scale.apply/sapply"       forall k a x. apply (scale k a) x = sapply k a x
-"scale.applyMat/sapplyMat" forall k a b. applyMat (scale k a) b = sapplyMat k a b
   #-}
   

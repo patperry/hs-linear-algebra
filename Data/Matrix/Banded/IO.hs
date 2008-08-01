@@ -13,11 +13,11 @@ module Data.Matrix.Banded.IO (
     IOBanded,
     
     module BLAS.Matrix.Base,
-    module BLAS.Matrix.ReadOnly,
     module BLAS.Tensor.Base,
     module BLAS.Tensor.Dense.ReadOnly,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable,
+    module Data.Matrix.Banded.Operations,
     
     -- * Creating new matrices
     newBanded,
@@ -64,19 +64,11 @@ module Data.Matrix.Banded.IO (
     ) where
 
 import Data.Matrix.Banded.Internal
-import Data.Matrix.Banded.Operations hiding ( apply, applyMat,
-    sapply, sapplyMat, getApply, getApplyMat )
+import Data.Matrix.Banded.Operations hiding ( IMatrix(..), scale, invScale )
     
 import BLAS.Elem ( BLAS2 )
 import BLAS.Matrix.Base hiding ( Matrix )
-import BLAS.Matrix.ReadOnly
 import BLAS.Tensor.Base
 import BLAS.Tensor.Dense.ReadOnly
 import BLAS.Tensor.ReadOnly
 import BLAS.Tensor.Mutable
-
-import qualified Data.Matrix.Banded.Operations as B
-
-instance (BLAS2 e) => RMatrix (BMatrix s) e where
-    getApply = B.getApply
-    getApplyMat = B.getApplyMat

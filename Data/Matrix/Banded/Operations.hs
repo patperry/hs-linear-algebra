@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded.Operations
@@ -9,19 +9,9 @@
 --
 
 module Data.Matrix.Banded.Operations (
-    -- * Matrix multiplication
-    -- ** Pure
-    apply,
-    applyMat,
-    sapply,
-    sapplyMat,
+    module BLAS.Matrix.Immutable,
+    module BLAS.Matrix.ReadOnly,
     
-    -- ** Impure
-    getApply,
-    getApplyMat,
-    getSApply,
-    getSApplyMat,
-
     -- * Matrix Arithmetic
     -- ** Pure
     scale,
@@ -40,14 +30,17 @@ module Data.Matrix.Banded.Operations (
     gbmv,
     gbmm,
     
+    -- * Unsafe operations
+    unsafeGbmv,
+    unsafeGbmm
+    
     ) where
 
 import System.IO.Unsafe
 import Unsafe.Coerce
 
-import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
 import Data.Matrix.Banded.Internal
-import Data.Matrix.Dense.Internal ( DMatrix, Matrix, IOMatrix)
+import Data.Matrix.Dense.Internal ( DMatrix, IOMatrix)
 import Data.Vector.Dense.Internal hiding ( unsafeWithElemPtr, unsafeThaw, 
     unsafeFreeze )
 import qualified Data.Vector.Dense.Operations as V
@@ -55,42 +48,17 @@ import qualified Data.Vector.Dense.Internal as V
 import qualified Data.Matrix.Dense.Internal as M
 import qualified Data.Matrix.Dense.Operations as M
 
+import BLAS.Access
 import BLAS.C ( CBLASTrans, colMajor, noTrans, conjTrans )
 import qualified BLAS.C as BLAS
 import BLAS.Elem ( BLAS1, BLAS2  )
 import qualified BLAS.Elem as E
+import BLAS.Internal ( checkMatVecMultAdd, checkMatMatMultAdd )
+import BLAS.Matrix.Immutable
+import BLAS.Matrix.ReadOnly
 
-infixl 7 `apply`, `applyMat`, `scale`, `invScale`
+infixl 7 `scale`, `invScale`
 
--- | Multiply a matrix by a vector.
-getApply :: (BLAS2 e) => BMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getApply = getSApply 1
-
--- | Multiply a scaled matrix by a vector.
-getSApply :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-getSApply alpha a x = 
-    checkMatVecMult (shape a) (V.dim x) $ unsafeGetSApply alpha a x
-
-unsafeGetSApply :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> IO (DVector r m e)
-unsafeGetSApply alpha a x = do
-    y <- V.newZero (numRows a)
-    gbmv alpha a x 0 y
-    return (unsafeCoerce y)
-
--- | Multiply a matrix by a matrix.
-getApplyMat :: (BLAS2 e) => BMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getApplyMat = getSApplyMat 1
-
--- | Multiply a scaled matrix by a matrix.
-getSApplyMat :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-getSApplyMat alpha a b = 
-    checkMatMatMult (shape a) (shape b) $ unsafeGetSApplyMat alpha a b
-
-unsafeGetSApplyMat :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-unsafeGetSApplyMat alpha a b = do
-    c <- newZero (numRows a, numCols b)
-    gbmm alpha a b 0 c
-    return (unsafeCoerce c)
 
 -- | Form a new matrix by multiplying every element by a value.
 getScaled :: (BLAS1 e) => e -> BMatrix t (m,n) e -> IO (BMatrix r (m,n) e)
@@ -130,7 +98,12 @@ flipShape (m,n) = (n,m)
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@
 gbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
-gbmv alpha a x beta y
+gbmv alpha a x beta y =
+    checkMatVecMultAdd (shape a) (dim x) (dim y) $ 
+        unsafeGbmv alpha a x beta y
+
+unsafeGbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
+unsafeGbmv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
         return ()
     | isConj x = do
@@ -160,8 +133,13 @@ gbmv alpha a x beta y
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
 gbmm alpha a b beta c =
+    checkMatMatMultAdd (shape a) (shape b) (shape c) $ 
+        unsafeGbmm alpha a b beta c
+
+unsafeGbmm :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
+unsafeGbmm alpha a b beta c =
     sequence_ $
-        zipWith (\x y -> gbmv alpha a x beta y) (M.cols b) (M.cols c)
+        zipWith (\x y -> unsafeGbmv alpha a x beta y) (M.cols b) (M.cols c)
 
 unaryOp :: (BLAS1 e) => (IOBanded (m,n) e -> IO ()) 
     -> BMatrix t (m,n) e -> IO (BMatrix r (m,n) e)
@@ -169,34 +147,6 @@ unaryOp f a = do
     a' <- newCopy a
     f (unsafeThaw a')
     return (unsafeCoerce a')
-
-{-
-binaryOp :: (BLAS1 e) => String -> (IOMatrix (m,n) e -> DMatrix t (m,n) e -> IO ()) 
-    -> DMatrix s (m,n) e -> DMatrix t (m,n) e -> IO (DMatrix r (m,n) e)
-binaryOp name f a b = 
-    checkMatMatOp name (shape a) (shape b) >> do
-        a' <- newCopy a
-        f (unsafeThaw a') b
-        return (unsafeCoerce a')
--}        
-        
--- | Multiply a matrix by a vector.
-apply :: (BLAS2 e) => Banded (m,n) e -> Vector n e -> Vector m e
-apply = sapply 1
-
--- | Multiply a scaled matrix by a vector.
-sapply :: (BLAS2 e) => e -> Banded (m,n) e -> Vector n e -> Vector m e
-sapply alpha a x = unsafePerformIO $ getSApply alpha a x
-{-# NOINLINE sapply #-}
-
--- | Multiply a scaled matrix by a matrix.
-sapplyMat :: (BLAS2 e) => e -> Banded (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-sapplyMat alpha a b = unsafePerformIO $ getSApplyMat alpha a b
-{-# NOINLINE sapplyMat #-}
-    
--- | Multiply a matrix by a matrix.
-applyMat :: (BLAS2 e) => Banded (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-applyMat = sapplyMat 1
 
 -- | Create a new matrix by scaling another matrix by the given value.
 scale :: (BLAS1 e) => e -> Banded (m,n) e -> Banded (m,n) e
@@ -208,8 +158,21 @@ invScale :: (BLAS1 e) => e -> Banded (m,n) e -> Banded (m,n) e
 invScale k a = unsafePerformIO $ getInvScaled k a
 {-# NOINLINE invScale #-}
 
-{-# RULES
-"scale.apply/sapply"       forall k a x. apply (scale k a) x = sapply k a x
-"scale.applyMat/sapplyMat" forall k a b. applyMat (scale k a) b = sapplyMat k a b
-  #-}
-    
+instance (BLAS2 e) => RMatrix (BMatrix s) e where
+    unsafeGetSApply alpha a x = do
+        y <- V.newZero (numRows a)
+        unsafeGbmv alpha a x 0 y
+        return (unsafeCoerce y)
+
+    unsafeGetSApplyMat alpha a b = do
+        c <- newZero (numRows a, numCols b)
+        unsafeGbmm alpha a b 0 c
+        return (unsafeCoerce c)
+
+instance (BLAS2 e) => IMatrix (BMatrix Imm) e where
+    unsafeSApply alpha a x = unsafePerformIO $ unsafeGetSApply alpha a x
+    {-# NOINLINE unsafeSApply #-}
+
+    unsafeSApplyMat alpha a b = unsafePerformIO $ unsafeGetSApplyMat alpha a b
+    {-# NOINLINE unsafeSApplyMat #-}
+

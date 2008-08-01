@@ -15,6 +15,8 @@ module Data.Matrix.Herm.Dense (
 
     hemv,
     hemm,
+    unsafeHemv,
+    unsafeHemm,
     ) where
 
 import Control.Monad ( zipWithM_ )
@@ -23,6 +25,7 @@ import Unsafe.Coerce
 
 import BLAS.Access
 import BLAS.Elem ( BLAS2, BLAS3 )
+import BLAS.Internal ( checkMatVecMultAdd, checkMatMatMultAdd )
 import BLAS.C ( colMajor, rightSide, leftSide, cblasUpLo )
 import BLAS.Types ( flipUpLo )
 import qualified BLAS.Elem as E
@@ -40,27 +43,31 @@ import BLAS.Matrix.ReadOnly
 
 
 instance (BLAS3 e) => IMatrix (Herm (DMatrix Imm)) e where
-    (<*>) h x = unsafePerformIO $ getApply h x
-    {-# NOINLINE (<*>) #-}
+    unsafeSApply k h x = unsafePerformIO $ unsafeGetSApply k h x
+    {-# NOINLINE unsafeSApply #-}
 
-    (<**>) h a = unsafePerformIO $ getApplyMat h a
-    {-# NOINLINE (<**>) #-}
+    unsafeSApplyMat k h a = unsafePerformIO $ unsafeGetSApplyMat k h a
+    {-# NOINLINE unsafeSApplyMat #-}
 
 
 instance (BLAS3 e) => RMatrix (Herm (DMatrix s)) e where
-    getApply h x = do
+    unsafeGetSApply k h x = do
         y <- newZero (dim x)
-        hemv 1 (unsafeCoerce h) x 1 y
+        unsafeHemv k (unsafeCoerce h) x 1 y
         return (unsafeCoerce y)
     
-    getApplyMat h a = do
+    unsafeGetSApplyMat k h a = do
         b <- newZero (shape a)
-        hemm 1 (unsafeCoerce h) a 1 b
+        unsafeHemm k (unsafeCoerce h) a 1 b
         return (unsafeCoerce b)
 
-
 hemv :: (BLAS2 e) => e -> Herm (DMatrix t) (n,n) e -> DVector s n e -> e -> IOVector n e -> IO ()
-hemv alpha h x beta y
+hemv alpha h x beta y =
+    checkMatVecMultAdd (numRows h, numCols h) (dim x) (dim y) $
+        unsafeHemv alpha h x beta y
+
+unsafeHemv :: (BLAS2 e) => e -> Herm (DMatrix t) (n,n) e -> DVector s n e -> e -> IOVector n e -> IO ()
+unsafeHemv alpha h x beta y
     | numRows h == 0 =
         return ()
     | isConj y = do
@@ -90,7 +97,12 @@ hemv alpha h x beta y
                         BLAS.hemv order uploA n alpha'' pA ldA pX incX beta pY incY
 
 hemm :: (BLAS3 e) => e -> Herm (DMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
-hemm alpha h b beta c
+hemm alpha h b beta c =
+    checkMatMatMultAdd (numRows h, numCols h) (shape b) (shape c) $
+        unsafeHemm alpha h b beta c
+
+unsafeHemm :: (BLAS3 e) => e -> Herm (DMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
+unsafeHemm alpha h b beta c
     | numRows b == 0 || numCols b == 0 || numCols c == 0 = return ()
     | (isHerm a) /= (isHerm c) || (isHerm a) /= (isHerm b) =
         zipWithM_ (\x y -> hemv alpha h x beta y) (cols b) (cols c)

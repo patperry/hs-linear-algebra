@@ -76,8 +76,8 @@ module Data.Matrix.Dense.IO (
     ) where
 
 import Data.Matrix.Dense.Internal
-import Data.Matrix.Dense.Operations hiding ( apply, applyMat,
-    sapply, sapplyMat, add, plus, minus, times, divide, getApply, getApplyMat )
+import Data.Matrix.Dense.Operations hiding ( unsafeSApply, unsafeSApplyMat,
+    add, plus, minus, times, divide, unsafeGetSApply, unsafeGetSApplyMat )
     
 import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Matrix.ReadOnly
