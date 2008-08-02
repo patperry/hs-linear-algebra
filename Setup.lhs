@@ -17,6 +17,8 @@
 >     system "runhaskell -lcblas -DCOMPLEX tests/HermBanded.hs"
 >     system "runhaskell -lcblas -DREAL    tests/TriBanded.hs"
 >     system "runhaskell -lcblas -DCOMPLEX tests/TriBanded.hs"
+>     system "runhaskell -lcblas -DREAL    tests/Perm.hs"
+>     system "runhaskell -lcblas -DCOMPLEX tests/Perm.hs"
 >     return ()
 >
 > main = defaultMainWithHooks defaultUserHooks{ runTests=testing }

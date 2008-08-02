@@ -50,9 +50,15 @@ all:
 	ghc --make -fforce-recomp -O -DCOMPLEX -threaded TriBanded.hs -o tri-banded-cplx
 	./tri-banded-cplx $(THREADS)
 
+	ghc --make -fforce-recomp -O -DREAL -threaded Perm.hs -o perm-real
+	./perm-real $(THREADS)
+	
+	ghc --make -fforce-recomp -O -DCOMPLEX -threaded Perm.hs -o perm-cplx
+	./perm-cplx $(THREADS)
+
 
 clean:
 	rm -f *~ *.hi *.o vector-real vector-cplx matrix-real matrix-cplx \
 	herm-matrix-real herm-matrix-cplx tri-matrix-real tri-matrix-cplx \
 	banded-real banded-cplx herm-banded-real herm-banded-cplx \
-	tri-banded-real tri-banded-cplx
+	tri-banded-real tri-banded-cplx perm-real perm-cplx

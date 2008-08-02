@@ -28,6 +28,7 @@ extra-source-files:     INSTALL
                         tests/Makefile
                         tests/Banded.hs
                         tests/Matrix.hs
+                        tests/Perm.hs
                         tests/HermMatrix.hs
                         tests/HermBanded.hs
                         tests/TriBanded.hs
@@ -116,11 +117,13 @@ library
                             Data.Vector.Dense.Operations
                         
                         Test.QuickCheck.Complex
+                        Test.QuickCheck.Permutation
                         Test.QuickCheck.Vector
                         Test.QuickCheck.Vector.Dense
                         Test.QuickCheck.Matrix
                         Test.QuickCheck.Matrix.Banded
                         Test.QuickCheck.Matrix.Dense
+                        Test.QuickCheck.Matrix.Perm
                         Test.QuickCheck.Matrix.Herm.Banded
                         Test.QuickCheck.Matrix.Herm.Dense
                         Test.QuickCheck.Matrix.Tri.Banded
