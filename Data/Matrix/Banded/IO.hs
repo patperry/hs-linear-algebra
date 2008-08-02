@@ -17,7 +17,6 @@ module Data.Matrix.Banded.IO (
     module BLAS.Tensor.Dense.ReadOnly,
     module BLAS.Tensor.ReadOnly,
     module BLAS.Tensor.Mutable,
-    module Data.Matrix.Banded.Operations,
     
     -- * Creating new matrices
     newBanded,
@@ -66,7 +65,6 @@ module Data.Matrix.Banded.IO (
 import Data.Matrix.Banded.Internal
 import Data.Matrix.Banded.Operations hiding ( IMatrix(..), scale, invScale )
     
-import BLAS.Elem ( BLAS2 )
 import BLAS.Matrix.Base hiding ( Matrix )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Dense.ReadOnly
