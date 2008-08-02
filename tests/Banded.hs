@@ -159,7 +159,7 @@ prop_assocs_at (a :: B) =
 prop_scale_elems (a :: B) k =
     and $ zipWith (~==) (elems (k *> a)) (map (k*) (elems a))
 prop_herm_elem (BandedAt (a :: B) (i,j)) =
-    (herm a) ! (j,i) == E.conj (a!(i,j))
+    (herm a) ! (j,i) === E.conj (a!(i,j))
 prop_herm_scale (a :: B) k =
     herm (k *> a) === (E.conj k) *> (herm a)
 
@@ -184,6 +184,7 @@ prop_apply_basis (BandedAt (a :: B) (_,j)) =
     || (any isUndef $ elems a)
 prop_apply_herm_basis (BandedAt (a :: B) (i,_)) =
     (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
+    || (any isUndef $ elems a)    
 prop_apply_scale k (BandedMV (a :: B) x) =
     a <*> (k *> x) ~== k *> (a <*> x)
 prop_apply_linear (BandedMVPair (a :: B) x y) =
