@@ -19,7 +19,7 @@ import BLAS.Matrix.Base ( numRows, numCols )
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix, shape )
 
-infixl 7 <\>, <\\>
+infixr 7 <\>, <\\>
 
 class IMatrix a e => ISolve a e where
     -- | Solve for a vector

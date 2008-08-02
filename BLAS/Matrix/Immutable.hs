@@ -21,7 +21,7 @@ import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
 import qualified Data.Matrix.Dense.Operations as M
 
-infixl 7 <*>, <**>
+infixr 7 <*>, <**>
 
 class (Base.Matrix a, Elem e) => IMatrix a e where
     -- | Apply to a vector
