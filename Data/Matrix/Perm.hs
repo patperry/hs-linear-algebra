@@ -12,6 +12,8 @@ module Data.Matrix.Perm (
     module BLAS.Matrix.Base,
     module BLAS.Matrix.Immutable,
     module BLAS.Matrix.ReadOnly,
+    module BLAS.Matrix.Solve.Immutable,
+    module BLAS.Matrix.Solve.ReadOnly,
 
     Perm(..),
     
@@ -40,9 +42,13 @@ import qualified BLAS.Elem as E
 
 import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
 
-import BLAS.Matrix.Base
+import BLAS.Matrix.Base hiding ( Matrix )
+import qualified BLAS.Matrix.Base as Base
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
+import BLAS.Matrix.Solve.Immutable
+import BLAS.Matrix.Solve.ReadOnly
+
 
 import Data.AEq
 
@@ -110,7 +116,7 @@ unsafeDoApplyMat p@(P _ _) a
     swap i j = unsafeSwapVectors (unsafeRow a i) (unsafeRow a j)
 
           
-instance Matrix Perm where
+instance Base.Matrix Perm where
     numRows (P sigma _) = P.size sigma
     numRows (I n)       = n
     
@@ -127,7 +133,7 @@ instance (BLAS1 e) => IMatrix Perm e where
     unsafeSApplyMat k p a = unsafePerformIO $ unsafeGetSApplyMat k p a
     {-# NOINLINE unsafeSApplyMat #-}
           
-          
+         
 instance (BLAS1 e) => RMatrix Perm e where
     unsafeGetSApply k (I _) x = do
         y <- V.getScaled k x
@@ -171,10 +177,22 @@ instance (BLAS1 e) => RMatrix Perm e where
             M.scaleBy k (M.unsafeThaw b)
             return b
 
+
+instance (BLAS1 e) => ISolve Perm e where
+    unsafeSolve p    = unsafeApply (herm p)
+    unsafeSolveMat p = unsafeApplyMat (herm p)
+    
+    
+instance (BLAS1 e) => RSolve Perm e where    
+    unsafeGetSolve p    = unsafeGetApply (herm p)
+    unsafeGetSolveMat p = unsafeGetApplyMat (herm p)
+
+
 instance (Elem e) => Show (Perm (n,n) e) where
     show (I n)         = "identity " ++ show n
     show p | isHerm p  = "herm (" ++ show (herm p) ++ ")"
            | otherwise = "fromPermutation (" ++ show (baseOf p) ++ ")"
+    
     
 instance (Elem e) => Eq (Perm (n,n) e) where
     (==) (I n) (I n') = n == n'
@@ -187,6 +205,7 @@ instance (Elem e) => Eq (Perm (n,n) e) where
         | h == h'   = sigma == sigma'
         | otherwise = P.size sigma == P.size sigma'
                       && sigma == (P.inverse sigma')
+
 
 instance (Elem e) => AEq (Perm (n,n) e) where
     (===) = (==)
