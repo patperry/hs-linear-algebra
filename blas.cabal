@@ -96,6 +96,8 @@ library
                             Data.Matrix.Banded.Internal
                             Data.Matrix.Banded.Operations
                         
+                        Data.Matrix.Diag
+                        
                         Data.Matrix.Dense
                             Data.Matrix.Dense.IO
                             Data.Matrix.Dense.Internal
