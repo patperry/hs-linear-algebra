@@ -103,11 +103,7 @@ unsafeDoSolveMat a b = do
 instance (BLAS1 e) => Scalable (DiagMatrix Imm (n,n)) e where
     (*>) k (Diag x) = Diag $ k *> x
 
-instance Tensor (DiagMatrix t (n,n)) (Int,Int) e where
-    shape a  = (numRows a, numCols a)
-    bounds a = case shape a of (m,n) -> ((0,0), (m-1,n-1))
-    
-    
+
 replaceHelp :: (BLAS1 e) => 
        (Vector n e -> [(Int,e)] -> Vector n e) 
     -> Diag (n,n) e -> [((Int,Int),e)] -> Diag (n,n) e

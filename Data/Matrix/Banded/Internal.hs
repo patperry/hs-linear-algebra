@@ -361,17 +361,15 @@ colView a = checkedCol (shape a) (unsafeColView a)
 
 
 instance C.Matrix (BMatrix t) where
-    numRows = fst . shape
-    numCols = snd . shape
+    numRows a | isHerm a  = size2 a
+              | otherwise = size1 a
+              
+    numCols a | isHerm a  = size1 a
+              | otherwise = size2 a
 
     herm a = let h' = (not . isHerm) a
              in coerceBanded $ a{ isHerm=h' }
-        
-instance Tensor (BMatrix t (m,n)) (Int,Int) e where
-    shape a | isHerm a  = (size2 a, size1 a)
-            | otherwise = (size1 a, size2 a)
 
-    bounds a = let (m,n) = shape a in ((0,0), (m-1,n-1))
     
 instance (BLAS1 e) => ITensor (BMatrix Imm (m,n)) (Int,Int) e where
     size = inlinePerformIO . getSize

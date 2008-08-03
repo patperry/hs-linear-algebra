@@ -374,16 +374,14 @@ liftV2 f a b =
 
 
 instance C.Matrix (DMatrix t) where
-    numRows = fst . shape
-    numCols = snd . shape
+    numRows a | isHerm a  = size2 a
+              | otherwise = size1 a
+
+    numCols a | isHerm a  = size1 a
+              | otherwise = size2 a
 
     herm a = a{ isHerm=(not . isHerm) a }
-    
-instance Tensor (DMatrix t (m,n)) (Int,Int) e where
-    shape a | isHerm a  = (size2 a, size1 a)
-            | otherwise = (size1 a, size2 a)
-    
-    bounds a = let (m,n) = shape a in ((0,0), (m-1,n-1))
+
 
 instance (BLAS1 e) => ITensor (DMatrix Imm (m,n)) (Int,Int) e where
     size a = (numRows a * numCols a)
