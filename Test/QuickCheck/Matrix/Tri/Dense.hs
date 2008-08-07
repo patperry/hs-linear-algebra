@@ -17,116 +17,123 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
 import Test.QuickCheck.Matrix.Dense ( dmatrix )
+import Test.QuickCheck.Matrix ( matrixSized )
 
 import Data.Vector.Dense
 import Data.Matrix.Dense
 import BLAS.Elem ( BLAS1, BLAS3 )
 
-import Data.Matrix.Tri.Dense ( Tri, UpLo(..), Diag(..), upper, lower, upperU, lowerU )
+import Data.Matrix.Tri.Dense ( Tri, UpLo(..), Diag(..), fromBase )
 
-triMatrix :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> Int -> Gen (Matrix (n,n) e)
-triMatrix u d n = 
-    let nz = case d of
-                 NonUnit -> n * (n + 1) `div` 2
-                 Unit    -> n * (n - 1) `div` 2
+import Unsafe.Coerce
+
+triMatrix :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> (Int,Int) -> Gen (Matrix (m,n) e)
+triMatrix u d (m,n) =
+    let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
-        h <- arbitrary
-        let f = case (h,u,d) of
-                 (False, Upper, NonUnit) -> \(i,j) -> i <= j
-                 (False, Upper,    Unit) -> \(i,j) -> i <  j
-                 (False, Lower, NonUnit) -> \(i,j) -> i >= j
-                 (False, Lower,    Unit) -> \(i,j) -> i >  j
-                 (True,  Upper, NonUnit) -> \(i,j) -> i >= j
-                 (True,  Upper,    Unit) -> \(i,j) -> i >  j
-                 (True,  Lower, NonUnit) -> \(i,j) -> i <= j
-                 (True,  Lower,    Unit) -> \(i,j) -> i <  j
-            ijs = filter f $ range ((0,0), (n-1,n-1))
-        es <- QC.vector nz
-        let a = matrix (n,n) $ zip ijs es
+        es <- QC.vector (m*n)
+        let a = matrix (m,n) $ zip ijs es
+            a' = case d of
+                    NonUnit -> a
+                    Unit    -> a // [ ((i,i),1) | i <- [0..(mn-1)] ]
+        return $ a'
+  where
+    mn = min m n
 
-        a' <- case h of
-                  False -> return a
-                  True  -> return (herm a)
-        return a'
+isTriIndex :: UpLo -> Diag -> (Int,Int) -> Bool
+isTriIndex Upper NonUnit (i,j) = i <= j
+isTriIndex Upper Unit    (i,j) = i <  j
+isTriIndex Lower NonUnit (i,j) = i >= j
+isTriIndex Lower Unit    (i,j) = i >  j
 
+-- | A triangular matrix and an equivalent dense matrix
+data TriMatrix m n e = 
+    TriMatrix (Tri Matrix (m,n) e) 
+              (Matrix (m,n) e) 
+    deriving Show
 
-data TriMatrix n e = TriMatrix UpLo Diag (Matrix (n,n) e) deriving (Eq, Show)
-
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrix n e) where
-    arbitrary = sized $ \k ->
-        let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
-        in do
-            u <- elements [ Upper, Lower  ]
-            d <- elements [ Unit, NonUnit ]
-            n <- choose (0,k')
-            a <- triMatrix u d n
-            return $ TriMatrix u d a
+instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrix m n e) where
+    arbitrary = matrixSized $ \k -> do
+        u <- elements [ Upper, Lower  ]
+        d <- elements [ Unit, NonUnit ]
+        m <- choose (0,k)
+        n <- choose (0,k)
+        a <- triMatrix u d (m,n)
+        
+        junk <- QC.vector (m*n)
+        let ijs = [ (i,j) | i <- [0..(m-1)]
+                          , j <- [0..(n-1)]
+                          , (not . (isTriIndex u d)) (i,j) ]
+            t   = fromBase u d $ a // zip ijs junk
+            
+        (t',a') <- elements [ (t,a), unsafeCoerce (herm t, herm a) ]
+            
+        return $ TriMatrix t' $ submatrix a' (0,0) (shape t')
             
     coarbitrary = undefined
 
-data TriMatrixMV n e = 
-    TriMatrixMV UpLo Diag (Matrix (n,n) e) (Vector n e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMV n e) where
+-- | A triangular matrix, and equivalent dense matrix, and a vector in
+-- their domain.        
+data TriMatrixMV m n e = 
+    TriMatrixMV (Tri Matrix (m,n) e) 
+                (Matrix (m,n) e) 
+                (Vector n e) 
+    deriving Show
+
+instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMV m n e) where
     arbitrary = do
-        (TriMatrix u d a) <- arbitrary
+        (TriMatrix t a) <- arbitrary
         x <- dvector (numCols a)
-        return $ TriMatrixMV u d a x
-        
-    coarbitrary (TriMatrixMV u d a x) =
-        coarbitrary (TriMatrix u d a, TestVector x)
-        
-data TriMatrixMM m n e = 
-    TriMatrixMM UpLo Diag (Matrix (m,m) e) (Matrix (m,n) e) deriving (Eq, Show)
+        return $ TriMatrixMV t a x
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMM m n e) where
-    arbitrary = sized $ \k ->
-        let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
-        in do
-            (TriMatrix u d a) <- arbitrary
-            n <- choose (0,k')
-            b <- dmatrix (numCols a, n)
-            return $ TriMatrixMM u d a b
+    coarbitrary = undefined
+
+-- | A triangular matrix, and equivalent dense matrix, and a matrix in
+-- their domain.        
+data TriMatrixMM m k n e = 
+    TriMatrixMM (Tri Matrix (m,k) e) 
+                (Matrix (m,k) e) 
+                (Matrix (k,n) e) 
+    deriving Show
+
+instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMM m k n e) where
+    arbitrary = matrixSized $ \s -> do
+        (TriMatrix t a) <- arbitrary
+        n <- choose (0,s)
+        b <- dmatrix (numCols a, n)
+        return $ TriMatrixMM t a b
             
     coarbitrary = undefined
-        
-data TriMatrixSV n e = 
-    TriMatrixSV (Tri Matrix (n,n) e) (Vector n e) deriving (Show)
+
+-- | A triangular matrix and a vector in its range
+data TriMatrixSV m n e = 
+    TriMatrixSV (Tri Matrix (m,n) e) 
+                (Vector m e) 
+    deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV m n e) where
     arbitrary = do
-        (TriMatrix u d a) <- arbitrary
-        let t = case (u,d) of
-                    (Lower,NonUnit) -> lower  a
-                    (Lower,Unit)    -> lowerU a
-                    (Upper,NonUnit) -> upper  a
-                    (Upper,Unit)    -> upperU a
-        k <- arbitrary
-        t' <- elements [ t
-                       , k *> t
-                       ]
-        x <- dvector (numCols t')
-        let y = t' <*> x
-        return (TriMatrixSV t' y)
+        (TriMatrix t a) <- arbitrary
+        x <- dvector (numCols a)
+        let y = a <*> x
+        return (TriMatrixSV t y)
         
     coarbitrary = undefined
 
-
-data TriMatrixSM m n e = 
-    TriMatrixSM (Tri Matrix (m,m) e) (Matrix (m,n) e) 
-    deriving (Show)
+-- | A triangular matrix and a matrix in its range
+data TriMatrixSM m k n e = 
+    TriMatrixSM (Tri Matrix (m,k) e) 
+                (Matrix (m,n) e) 
+    deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m n e) where
-    arbitrary = sized $ \k ->
-        let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
-        in do
-            (TriMatrixSV t _) <- arbitrary
-            n <- choose (0, k')
-            a <- dmatrix (numCols t, n)
-            
-            let b = t <**> a
-            return (TriMatrixSM t b)
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m k n e) where
+    arbitrary = matrixSized $ \s -> do
+        (TriMatrix t a) <- arbitrary
+        n <- choose (0, s)
+        b <- dmatrix (numCols a, n)
+        let c = a <**> b
+        return (TriMatrixSM t c)
         
     coarbitrary = undefined
-
     

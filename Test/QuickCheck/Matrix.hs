@@ -39,3 +39,10 @@ instance Arbitrary e => Arbitrary (Assocs e) where
             return $ Assocs (m,n) (zip ijs' es)
         
     coarbitrary (Assocs mn ijes) = coarbitrary (mn,ijes)
+
+matrixSized :: (Int -> Gen a) -> Gen a
+matrixSized f = 
+    sized $ \s ->
+        let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
+        in f s'
+        
