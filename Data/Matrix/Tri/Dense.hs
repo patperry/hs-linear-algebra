@@ -19,11 +19,6 @@ module Data.Matrix.Tri.Dense (
     trmm,    
     trsm,
     
-    unsafeTrmv,
-    unsafeTrsv,
-    unsafeTrmm,
-    unsafeTrsm,
-    
     ) where
 
 import Control.Monad ( when )
@@ -31,20 +26,20 @@ import Data.Maybe ( fromJust )
 import System.IO.Unsafe
 import Unsafe.Coerce
 
-import Data.Matrix.Dense.Internal
+import Data.Matrix.Dense.Internal hiding ( diag )
 import qualified Data.Matrix.Dense.Internal as M
 import qualified Data.Matrix.Dense.Operations as M
 import Data.Vector.Dense.Internal
+import Data.Vector.Dense.Operations( unsafeCopyVector )
+import Data.Matrix.Dense.Operations( unsafeCopyMatrix )
 import qualified Data.Vector.Dense.Internal as V
 import qualified Data.Vector.Dense.Operations as V
 
 import BLAS.Access
-import BLAS.Elem ( BLAS3 )
+import BLAS.Elem ( Elem, BLAS3 )
 import qualified BLAS.Elem as E
 import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
     noTrans, conjTrans, leftSide, rightSide )
-import BLAS.Internal ( checkMatVecMult, checkMatMatMult, checkMatVecSolv,
-    checkMatMatSolv )
 import BLAS.Types ( Trans(..), flipTrans, flipUpLo )
                                    
 import qualified BLAS.C as BLAS
@@ -70,67 +65,129 @@ instance (BLAS3 e) => ISolve (Tri (DMatrix Imm)) e where
     unsafeSolveMat t a = unsafePerformIO $ unsafeGetSolveMat t a
     {-# NOINLINE unsafeSolveMat #-}
 
-instance (BLAS3 e) => RMatrix (Tri (DMatrix s)) e where
-    unsafeGetSApply k t x = do
-        x' <- newCopy x
-        unsafeTrmv (unsafeCoerce t) (V.unsafeThaw x')
-        V.scaleBy k (V.unsafeThaw x')
-        return (unsafeCoerce x')
+toLower :: (Elem e) => Diag -> DMatrix s (m,n) e 
+        -> Either (Tri (DMatrix s) (m,m) e) 
+                  (Tri (DMatrix s) (n,n) e, DMatrix s (d,n) e)
+toLower diag a =
+    if m <= n
+        then Left $  fromBase Lower diag (unsafeSubmatrix a (0,0) (m,m))
+        else let t = fromBase Lower diag (unsafeSubmatrix a (0,0) (n,n))
+                 r = unsafeSubmatrix a (n,0) (d,n)
+             in Right (t,r)
+  where
+    (m,n) = shape a
+    d     = m - n
     
-    unsafeGetSApplyMat k t a = do
-        a' <- newCopy a
-        unsafeTrmm (unsafeCoerce t) (M.unsafeThaw a')
-        M.scaleBy k (M.unsafeThaw a')
-        return (unsafeCoerce a')
+toUpper :: (Elem e) => Diag -> DMatrix s (m,n) e
+        -> Either (Tri (DMatrix s) (n,n) e)
+                  (Tri (DMatrix s) (m,m) e, DMatrix s (m,d) e)
+toUpper diag a =
+    if n <= m
+        then Left $  fromBase Upper diag (unsafeSubmatrix a (0,0) (n,n))
+        else let t = fromBase Upper diag (unsafeSubmatrix a (0,0) (m,m))
+                 r = unsafeSubmatrix a (0,m) (m,d)
+             in Right (t,r)
+  where
+    (m,n) = shape a
+    d     = n - m
+
+
+instance (BLAS3 e) => RMatrix (Tri (DMatrix s)) e where
+    unsafeDoSApply alpha t x y =
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
+                unsafeCopyVector y (coerceVector x)
+                trmv alpha t' y
+                
+            (Lower,Right (t',r),_) -> do
+                let y1 = unsafeSubvector y 0            (numRows t')
+                    y2 = unsafeSubvector y (numRows t') (numRows r)
+                unsafeCopyVector y1 x
+                trmv alpha t' y1
+                unsafeDoSApply alpha r x y2
+                
+            (Upper,_,Left t') -> do
+                unsafeCopyVector (coerceVector y) x
+                trmv alpha t' (coerceVector y)
+
+            (Upper,_,Right (t',r)) ->
+                let x1 = unsafeSubvector x 0            (numCols t')
+                    x2 = unsafeSubvector x (numCols t') (numCols r)
+                in do
+                    unsafeCopyVector y x1
+                    trmv alpha t' y
+                    unsafeDoSApplyAdd alpha r x2 1 y
+      where
+        (u,d,a) = toBase t
+
+
+    unsafeDoSApplyMat alpha t b c =
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
+                unsafeCopyMatrix c (coerceMatrix b)
+                trmm alpha t' c
+                
+            (Lower,Right (t',r),_) -> do
+                let c1 = unsafeSubmatrix c (0,0)          (numRows t',numCols c)
+                    c2 = unsafeSubmatrix c (numRows t',0) (numRows r ,numCols c)
+                unsafeCopyMatrix c1 b
+                trmm alpha t' c1
+                unsafeDoSApplyMat alpha r b c2
+                
+            (Upper,_,Left t') -> do
+                unsafeCopyMatrix (coerceMatrix c) b
+                trmm alpha t' (coerceMatrix c)
+
+            (Upper,_,Right (t',r)) ->
+                let b1 = unsafeSubmatrix b (0,0)          (numCols t',numCols b)
+                    b2 = unsafeSubmatrix b (numCols t',0) (numCols r ,numCols b)
+                in do
+                    unsafeCopyMatrix c b1
+                    trmm alpha t' c
+                    unsafeDoSApplyAddMat alpha r b2 1 c
+      where
+        (u,d,a) = toBase t
+        
+    
 
 instance (BLAS3 e) => RSolve (Tri (DMatrix s)) e where
     unsafeGetSolve t x = do
         x' <- newCopy x
-        unsafeTrsv (unsafeCoerce t) (V.unsafeThaw x')
+        trsv 1 (unsafeCoerce t) (V.unsafeThaw x')
         return (unsafeCoerce x')
     
     unsafeGetSolveMat t a = do
         a' <- newCopy a
-        unsafeTrsm (unsafeCoerce t) (M.unsafeThaw a')
+        trsm 1 (unsafeCoerce t) (M.unsafeThaw a')
         return (unsafeCoerce a')
 
-trmv :: (BLAS3 e) => Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
-trmv t x =
-    checkMatVecMult (numRows t, numCols t) (dim x) $
-        unsafeTrmv t x
-
-unsafeTrmv :: (BLAS3 e) => Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
-unsafeTrmv _ x
-    | dim x == 0 = return ()
-unsafeTrmv t x
+trmv :: (BLAS3 e) => e -> Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
+trmv alpha t x 
+    | dim x == 0 = 
+        return ()
     | isConj x =
         let b = fromJust $ maybeFromCol x
-        in trmm t b
-unsafeTrmv t x =
-    let (u,d,alpha,a) = toBase t
-        order     = colMajor
-        (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
-        uploA     = cblasUpLo u'
-        diagA     = cblasDiag d
-        n         = numCols a
-        ldA       = ldaOf a
-        incX      = strideOf x
-    in M.unsafeWithElemPtr a (0,0) $ \pA ->
-           V.unsafeWithElemPtr x 0 $ \pX -> do
-               BLAS.trmv order uploA transA diagA n pA ldA pX incX
-               when (alpha /= 1) $ V.scaleBy alpha x
-               
+        in trmm alpha t b
+    | otherwise =
+        let (u,d,a)   = toBase t
+            order     = colMajor
+            (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+            uploA     = cblasUpLo u'
+            diagA     = cblasDiag d
+            n         = dim x
+            ldA       = ldaOf a
+            incX      = strideOf x
+        in M.unsafeWithElemPtr a (0,0) $ \pA ->
+               V.unsafeWithElemPtr x 0 $ \pX -> do
+                   BLAS.trmv order uploA transA diagA n pA ldA pX incX
+                   when (alpha /= 1) $ V.scaleBy alpha x
 
-trmm :: (BLAS3 e) => Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-trmm t b = 
-    checkMatMatMult (numRows t, numCols t) (shape b) $
-        unsafeTrmm t b
                
-unsafeTrmm :: (BLAS3 e) => Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-unsafeTrmm _ b
+trmm :: (BLAS3 e) => e -> Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
+trmm _ _ b
     | M.numRows b == 0 || M.numCols b == 0 = return ()
-unsafeTrmm t b =
-    let (u,d,alpha,a) = toBase t
+trmm alpha t b =
+    let (u,d,a)   = toBase t
         order     = colMajor
         (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
@@ -147,20 +204,16 @@ unsafeTrmm t b =
            M.unsafeWithElemPtr b (0,0) $ \pB ->
                BLAS.trmm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
 
-trsv :: (BLAS3 e) =>Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
-trsv t x =
-    checkMatVecSolv (numRows t, numCols t) (dim x) $
-        unsafeTrsv t x
 
-unsafeTrsv :: (BLAS3 e) =>Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
-unsafeTrsv _ x
+trsv :: (BLAS3 e) => e -> Tri (DMatrix t) (n,n) e -> IOVector n e -> IO ()
+trsv _ _ x
     | dim x == 0 = return ()
-unsafeTrsv t x
+trsv alpha t x
     | isConj x =
         let b = fromJust $ maybeFromCol x
-        in trsm t b
-unsafeTrsv t x =
-    let (u,d,alpha,a) = toBase t
+        in trsm alpha t b
+trsv alpha t x =
+    let (u,d,a) = toBase t
         order     = colMajor
         (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
         uploA     = cblasUpLo u'
@@ -171,18 +224,15 @@ unsafeTrsv t x =
     in M.unsafeWithElemPtr a (0,0) $ \pA ->
            V.unsafeWithElemPtr x 0 $ \pX -> do
                BLAS.trsv order uploA transA diagA n pA ldA pX incX
-               when (alpha /= 1) $ V.invScaleBy alpha x
+               when (alpha /= 1) $ V.scaleBy alpha x
 
-trsm :: (BLAS3 e) => Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-trsm t b =
-    checkMatMatSolv (numRows t, numCols t) (shape b) $
-        unsafeTrsm t b
 
-unsafeTrsm :: (BLAS3 e) => Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-unsafeTrsm _ b
+
+trsm :: (BLAS3 e) => e -> Tri (DMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
+trsm _ _ b
     | M.numRows b == 0 || M.numCols b == 0 = return ()
-unsafeTrsm t b =
-    let (u,d,alpha,a) = toBase t
+trsm alpha t b =
+    let (u,d,a)   = toBase t
         order     = colMajor
         (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
@@ -197,5 +247,5 @@ unsafeTrsm t b =
         ldB       = ldaOf b
     in M.unsafeWithElemPtr a (0,0) $ \pA ->
            M.unsafeWithElemPtr b (0,0) $ \pB -> do
-               BLAS.trsm order side uploA transA diagA m' n' (1/alpha') pA ldA pB ldB
+               BLAS.trsm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
                
