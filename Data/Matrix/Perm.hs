@@ -24,14 +24,6 @@ module Data.Matrix.Perm (
     fromPermutation,
     toPermutation,
 
-    -- * Applying in-place
-    doApply,
-    doApplyMat,
-    
-    -- * Unsafe Operations
-    unsafeDoApply,
-    unsafeDoApplyMat
-    
     ) where
 
 import Control.Monad ( forM_ )
@@ -127,11 +119,6 @@ instance Base.Matrix Perm where
 
 
 instance (BLAS1 e) => IMatrix Perm e where
-    unsafeSApply k p x = unsafePerformIO $ unsafeGetSApply k p x
-    {-# NOINLINE unsafeSApply #-}
-
-    unsafeSApplyMat k p a = unsafePerformIO $ unsafeGetSApplyMat k p a
-    {-# NOINLINE unsafeSApplyMat #-}
           
          
 instance (BLAS1 e) => RMatrix Perm e where
