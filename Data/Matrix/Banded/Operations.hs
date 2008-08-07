@@ -26,14 +26,6 @@ module Data.Matrix.Banded.Operations (
     scaleBy,
     invScaleBy,
 
-    -- * BLAS operations
-    gbmv,
-    gbmm,
-    
-    -- * Unsafe operations
-    unsafeGbmv,
-    unsafeGbmm
-    
     ) where
 
 import System.IO.Unsafe
@@ -53,7 +45,6 @@ import BLAS.C ( CBLASTrans, colMajor, noTrans, conjTrans )
 import qualified BLAS.C as BLAS
 import BLAS.Elem ( BLAS1, BLAS2  )
 import qualified BLAS.Elem as E
-import BLAS.Internal ( checkMatVecMultAdd, checkMatMatMultAdd )
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
 
@@ -96,14 +87,10 @@ blasTransOf a =
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
 
--- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@
-gbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
-gbmv alpha a x beta y =
-    checkMatVecMultAdd (shape a) (dim x) (dim y) $ 
-        unsafeGbmv alpha a x beta y
 
-unsafeGbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
-unsafeGbmv alpha a x beta y
+-- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
+gbmv :: (BLAS2 e) => e -> BMatrix s (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
+gbmv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
         return ()
     | isConj x = do
@@ -130,16 +117,11 @@ unsafeGbmv alpha a x beta y
                     V.unsafeWithElemPtr y 0 $ \pY -> do
                         BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
 
--- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
+-- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
 gbmm alpha a b beta c =
-    checkMatMatMultAdd (shape a) (shape b) (shape c) $ 
-        unsafeGbmm alpha a b beta c
-
-unsafeGbmm :: (BLAS2 e) => e -> BMatrix s (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
-unsafeGbmm alpha a b beta c =
     sequence_ $
-        zipWith (\x y -> unsafeGbmv alpha a x beta y) (M.cols b) (M.cols c)
+        zipWith (\x y -> gbmv alpha a x beta y) (M.cols b) (M.cols c)
 
 unaryOp :: (BLAS1 e) => (IOBanded (m,n) e -> IO ()) 
     -> BMatrix t (m,n) e -> IO (BMatrix r (m,n) e)
@@ -159,20 +141,8 @@ invScale k a = unsafePerformIO $ getInvScaled k a
 {-# NOINLINE invScale #-}
 
 instance (BLAS2 e) => RMatrix (BMatrix s) e where
-    unsafeGetSApply alpha a x = do
-        y <- V.newZero (numRows a)
-        unsafeGbmv alpha a x 0 y
-        return (unsafeCoerce y)
+    unsafeDoSApplyAdd    = gbmv
+    unsafeDoSApplyAddMat = gbmm
 
-    unsafeGetSApplyMat alpha a b = do
-        c <- newZero (numRows a, numCols b)
-        unsafeGbmm alpha a b 0 c
-        return (unsafeCoerce c)
-
-instance (BLAS2 e) => IMatrix (BMatrix Imm) e where
-    unsafeSApply alpha a x = unsafePerformIO $ unsafeGetSApply alpha a x
-    {-# NOINLINE unsafeSApply #-}
-
-    unsafeSApplyMat alpha a b = unsafePerformIO $ unsafeGetSApplyMat alpha a b
-    {-# NOINLINE unsafeSApplyMat #-}
+instance (BLAS2 e) => IMatrix (BMatrix Imm) e
 
