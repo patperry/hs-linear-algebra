@@ -28,6 +28,9 @@ module BLAS.Internal (
     checkMatMatMultAdd,
     checkMatVecSolv,
     checkMatMatSolv,
+    checkSquare,
+    checkFat,
+    checkTall,
     diagStart,
     diagLen,    
     ) where
@@ -234,4 +237,28 @@ checkMatMatSolv mn mk
         error $ printf
             ("Tried to solve a matrix with shape `%s' for a matrix with shape `%s'")
             (show mn) (show mk)
+    | otherwise = id
+
+checkSquare :: (Int,Int) -> a -> a
+checkSquare (m,n)
+    | m /= n =
+        error $ printf
+            ("Expected a square matrix but got one with shape `%s'")
+            (show (m,n))
+    | otherwise = id
+
+checkFat :: (Int,Int) -> a -> a
+checkFat (m,n)
+    | m > n =
+        error $ printf
+            ("Expected a fat matrix but got one with shape `%s'")
+            (show (m,n))
+    | otherwise = id
+
+checkTall :: (Int,Int) -> a -> a
+checkTall (m,n)
+    | m < n =
+        error $ printf
+            ("Expected a tall matrix but got one with shape `%s'")
+            (show (m,n))
     | otherwise = id

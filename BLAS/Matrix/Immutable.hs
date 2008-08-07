@@ -14,16 +14,17 @@ module BLAS.Matrix.Immutable (
     ) where
 
 import BLAS.Access
-import BLAS.Elem ( Elem, BLAS3 )
+import BLAS.Elem ( BLAS3 )
 import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
-import qualified BLAS.Matrix.Base as Base
+import BLAS.Matrix.ReadOnly
 import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
-import qualified Data.Matrix.Dense.Operations as M
+
+import System.IO.Unsafe ( unsafePerformIO )
 
 infixr 7 <*>, <**>
 
-class (Base.Matrix a, Elem e) => IMatrix a e where
+class (RMatrix a e) => IMatrix a e where
     -- | Apply to a vector
     (<*>) :: a (m,n) e -> Vector n e -> Vector m e
     (<*>) a x = 
@@ -52,13 +53,15 @@ class (Base.Matrix a, Elem e) => IMatrix a e where
     unsafeApplyMat = unsafeSApplyMat 1
     
     unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
-    
-    unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
+    unsafeSApply alpha a x = unsafePerformIO $ unsafeGetSApply alpha a x
+    {-# NOINLINE unsafeSApply #-}
+
+    unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+    unsafeSApplyMat alpha a b = unsafePerformIO $ unsafeGetSApplyMat alpha a b
+    {-# NOINLINE unsafeSApplyMat #-}
 
 
 instance (BLAS3 e) => IMatrix (DMatrix Imm) e where
-    unsafeSApply    = M.unsafeSApply
-    unsafeSApplyMat = M.unsafeSApplyMat
 
 {-# RULES
 "scale.apply/sapply"       forall k a x. (<*>) (k *> a) x = sapply k a x
