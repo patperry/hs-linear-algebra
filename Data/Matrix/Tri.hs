@@ -17,57 +17,104 @@ module Data.Matrix.Tri (
     mapTri,
 
     lower,
+    lowerFat,
+    lowerTall,
+    
     lowerU,
+    lowerUFat,
+    lowerUTall,
+    
     upper,
+    upperFat,
+    upperTall,
+    
     upperU,
+    upperUFat,
+    upperUTall,
+
 
     ) where
 
-import qualified BLAS.Elem as E
+import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import BLAS.Matrix
 import BLAS.Tensor
 import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
 
-data Tri a nn e = Tri UpLo Diag e (a nn e)
+import Unsafe.Coerce
 
-mapTri :: (a (n,n) e -> b (n,n) e) -> Tri a (n,n) e -> Tri b (n,n) e
-mapTri f (Tri u d n a) = Tri u d n $ f a
+data Tri a mn e = Tri UpLo Diag (a mn e)
 
-fromBase :: UpLo -> Diag -> e -> a (n,n) e -> Tri a (n,n) e
+mapTri :: (a (m,n) e -> b (m,n) e) -> Tri a (m,n) e -> Tri b (m,n) e
+mapTri f (Tri u d a) = Tri u d $ f a
+
+fromBase :: UpLo -> Diag -> a (m,n) e -> Tri a (m,n) e
 fromBase = Tri
         
-toBase :: Tri a (n,n) e -> (UpLo, Diag, e, a (n,n) e)
-toBase (Tri u d e a) = (u,d,e,a)
+toBase :: Tri a (m,n) e -> (UpLo, Diag, a (m,n) e)
+toBase (Tri u d a) = (u,d,a)
 
-lower :: (Num e) => a (n,n) e -> Tri a (n,n) e
-lower = Tri Lower NonUnit 1
 
-lowerU :: (Num e) => a (n,n) e -> Tri a (n,n) e
-lowerU = Tri Lower Unit 1
+lower :: (Matrix a) => a (n,n) e -> Tri a (n,n) e
+lower a = checkSquare (shape a) $ Tri Lower NonUnit a
 
-upper :: (Num e) => a (n,n) e -> Tri a (n,n) e
-upper = Tri Upper NonUnit 1
+lowerFat :: (Matrix a) => a (m,n) e -> Tri a (m,m) e
+lowerFat a = checkFat (shape a) $ Tri Lower NonUnit (unsafeCoerce a)
 
-upperU :: (Num e) => a (n,n) e -> Tri a (n,n) e
-upperU = Tri Upper Unit 1
+lowerTall :: (Matrix a) => a (m,n) e -> Tri a (m,n) e
+lowerTall a = checkTall (shape a) $ Tri Lower NonUnit a
+
+
+lowerU :: (Matrix a) => a (n,n) e -> Tri a (n,n) e
+lowerU a = checkSquare (shape a) $ Tri Lower Unit a
+
+lowerUFat :: (Matrix a) => a (m,n) e -> Tri a (m,m) e
+lowerUFat a = checkFat (shape a) $ Tri Lower Unit (unsafeCoerce a)
+
+lowerUTall :: (Matrix a) => a (m,n) e -> Tri a (m,n) e
+lowerUTall a = checkTall (shape a) $ Tri Lower Unit a
+
+
+upper :: (Matrix a) => a (n,n) e -> Tri a (n,n) e
+upper a = checkSquare (shape a) $ Tri Upper NonUnit a
+
+upperFat :: (Matrix a) => a (m,n) e -> Tri a (m,n) e
+upperFat a = checkFat (shape a) $ Tri Upper NonUnit a
+
+upperTall :: (Matrix a) => a (m,n) e -> Tri a (n,n) e
+upperTall a = checkTall (shape a) $ Tri Upper NonUnit (unsafeCoerce a)
+
+
+upperU :: (Matrix a) => a (n,n) e -> Tri a (n,n) e
+upperU a = checkSquare (shape a) $ Tri Upper Unit a
+
+upperUFat :: (Matrix a) => a (m,n) e -> Tri a (m,n) e
+upperUFat a = checkFat (shape a) $ Tri Upper Unit a
+
+upperUTall :: (Matrix a) => a (m,n) e -> Tri a (n,n) e
+upperUTall a = checkTall (shape a) $ Tri Upper Unit (unsafeCoerce a)
+
       
 instance Matrix a => Matrix (Tri a) where
-    numRows (Tri _ _ _ a) = numRows a
-    numCols (Tri _ _ _ a) = numCols a
-    herm    (Tri u d e a) = Tri (flipUpLo u) d (E.conj e) (herm a)
+    numRows (Tri Lower _ a) = numRows a
+    numRows (Tri Upper _ a) = min (numRows a) (numCols a)
     
-instance (Num e) => Scalable (Tri a nn) e where
-    (*>) k (Tri u d e a) = Tri u d (k*e) a
+    numCols (Tri Lower _ a) = min (numRows a) (numCols a)
+    numCols (Tri Upper _ a) = numCols a
+    
+    herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
 
-instance (Show (a mn e), Show e, Num e) => Show (Tri a mn e) where
-    show (Tri u d k a) 
-        | k /= 1 = "(" ++ show k ++ ") *> " ++ show (Tri u d 1 a)
-        | otherwise =
-            constructor ++ " (" ++ show a ++ ")"
+
+instance (Show (a (m,n) e), Matrix a) => Show (Tri a (m,n) e) where
+    show (Tri u d a) =
+        constructor ++ suffix ++ " (" ++ show a ++ ")"
         where
           constructor = case (u,d) of
               (Lower, NonUnit) -> "lower"
               (Lower, Unit   ) -> "lowerU"
               (Upper, NonUnit) -> "upper"
               (Upper, Unit   ) -> "upperU"
-        
+
+          suffix = case undefined of
+                       _ | isSquare a -> ""
+                       _ | isFat a    -> "Fat"
+                       _              -> "Tall"
