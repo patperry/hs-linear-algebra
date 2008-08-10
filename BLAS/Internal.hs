@@ -28,6 +28,8 @@ module BLAS.Internal (
     checkMatMatMultAdd,
     checkMatVecSolv,
     checkMatMatSolv,
+    checkMatVecSolvTo,
+    checkMatMatSolvTo,
     checkSquare,
     checkFat,
     checkTall,
@@ -230,13 +232,37 @@ checkMatVecSolv mn m
             ("Tried to solve a matrix with shape `%s' for a vector of dimension `%d'")
             (show mn) m
     | otherwise = id
-        
+
+checkMatVecSolvTo :: (Int,Int) -> Int -> Int -> a -> a
+checkMatVecSolvTo mn m n
+    | fst mn /= m =
+        error $ printf
+            ("Tried to solve a matrix with shape `%s' for a vector of dimension `%d'")
+            (show mn) m
+    | snd mn /= n =
+        error $ printf
+            ("Tried to store a vector of dimension `%d' in a vector of dimension `%d'")
+            (show $ snd mn) n
+    | otherwise = id
+
 checkMatMatSolv :: (Int,Int) -> (Int,Int) -> a -> a
 checkMatMatSolv mn mk
     | fst mn /= fst mk =
         error $ printf
             ("Tried to solve a matrix with shape `%s' for a matrix with shape `%s'")
             (show mn) (show mk)
+    | otherwise = id
+
+checkMatMatSolvTo :: (Int,Int) -> (Int,Int) -> (Int,Int) -> a -> a
+checkMatMatSolvTo mk mn kn
+    | fst mn /= fst mk =
+        error $ printf
+            ("Tried to solve a matrix with shape `%s' for a matrix with shape `%s'")
+            (show mk) (show mn)
+    | kn /= (snd mk, snd mn) =
+        error $ printf
+            ("Tried to store a matrix with shape `%s' in a matrix with shape `%s'")
+            (show (snd mk, snd mn)) (show kn)
     | otherwise = id
 
 checkSquare :: (Int,Int) -> a -> a
