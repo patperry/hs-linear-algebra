@@ -58,32 +58,32 @@ prop_tri_sapplyMat k (TriMatrixMM (t :: TM) a b) =
     sapplyMat k t b ~== sapplyMat k a b
 
 
-{-
 prop_tri_solve (TriMatrixSV (t :: TM) y) =
     let x = t <\> y
     in t <*> x ~== y || (any isUndef $ elems x)
 
-prop_tri_invCompose (TriMatrixSM (t :: TM) b) =
+prop_tri_ssolve k (TriMatrixSV (t :: TM) y) =
+    ssolve k t y ~== t <\> (k *> y)
+
+prop_tri_solveMat (TriMatrixSM (t :: TM) b) =
     let a = t <\\> b
     in t <**> a ~== b || (any isUndef $ elems a)
--}
+
+prop_tri_ssolveMat k (TriMatrixSM (t :: TM) b) =
+    ssolveMat k t b ~== t <\\> (k *> b)
+
 
 properties =
     [ ("tri apply"             , pDet prop_tri_apply)
     , ("tri sapply"            , pDet prop_tri_sapply)
     , ("tri applyMat"          , pDet prop_tri_applyMat)
     , ("tri sapplyMat"         , pDet prop_tri_sapplyMat)
-    
-    {-
-    , ("tri compose"           , pDet prop_tri_compose)
-    , ("scale tri compose"     , pDet prop_scale_tri_compose)
-    , ("herm tri compose"      , pDet prop_herm_tri_compose)
-    , ("scale herm tri compose", pDet prop_scale_herm_tri_compose)
-    , ("herm scale tri compose", pDet prop_herm_scale_tri_compose)
-    
+
     , ("tri solve"             , pDet prop_tri_solve)
-    , ("tri invCompose"        , pDet prop_tri_invCompose)
-    -}
+    , ("tri ssolve"            , pDet prop_tri_ssolve)
+    , ("tri solveMat"          , pDet prop_tri_solveMat)
+    , ("tri ssolveMat"         , pDet prop_tri_ssolveMat)
+    
     ]
 
 
@@ -96,4 +96,4 @@ main = do
 
 main' n = do
     putStrLn $ "Running tests for " ++ field
-    pRun n 400 properties
+    pRun n 200 properties
