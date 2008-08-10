@@ -21,19 +21,10 @@ module Data.Matrix.Diag (
     fromVector,
     toVector,
 
-    -- * In-place operations
-    doSolve,
-    doSolveMat,
-    
-    -- * Unsafe operations
-    unsafeDoSolve,
-    unsafeDoSolveMat,
-    
     ) where
 
 import BLAS.Access
 import BLAS.Elem ( BLAS1, BLAS2 )
-import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
 import BLAS.Matrix hiding ( Matrix )
 import qualified BLAS.Matrix as Base
 import BLAS.Tensor
@@ -41,13 +32,15 @@ import BLAS.Tensor
 import Control.Monad ( zipWithM_ )
 
 import Data.AEq
-import Data.Matrix.Dense.Internal ( IOMatrix, rows )
+import Data.Matrix.Dense.Internal ( rows )
+import Data.Matrix.Dense.Operations ( unsafeCopyMatrix )
 import qualified Data.Matrix.Dense.Operations as M
 import qualified Data.Matrix.Dense.Internal as M
 import Data.Vector.Dense.Internal
 import qualified Data.Vector.Dense.Internal as V
 import qualified Data.Vector.Dense.Operations as V
-import Data.Vector.Dense.Operations ( (//=), scaleBy, invScaleBy )
+import Data.Vector.Dense.Operations ( (//=), scaleBy, invScaleBy,
+    unsafeCopyVector )
 
 import System.IO.Unsafe
 import Unsafe.Coerce
@@ -64,23 +57,6 @@ fromVector = Diag . unsafeCoerce
 
 toVector :: DiagMatrix t (n,n) e -> DVector t n e
 toVector (Diag x) = unsafeCoerce x
-
-doSolve :: (BLAS2 e) => DiagMatrix t (n,n) e -> IOVector n e -> IO ()
-doSolve a x =
-    checkMatVecSolv (shape a) (dim x) $ unsafeDoSolve a x
-    
-unsafeDoSolve :: (BLAS2 e) => DiagMatrix t (n,n) e -> IOVector n e -> IO ()
-unsafeDoSolve a x = x //= (toVector a)
-
-doSolveMat :: (BLAS1 e) => DiagMatrix t (m,m) e -> IOMatrix (m,n) e -> IO ()
-doSolveMat a b =
-    checkMatMatSolv (shape a) (shape b) $ unsafeDoSolveMat a b
-
-unsafeDoSolveMat :: (BLAS1 e) => DiagMatrix t (m,m) e -> IOMatrix (m,n) e -> IO ()
-unsafeDoSolveMat a b = do
-    ks <- unsafeInterleaveIO $ getElems (toVector a)
-    zipWithM_ (\k r -> invScaleBy k r) ks (rows b)
-
 
 instance (BLAS1 e) => Scalable (DiagMatrix Imm (n,n)) e where
     (*>) k (Diag x) = Diag $ k *> x
@@ -169,25 +145,26 @@ instance (BLAS2 e) => RMatrix (DiagMatrix t) e where
         zipWithM_ (\k r -> scaleBy (alpha*k) r) ks (rows b)
 
 
-
-instance (BLAS2 e) => ISolve (DiagMatrix Imm) e where
-    unsafeSolve a x = unsafePerformIO $ unsafeGetSolve a x
-    {-# NOINLINE unsafeSolve #-}
-    
-    unsafeSolveMat a b = unsafePerformIO $ unsafeGetSolveMat a b
-    {-# NOINLINE unsafeSolveMat #-}
+instance (BLAS2 e) => ISolve (DiagMatrix Imm) e
 
 
 instance (BLAS2 e) => RSolve (DiagMatrix Imm) e where
-    unsafeGetSolve a x = do
-        x' <- newCopy x
-        unsafeDoSolve (unsafeCoerce a) (V.unsafeThaw x')
-        return (unsafeCoerce x')
+    unsafeDoSolve a y x = do
+        unsafeCopyVector x (unsafeCoerce y)
+        unsafeDoSolve_ (coerceDiag a) x
+        
+    unsafeDoSolveMat a c b = do
+        unsafeCopyMatrix b (unsafeCoerce c)
+        unsafeDoSolveMat_ (coerceDiag a) b
+    
+    unsafeDoSolve_ a x = x //= (toVector a)
 
-    unsafeGetSolveMat a b = do
-        b' <- newCopy b
-        unsafeDoSolveMat (unsafeCoerce a) (M.unsafeThaw b')
-        return (unsafeCoerce b')
+    unsafeDoSolveMat_ a b = do
+        ks <- unsafeInterleaveIO $ getElems (toVector a)
+        zipWithM_ (\k r -> invScaleBy k r) ks (rows b)
+
+
+
 
 
 instance (Show e, BLAS1 e) => Show (DiagMatrix Imm (n,n) e) where
