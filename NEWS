@@ -1,0 +1,24 @@
+
+Changes in 0.5:
+
+* Add Banded matrix data type, as well as Tri Banded and Herm Banded.
+
+* Add support for trapezoidal dense matrices (Tri Matrix (m,n) e, where
+  m is not the same as n).  Note that trapezoidal banded matrices are
+  *NOT* supported.
+
+* Add Diag matrix data type for diagonal matrices.
+
+* Add Perm matrix data type, for permutation matrices.
+
+* Enhance the RMatrix and RSolve type classes with an API that allows 
+  specifying where to store the result of a computation.
+  
+* Enhance the IMatrix, RMatrix, ISolve, and RSolve type classes to add
+  "scale and multiply" operations.
+  
+* Remove the scale parameter for Tri and Herm matrix data types.
+
+* Flatten the data types for DVector and DMatrix.
+
+* Some inlining and unpacking performance improvements.
