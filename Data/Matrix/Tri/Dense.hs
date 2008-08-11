@@ -176,7 +176,7 @@ instance (BLAS3 e) => RSolve (Tri (DMatrix s)) e where
                 unsafeCopyMatrix b (coerceMatrix c)
                 trsm alpha t' (coerceMatrix b)
                 
-            (Lower,Right (t',r),_) -> do
+            (Lower,Right (t',_),_) -> do
                 let c1 = unsafeSubmatrix c (0,0)          (numRows t',numCols c)
                 unsafeCopyMatrix b c1
                 trsm alpha t' b
