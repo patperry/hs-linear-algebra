@@ -12,27 +12,19 @@ module Data.Matrix.Herm.Banded (
     module Data.Matrix.Herm,
     module BLAS.Matrix.Immutable,
     module BLAS.Matrix.ReadOnly,
-
-    hbmv,
-    hbmm,
-    unsafeHbmv,
-    unsafeHbmm,
     ) where
 
 import Control.Monad ( zipWithM_ )
-import System.IO.Unsafe
-import Unsafe.Coerce
 
 import BLAS.Access
 import BLAS.Elem ( BLAS2 )
 import BLAS.C ( colMajor, cblasUpLo )
-import BLAS.Internal ( checkMatVecMultAdd, checkMatMatMultAdd )
 import BLAS.Types ( flipUpLo )
 import qualified BLAS.Elem as E
 import qualified BLAS.C as BLAS
 
 import Data.Matrix.Banded.Internal
-import Data.Matrix.Dense.Internal ( DMatrix, IOMatrix )
+import Data.Matrix.Dense.Internal ( DMatrix, IOMatrix, coerceMatrix )
 import Data.Vector.Dense.Internal
 import qualified Data.Matrix.Banded.Internal as B
 import qualified Data.Matrix.Dense.Internal as M
@@ -43,33 +35,18 @@ import Data.Matrix.Herm
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
 
-
 instance (BLAS2 e) => IMatrix (Herm (BMatrix Imm)) e where
-    unsafeSApply k h x = unsafePerformIO $ unsafeGetSApply k h x
-    {-# NOINLINE unsafeSApply #-}
-
-    unsafeSApplyMat k h a = unsafePerformIO $ unsafeGetSApplyMat k h a
-    {-# NOINLINE unsafeSApplyMat #-}
-
 
 instance (BLAS2 e) => RMatrix (Herm (BMatrix s)) e where
-    unsafeGetSApply k h x = do
-        y <- newZero (dim x)
-        unsafeHbmv k (unsafeCoerce h) x 1 y
-        return (unsafeCoerce y)
-    
-    unsafeGetSApplyMat k h a = do
-        b <- newZero (shape a)
-        unsafeHbmm k (unsafeCoerce h) a 1 b
-        return (unsafeCoerce b)
+    unsafeDoSApplyAdd alpha a x beta y = 
+        hbmv alpha (coerceHerm a) x beta (coerceVector y)
+        
+    unsafeDoSApplyAddMat alpha a b beta c = 
+        hbmm alpha (coerceHerm a) b beta (coerceMatrix c)
+
 
 hbmv :: (BLAS2 e) => e -> Herm (BMatrix t) (n,n) e -> DVector s n e -> e -> IOVector n e -> IO ()
-hbmv alpha h x beta y =
-    checkMatVecMultAdd (numRows h, numCols h) (dim x) (dim y) $
-        unsafeHbmv alpha h x beta y
-
-unsafeHbmv :: (BLAS2 e) => e -> Herm (BMatrix t) (n,n) e -> DVector s n e -> e -> IOVector n e -> IO ()
-unsafeHbmv alpha h x beta y
+hbmv alpha h x beta y
     | numRows h == 0 =
         return ()
     | isConj y = do
@@ -105,11 +82,7 @@ unsafeHbmv alpha h x beta y
                     V.unsafeWithElemPtr y 0 $ \pY -> do
                         BLAS.hbmv order uploA n k alpha'' pA ldA pX incX beta pY incY
 
+
 hbmm :: (BLAS2 e) => e -> Herm (BMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
 hbmm alpha h b beta c =
-    checkMatMatMultAdd (numRows h, numCols h) (shape b) (shape c) $
-        unsafeHbmm alpha h b beta c
-
-unsafeHbmm :: (BLAS2 e) => e -> Herm (BMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
-unsafeHbmm alpha h b beta c =
-    zipWithM_ (\x y -> unsafeHbmv alpha h x beta y) (M.cols b) (M.cols c)
+    zipWithM_ (\x y -> hbmv alpha h x beta y) (M.cols b) (M.cols c)

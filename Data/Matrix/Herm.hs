@@ -19,6 +19,8 @@ module Data.Matrix.Herm (
     hermL,
     hermU,
 
+    coerceHerm,
+
     ) where
 
 import Unsafe.Coerce
@@ -29,6 +31,9 @@ import BLAS.Tensor
 import BLAS.Types ( UpLo(..) )
 
 data Herm a nn e = Herm UpLo e (a nn e)
+
+coerceHerm :: Herm a mn e -> Herm a mn' e
+coerceHerm = unsafeCoerce
 
 mapHerm :: (a (n,n) e -> b (n,n) e) -> Herm a (n,n) e -> Herm b (n,n) e
 mapHerm f (Herm u e a) = Herm u e $ f a
