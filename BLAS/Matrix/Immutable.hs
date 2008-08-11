@@ -20,7 +20,6 @@ import BLAS.Matrix.ReadOnly
 import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
 
-import System.IO
 import System.IO.Unsafe ( unsafePerformIO )
 
 infixr 7 <*>, <**>

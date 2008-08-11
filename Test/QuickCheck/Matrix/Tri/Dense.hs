@@ -15,7 +15,7 @@ import Data.Ix ( range )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
+import Test.QuickCheck.Vector.Dense ( dvector )
 import Test.QuickCheck.Matrix.Dense ( dmatrix )
 import Test.QuickCheck.Matrix ( matrixSized )
 

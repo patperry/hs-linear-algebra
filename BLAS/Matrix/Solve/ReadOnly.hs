@@ -37,12 +37,10 @@ module BLAS.Matrix.Solve.ReadOnly (
 
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
-import BLAS.Matrix.Base ( numRows, numCols )
-import BLAS.Matrix.ReadOnly
 
 import Data.Vector.Dense.IO ( DVector, IOVector, dim, newVector_ )
 import qualified Data.Vector.Dense.IO as V
-import Data.Matrix.Dense.IO ( DMatrix, IOMatrix, shape, newMatrix_ )
+import Data.Matrix.Dense.IO ( DMatrix, IOMatrix, RMatrix, numCols, shape, newMatrix_ )
 import qualified Data.Matrix.Dense.IO as M
 
 import Unsafe.Coerce
