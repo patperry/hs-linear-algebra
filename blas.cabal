@@ -103,7 +103,7 @@ library
                             Data.Matrix.Dense.Internal
                             Data.Matrix.Dense.Operations
                         
-                        -- Data.Matrix.Perm
+                        Data.Matrix.Perm
                         
                         Data.Matrix.Herm
                             Data.Matrix.Herm.Banded
@@ -125,7 +125,7 @@ library
                         Test.QuickCheck.Matrix
                         Test.QuickCheck.Matrix.Banded
                         Test.QuickCheck.Matrix.Dense
-                        -- Test.QuickCheck.Matrix.Perm
+                        Test.QuickCheck.Matrix.Perm
                         Test.QuickCheck.Matrix.Herm.Banded
                         Test.QuickCheck.Matrix.Herm.Dense
                         -- Test.QuickCheck.Matrix.Tri.Banded
