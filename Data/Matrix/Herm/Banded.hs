@@ -17,10 +17,8 @@ module Data.Matrix.Herm.Banded (
 import Control.Monad ( zipWithM_ )
 
 import BLAS.Access
-import BLAS.Elem ( BLAS2 )
-import BLAS.C ( colMajor, cblasUpLo )
+import BLAS.C ( BLAS2, colMajor, cblasUpLo )
 import BLAS.Types ( flipUpLo )
-import qualified BLAS.Elem as E
 import qualified BLAS.C as BLAS
 
 import Data.Matrix.Banded.Internal
@@ -58,29 +56,27 @@ hbmv alpha h x beta y
         V.doConj (V.unsafeThaw x')
         hbmv alpha h (conj x') beta y
     | otherwise =
-        let order   = colMajor
-            (u,e,a) = toBase h
-            alpha'  = alpha * e
-            n       = numCols a
-            k       = case u of 
-                          Upper -> numUpper a
-                          Lower -> numLower a      
-            (u',alpha'') 
-                    = case (isHerm a) of
-                          True  -> (flipUpLo u, E.conj alpha')
-                          False -> (u, alpha')
-            uploA   = cblasUpLo u'
-            ldA     = ldaOf a
-            incX    = strideOf x
-            incY    = strideOf y
+        let order = colMajor
+            (u,a) = toBase h
+            n     = numCols a
+            k     = case u of 
+                        Upper -> numUpper a
+                        Lower -> numLower a      
+            u'    = case (isHerm a) of
+                        True  -> flipUpLo u
+                        False -> u
+            uploA = cblasUpLo u'
+            ldA   = ldaOf a
+            incX  = strideOf x
+            incY  = strideOf y
             withPtrA 
-                    = case u' of Upper -> B.unsafeWithBasePtr a
-                                 Lower -> B.unsafeWithElemPtr a (0,0)
+                  = case u' of Upper -> B.unsafeWithBasePtr a
+                               Lower -> B.unsafeWithElemPtr a (0,0)
                     
-        in withPtrA  $ \pA ->
+        in withPtrA $ \pA ->
                V.unsafeWithElemPtr x 0 $ \pX ->
                     V.unsafeWithElemPtr y 0 $ \pY -> do
-                        BLAS.hbmv order uploA n k alpha'' pA ldA pX incX beta pY incY
+                        BLAS.hbmv order uploA n k alpha pA ldA pX incX beta pY incY
 
 
 hbmm :: (BLAS2 e) => e -> Herm (BMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()

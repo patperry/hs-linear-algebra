@@ -15,9 +15,11 @@ import Control.Monad ( replicateM )
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Vector.Dense ( dvector )
+import Test.QuickCheck.Matrix ( matrixSized )
 import Test.QuickCheck.Matrix.Dense ( dmatrix )
 
 import BLAS.Elem ( Elem, BLAS2, toReal, fromReal, conj )
+import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Banded
@@ -54,47 +56,61 @@ hermBanded n k
     realPart :: Elem e => [e] -> [e]
     realPart = map (fromReal . toReal)
 
-
-data HermBandedMV n e = 
-    HermBandedMV UpLo (Banded (n,n) e) (Banded (n,n) e) (Vector n e) deriving (Show)
-
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMV n e) where
-    arbitrary = sized $ \s ->
-        let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
-        in do
-            u <- elements [ Upper, Lower ]
-            n <- choose (0,s')
-            k <- if n == 0 then return 0 else choose (0,n-1)
-            l <- if n == 0 then return 0 else choose (0,n-1)
+data HermBanded n e =
+    HermBanded (Herm Banded (n,n) e)
+               (Banded (n,n) e)
+    deriving Show
+    
+instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBanded n e) where
+    arbitrary = matrixSized $ \s -> do
+        n <- choose (0,s)
+        k <- if n == 0 then return 0 else choose (0,n-1)
+        l <- if n == 0 then return 0 else choose (0,n-1)
             
-            h <- hermBanded n k
+        a <- hermBanded n k
             
-            junk <- replicateM l $ QC.vector n
-            let (_,_,ds) = toLists h
-                a = case u of
-                        Upper -> listsBanded (n,n) (l,k) $ junk ++ (drop k ds)
-                        Lower -> listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk
-                        
-            x <- dvector n
+        junk <- replicateM l $ QC.vector n
+        let (_,_,ds) = toLists a
+            (u ,b ) = (Upper, listsBanded (n,n) (l,k) $ junk ++ (drop k ds))
+            (u',b') = (Lower, listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk)
+        
+        h <- elements [ fromBase u             b
+                      , fromBase (flipUpLo u)  (herm b)
+                      , fromBase u'            b'
+                      , fromBase (flipUpLo u') (herm b')
+                      ]
             
-            return $ HermBandedMV u a h x
+        return $ HermBanded h a
 
     coarbitrary = undefined
 
+data HermBandedMV n e = 
+    HermBandedMV (Herm Banded (n,n) e) 
+                 (Banded (n,n) e) 
+                 (Vector n e) 
+    deriving Show
+
+instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMV n e) where
+    arbitrary = do
+        (HermBanded h a) <- arbitrary
+        x <- dvector (numCols a)
+        return $ HermBandedMV h a x
+
+    coarbitrary = undefined
+    
     
 data HermBandedMM m n e = 
-    HermBandedMM UpLo (Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving (Show)
+    HermBandedMM (Herm Banded (m,m) e) 
+                 (Banded (m,m) e) 
+                 (Matrix (m,n) e) 
+    deriving Show
     
 instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMM m n e) where
-    arbitrary = sized $ \s ->
-        let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
-        in do
-            (HermBandedMV u a h _) <- arbitrary
-            n <- choose (0,s')
-            
-            let m = numCols h
-            b <- dmatrix (m,n)
+    arbitrary = matrixSized $ \s -> do
+        (HermBanded a h) <- arbitrary
+        n <- choose (0,s)
+        b <- dmatrix (numCols h,n)
 
-            return $ HermBandedMM u a h b
+        return $ HermBandedMM a h b
             
     coarbitrary = undefined

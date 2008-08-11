@@ -17,10 +17,8 @@ module Data.Matrix.Herm.Dense (
 import Control.Monad ( zipWithM_ )
 
 import BLAS.Access
-import BLAS.Elem ( BLAS2, BLAS3 )
-import BLAS.C ( colMajor, rightSide, leftSide, cblasUpLo )
+import BLAS.C ( BLAS2, BLAS3, colMajor, rightSide, leftSide, cblasUpLo )
 import BLAS.Types ( flipUpLo )
-import qualified BLAS.Elem as E
 import qualified BLAS.C as BLAS
 
 import Data.Matrix.Dense.Internal
@@ -57,22 +55,20 @@ hemv alpha h x beta y
         V.doConj (V.unsafeThaw x')
         hemv alpha h (conj x') beta y
     | otherwise =
-        let order   = colMajor
-            (u,e,a) = toBase h
-            alpha'  = alpha * e
-            n       = numCols a
-            (u',alpha'') 
-                    = case (isHerm a) of
-                          True  -> (flipUpLo u, E.conj alpha')
-                          False -> (u, alpha')
-            uploA   = cblasUpLo u'
-            ldA     = ldaOf a
-            incX    = strideOf x
-            incY    = strideOf y
+        let order = colMajor
+            (u,a) = toBase h
+            n     = numCols a
+            u'    = case isHerm a of
+                        True  -> flipUpLo u
+                        False -> u
+            uploA = cblasUpLo u'
+            ldA   = ldaOf a
+            incX  = strideOf x
+            incY  = strideOf y
         in M.unsafeWithElemPtr a (0,0) $ \pA ->
                V.unsafeWithElemPtr x 0 $ \pX ->
                     V.unsafeWithElemPtr y 0 $ \pY -> do
-                        BLAS.hemv order uploA n alpha'' pA ldA pX incX beta pY incY
+                        BLAS.hemv order uploA n alpha pA ldA pX incX beta pY incY
 
 hemm :: (BLAS3 e) => e -> Herm (DMatrix t) (m,m) e -> DMatrix s (m,n) e -> e -> IOMatrix (m,n) e -> IO ()
 hemm alpha h b beta c
@@ -82,11 +78,10 @@ hemm alpha h b beta c
     | otherwise =
         let order   = colMajor
             (m,n)   = shape c
-            alpha'  = alpha * e
-            (side,u',m',n', alpha'')
+            (side,u',m',n')
                     = if isHerm a
-                          then (rightSide, flipUpLo u, n, m, E.conj alpha')
-                          else (leftSide,  u, m, n, alpha')
+                          then (rightSide, flipUpLo u, n, m)
+                          else (leftSide,  u,          m, n)
             uploA   = cblasUpLo u'
             ldA     = ldaOf a
             ldB     = ldaOf b
@@ -94,6 +89,6 @@ hemm alpha h b beta c
         in M.unsafeWithElemPtr a (0,0) $ \pA ->
                M.unsafeWithElemPtr b (0,0) $ \pB ->
                    M.unsafeWithElemPtr c (0,0) $ \pC ->
-                       BLAS.hemm order side uploA m' n' alpha'' pA ldA pB ldB beta pC ldC
+                       BLAS.hemm order side uploA m' n' alpha pA ldA pB ldB beta pC ldC
     where
-      (u,e,a) = toBase h
+      (u,a) = toBase h
