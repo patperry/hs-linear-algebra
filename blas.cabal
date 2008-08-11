@@ -110,7 +110,7 @@ library
                             Data.Matrix.Herm.Dense
                         
                         Data.Matrix.Tri
-                            -- Data.Matrix.Tri.Banded
+                            Data.Matrix.Tri.Banded
                             Data.Matrix.Tri.Dense
                         
                         Data.Vector.Dense
@@ -128,7 +128,7 @@ library
                         Test.QuickCheck.Matrix.Perm
                         Test.QuickCheck.Matrix.Herm.Banded
                         Test.QuickCheck.Matrix.Herm.Dense
-                        -- Test.QuickCheck.Matrix.Tri.Banded
+                        Test.QuickCheck.Matrix.Tri.Banded
                         Test.QuickCheck.Matrix.Tri.Dense
                         
     other-modules:      BLAS.C.Double

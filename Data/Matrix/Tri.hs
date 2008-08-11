@@ -32,6 +32,7 @@ module Data.Matrix.Tri (
     upperUFat,
     upperUTall,
 
+    coerceTri,
 
     ) where
 
@@ -43,6 +44,10 @@ import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
 import Unsafe.Coerce
 
 data Tri a mn e = Tri UpLo Diag (a mn e)
+
+-- | Coerce the shape type.
+coerceTri :: Tri a mn e -> Tri a mn' e
+coerceTri = unsafeCoerce
 
 mapTri :: (a (m,n) e -> b (m,n) e) -> Tri a (m,n) e -> Tri b (m,n) e
 mapTri f (Tri u d a) = Tri u d $ f a

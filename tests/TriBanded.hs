@@ -54,13 +54,10 @@ prop_herm_tri_apply (TriBandedMV (t :: TB) a x) =
     herm t <*> x ~== herm a <*> x
 
 prop_scale_tri_apply k (TriBandedMV (t :: TB) a x) =
-    (k *> t) <*> x ~== (k *> a) <*> x
+    sapply k t x ~== sapply k a x
 
 prop_scale_herm_tri_apply k (TriBandedMV (t :: TB) a x) =
-    (k *> (herm t)) <*> x ~== (k *> herm a) <*> x
-
-prop_herm_scale_tri_apply k (TriBandedMV (t :: TB) a x) =
-    (herm $ k *> t) <*> x ~== (herm $ k *> a) <*> x
+    sapply k (herm t) x ~== sapply k (herm a) x
 
 
 prop_tri_compose (TriBandedMM (t :: TB) a b) =
@@ -70,39 +67,42 @@ prop_herm_tri_compose (TriBandedMM (t :: TB) a b) =
     herm t <**> b ~== herm a <**> b
 
 prop_scale_tri_compose k (TriBandedMM (t :: TB) a b) =
-    (k *> t) <**> b ~== (k *> a) <**> b
+    sapplyMat k t b ~== sapplyMat k a b
 
 prop_scale_herm_tri_compose k (TriBandedMM (t :: TB) a b) =
-    (k *> herm t) <**> b ~== (k *> herm a) <**> b
-
-prop_herm_scale_tri_compose k (TriBandedMM (t :: TB) a b) =
-    (herm $ k *> t) <**> b ~== (herm $ k *> a) <**> b
+    sapplyMat k (herm t) b ~== sapplyMat k (herm a) b
 
 
 prop_tri_solve (TriBandedSV (t :: TB) y) =
     let x = t <\> y
     in t <*> x ~== y || (any isUndef $ elems x)
 
-prop_tri_invCompose (TriBandedSM (t :: TB) b) =
-    let a = t <\\> b
-    in t <**> a ~== b || (any isUndef $ elems a)
+prop_tri_ssolve k (TriBandedSV (t :: TB) y) =
+    ssolve k t y ~== t <\> (k*>y)
 
+prop_tri_solveMat (TriBandedSM (t :: TB) c) =
+    let b = t <\\> c
+    in t <**> b ~== c || (any isUndef $ elems b)
+
+prop_tri_ssolveMat k (TriBandedSM (t :: TB) c) =
+    ssolveMat k t c ~== t <\\> (k*>c)
 
 properties =
     [ ("tri apply"             , pDet prop_tri_apply)
     , ("scale tri apply"       , pDet prop_scale_tri_apply)
     , ("herm tri apply"        , pDet prop_herm_tri_apply)
     , ("scale herm tri apply"  , pDet prop_scale_herm_tri_apply)
-    , ("herm scale tri apply"  , pDet prop_herm_scale_tri_apply)
     
     , ("tri compose"           , pDet prop_tri_compose)
     , ("scale tri compose"     , pDet prop_scale_tri_compose)
     , ("herm tri compose"      , pDet prop_herm_tri_compose)
     , ("scale herm tri compose", pDet prop_scale_herm_tri_compose)
-    , ("herm scale tri compose", pDet prop_herm_scale_tri_compose)
     
     , ("tri solve"             , pDet prop_tri_solve)
-    , ("tri invCompose"        , pDet prop_tri_invCompose)
+    , ("tri solveMat"          , pDet prop_tri_solveMat)
+    , ("tri ssolve"            , pDet prop_tri_ssolve)
+    , ("tri ssolveMat"         , pDet prop_tri_ssolveMat)
+
     ]
 
 

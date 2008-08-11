@@ -13,39 +13,22 @@ module Data.Matrix.Tri.Banded (
     module BLAS.Matrix.Immutable,
     module BLAS.Matrix.ReadOnly,
     module BLAS.Matrix.Solve,
-
-    tbmv,
-    tbsv,
-    tbmm,    
-    tbsm,
-    
-    unsafeTbmv,
-    unsafeTbsv,
-    unsafeTbmm,
-    unsafeTbsm,
-    
     ) where
 
-import Control.Monad ( when )
-import System.IO.Unsafe
-import Unsafe.Coerce
 
 import Data.Matrix.Banded.Internal
 import qualified Data.Matrix.Banded.Internal as B
-import Data.Matrix.Dense.Internal ( IOMatrix )
-import qualified Data.Matrix.Dense.Internal as M
-import qualified Data.Matrix.Dense.Operations as M
-import Data.Vector.Dense.Internal
-import qualified Data.Vector.Dense.Internal as V
-import qualified Data.Vector.Dense.Operations as V
+import Data.Matrix.Dense.IO ( IOMatrix, coerceMatrix, unsafeCopyMatrix )
+import qualified Data.Matrix.Dense.IO as M
+import Data.Vector.Dense.IO ( IOVector, isConj, strideOf, conj, coerceVector, 
+    unsafeCopyVector )
+import qualified Data.Vector.Dense.IO as V
 
 import BLAS.Access
 import BLAS.Types ( flipUpLo )
 
 import BLAS.C ( BLAS2, cblasDiag, cblasUpLo, colMajor, noTrans, conjTrans )                                   
 import qualified BLAS.C as BLAS
-import BLAS.Internal ( checkMatVecMult, checkMatMatMult, checkMatVecSolv,
-    checkMatMatSolv )
 
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.ReadOnly
@@ -54,59 +37,43 @@ import BLAS.Matrix.Solve
 import Data.Matrix.Tri
 
 instance (BLAS2 e) => IMatrix (Tri (BMatrix Imm)) e where
-    unsafeSApply k t x = unsafePerformIO $ unsafeGetSApply k t x
-    {-# NOINLINE unsafeSApply #-}
-
-    unsafeSApplyMat k t a = unsafePerformIO $ unsafeGetSApplyMat k t a
-    {-# NOINLINE unsafeSApplyMat #-}
-
-instance (BLAS2 e) => ISolve (Tri (BMatrix Imm)) e where
-    unsafeSolve t x = unsafePerformIO $ unsafeGetSolve t x
-    {-# NOINLINE unsafeSolve #-}
-
-    unsafeSolveMat t a = unsafePerformIO $ unsafeGetSolveMat t a
-    {-# NOINLINE unsafeSolveMat #-}
 
 instance (BLAS2 e) => RMatrix (Tri (BMatrix s)) e where
-    unsafeGetSApply k t x = do
-        x' <- newCopy x
-        unsafeTbmv (unsafeCoerce t) (V.unsafeThaw x')
-        V.scaleBy k (V.unsafeThaw x')
-        return (unsafeCoerce x')
+
+    unsafeDoSApply alpha a x y = do
+        unsafeCopyVector (coerceVector y) x
+        unsafeDoSApply_ alpha (coerceTri a) y
     
-    unsafeGetSApplyMat k t a = do
-        a' <- newCopy a
-        unsafeTbmm (unsafeCoerce t) (M.unsafeThaw a')
-        M.scaleBy k (M.unsafeThaw a')
-        return (unsafeCoerce a')
+    unsafeDoSApplyMat alpha a b c = do
+        unsafeCopyMatrix (coerceMatrix c) b
+        unsafeDoSApplyMat_ alpha (coerceTri a) c
+        
+    unsafeDoSApply_    = tbmv
+    unsafeDoSApplyMat_ = tbmm
+
+instance (BLAS2 e) => ISolve (Tri (BMatrix Imm)) e where
 
 instance (BLAS2 e) => RSolve (Tri (BMatrix s)) e where
-    unsafeGetSolve t x = do
-        x' <- newCopy x
-        unsafeTbsv (unsafeCoerce t) (V.unsafeThaw x')
-        return (unsafeCoerce x')
+    unsafeDoSSolve alpha a y x = do
+        unsafeCopyVector (coerceVector x) y
+        unsafeDoSSolve_ alpha (coerceTri a) x
     
-    unsafeGetSolveMat t a = do
-        a' <- newCopy a
-        unsafeTbsm (unsafeCoerce t) (M.unsafeThaw a')
-        return (unsafeCoerce a')
+    unsafeDoSSolveMat alpha a c b = do
+        unsafeCopyMatrix (coerceMatrix b) c
+        unsafeDoSSolveMat_ alpha (coerceTri a) b
+
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm
 
 
-
-
-tbmv :: (BLAS2 e) => Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-tbmv t x =
-    checkMatVecMult (numRows t, numCols t) (dim x) $
-        unsafeTbmv t x
-
-unsafeTbmv :: (BLAS2 e) => Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-unsafeTbmv t x | isConj x = do
+tbmv :: (BLAS2 e) => e -> Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
+tbmv alpha t x | isConj x = do
     V.doConj x
-    tbmv t (conj x)
+    tbmv alpha t (conj x)
     V.doConj x
 
-unsafeTbmv t x =
-    let (u,d,alpha,a) = toBase t
+tbmv alpha t x =
+    let (u,d,a) = toBase t
         order     = colMajor
         (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
         uploA     = cblasUpLo u'
@@ -121,31 +88,23 @@ unsafeTbmv t x =
                         Lower -> B.unsafeWithElemPtr a (0,0)
     in withPtrA $ \pA ->
            V.unsafeWithElemPtr x 0 $ \pX -> do
+               V.scaleBy alpha x
                BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
-               when (alpha /= 1) $ V.scaleBy alpha x
               
                
-tbmm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-tbmm t b =
-    checkMatMatMult (numRows t, numCols t) (shape b) $
-        unsafeTbmm t b
+tbmm :: (BLAS2 e) => e -> Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
+tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (M.cols b)
+tbmm alpha t b = M.scaleBy alpha b >> tbmm 1 t b
 
-unsafeTbmm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-unsafeTbmm t b = mapM_ (\x -> unsafeTbmv t x) (M.cols b)
 
-tbsv :: (BLAS2 e) => Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-tbsv t x =
-    checkMatVecSolv (numRows t, numCols t) (dim x) $
-        unsafeTbsv t x
-
-unsafeTbsv :: (BLAS2 e) => Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-unsafeTbsv t x | isConj x = do
+tbsv :: (BLAS2 e) => e -> Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
+tbsv alpha t x | isConj x = do
     V.doConj x
-    tbsv t (conj x)
+    tbsv alpha t (conj x)
     V.doConj x
     
-unsafeTbsv t x = 
-    let (u,d,alpha,a) = toBase t
+tbsv alpha t x = 
+    let (u,d,a) = toBase t
         order     = colMajor
         (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
         uploA     = cblasUpLo u'
@@ -160,14 +119,10 @@ unsafeTbsv t x =
                         Lower -> B.unsafeWithElemPtr a (0,0)
     in withPtrA $ \pA ->
            V.unsafeWithElemPtr x 0 $ \pX -> do
+               V.scaleBy alpha x
                BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
-               when (alpha /= 1) $ V.invScaleBy alpha x
 
 
-tbsm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-tbsm t b =
-    checkMatMatSolv (numRows t, numCols t) (shape b) $
-        unsafeTbsm t b
-
-unsafeTbsm :: (BLAS2 e) => Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-unsafeTbsm t b = mapM_ (\x -> unsafeTbsv t x) (M.cols b)
+tbsm :: (BLAS2 e) => e -> Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
+tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (M.cols b)
+tbsm alpha t b = M.scaleBy alpha b >> tbsm 1 t b
