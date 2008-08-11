@@ -31,6 +31,12 @@ module BLAS.Matrix.ReadOnly (
     doSApply_,
     doSApplyMat_,
     
+    -- * Unsafe operations
+    unsafeGetApply,
+    unsafeGetApplyMat,
+    unsafeGetSApply,
+    unsafeGetSApplyMat,
+    
     ) where
 
 import BLAS.Elem ( BLAS1, BLAS3 )
@@ -49,24 +55,6 @@ import Unsafe.Coerce
 -- | Minimal complete definition: (unsafeDoSApplyAdd, unsafeDoSApplyAddMat)
 -- or (unsafeDoSApply, unsafeDoSApplyMat)
 class (Base.Matrix a, BLAS1 e) => RMatrix a e where
-    unsafeGetApply :: a (m,n) e -> DVector t n e -> IO (DVector r m e)
-    unsafeGetApply = unsafeGetSApply 1
-    
-    unsafeGetApplyMat :: a (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-    unsafeGetApplyMat = unsafeGetSApplyMat 1
-    
-    unsafeGetSApply :: e -> a (m,n) e -> DVector t n e -> IO (DVector r m e)
-    unsafeGetSApply alpha a x = do
-        y <- newZero (numRows a)
-        unsafeDoSApply alpha a x y
-        return (unsafeCoerce y)
-    
-    unsafeGetSApplyMat :: e -> a (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
-    unsafeGetSApplyMat alpha a b = do
-        c <- newZero (numRows a, numCols b)
-        unsafeDoSApplyMat alpha a b c
-        return (unsafeCoerce c)
-
     unsafeDoApply :: a (m,n) e -> DVector t n e -> IOVector m e -> IO ()
     unsafeDoApply a x y =
         unsafeDoApplyAdd a x 0 y
@@ -122,6 +110,31 @@ class (Base.Matrix a, BLAS1 e) => RMatrix a e where
         c' <- unsafeGetApplyMat a b
         M.scaleBy beta c
         M.axpy alpha c' c
+
+
+unsafeGetApply :: (RMatrix a e) =>
+    a (m,n) e -> DVector t n e -> IO (DVector r m e)
+unsafeGetApply = unsafeGetSApply 1
+
+unsafeGetApplyMat :: (RMatrix a e) =>
+    a (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
+unsafeGetApplyMat = unsafeGetSApplyMat 1
+
+unsafeGetSApply :: (RMatrix a e) =>
+    e -> a (m,n) e -> DVector t n e -> IO (DVector r m e)
+unsafeGetSApply alpha a x = do
+    y <- newZero (numRows a)
+    unsafeDoSApply alpha a x y
+    return (unsafeCoerce y)
+
+unsafeGetSApplyMat :: (RMatrix a e) =>
+    e -> a (m,k) e -> DMatrix t (k,n) e -> IO (DMatrix r (m,n) e)
+unsafeGetSApplyMat alpha a b = do
+    c <- newZero (numRows a, numCols b)
+    unsafeDoSApplyMat alpha a b c
+    return (unsafeCoerce c)
+
+
 
 
 -- | Apply to a vector
