@@ -57,13 +57,13 @@ class RMatrix a e => RSolve a e where
     
     unsafeDoSSolve :: e -> a (m,n) e -> DVector t m e -> IOVector n e -> IO ()
     unsafeDoSSolve alpha a y x = do
-        V.scaleBy alpha x
         unsafeDoSolve a y x
+        V.scaleBy alpha x
     
     unsafeDoSSolveMat :: e -> a (m,n) e -> DMatrix t (m,k) e -> IOMatrix (n,k) e -> IO ()
     unsafeDoSSolveMat alpha a c b = do
-        M.scaleBy alpha b
         unsafeDoSolveMat a c b
+        M.scaleBy alpha b
 
     unsafeDoSolve_ :: a (n,n) e -> IOVector n e -> IO ()
     unsafeDoSolve_ = unsafeDoSSolve_ 1

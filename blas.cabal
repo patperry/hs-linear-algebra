@@ -125,6 +125,7 @@ library
                         Test.QuickCheck.Matrix
                         Test.QuickCheck.Matrix.Banded
                         Test.QuickCheck.Matrix.Dense
+                        Test.QuickCheck.Matrix.Diag
                         Test.QuickCheck.Matrix.Perm
                         Test.QuickCheck.Matrix.Herm.Banded
                         Test.QuickCheck.Matrix.Herm.Dense

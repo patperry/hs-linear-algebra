@@ -56,8 +56,8 @@ import Unsafe.Coerce
 -- or (unsafeDoSApply, unsafeDoSApplyMat)
 class (Base.Matrix a, BLAS1 e) => RMatrix a e where
     unsafeDoApply :: a (m,n) e -> DVector t n e -> IOVector m e -> IO ()
-    unsafeDoApply a x y =
-        unsafeDoApplyAdd a x 0 y
+    unsafeDoApply =
+        unsafeDoSApply 1
         
     unsafeDoApplyAdd :: a (m,n) e -> DVector t n e -> e -> IOVector m e -> IO ()
     unsafeDoApplyAdd a x beta y =
@@ -69,7 +69,7 @@ class (Base.Matrix a, BLAS1 e) => RMatrix a e where
 
     unsafeDoApplyMat :: a (m,k) e -> DMatrix t (k,n) e -> IOMatrix (m,n) e -> IO ()
     unsafeDoApplyMat a b c =
-        unsafeDoApplyAddMat a b 0 c
+        unsafeDoSApplyMat 1 a b c
         
     unsafeDoApplyAddMat :: a (m,k) e -> DMatrix t (k,n) e -> e -> IOMatrix (m,n) e -> IO ()
     unsafeDoApplyAddMat a b beta c =
@@ -141,7 +141,7 @@ unsafeGetSApplyMat alpha a b = do
 getApply :: (RMatrix a e) =>
     a (m,n) e -> DVector t n e -> IO (DVector r m e)
 getApply a x =
-    checkMatVecMult (shape a) (dim x) $ 
+    checkMatVecMult (shape a) (dim x) $ do
         unsafeGetApply a x
 
 -- | Apply to a matrix

@@ -115,7 +115,7 @@ instance (BLAS1 e) => MTensor (DiagMatrix Mut (n,n)) (Int,Int) e IO where
         
 instance Base.Matrix (DiagMatrix t) where
     numRows (Diag x) = dim x
-    numCols = numCols
+    numCols = numRows
 
     herm (Diag x) = unsafeCoerce $ Diag (conj x)
 
@@ -125,7 +125,7 @@ instance (BLAS2 e) => IMatrix (DiagMatrix Imm) e
 instance (BLAS2 e) => RMatrix (DiagMatrix t) e where
     unsafeDoSApplyAdd alpha a x beta y = do
         x' <- newCopy x
-        unsafeDoApply_ (coerceDiag a) (V.unsafeThaw x')
+        unsafeDoSApply_ 1 (coerceDiag a) (V.unsafeThaw x')
         scaleBy beta y
         V.unsafeAxpy alpha x' (V.coerceVector y)
 
@@ -149,22 +149,22 @@ instance (BLAS2 e) => ISolve (DiagMatrix Imm) e
 
 
 instance (BLAS2 e) => RSolve (DiagMatrix Imm) e where
-    unsafeDoSolve a y x = do
+    unsafeDoSSolve alpha a y x = do
         unsafeCopyVector x (unsafeCoerce y)
-        unsafeDoSolve_ (coerceDiag a) x
+        unsafeDoSSolve_ alpha (coerceDiag a) x
         
-    unsafeDoSolveMat a c b = do
+    unsafeDoSSolveMat alpha a c b = do
         unsafeCopyMatrix b (unsafeCoerce c)
-        unsafeDoSolveMat_ (coerceDiag a) b
+        unsafeDoSSolveMat_ alpha (coerceDiag a) b
     
-    unsafeDoSolve_ a x = x //= (toVector a)
+    unsafeDoSSolve_ alpha a x = do
+        V.scaleBy alpha x
+        x //= (toVector a)
 
-    unsafeDoSolveMat_ a b = do
+    unsafeDoSSolveMat_ alpha a b = do
+        M.scaleBy alpha b
         ks <- unsafeInterleaveIO $ getElems (toVector a)
         zipWithM_ (\k r -> invScaleBy k r) ks (rows b)
-
-
-
 
 
 instance (Show e, BLAS1 e) => Show (DiagMatrix Imm (n,n) e) where

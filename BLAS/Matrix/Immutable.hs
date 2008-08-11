@@ -20,6 +20,7 @@ import BLAS.Matrix.ReadOnly
 import Data.Vector.Dense
 import Data.Matrix.Dense.Internal
 
+import System.IO
 import System.IO.Unsafe ( unsafePerformIO )
 
 infixr 7 <*>, <**>
@@ -28,7 +29,7 @@ class (RMatrix a e) => IMatrix a e where
     -- | Apply to a vector
     (<*>) :: a (m,n) e -> Vector n e -> Vector m e
     (<*>) a x = 
-        checkMatVecMult (numRows a, numCols a) (dim x) $ unsafeApply a x
+        checkMatVecMult (shape a) (dim x) $ unsafeApply a x
         
     -- | Apply to a matrix
     (<**>) :: a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
