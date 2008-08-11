@@ -16,6 +16,7 @@ import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Permutation
 import Test.QuickCheck.Vector.Dense ( dvector )
 import Test.QuickCheck.Matrix.Dense ( dmatrix )
+import Test.QuickCheck.Matrix ( matrixSized )
 
 import BLAS.Elem ( Elem, BLAS1 )
 
@@ -38,16 +39,11 @@ hermedPerm n = rawPerm n >>= return . herm
 idPerm :: Int -> Gen (Perm (n,n) e)
 idPerm = return . identity
 
-matSized :: (Int -> Gen a) -> Gen a
-matSized f = 
-    sized $ \s ->
-        let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
-        in f s'
 
 newtype TestPerm n e = TestPerm (Perm (n,n) e) deriving Show
 
 instance (Elem e) => Arbitrary (TestPerm n e) where
-    arbitrary = matSized $ \s -> do
+    arbitrary = matrixSized $ \s -> do
         n <- choose (0,s)
         p <- pmatrix n
         return $ TestPerm p
@@ -88,7 +84,7 @@ instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMVPair n e) where
 data PermMM m n e = PermMM (Perm (m,m) e) (Matrix (m,n) e) deriving Show
 
 instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMM m n e) where
-    arbitrary = matSized $ \s -> do
+    arbitrary = matrixSized $ \s -> do
         (TestPerm p) <- arbitrary
         n <- choose (0,s)
         a <- dmatrix (numCols p, n)
