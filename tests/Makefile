@@ -56,9 +56,16 @@ all:
 	ghc --make -fforce-recomp -O -DCOMPLEX -threaded Perm.hs -o perm-cplx
 	./perm-cplx $(THREADS)
 
+	ghc --make -fforce-recomp -O -DREAL -threaded Diag.hs -o diag-real
+	./diag-real $(THREADS)
+	
+	ghc --make -fforce-recomp -O -DCOMPLEX -threaded Diag.hs -o diag-cplx
+	./diag-cplx $(THREADS)
+
+
 
 clean:
 	rm -f *~ *.hi *.o vector-real vector-cplx matrix-real matrix-cplx \
 	herm-matrix-real herm-matrix-cplx tri-matrix-real tri-matrix-cplx \
 	banded-real banded-cplx herm-banded-real herm-banded-cplx \
-	tri-banded-real tri-banded-cplx perm-real perm-cplx
+	tri-banded-real tri-banded-cplx perm-real perm-cplx diag-real diag-cplx
