@@ -1,5 +1,5 @@
 name:            blas
-version:         0.5
+version:         0.6
 homepage:        http://stat.stanford.edu/~patperry/code/blas
 synopsis:        Bindings to the BLAS library
 description:
@@ -36,6 +36,7 @@ extra-source-files:     INSTALL
                         tests/TriBanded.hs
                         tests/TriMatrix.hs
                         tests/Vector.hs
+                        tests/STVector.hs
 
 
 -- Below are the flags for specifying which CBLAS to link with.  If no flag
@@ -65,80 +66,96 @@ flag custom
     -- You must edit this file below to use this option.  
 
 library
-    exposed-modules:    BLAS.Access
+    exposed-modules:    
                         BLAS.C
                             BLAS.C.Level1
                             BLAS.C.Level2
                             BLAS.C.Level3
                             BLAS.C.Types
+
+                        BLAS.Conj
+
                         BLAS.Elem
                             BLAS.Elem.Base
+
                         BLAS.Internal
-                        BLAS.Matrix
-                            BLAS.Matrix.Base
-                            BLAS.Matrix.Immutable
-                            BLAS.Matrix.ReadOnly
-                            BLAS.Matrix.Solve
-                                BLAS.Matrix.Solve.Immutable
-                                BLAS.Matrix.Solve.ReadOnly
+                        -- BLAS.Matrix
+                        --     BLAS.Matrix.Base
+                        --     BLAS.Matrix.Immutable
+                        --     BLAS.Matrix.ReadOnly
+                        --     BLAS.Matrix.Solve
+                        --         BLAS.Matrix.Solve.Immutable
+                        --         BLAS.Matrix.Solve.ReadOnly
+
+                        BLAS.Numeric
+                            BLAS.Numeric.Immutable
+                            BLAS.Numeric.Read
+                            BLAS.Numeric.Write
+                            BLAS.Numeric.Binary
+                            BLAS.Numeric.Ternary
+
                         BLAS.Tensor
                             BLAS.Tensor.Base
-                            BLAS.Tensor.Dense
-                                BLAS.Tensor.Dense.Immutable
-                                BLAS.Tensor.Dense.ReadOnly
+                            BLAS.Tensor.Copy
                             BLAS.Tensor.Immutable
-                            BLAS.Tensor.ReadOnly
-                            BLAS.Tensor.Mutable
-                            BLAS.Tensor.Scalable
+                            BLAS.Tensor.Read
+                            BLAS.Tensor.Write
+
                         BLAS.Types
-                        BLAS.Vector
-                        
-                        Data.Matrix.Banded
-                            Data.Matrix.Banded.IO
-                            Data.Matrix.Banded.Internal
-                            Data.Matrix.Banded.Operations
-                        
-                        Data.Matrix.Diag
-                        
-                        Data.Matrix.Dense
-                            Data.Matrix.Dense.IO
-                            Data.Matrix.Dense.Internal
-                            Data.Matrix.Dense.Operations
-                        
-                        Data.Matrix.Perm
-                        
-                        Data.Matrix.Herm
-                            Data.Matrix.Herm.Banded
-                            Data.Matrix.Herm.Dense
-                        
-                        Data.Matrix.Tri
-                            Data.Matrix.Tri.Banded
-                            Data.Matrix.Tri.Dense
-                        
+
+                        -- BLAS.Vector
+                        -- 
+                        -- Data.Matrix.Banded
+                        --     Data.Matrix.Banded.IO
+                        --     Data.Matrix.Banded.Internal
+                        --     Data.Matrix.Banded.Operations
+                        -- 
+                        -- Data.Matrix.Diag
+                        -- 
+                        -- Data.Matrix.Dense
+                        --     Data.Matrix.Dense.IO
+                        --     Data.Matrix.Dense.Internal
+                        --     Data.Matrix.Dense.Operations
+                        -- 
+                        -- Data.Matrix.Perm
+                        -- 
+                        -- Data.Matrix.Herm
+                        --     Data.Matrix.Herm.Banded
+                        --     Data.Matrix.Herm.Dense
+                        -- 
+                        -- Data.Matrix.Tri
+                        --     Data.Matrix.Tri.Banded
+                        --     Data.Matrix.Tri.Dense
+
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
-                            Data.Vector.Dense.Internal
-                            Data.Vector.Dense.Operations
-                        
+                            Data.Vector.Dense.ST
+                            Data.Vector.Dense.Class
+                                Data.Vector.Dense.Class.Base
+                                Data.Vector.Dense.Class.Read
+                                Data.Vector.Dense.Class.Write
+
+                        -- 
                         Test.QuickCheck.Complex
-                        Test.QuickCheck.Permutation
-                        Test.QuickCheck.Vector
+                        -- Test.QuickCheck.Permutation
+                        -- Test.QuickCheck.Vector
                         Test.QuickCheck.Vector.Dense
-                        Test.QuickCheck.Matrix
-                        Test.QuickCheck.Matrix.Banded
-                        Test.QuickCheck.Matrix.Dense
-                        Test.QuickCheck.Matrix.Diag
-                        Test.QuickCheck.Matrix.Perm
-                        Test.QuickCheck.Matrix.Herm.Banded
-                        Test.QuickCheck.Matrix.Herm.Dense
-                        Test.QuickCheck.Matrix.Tri.Banded
-                        Test.QuickCheck.Matrix.Tri.Dense
+                        -- Test.QuickCheck.Matrix
+                        -- Test.QuickCheck.Matrix.Banded
+                        -- Test.QuickCheck.Matrix.Dense
+                        -- Test.QuickCheck.Matrix.Diag
+                        -- Test.QuickCheck.Matrix.Perm
+                        -- Test.QuickCheck.Matrix.Herm.Banded
+                        -- Test.QuickCheck.Matrix.Herm.Dense
+                        -- Test.QuickCheck.Matrix.Tri.Banded
+                        -- Test.QuickCheck.Matrix.Tri.Dense
                         
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
+                        Data.Vector.Dense.Internal
                         
     ghc-options:        -Wall                   
-    extensions:         BangPatterns, EmptyDataDecls, FlexibleContexts, 
+    extensions:         BangPatterns, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses
     build-depends:      base, ieee, permutation, storable-complex, QuickCheck

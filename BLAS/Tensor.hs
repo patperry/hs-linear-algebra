@@ -8,17 +8,11 @@
 --
 
 module BLAS.Tensor (
-    module BLAS.Tensor.Base,
-    module BLAS.Tensor.Dense,
-    module BLAS.Tensor.Scalable,
     module BLAS.Tensor.Immutable,
-    module BLAS.Tensor.ReadOnly,
-    module BLAS.Tensor.Mutable
+    module BLAS.Tensor.Copy,
+    module BLAS.Tensor.Write,
     ) where
 
-import BLAS.Tensor.Base
-import BLAS.Tensor.Dense
-import BLAS.Tensor.Scalable
-import BLAS.Tensor.Immutable
-import BLAS.Tensor.ReadOnly
-import BLAS.Tensor.Mutable
+import BLAS.Tensor.Immutable 
+import BLAS.Tensor.Copy
+import BLAS.Tensor.Write hiding ( BaseTensor(..) )

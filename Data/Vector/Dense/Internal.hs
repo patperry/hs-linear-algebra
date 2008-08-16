@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Vector.Dense.Internal
+-- Module     : Data.Vector.Dense.ST
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
@@ -10,386 +10,491 @@
 --
 
 module Data.Vector.Dense.Internal (
-    -- * Vector data types
-    Vector,
-    IOVector,
-    DVector(..),
-
-    module BLAS.Vector,
-    module BLAS.Tensor,
+    -- * The IOVector data type
+    IOVector(..),
 
     -- * Conversion to and from @ForeignPtr@s.
     fromForeignPtr,
     toForeignPtr,
     
-    -- * Creating new vectors
-    newVector, 
-    newVector_,
-    newListVector,
+    -- * Vector Properties
+    getSumAbs,
+    getNorm2,
+    getWhichMaxAbs,
     
-    -- * Special vectors
-    newBasis,
-    setBasis,
+    -- * Vector Operations
+    getDot,
+    unsafeGetDot,
+    
+    -- * Internal Operations
+    newCopyVector,
+    unsafeCopyVector,
+    unsafeAxpyVector,
+    unsafeMulVector,
+    unsafeDivVector,
+    unsafeDoBinaryOp,
+    
+    module BLAS.Tensor,
+    module BLAS.Numeric,
+    module Data.Vector.Dense.Class,
 
-    -- * Vector views
-    subvector,
-    subvectorWithStride,
-    
-    -- * Casting vectors
-    coerceVector,
-    
-    -- * Unsafe operations
-    unsafeNewVector,
-    unsafeWithElemPtr,
-    unsafeSubvector,
-    unsafeSubvectorWithStride,
-    
-    unsafeFreeze,
-    unsafeThaw,
-    
     ) where
   
-  
-import Control.Monad
-import Data.Ix
-import Foreign 
-import System.IO.Unsafe       
-import Unsafe.Coerce
-
-import Data.AEq
-
-import BLAS.Access
 import BLAS.Elem.Base ( Elem )
-import qualified BLAS.Elem.Base as E
-import BLAS.Vector hiding ( Vector )
-import qualified BLAS.Vector as C
-import BLAS.Tensor
 
-import BLAS.Internal  ( clearArray, inlinePerformIO, checkedSubvector,
-    checkedSubvectorWithStride )
-import BLAS.C.Level1  ( BLAS1, copy )
+import BLAS.Internal ( clearArray, inlinePerformIO, checkVecVecOp )
+
+import BLAS.C ( BLAS1, BLAS2 )
+import qualified BLAS.C as BLAS
+
+import BLAS.Tensor hiding ( ITensor(..) )
+import BLAS.Numeric hiding ( INumeric(..) )
+
+import Control.Monad
+import Data.Complex
+
+import Data.Vector.Dense.Class hiding ( conjVector )
+import Data.Vector.Dense.Class.Base
+
+import Foreign 
 
 
--- | A dense vector.  @t@ is a type that will usually be @Imm@ or @Mut@.  
+-- | A dense mutable vector.  @s@ is the state thread,
 -- @n@ is a phantom type for the dimension of the vector, and @e@ is the 
--- element type.  A @DVector@ @x@ stores @dim x@ elements.  Indices into
+-- element type.  An @IOVector@ @x@ stores @dimIOVector x@ elements.  Indices into
 -- the vector are @0@-based.
-data DVector t n e = 
-      DV { storageOf :: {-# UNPACK #-} !(ForeignPtr e) -- ^ a pointer to the storage region
-         , offsetOf  :: {-# UNPACK #-} !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
-         , lengthOf  :: {-# UNPACK #-} !Int            -- ^ the length of the vector
-         , strideOf  :: {-# UNPACK #-} !Int            -- ^ the stride (in elements, not bytes) between elements.
-         , isConj    :: {-# UNPACK #-} !Bool           -- ^ indicates whether or not the vector is conjugated
+data IOVector n e = 
+      DV { storageIOVector :: {-# UNPACK #-} !(ForeignPtr e) -- ^ a pointer to the storage region
+         , offsetIOVector  :: {-# UNPACK #-} !Int            -- ^ an offset (in elements, not bytes) to the first element in the vector. 
+         , dimIOVector     :: {-# UNPACK #-} !Int            -- ^ the length of the vector
+         , strideIOVector  :: {-# UNPACK #-} !Int            -- ^ the stride (in elements, not bytes) between elements.
+         , isConjIOVector  :: {-# UNPACK #-} !Bool           -- ^ indicates whether or not the vector is conjugated
          }
 
-type Vector n e = DVector Imm n e
-type IOVector n e = DVector Mut n e
-
--- | Cast the phantom length type.
-coerceVector :: DVector t n e -> DVector t m e
-coerceVector = unsafeCoerce
-{-# INLINE coerceVector #-}
 
 -- | @fromForeignPtr fptr offset n inc c@ creates a vector view of a
 -- region in memory starting at the given offset and having dimension @n@,
 -- with a stride of @inc@, and with @isConj@ set to @c@.
-fromForeignPtr :: ForeignPtr e -> Int -> Int -> Int -> Bool -> DVector t n e
+fromForeignPtr :: ForeignPtr e -> Int -> Int -> Int -> Bool -> IOVector n e
 fromForeignPtr = DV
 {-# INLINE fromForeignPtr #-}
 
 -- | Gets the tuple @(fptr,offset,n,inc,c)@, where @n@ is the dimension and 
 -- @inc@ is the stride of the vector, and @c@ indicates whether or not the
 -- vector is conjugated.
-toForeignPtr :: DVector t n e -> (ForeignPtr e, Int, Int, Int, Bool)
+toForeignPtr :: IOVector n e -> (ForeignPtr e, Int, Int, Int, Bool)
 toForeignPtr (DV f o n s c) = (f, o, n, s, c)
 {-# INLINE toForeignPtr #-}
 
--- | @subvector x o n@ creates a subvector view of @x@ starting at index @o@ 
--- and having length @n@.
-subvector :: DVector t n e -> Int -> Int -> DVector t m e
-subvector x = checkedSubvector (dim x) (unsafeSubvector x)
-
--- | Same as 'subvector' but arguments are not range-checked.
-unsafeSubvector :: DVector t n e -> Int -> Int -> DVector t m e
-unsafeSubvector = unsafeSubvectorWithStride 1
-
--- | @subvectorWithStride s x o n@ creates a subvector view of @x@ starting 
--- at index @o@, having length @n@ and stride @s@.
-subvectorWithStride :: Int -> DVector t n e -> Int -> Int -> DVector t m e
-subvectorWithStride s x = 
-    checkedSubvectorWithStride s (dim x) (unsafeSubvectorWithStride s x)
-    
--- | Same as 'subvectorWithStride' but arguments are not range-checked.
-unsafeSubvectorWithStride :: Int -> DVector t n e -> Int -> Int -> DVector t m e
-unsafeSubvectorWithStride s x o n =
-    let f  = storageOf x
-        o' = indexOf x o
+unsafeSubvectorWithStrideIOVector :: Int -> IOVector n e -> Int -> Int -> IOVector m e
+unsafeSubvectorWithStrideIOVector s x o n =
+    let f  = storageIOVector x
+        o' = indexOfIOVector x o
         n' = n
-        s' = s * (strideOf x)
-        c  = isConj x
-    in 
-        fromForeignPtr f o' n' s' c
+        s' = s * (strideIOVector x)
+        c  = isConjIOVector x
+    in fromForeignPtr f o' n' s' c
 
--- | Creates a new vector of the given length.  The elements will be 
--- uninitialized.
-newVector_ :: (Elem e) => Int -> IO (DVector t n e)
-newVector_ n
+newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
+newIOVector_ n
     | n < 0 = 
-        ioError $ userError $ 
-            "Tried to create a vector with `" ++ show n ++ "' elements."
+        fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
     | otherwise = do
         arr <- mallocForeignPtrArray n
         return $ fromForeignPtr arr 0 n 1 False
 
--- | Creates a new vector of the given dimension with the given elements.
--- If the list has length less than the passed-in dimenson, the tail of
--- the vector will be uninitialized.
-newListVector :: (Elem e) => Int -> [e] -> IO (DVector t n e)
-newListVector n es = do
-    x <- newVector_ n
-    withForeignPtr (storageOf x) $ flip pokeArray $ take n es
-    return x
-
--- | @listVector n es@ is equivalent to @vector n (zip [0..(n-1)] es)@, except
--- that the result is undefined if @length es@ is less than @n@.
-listVector :: (Elem e) => Int -> [e] -> Vector n e
-listVector n es = unsafeFreeze $ unsafePerformIO $ newListVector n es
-{-# NOINLINE listVector #-}
-
-
--- | Creates a new vector with the given association list.  Unspecified
--- indices will get initialized to zero.
-newVector :: (BLAS1 e) => Int -> [(Int,e)] -> IO (DVector t n e)
-newVector =
-    newVectorHelp writeElem
-
--- | Same as 'newVector' but indices are not range-checked.
-unsafeNewVector :: (BLAS1 e) => Int -> [(Int,e)] -> IO (DVector t n e)
-unsafeNewVector =
-    newVectorHelp unsafeWriteElem
-
-newVectorHelp :: (BLAS1 e) => 
-       (IOVector n e -> Int -> e -> IO ()) 
-    -> Int -> [(Int,e)] -> IO (DVector t n e)
-newVectorHelp set n ies = do
-    x <- newZero n
-    mapM_ (uncurry $ set x) ies
-    return (unsafeCoerce x)
-
--- | @newBasis n i@ creates a vector of length @n@ that is all zero except for
--- at position @i@, where it equal to one.
-newBasis :: (BLAS1 e) => Int -> Int -> IO (IOVector n e)
-newBasis n i = do
-    x <- newVector_ n
-    setBasis i x
-    return x
-
--- | @setBasis x i@ sets the @i@th coordinate of @x@ to @1@, and all other
--- coordinates to @0@.  If the vector has been scaled, it is possible that
--- @readVector x i@ will not return exactly @1@.  See 'setElem'.
-setBasis :: (BLAS1 e) => Int -> IOVector n e -> IO ()
-setBasis i x
-    | i < 0 || i >= dim x =
-        ioError $ userError $ 
-            "tried to set a vector of dimension `" ++ show (dim x) ++ "'"
-            ++ " to basis vector `" ++ show i ++ "'"
-    | otherwise = do
-        setZero x
-        unsafeWriteElem x i 1 
-
-indexOf :: DVector t n e -> Int -> Int
-indexOf x i = offsetOf x + i * strideOf x
-{-# INLINE indexOf #-}
+indexOfIOVector :: IOVector n e -> Int -> Int
+indexOfIOVector x i = offsetIOVector x + i * strideIOVector x
+{-# INLINE indexOfIOVector #-}
 
 -- | Evaluate a function with a pointer to the value stored at the given
 -- index.  Note that the value may need to conjugated before using it.  See
 -- 'isConj'.
-unsafeWithElemPtr :: (Elem e) => DVector t n e -> Int -> (Ptr e -> IO a) -> IO a
-unsafeWithElemPtr x i f =
-    withForeignPtr (storageOf x) $ \ptr ->
-        let elemPtr = ptr `advancePtr` (indexOf x i)
+unsafeWithElemPtrIOVector :: (Storable e) => IOVector n e -> Int -> (Ptr e -> IO a) -> IO a
+unsafeWithElemPtrIOVector x i f =
+    withForeignPtr (storageIOVector x) $ \ptr ->
+        let elemPtr = ptr `advancePtr` (indexOfIOVector x i)
         in f elemPtr
-{-# INLINE unsafeWithElemPtr #-}
+{-# INLINE unsafeWithElemPtrIOVector #-}
 
--- | Cast the access type to @Imm@.
-unsafeFreeze :: DVector t n e -> Vector n e
-unsafeFreeze = unsafeCoerce
+withIOVectorPtr :: (Storable e) => IOVector n e -> (Ptr e -> IO a) -> IO a
+withIOVectorPtr = flip unsafeWithElemPtrIOVector 0
 
--- | Cast the access type to @Mut@.
-unsafeThaw :: DVector t n e -> IOVector n e
-unsafeThaw = unsafeCoerce
+conjIOVector :: IOVector n e -> IOVector n e
+conjIOVector x = let c' = (not . isConjIOVector) x 
+                 in x { isConjIOVector=c' }
+{-# INLINE conjIOVector #-}
 
-instance C.Vector (DVector t) where
-    dim = lengthOf
-    {-# INLINE dim #-}
+getSizeIOVector :: IOVector n e -> IO Int
+getSizeIOVector = return . dimIOVector
+{-# INLINE getSizeIOVector #-}
 
-    conj x = let c' = (not . isConj) x 
-             in x { isConj=c' }
-    {-# INLINE conj #-}
+shapeIOVector :: IOVector n e -> Int
+shapeIOVector = dimIOVector
 
+boundsIOVector :: IOVector n e -> (Int,Int)
+boundsIOVector x = (0, dimIOVector x - 1)
 
-instance Tensor (DVector t n) Int e where
-    shape = dim
-    {-# INLINE shape #-}
+indicesIOVector :: IOVector n e -> [Int]
+indicesIOVector x = [0..(n-1)] where n = dimIOVector x
+{-# INLINE indicesIOVector #-}
 
-    bounds x = (0, dim x - 1)
-    {-# INLINE bounds #-}
+getIndicesIOVector :: IOVector n e -> IO [Int]
+getIndicesIOVector = return . indicesIOVector
+{-# INLINE getIndicesIOVector #-}
 
-instance (BLAS1 e) => ITensor (DVector Imm n) Int e where
-    size = dim
-    
-    indices = range . bounds
-    {-# INLINE indices #-}
+getIndicesIOVector' :: IOVector n e -> IO [Int]
+getIndicesIOVector' = getIndicesIOVector
+{-# INLINE getIndicesIOVector' #-}
 
-    elems  = inlinePerformIO . getElems . unsafeThaw
-    assocs = inlinePerformIO . getAssocs . unsafeThaw
-
-    unsafeAt x = inlinePerformIO . unsafeReadElem (unsafeThaw x)
-    {-# INLINE unsafeAt #-}
-    
-    amap f x = listVector (dim x) (map f $ elems x)
-    
-    (//) = replaceHelp writeElem
-    unsafeReplace = replaceHelp unsafeWriteElem
-
-replaceHelp :: (BLAS1 e) => 
-       (IOVector n e -> Int -> e -> IO ())
-    -> Vector n e -> [(Int, e)] -> Vector n e
-replaceHelp set x ies =
-    unsafeFreeze $ unsafePerformIO $ do
-        y  <- newCopy (unsafeThaw x)
-        mapM_ (uncurry $ set y) ies
-        return y
-{-# NOINLINE replaceHelp #-}
-
-
-instance (BLAS1 e) => IDTensor (DVector Imm n) Int e where
-    zero n = unsafeFreeze $ unsafePerformIO $ newZero n
-    {-# NOINLINE zero #-}
-    
-    constant n e = unsafeFreeze $ unsafePerformIO $ newConstant n e
-    {-# NOINLINE constant #-}
-
-    azipWith f x y
-        | dim y /= n =
-            error ("amap2: vector lengths differ; first has length `" ++
-                    show n ++ "' and second has length `" ++
-                    show (dim y) ++ "'")
-        | otherwise =
-            listVector n (zipWith f (elems x) (elems y))
-      where
-        n = dim x
-    
-
-instance (BLAS1 e) => RTensor (DVector t n) Int e IO where
-    getSize = return . dim
-    
-    newCopy x
-        | isConj x = 
-            newCopy (conj x) >>= return . conj
-        | otherwise = do
-            y <- newVector_ (dim x)
-            unsafeWithElemPtr x 0 $ \pX ->
-                unsafeWithElemPtr y 0 $ \pY ->
-                    let n    = dim x
-                        incX = strideOf x
-                        incY = strideOf y
-                    in copy n pX incX pY incY >> 
-                       return y
-                       
-    getIndices = return . indices . unsafeFreeze
-    {-# INLINE getIndices #-}
-    
-    unsafeReadElem x i
-        | isConj x = 
-            unsafeReadElem (conj x) i >>= return . E.conj
-        | otherwise =
-            withForeignPtr (storageOf x) $ \ptr ->
-                peekElemOff ptr (indexOf x i) 
-
-    getAssocs x
-        | isConj x =
-            getAssocs (conj x) >>= return . map (\(i,e) -> (i,E.conj e))
-        | otherwise =
-            let (f,o,n,incX,_) = toForeignPtr x
-                ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
-            in return $ go n f incX ptr 0
-      where
-            go !n !f !incX !ptr !i 
-                | i >= n = 
-                     -- This is very important since we are doing unsafe IO.
-                     -- Otherwise, the DVector might get discared and the
-                     -- memory freed before all of the elements are read
-                     inlinePerformIO $ do
-                         touchForeignPtr f
-                         return []
-                | otherwise =
-                    let e    = inlinePerformIO $ peek ptr
-                        ptr' = ptr `advancePtr` incX
-                        i'   = i + 1
-                        ies  = go n f incX ptr' i'
-                    in e `seq` ((i,e):ies)
-    {-# NOINLINE getAssocs #-}
-
-
-instance (BLAS1 e) => RDTensor (DVector t n) Int e IO where
-    newZero n = newVector_ n >>= (\x -> setZero (unsafeThaw x) >> return x)
-    
-    newConstant n e = newVector_ n >>= (\x -> setConstant e (unsafeThaw x) >> return x)
-    
-    
-instance (BLAS1 e) => MTensor (DVector Mut n) Int e IO where
-    setZero x 
-        | strideOf x == 1 = unsafeWithElemPtr x 0 $ flip clearArray (dim x)
-        | otherwise       = setConstant 0 x
-
-    setConstant e x 
-        | isConj x  = setConstant (E.conj e) (conj x)
-        | otherwise = unsafeWithElemPtr x 0 $ go (dim x)
-      where
-        go !n !ptr | n <= 0 = return ()
-                   | otherwise = let ptr' = ptr `advancePtr` (strideOf x)
-                                     n'   = n - 1
-                                 in poke ptr e >> 
-                                    go n' ptr'
-    
-    unsafeWriteElem x i e =
-        let e' = if isConj x then E.conj e else e
-        in withForeignPtr (storageOf x) $ \ptr -> 
-               pokeElemOff ptr (indexOf x i) e'
-                        
-    canModifyElem x i = return $ inRange (bounds x) i
-    {-# INLINE canModifyElem #-}
-    
-    modifyWith f x
-        | isConj x  = modifyWith (E.conj . f . E.conj) (conj x)
-        | otherwise = withForeignPtr (storageOf x) $ 
-                          \ptr -> go (dim x) (ptr `advancePtr` offsetOf x)
-      where
-        go !n !ptr | n <= 0 = return ()
-                   | otherwise = do
-                       peek ptr >>= poke ptr . f
-                       go (n-1) (ptr `advancePtr` incX)
-
-        incX = strideOf x
-    
-compareHelp :: (BLAS1 e) => 
-    (e -> e -> Bool) -> Vector n e -> Vector n e -> Bool
-compareHelp cmp x y
-    | isConj x && isConj y =
-        compareHelp cmp (conj x) (conj y)
+unsafeReadElemIOVector :: (Elem e) => IOVector n e -> Int -> IO e
+unsafeReadElemIOVector x i
+    | isConjIOVector x = 
+        unsafeReadElemIOVector (conjIOVector x) i >>= return . conj
     | otherwise =
-        (dim x == dim y) && (and $ zipWith cmp (elems x) (elems y))
+        withForeignPtr (storageIOVector x) $ \ptr ->
+            peekElemOff ptr (indexOfIOVector x i) 
 
-instance (BLAS1 e, Eq e) => Eq (DVector Imm n e) where
-    (==) = compareHelp (==)
+getElemsIOVector :: (Elem e) => IOVector n e -> IO [e]
+getElemsIOVector x = do
+    ies <- getAssocsIOVector x
+    return $ (snd . unzip) ies
 
-instance (BLAS1 e, AEq e) => AEq (DVector Imm n e) where
-    (===) = compareHelp (===)
-    (~==) = compareHelp (~==)
+getElemsIOVector' :: (Elem e) => IOVector n e -> IO [e]
+getElemsIOVector' x = do
+    ies <- getAssocsIOVector' x
+    return $ (snd . unzip) ies
 
-instance (BLAS1 e, Show e) => Show (DVector Imm n e) where
-    show x
-        | isConj x  = "conj (" ++ show (conj x) ++ ")"
-        | otherwise = "listVector " ++ show (dim x) ++ " " ++ show (elems x)
+getAssocsIOVector :: (Elem e) => IOVector n e -> IO [(Int,e)]
+getAssocsIOVector x
+    | isConjIOVector x =
+        getAssocsIOVector (conjIOVector x) 
+            >>= return . map (\(i,e) -> (i,conj e))
+    | otherwise =
+        let (f,o,n,incX,_) = toForeignPtr x
+            ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
+        in return $ go n f incX ptr 0
+  where
+        go !n !f !incX !ptr !i 
+            | i >= n = 
+                 -- This is very important since we are doing unsafe IO.
+                 -- Otherwise, the DVector might get discared and the
+                 -- memory freed before all of the elements are read
+                 inlinePerformIO $ do
+                     touchForeignPtr f
+                     return []
+            | otherwise =
+                let e    = inlinePerformIO $ peek ptr
+                    ptr' = ptr `advancePtr` incX
+                    i'   = i + 1
+                    ies  = go n f incX ptr' i'
+                in e `seq` ((i,e):ies)
+{-# INLINE getAssocsIOVector #-}
+
+getAssocsIOVector' :: (Elem e) => IOVector n e -> IO [(Int,e)]
+getAssocsIOVector' x
+    | isConjIOVector x =
+        getAssocsIOVector' (conjIOVector x) 
+            >>= return . map (\(i,e) -> (i,conj e))
+    | otherwise =
+        withIOVectorPtr x $ \ptr ->
+            go (dimIOVector x) (strideIOVector x) ptr 0
+  where
+        go !n !incX !ptr !i 
+            | i >= n = 
+                return []
+            | otherwise = do
+                e <- peek ptr
+                let ptr' = ptr `advancePtr` incX
+                    i'   = i + 1
+                ies <- go n incX ptr' i'
+                return $ (i,e):ies
+
+
+newZeroIOVector :: (Elem e) => Int -> IO (IOVector n e)
+newZeroIOVector n = do
+    x <- newIOVector_ n
+    setZeroIOVector x
+    return x
+
+newConstantIOVector :: (Elem e) => Int -> e -> IO (IOVector n e)
+newConstantIOVector n e = do
+    x <- newIOVector_ n
+    setConstantIOVector e x
+    return x
+    
+setZeroIOVector :: (Elem e) => IOVector n e -> IO ()    
+setZeroIOVector x 
+    | strideIOVector x == 1 = unsafeWithElemPtrIOVector x 0 $ 
+                                    flip clearArray (dimIOVector x)
+    | otherwise               = setConstantIOVector 0 x
+
+setConstantIOVector :: (Elem e) => e -> IOVector n e -> IO ()    
+setConstantIOVector e x 
+    | isConjIOVector x  = setConstantIOVector (conj e) (conjIOVector x)
+    | otherwise = unsafeWithElemPtrIOVector x 0 $ go (dimIOVector x)
+  where
+    go !n !ptr | n <= 0 = return ()
+               | otherwise = let ptr' = ptr `advancePtr` (strideIOVector x)
+                                 n'   = n - 1
+                             in poke ptr e >> 
+                                go n' ptr'
+
+unsafeWriteElemIOVector :: (Elem e) => IOVector n e -> Int -> e -> IO ()
+unsafeWriteElemIOVector x i e =
+    let e' = if isConjIOVector x then conj e else e
+    in withForeignPtr (storageIOVector x) $ \ptr -> 
+           pokeElemOff ptr (indexOfIOVector x i) e'
+                    
+canModifyElemIOVector :: IOVector n e -> Int -> IO Bool
+canModifyElemIOVector _ _ = return True
+{-# INLINE canModifyElemIOVector #-}
+
+modifyWithIOVector :: (Elem e) => (e -> e) -> IOVector n e -> IO ()
+modifyWithIOVector f x
+    | isConjIOVector x = modifyWithIOVector (conj . f . conj) (conjIOVector x)
+    | otherwise = withIOVectorPtr x $ \ptr ->
+                      go (dimIOVector x) ptr
+  where
+    go !n !ptr | n <= 0 = return ()
+               | otherwise = do
+                   peek ptr >>= poke ptr . f
+                   go (n-1) (ptr `advancePtr` incX)
+
+    incX = strideIOVector x
+
+---------------------------  Copying Vectors --------------------------------
+
+newCopyVector :: (BLAS1 e, ReadVector x e m, WriteVector y e m) => 
+    x n e -> m (y n e)    
+newCopyVector x
+    | isConj x = 
+        newCopyVector (conj x) >>= return . conj
+    | otherwise = do
+        y <- newVector_ (dim x)
+        unsafeCopyVector y x
+        return y
+
+unsafeCopyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
+    y n e -> x n e -> m ()
+unsafeCopyVector y x
+    | isConj x && isConj y =
+        unsafeCopyVector (conj y) (conj x)
+    | isConj x || isConj y =
+        forM_ [0..(dim x - 1)] $ \i -> do
+            unsafeReadElem x i >>= unsafeWriteElem y i
+    | otherwise =
+        call2 BLAS.copy x y
+
+unsafeSwapIOVector :: (Elem e) => IOVector n e -> IOVector n e -> IO ()
+unsafeSwapIOVector x y
+    | isConjIOVector x && isConjIOVector y =
+        unsafeSwapIOVector (conjIOVector x) (conjIOVector y)
+    | otherwise =
+        forM_ [0..(dimIOVector x - 1)] $ \i -> do
+            tmp <- unsafeReadElemIOVector x i
+            unsafeReadElemIOVector y i >>= unsafeWriteElemIOVector x i
+            unsafeWriteElemIOVector y i tmp
+
+unsafeSwapIOVectorBLAS1 :: (BLAS1 e) => 
+    IOVector n e -> IOVector n e -> IO ()
+unsafeSwapIOVectorBLAS1 x y
+    | isConjIOVector x && isConjIOVector y =
+        unsafeSwapIOVectorBLAS1 (conj x) (conj y)
+    | isConjIOVector x || isConjIOVector y =
+        forM_ [0..(dimIOVector x - 1)] $ \i -> do
+            tmp <- unsafeReadElemIOVector x i
+            unsafeReadElemIOVector y i >>= unsafeWriteElemIOVector x i
+            unsafeWriteElemIOVector y i tmp
+    | otherwise =
+        call2 BLAS.swap x y
+
+unsafeSwapIOVectorBLAS1Real :: (BLAS1 e) => 
+    IOVector n e -> IOVector n e -> IO ()
+unsafeSwapIOVectorBLAS1Real = call2 BLAS.swap
+
+unsafeSwapIOVectorComplexDouble :: IOVector n (Complex Double) -> IOVector n (Complex Double) -> IO ()
+unsafeSwapIOVectorComplexDouble = unsafeSwapIOVectorBLAS1
+unsafeSwapIOVectorDouble :: IOVector n Double -> IOVector n Double -> IO ()
+unsafeSwapIOVectorDouble = unsafeSwapIOVectorBLAS1Real
+{-# RULES "unsafeSwapIOVector/Double" unsafeSwapIOVector = unsafeSwapIOVectorDouble #-}
+{-# RULES "unsafeSwapIOVector/ComplexDouble" unsafeSwapIOVector = unsafeSwapIOVectorComplexDouble #-}
+
+
+----------------------------- BLAS Operations --------------------------------
+
+-- | Gets the sum of the absolute values of the vector entries.
+getSumAbs :: (ReadVector x e m, BLAS1 e) => x n e -> m Double
+getSumAbs = call BLAS.asum
+    
+-- | Gets the 2-norm of a vector.
+getNorm2 :: (ReadVector x e m, BLAS1 e) => x n e -> m Double
+getNorm2 = call BLAS.nrm2
+
+-- | Gets the index and norm of the element with maximum magnitude.  This is 
+-- undefined if any of the elements are @NaN@.  It will throw an exception if 
+-- the dimension of the vector is 0.
+getWhichMaxAbs :: (ReadVector x e m, BLAS1 e) => x n e -> m (Int, e)
+getWhichMaxAbs x =
+    case (dim x) of
+        0 -> fail $ "getWhichMaxAbs of an empty vector"
+        _ -> do
+            i <- call BLAS.iamax x
+            e <- unsafeReadElem x i
+            return (i,e)
+
+
+-- | Computes the dot product of two vectors.
+getDot :: (ReadVector x e m, ReadVector y e m, BLAS1 e) => 
+    x n e -> y n e -> m e
+getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
+{-# INLINE getDot #-}
+
+unsafeGetDot :: (ReadVector x e m, ReadVector y e m, BLAS1 e) => 
+    x n e -> y n e -> m e
+unsafeGetDot x y =
+    case (isConj x, isConj y) of
+        (False, False) -> call2 BLAS.dotc x y
+        (True , False) -> call2 BLAS.dotu x y
+        (False, True ) -> call2 BLAS.dotu x y >>= return . conj
+        (True , True)  -> call2 BLAS.dotc x y >>= return . conj
+{-# INLINE unsafeGetDot #-}
+
+doConjIOVector :: (BLAS1 e) => IOVector n e -> IO ()
+doConjIOVector = call BLAS.conj
+
+scaleByIOVector :: (BLAS1 e) => e -> IOVector n e -> IO ()
+scaleByIOVector 1 _ = return ()
+scaleByIOVector k x | isConjIOVector x= scaleByIOVector (conj k) (conj x)
+                    | otherwise       = call (flip BLAS.scal k) x
+                    
+shiftByIOVector :: (Elem e) => e -> IOVector n e -> IO ()
+shiftByIOVector k x | isConjIOVector x  = shiftByIOVector (conj k) (conj x)
+                    | otherwise = modifyWithIOVector (k+) x
+
+unsafeAxpyVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) => 
+    e -> x n e -> y n e -> m ()
+unsafeAxpyVector alpha x y
+    | isConj y =
+        unsafeAxpyVector (conj alpha) (conj x) (conj y)
+    | isConj x =
+        call2 (flip BLAS.acxpy alpha) x y
+    | otherwise =
+        call2 (flip BLAS.axpy alpha) x y
+
+unsafeMulVector :: (WriteVector y e m, ReadVector x e m, BLAS2 e) => 
+    y n e -> x n e -> m ()
+unsafeMulVector y x
+    | isConj y =
+        unsafeMulVector (conj y) (conj x)
+    | isConj x =
+        call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y    
+    | otherwise =
+        call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
+
+unsafeDivVector :: (WriteVector y e m, ReadVector x e m, BLAS2 e) => 
+    y n e -> x n e -> m ()
+unsafeDivVector y x
+    | isConj y =
+        unsafeDivVector (conj y) (conj x)
+    | isConj x =
+        call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y
+    | otherwise =
+        call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
+
+
+call :: (ReadVector x e m) => 
+        (Int -> Ptr e -> Int -> IO a) 
+    ->  x n e -> m a
+call f x =
+    let n    = dim x
+        incX = stride x
+    in unsafeIOToM $
+           withVectorPtr x $ \pX -> 
+               f n pX incX
+{-# INLINE call #-}
+
+call2 :: (ReadVector x e m, ReadVector y f m) => 
+       (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
+    -> x n e -> y n' f -> m a
+call2 f x y =
+    let n    = dim x
+        incX = stride x
+        incY = stride y
+    in unsafeIOToM $
+           withVectorPtr x $ \pX ->
+               withVectorPtr y $ \pY ->
+                   f n pX incX pY incY
+{-# INLINE call2 #-}    
+
+instance BaseTensor IOVector Int e where
+    shape  = shapeIOVector
+    bounds = boundsIOVector
+
+instance (Elem e) => ReadTensor IOVector Int e IO where
+    getSize        = getSizeIOVector
+
+    getAssocs      = getAssocsIOVector
+    getIndices     = getIndicesIOVector
+    getElems       = getElemsIOVector
+
+    getAssocs'     = getAssocsIOVector'
+    getIndices'    = getIndicesIOVector'
+    getElems'      = getElemsIOVector'
+    
+    unsafeReadElem = unsafeReadElemIOVector
+
+instance (Elem e) => WriteTensor IOVector Int e IO where
+    newZero         = newZeroIOVector
+    newConstant     = newConstantIOVector
+
+    setConstant     = setConstantIOVector
+    setZero         = setZeroIOVector
+
+    modifyWith      = modifyWithIOVector
+    unsafeWriteElem = unsafeWriteElemIOVector
+    canModifyElem   = canModifyElemIOVector
+    
+    unsafeSwap      = unsafeSwapIOVector
+
+    
+instance (Elem e) => BaseVector IOVector e where
+    stride                    = strideIOVector
+    isConj                    = isConjIOVector
+    conjVector              = conjIOVector
+    unsafeSubvectorWithStride = unsafeSubvectorWithStrideIOVector
+    withVectorPtr             = withIOVectorPtr
+
+instance (Elem e) => ReadVector IOVector e IO where
+    
+instance (Elem e) => WriteVector IOVector e IO where
+    newVector_ = newIOVector_
+
+instance (BLAS1 e) => ReadNumeric IOVector Int e IO where
+
+instance (BLAS1 e) => WriteNumeric IOVector Int e IO where
+    doConj  = doConjIOVector
+    scaleBy = scaleByIOVector
+    shiftBy = shiftByIOVector
+
+instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
+    newCopy    = newCopyVector    
+    unsafeCopy = unsafeCopyVector
+
+instance (BLAS2 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
+    unsafeAxpy = unsafeAxpyVector
+    unsafeMul  = unsafeMulVector
+    unsafeDiv  = unsafeDivVector
+
+instance (BLAS2 e, ReadVector x e IO, ReadVector y e IO) => Numeric3 x y IOVector Int e IO where
+    unsafeDoAdd = unsafeDoBinaryOp $ flip $ unsafeAxpyVector 1
+    unsafeDoSub = unsafeDoBinaryOp $ flip $ unsafeAxpyVector (-1)
+    unsafeDoMul = unsafeDoBinaryOp $ unsafeMulVector
+    unsafeDoDiv = unsafeDoBinaryOp $ unsafeDivVector
+    
+unsafeDoBinaryOp :: (BLAS1 e, ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (z n e -> y n e -> m ()) -> x n e -> y n e -> z n e -> m ()
+unsafeDoBinaryOp f x y z = do
+    unsafeCopyVector z x
+    f z y
     

@@ -11,6 +11,7 @@
 
 
 module BLAS.Internal (
+    UnsafeIOToM(..),
     clearArray,
     bzero,
     inlinePerformIO,
@@ -33,10 +34,13 @@ module BLAS.Internal (
     checkSquare,
     checkFat,
     checkTall,
+    checkBinaryOp,
+    checkTernaryOp,
     diagStart,
     diagLen,    
     ) where
 
+import Control.Monad.ST ( ST, unsafeIOToST )
 import Data.Ix     ( inRange )
 import Foreign                  ( Ptr, Storable, castPtr, sizeOf )
 import Foreign.C.Types          ( CSize )
@@ -49,6 +53,15 @@ import GHC.IOBase               ( IO(IO) )
 import System.IO.Unsafe         ( unsafePerformIO )
 #endif
 
+
+class (Monad m) => UnsafeIOToM m where
+    unsafeIOToM :: IO a -> m a
+    
+instance UnsafeIOToM IO where
+    unsafeIOToM = id
+instance UnsafeIOToM (ST s) where
+    unsafeIOToM = unsafeIOToST
+    
 
 clearArray :: Storable e => Ptr e -> Int -> IO ()
 clearArray = clearArray' undefined
@@ -288,3 +301,27 @@ checkTall (m,n)
             ("Expected a tall matrix but got one with shape `%s'")
             (show (m,n))
     | otherwise = id
+
+checkBinaryOp :: (Eq i, Show i) => i -> i -> a -> a
+checkBinaryOp m n
+    | m /= n =
+        error $ printf
+            ("Shapes in binary operation do not match. "
+            ++ " First operand has shape `%s' and second has shapw `%s'.")
+            (show m)
+            (show n)
+    | otherwise = id
+{-# INLINE checkBinaryOp #-}
+
+checkTernaryOp :: (Eq i, Show i) => i -> i -> i -> a -> a
+checkTernaryOp l m n
+    | l == m && l == n = id
+    | otherwise =
+        error $ printf
+            ("Shapes in ternary operation do not match. "
+            ++ " First operand has shape `%s', second has shapw `%s',"
+            ++ " and third has shape `%s'.")
+            (show l)
+            (show m)
+            (show n)
+{-# INLINE checkTernaryOp #-}

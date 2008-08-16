@@ -1,56 +1,70 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Mutable
+-- Module     : BLAS.Tensor.Write
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Mutable (
-    MTensor(..),
+module BLAS.Tensor.Write (
+    WriteTensor(..),
     writeElem,
     modifyElem,
+    swap,
+    
+    module BLAS.Tensor.Read
     ) where
 
-import BLAS.Tensor.Base
-import BLAS.Tensor.ReadOnly
+import Data.Ix( inRange )
+import BLAS.Tensor.Read
 
 -- | Class for modifiable mutable tensors.
-class (RTensor x i e m) => (MTensor x i e m) where
+class (ReadTensor x i e m) => (WriteTensor x i e m) | x -> m where
+    -- | Creates a new tensor with elements all initialized to zero.
+    newZero :: i -> m (x n e)
+    
+    -- | Creates a new tensor with elements all initialized to the 
+    -- given value.
+    newConstant :: i -> e -> m (x n e)
+    
     -- | Get the maximum number of elements that can be stored in the tensor.
-    getMaxSize :: x e -> m Int
+    getMaxSize :: x n e -> m Int
     getMaxSize = getSize
     
     -- | Sets all stored elements to zero.
-    setZero :: x e -> m ()
+    setZero :: x n e -> m ()
+    setZero = setConstant 0
     
     -- | Sets all stored elements to the given value.
-    setConstant :: e -> x e -> m ()
+    setConstant :: e -> x n e -> m ()
 
     -- | True if the value at a given index can be changed
-    canModifyElem :: x e -> i -> m Bool
+    canModifyElem :: x n e -> i -> m Bool
     
     -- | Set the value of the element at the given index, without doing any
     -- range checking.
-    unsafeWriteElem :: x e -> i -> e -> m ()
+    unsafeWriteElem :: x n e -> i -> e -> m ()
     
     -- | Modify the value of the element at the given index, without doing
     -- any range checking.
-    unsafeModifyElem :: x e -> i -> (e -> e) -> m ()
+    unsafeModifyElem :: x n e -> i -> (e -> e) -> m ()
     unsafeModifyElem x i f = do
         e <- unsafeReadElem x i
         unsafeWriteElem x i (f e)
     
     -- | Replace each element by a function applied to it
-    modifyWith :: (e -> e) -> x e -> m ()
+    modifyWith :: (e -> e) -> x n e -> m ()
     
+    unsafeSwap :: x n e -> x n e -> m ()
+
+
 -- | Set the value of the element at the given index.
-writeElem :: (MTensor x i e m, Show i) => x e -> i -> e -> m ()
+writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()
 writeElem x i e = do
     ok <- canModifyElem x i
-    case ok of
+    case ok && inRange (bounds x) i of
         False -> 
             fail $ "tried to set element at index `" ++ show i ++ "'"
                    ++ " in an object with shape `" ++ show s ++ "'"
@@ -61,7 +75,7 @@ writeElem x i e = do
     s = shape x
 
 -- | Update the value of the element at the given index.
-modifyElem :: (MTensor x i e m, Show i) => x e -> i -> (e -> e) -> m ()
+modifyElem :: (WriteTensor x i e m) => x n e -> i -> (e -> e) -> m ()
 modifyElem x i f = do
     ok <- canModifyElem x i
     case ok of
@@ -73,4 +87,16 @@ modifyElem x i f = do
             unsafeModifyElem x i f
   where
     s = shape x
+    
+-- | Swap the values stored in two tensors of the same shape.
+swap :: (WriteTensor x i e m) => x n e -> x n e -> m ()
+swap x y
+    | n1 /= n2 =
+        fail $ "tried to swap tensors of shapes `" ++ show n1 ++ "'"
+               ++ " and `" ++ show n2 ++ "'"
+    | otherwise =
+        unsafeSwap x y
+  where
+    n1 = shape x
+    n2 = shape y
     

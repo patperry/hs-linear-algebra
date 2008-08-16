@@ -1,20 +1,18 @@
-{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Access
+-- Module     : BLAS.Tensor.Dense.Read
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
--- Types for access control.
-module BLAS.Access (
-    Mut,
-    Imm
+
+module BLAS.Numeric.Read (
+    ReadNumeric,
     ) where
 
--- | Tag for mutable types.
-data Mut
+import BLAS.Tensor.Read
 
--- | Tag for immutable types.
-data Imm
+class (ReadTensor x i e m) => ReadNumeric x i e m
+

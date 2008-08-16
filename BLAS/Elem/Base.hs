@@ -9,19 +9,17 @@
 --
 
 module BLAS.Elem.Base (
-    Elem(..)
+    Elem(..),
+    module BLAS.Conj
     ) where
 
-import Data.Complex             ( Complex(..), conjugate, magnitude )
+import BLAS.Conj
+import Data.Complex             ( Complex(..), magnitude )
 import Foreign                  ( Storable )
 import Foreign.Storable.Complex ()
 
 -- | The base class for elements.
-class (Storable e, Fractional e) => Elem e where
-    -- | Take the complex conjugate of a value.  For real values
-    -- this is equal to @id@.
-    conj :: e -> e
-    
+class (Storable e, Fractional e, Conj e) => Elem e where
     -- | Get the magnitude of a value.
     norm :: e -> Double
     
@@ -36,16 +34,13 @@ class (Storable e, Fractional e) => Elem e where
     
 
 instance Elem Double where
-    conj     = id
     norm     = abs
     norm1    = abs
     fromReal = id
     toReal   = id
     
 instance Elem (Complex Double) where
-    conj             = conjugate
     norm             = magnitude
     norm1 (x :+ y)   = abs x + abs y
     fromReal x       = x :+ 0
     toReal  (x :+ _) = x
-    

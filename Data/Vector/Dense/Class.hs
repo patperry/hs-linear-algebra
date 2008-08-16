@@ -1,16 +1,14 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Dense
+-- Module     : Data.Vector.Dense.Class
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Dense (
-    module BLAS.Tensor.Dense.Immutable,
-    module BLAS.Tensor.Dense.ReadOnly,
+module Data.Vector.Dense.Class (
+    module Data.Vector.Dense.Class.Write,
     ) where
 
-import BLAS.Tensor.Dense.Immutable
-import BLAS.Tensor.Dense.ReadOnly
+import Data.Vector.Dense.Class.Write
