@@ -54,7 +54,12 @@ import qualified Data.Vector.Dense.IO as IO
 import Data.Vector.Dense.Class.Read hiding ( conjVector )
 import Data.Vector.Dense.Class.Base
 
+
+infixl 7 <.>
+
+
 newtype Vector n e = V (IO.IOVector n e)
+
 
 unsafeFreezeIOVector :: IO.IOVector n e -> Vector n e
 unsafeFreezeIOVector = V

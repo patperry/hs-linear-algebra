@@ -1,31 +1,16 @@
-{-# LANGUAGE Rank2Types, PatternSignatures, GeneralizedNewtypeDeriving #-}
-
-import Control.Monad
-import Control.Monad.ST
-import Data.Complex ( Complex(..) )
-import Data.Function
-import Data.List
-import Data.Ord
-import Debug.Trace
-import Foreign( Storable )
-import System.Environment
-import System.IO
-import System.Random
-import Text.Printf
-import Test.QuickCheck
-import Text.Show.Functions
+{-# LANGUAGE Rank2Types, PatternSignatures #-}
+module STVector ( tests_STVector ) where
 
 
 import BLAS.Elem
-import Data.AEq
 import Data.Vector.Dense
 import Data.Vector.Dense.ST
 
-import qualified Test.QuickCheck.Vector.Dense as Test
+import qualified Generators.Vector.Dense as Test
+
+import Driver
 
 
-
-type E = Complex Double 
 
 ---------------------------- Creating Vectors --------------------------------
 
@@ -330,162 +315,56 @@ implementsIf2 pre a f =
             
 ------------------------------------------------------------------------
 
-main :: IO ()
-main = do
-    args <- fmap (drop 1) getArgs
-    let n = if null args then 100 else read (head args)
-    (results, passed) <- liftM unzip $ mapM (\(s,a) -> printf "%-25s: " s >> a n) tests
-    printf "Passed %d tests!\n" (sum passed)
-    when (not . and $ results) $ fail "Not all tests passed!"
- where
-
-    tests =
-        [ ("newVector", mytest prop_NewVector)
-        , ("newListVector", mytest prop_NewListVector)
-        
-        , ("getSize", mytest prop_GetSize)
-        , ("readElem", mytest prop_ReadElem)
-        , ("canModifyElem", mytest prop_CanModifyElem)
-        , ("writeElem", mytest prop_WriteElem)
-        , ("modifyElem", mytest prop_ModifyElem)
-
-        , ("getIndices", mytest prop_GetIndicesLazy)
-        , ("getIndices'", mytest prop_GetIndicesStrict)
-        , ("getElems", mytest prop_GetElemsLazyModifyWith)
-        , ("getElems'", mytest prop_GetElemsStrictModifyWith)
-        , ("getAssocs", mytest prop_GetAssocsLazyModifyWith)
-        , ("getAssocs'", mytest prop_GetAssocsStrictModifyWith)
-
-        , ("newZeroVector", mytest prop_NewZeroVector)
-        , ("setZero", mytest prop_SetZero)
-        , ("newConstantVector", mytest prop_NewConstantVector)
-        , ("setConstant", mytest prop_SetConstant)
-        , ("newBasisVector", mytest prop_NewBasisVector)
-        , ("setBasis", mytest prop_SetBasis)
-        
-        , ("copy", mytest prop_Copy)
-        , ("swap", mytest prop_Swap)
-
-        , ("doConj", mytest prop_DoConj)
-        , ("scaleBy", mytest prop_ScaleBy)
-        , ("shiftBy", mytest prop_ShiftBy)
-        , ("modifyWith", mytest prop_ModifyWith)
-        
-        , ("getConj", mytest prop_GetConj)
-        , ("getScaled", mytest prop_GetScaled)
-        , ("getShifted", mytest prop_GetShifted)
-
-        , ("axpy", mytest prop_Axpy)
-        , ("(+=)", mytest prop_AddEquals)
-        , ("(-=)", mytest prop_SubEquals)
-        , ("(*=)", mytest prop_MulEquals)
-        , ("(//=)", mytest prop_DivEquals)
-        
-        , ("getAdd", mytest prop_GetAdd)
-        , ("getSub", mytest prop_GetSub)
-        , ("getMul", mytest prop_GetMul)
-        , ("getDiv", mytest prop_GetDiv)
-
-        , ("getSumAbs", mytest prop_GetSumAbs)
-        , ("getNorm2", mytest prop_GetNorm2)
-        , ("getWhichMaxAbs", mytest prop_GetWhichMaxAbs)
-        , ("getDot", mytest prop_GetDot)
-
-        ]
-
+tests_STVector =
+    [ ("newVector", mytest prop_NewVector)
+    , ("newListVector", mytest prop_NewListVector)
     
-------------------------------------------------------------------------
---
--- QC driver ( taken from xmonad-0.6 )
---
+    , ("getSize", mytest prop_GetSize)
+    , ("readElem", mytest prop_ReadElem)
+    , ("canModifyElem", mytest prop_CanModifyElem)
+    , ("writeElem", mytest prop_WriteElem)
+    , ("modifyElem", mytest prop_ModifyElem)
 
-debug = False
+    , ("getIndices", mytest prop_GetIndicesLazy)
+    , ("getIndices'", mytest prop_GetIndicesStrict)
+    , ("getElems", mytest prop_GetElemsLazyModifyWith)
+    , ("getElems'", mytest prop_GetElemsStrictModifyWith)
+    , ("getAssocs", mytest prop_GetAssocsLazyModifyWith)
+    , ("getAssocs'", mytest prop_GetAssocsStrictModifyWith)
 
-mytest :: Testable a => a -> Int -> IO (Bool, Int)
-mytest a n = mycheck defaultConfig
-    { configMaxTest=n
-    , configEvery   = \n args -> let s = show n in s ++ [ '\b' | _ <- s ] } a
- -- , configEvery= \n args -> if debug then show n ++ ":\n" ++ unlines args else [] } a
+    , ("newZeroVector", mytest prop_NewZeroVector)
+    , ("setZero", mytest prop_SetZero)
+    , ("newConstantVector", mytest prop_NewConstantVector)
+    , ("setConstant", mytest prop_SetConstant)
+    , ("newBasisVector", mytest prop_NewBasisVector)
+    , ("setBasis", mytest prop_SetBasis)
+    
+    , ("copy", mytest prop_Copy)
+    , ("swap", mytest prop_Swap)
 
-mycheck :: Testable a => Config -> a -> IO (Bool, Int)
-mycheck config a = do
-    rnd <- newStdGen
-    mytests config (evaluate a) rnd 0 0 []
+    , ("doConj", mytest prop_DoConj)
+    , ("scaleBy", mytest prop_ScaleBy)
+    , ("shiftBy", mytest prop_ShiftBy)
+    , ("modifyWith", mytest prop_ModifyWith)
+    
+    , ("getConj", mytest prop_GetConj)
+    , ("getScaled", mytest prop_GetScaled)
+    , ("getShifted", mytest prop_GetShifted)
 
-mytests :: Config -> Gen Result -> StdGen -> Int -> Int -> [[String]] -> IO (Bool, Int)
-mytests config gen rnd0 ntest nfail stamps
-    | ntest == configMaxTest config = done "OK," ntest stamps >> return (True, ntest)
-    | nfail == configMaxFail config = done "Arguments exhausted after" ntest stamps >> return (True, ntest)
-    | otherwise               =
-      do putStr (configEvery config ntest (arguments result)) >> hFlush stdout
-         case ok result of
-           Nothing    ->
-             mytests config gen rnd1 ntest (nfail+1) stamps
-           Just True  ->
-             mytests config gen rnd1 (ntest+1) nfail (stamp result:stamps)
-           Just False ->
-             putStr ( "Falsifiable after "
-                   ++ show ntest
-                   ++ " tests:\n"
-                   ++ unlines (arguments result)
-                    ) >> hFlush stdout >> return (False, ntest)
-     where
-      result      = generate (configSize config ntest) rnd2 gen
-      (rnd1,rnd2) = split rnd0
+    , ("axpy", mytest prop_Axpy)
+    , ("(+=)", mytest prop_AddEquals)
+    , ("(-=)", mytest prop_SubEquals)
+    , ("(*=)", mytest prop_MulEquals)
+    , ("(//=)", mytest prop_DivEquals)
+    
+    , ("getAdd", mytest prop_GetAdd)
+    , ("getSub", mytest prop_GetSub)
+    , ("getMul", mytest prop_GetMul)
+    , ("getDiv", mytest prop_GetDiv)
 
-done :: String -> Int -> [[String]] -> IO ()
-done mesg ntest stamps = putStr ( mesg ++ " " ++ show ntest ++ " tests" ++ table )
-  where
-    table = display
-            . map entry
-            . reverse
-            . sort
-            . map pairLength
-            . group
-            . sort
-            . filter (not . null)
-            $ stamps
+    , ("getSumAbs", mytest prop_GetSumAbs)
+    , ("getNorm2", mytest prop_GetNorm2)
+    , ("getWhichMaxAbs", mytest prop_GetWhichMaxAbs)
+    , ("getDot", mytest prop_GetDot)
 
-    display []  = ".\n"
-    display [x] = " (" ++ x ++ ").\n"
-    display xs  = ".\n" ++ unlines (map (++ ".") xs)
-
-    pairLength xss@(xs:_) = (length xss, xs)
-    entry (n, xs)         = percentage n ntest
-                       ++ " "
-                       ++ concat (intersperse ", " xs)
-
-    percentage n m        = show ((100 * n) `div` m) ++ "%"
-
-------------------------------------------------------------------------
-
-instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
-    arbitrary = liftM2 (:+) arbitrary arbitrary
-    coarbitrary (x:+y) = coarbitrary (x,y)
-
-newtype Natural = Nat Int deriving (Eq,Show)
-instance Arbitrary Natural where
-    arbitrary = do
-        n <- arbitrary
-        return $ Nat (abs n)
-        
-    coarbitrary = undefined
-
-data Index = Index Int Int deriving (Eq,Show)
-instance Arbitrary Index where
-    arbitrary = do
-        n <- arbitrary
-        i <- choose (0, abs n)
-        return $ Index i (abs n + 1)
-        
-    coarbitrary = undefined
-
-data Assocs = Assocs Int [(Int,E)] deriving (Eq,Show)
-instance Arbitrary Assocs where
-    arbitrary = do
-        (Nat n) <- arbitrary
-        (Nat s) <- if n == 0 then return (Nat 0) else arbitrary
-        ies <- replicateM s $ liftM2 (,) (choose (0,n-1)) arbitrary
-        return $ Assocs n ies
-        
-    coarbitrary = undefined
+    ]

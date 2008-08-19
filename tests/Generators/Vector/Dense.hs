@@ -7,8 +7,7 @@
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Vector.Dense (
-    TestVector(..),
+module Generators.Vector.Dense (
     SubVector(..),
     VectorPair(..),
     VectorTriple(..),
@@ -25,7 +24,6 @@ import qualified Test.QuickCheck as QC
 import Data.Vector.Dense hiding ( vector )
 import BLAS.Elem ( Elem, BLAS1 )
 
-newtype TestVector n e = TestVector (Vector n e) deriving (Show)
 data SubVector n e = SubVector Int (Vector n e) Int Int deriving (Show)
 data VectorPair n e = Pair (Vector n e) (Vector n e) deriving (Show)
 data VectorTriple n e = Triple (Vector n e) (Vector n e) (Vector n e) deriving (Show)
@@ -57,17 +55,17 @@ subVector n = do
     x <- vector (o + s*n + e)
     return (SubVector s x o n)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TestVector n e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
     arbitrary = sized $ \m ->
-        choose (0,m) >>= vector >>= return . TestVector
-    coarbitrary (TestVector x) =
+        choose (0,m) >>= vector
+    coarbitrary x =
         coarbitrary (elems x)
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (SubVector n e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
     coarbitrary (SubVector s x o n) = 
-        coarbitrary (s,TestVector x,o,n)
+        coarbitrary (s,x,o,n)
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
     arbitrary = sized $ \m -> do
@@ -77,7 +75,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
         return $ Pair x y
         
     coarbitrary (Pair x y) = 
-        coarbitrary (TestVector x, TestVector y)
+        coarbitrary (x,y)
         
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
     arbitrary = sized $ \m -> do
@@ -88,5 +86,5 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
         return $ Triple x y z
         
     coarbitrary (Triple x y z) = 
-        coarbitrary (TestVector x, TestVector y, TestVector z)
+        coarbitrary (x,y,z)
         
