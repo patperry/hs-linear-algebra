@@ -43,7 +43,7 @@ module Data.Vector.Dense (
 import Data.AEq
 import System.IO.Unsafe
 
-import BLAS.Elem ( Elem, BLAS1, BLAS2 )
+import BLAS.Elem ( Elem, BLAS1 )
 import BLAS.Internal ( UnsafeIOToM(..), inlinePerformIO )
 import BLAS.Tensor.Immutable
 import BLAS.Numeric.Immutable
@@ -236,7 +236,7 @@ instance (Elem e) => BaseVector Vector e where
 
 instance (BLAS1 e, UnsafeIOToM m) => ReadVector Vector e m where
     
-instance (BLAS2 e) => Num (Vector n e) where
+instance (BLAS1 e) => Num (Vector n e) where
     (+) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getAdd x y
     (-) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getSub x y
     (*) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getMul x y
@@ -245,12 +245,12 @@ instance (BLAS2 e) => Num (Vector n e) where
     signum      = tmap signum
     fromInteger = (constant 1) . fromInteger
     
-instance (BLAS2 e) => Fractional (Vector n e) where
+instance (BLAS1 e) => Fractional (Vector n e) where
     (/) x y      = unsafeFreezeIOVector $ unsafeLiftVector2 getDiv x y
     recip        = tmap recip
     fromRational = (constant 1) . fromRational 
     
-instance (BLAS2 e, Floating e) => Floating (Vector n e) where
+instance (BLAS1 e, Floating e) => Floating (Vector n e) where
     pi    = constant 1 pi
     exp   = tmap exp
     sqrt  = tmap sqrt

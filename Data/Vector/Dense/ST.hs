@@ -16,7 +16,7 @@ module Data.Vector.Dense.ST (
     module Data.Vector.Dense.IO,
     ) where
 
-import BLAS.Elem ( Elem, BLAS1, BLAS2 )
+import BLAS.Elem ( Elem, BLAS1 )
 
 import Control.Monad.ST
 
@@ -93,12 +93,12 @@ instance (BLAS1 e, ReadVector x e (ST s)) => CopyTensor x (STVector s) Int e (ST
     newCopy    = newCopyVector    
     unsafeCopy = unsafeCopyVector
     
-instance (BLAS2 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s) where
+instance (BLAS1 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s) where
     unsafeAxpy = unsafeAxpyVector
     unsafeMul  = unsafeMulVector
     unsafeDiv  = unsafeDivVector
 
-instance (BLAS2 e, ReadVector x e (ST s), ReadVector y e (ST s)) => Numeric3 x y (STVector s) Int e (ST s) where
+instance (BLAS1 e, ReadVector x e (ST s), ReadVector y e (ST s)) => Numeric3 x y (STVector s) Int e (ST s) where
     unsafeDoAdd = unsafeDoBinaryOp $ flip $ unsafeAxpyVector 1
     unsafeDoSub = unsafeDoBinaryOp $ flip $ unsafeAxpyVector (-1)
     unsafeDoMul = unsafeDoBinaryOp $ unsafeMulVector

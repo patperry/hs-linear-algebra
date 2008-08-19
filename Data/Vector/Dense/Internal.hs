@@ -44,7 +44,7 @@ import BLAS.Elem.Base ( Elem )
 
 import BLAS.Internal ( clearArray, inlinePerformIO, checkVecVecOp )
 
-import BLAS.C ( BLAS1, BLAS2 )
+import BLAS.C ( BLAS1 )
 import qualified BLAS.C as BLAS
 
 import BLAS.Tensor hiding ( ITensor(..) )
@@ -382,25 +382,29 @@ unsafeAxpyVector alpha x y
     | otherwise =
         call2 (flip BLAS.axpy alpha) x y
 
-unsafeMulVector :: (WriteVector y e m, ReadVector x e m, BLAS2 e) => 
+unsafeMulVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 unsafeMulVector y x
     | isConj y =
         unsafeMulVector (conj y) (conj x)
     | isConj x =
-        call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y    
+        call2 BLAS.cmul x y
+        --call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y    
     | otherwise =
-        call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
+        call2 BLAS.mul x y
+        --call2 (flip (BLAS.tbmv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
 
-unsafeDivVector :: (WriteVector y e m, ReadVector x e m, BLAS2 e) => 
+unsafeDivVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 unsafeDivVector y x
     | isConj y =
         unsafeDivVector (conj y) (conj x)
     | isConj x =
-        call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y
+        call2 BLAS.cdiv x y
+        --call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.conjTrans BLAS.nonUnit) 0) x y
     | otherwise =
-        call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
+        call2 BLAS.div x y
+        --call2 (flip (BLAS.tbsv BLAS.colMajor BLAS.upper BLAS.noTrans BLAS.nonUnit) 0) x y
 
 
 call :: (ReadVector x e m) => 
@@ -481,12 +485,12 @@ instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
     newCopy    = newCopyVector    
     unsafeCopy = unsafeCopyVector
 
-instance (BLAS2 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
+instance (BLAS1 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
     unsafeAxpy = unsafeAxpyVector
     unsafeMul  = unsafeMulVector
     unsafeDiv  = unsafeDivVector
 
-instance (BLAS2 e, ReadVector x e IO, ReadVector y e IO) => Numeric3 x y IOVector Int e IO where
+instance (BLAS1 e, ReadVector x e IO, ReadVector y e IO) => Numeric3 x y IOVector Int e IO where
     unsafeDoAdd = unsafeDoBinaryOp $ flip $ unsafeAxpyVector 1
     unsafeDoSub = unsafeDoBinaryOp $ flip $ unsafeAxpyVector (-1)
     unsafeDoMul = unsafeDoBinaryOp $ unsafeMulVector

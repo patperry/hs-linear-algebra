@@ -12,11 +12,14 @@
 module BLAS.C.Level1
     where
      
+import Prelude hiding ( div )
+
 import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with )
 import Foreign.Storable.Complex ()
 import Data.Complex
 
 import BLAS.Elem.Base
+import BLAS.C.Types
 import BLAS.C.Double  
 import BLAS.C.Zomplex
         
@@ -42,6 +45,19 @@ class (Elem a) => BLAS1 a where
     -- | Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
+    -- | Replaces @y@ with @x*y@.
+    mul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+
+    -- | Replaces @y@ with @conj(x)*y@.
+    cmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+
+    -- | Replaces @y@ with @y/x@.
+    div :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+
+    -- | Replaces @y@ with @y/conj(x)@.
+    cdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+
+
 
 instance BLAS1 Double where
     dotu  = ddot
@@ -57,6 +73,10 @@ instance BLAS1 Double where
     rot   = drot
     conj _ _ _ = return ()
     acxpy = daxpy
+    mul n = dtbmv colMajor upper noTrans nonUnit n 0
+    cmul  = mul
+    div n = dtbsv colMajor upper noTrans nonUnit n 0
+    cdiv = div
 
 instance BLAS1 (Complex Double) where
     dotu n pX incX pY incY =
@@ -124,3 +144,8 @@ instance BLAS1 (Complex Double) where
                         
                     go n'' pX'' pY''
         
+    mul n  = ztbmv colMajor upper noTrans   nonUnit n 0
+    cmul n = ztbmv colMajor upper conjTrans nonUnit n 0
+
+    div n  = ztbsv colMajor upper noTrans   nonUnit n 0
+    cdiv n = ztbsv colMajor upper conjTrans nonUnit n 0
