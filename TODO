@@ -38,3 +38,6 @@ IOVector.
 * Move unsafeIOToM into separate file.
 
 * submatrix -> submatrixView.  Add getSubmatrix function?
+
+* Having (//) in ITensor makes BLAS1 a pre-requisite.  Move (//) to seperate
+  typeclass to get around this?
