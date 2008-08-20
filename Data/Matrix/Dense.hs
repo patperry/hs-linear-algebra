@@ -86,6 +86,13 @@ matrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
 matrix mn ies = unsafePerformIO $ newMatrix mn ies
 {-# NOINLINE matrix #-}
 
+-- | Create a new matrix with the given elements in row-major order.
+listMatrix :: (Elem e) => (Int,Int) -> [e] -> Matrix (m,n) e
+listMatrix mn es = unsafePerformIO $ newListMatrix mn es
+{-# NOINLINE listMatrix #-}
+
+
+
 -- | Same as 'matrix' but does not do any bounds checking.
 unsafeMatrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
 unsafeMatrix mn ies = unsafePerformIO $ unsafeNewMatrix mn ies
@@ -159,4 +166,25 @@ instance (BLAS2 e, Floating e) => Floating (DMatrix Imm (m,n) e) where
     asinh    = amap asinh
     acosh    = amap acosh
     atanh    = amap atanh
+    
+instance (BLAS1 e, Show e) => Show (DMatrix Imm (m,n) e) where
+    show a | isHerm a = 
+                "herm (" ++ show (herm a) ++ ")"
+           | otherwise =
+                "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
+        
+compareHelp :: (BLAS1 e) => 
+    (e -> e -> Bool) -> Matrix (m,n) e -> Matrix (m,n) e -> Bool
+compareHelp cmp x y
+    | isHerm x && isHerm y =
+        compareHelp cmp (herm x) (herm y)
+compareHelp cmp x y =
+    (shape x == shape y) && (and $ zipWith cmp (elems x) (elems y))
+
+instance (BLAS1 e, Eq e) => Eq (DMatrix Imm (m,n) e) where
+    (==) = compareHelp (==)
+
+instance (BLAS1 e, AEq e) => AEq (DMatrix Imm (m,n) e) where
+    (===) = compareHelp (===)
+    (~==) = compareHelp (~==)
     

@@ -233,8 +233,9 @@ instance (Elem e) => BaseVector Vector e where
     isConj                    = liftVector isConj
     conjVector (V x)          = V $ conjVector x
     unsafeSubvectorWithStride s (V x) o n = V $ unsafeSubvectorWithStride s x o n
-    vectorViewArray f o n s c = V $ vectorViewArray f o n s c
     withVectorPtr             = liftVector withVectorPtr
+    vectorViewArray f o n s c = V $ vectorViewArray f o n s c
+    arrayFromVector           = liftVector arrayFromVector
 
 instance (BLAS1 e, UnsafeIOToM m) => ReadVector Vector e m where
     

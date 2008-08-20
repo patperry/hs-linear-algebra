@@ -12,8 +12,5 @@ module Data.Vector.Dense.IO (
     
     ) where
 
-import Data.Vector.Dense.Internal hiding ( DV, storageIOVector, offsetIOVector, 
-    dimIOVector, strideIOVector, isConjIOVector, 
-    unsafeAxpyVector, unsafeMulVector, unsafeDivVector, 
-    unsafeDoVectorOp2 )
-import BLAS.Numeric
+import Data.Vector.Dense.Internal hiding ( unsafeAxpyVector, 
+    unsafeMulVector, unsafeDivVector, unsafeDoVectorOp2 )

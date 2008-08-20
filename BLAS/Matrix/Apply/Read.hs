@@ -8,7 +8,7 @@
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.ReadOnly (
+module BLAS.Matrix.Apply.Read (
     RMatrix(..),
     
     -- * Matrix and vector multiplication

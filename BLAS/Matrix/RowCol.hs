@@ -1,15 +1,18 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Matrix.Dense.IO
+-- Module     : BLAS.Matrix.RowCol
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Data.Matrix.Dense.IO (
-    module Data.Matrix.Dense.Internal,
-    
+module BLAS.Matrix.RowCol (
+    module BLAS.Matrix.RowCol.Immutable,
+    module BLAS.Matrix.RowCol.Read,
+    module BLAS.Matrix.RowCol.View,
     ) where
 
-import Data.Matrix.Dense.Internal hiding ( unsafeDoMatrixOp2 )
+import BLAS.Matrix.RowCol.Immutable
+import BLAS.Matrix.RowCol.Read
+import BLAS.Matrix.RowCol.View

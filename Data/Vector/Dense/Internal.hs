@@ -11,7 +11,7 @@
 
 module Data.Vector.Dense.Internal (
     -- * The IOVector data type
-    IOVector(..),
+    IOVector,
 
     -- * Vector Properties
     getSumAbs,
@@ -424,8 +424,9 @@ instance (Elem e) => BaseVector IOVector e where
     isConj                    = isConjIOVector
     conjVector                = conjIOVector
     unsafeSubvectorWithStride = unsafeSubvectorWithStrideIOVector
-    vectorViewArray           = DV
     withVectorPtr             = withIOVectorPtr
+    vectorViewArray           = DV
+    arrayFromVector (DV f o n s c) = (f,o,n,s,c)
 
 instance (Elem e) => ReadVector IOVector e IO where
     

@@ -86,8 +86,13 @@ library
                             BLAS.Elem.Base
 
                         BLAS.Internal
-                        -- BLAS.Matrix
-                        --     BLAS.Matrix.Base
+                        BLAS.Matrix
+                            BLAS.Matrix.Base
+                            BLAS.Matrix.RowCol
+                                BLAS.Matrix.RowCol.Immutable
+                                BLAS.Matrix.RowCol.Read
+                                BLAS.Matrix.RowCol.View
+                                
                         --     BLAS.Matrix.Immutable
                         --     BLAS.Matrix.ReadOnly
                         --     BLAS.Matrix.Solve
@@ -117,11 +122,15 @@ library
                         --     Data.Matrix.Banded.Internal
                         --     Data.Matrix.Banded.Operations
                         -- 
-                        -- Data.Matrix.Diag
-                        -- 
+                        -- Data.Matrix.Diag 
+                        
+                            Data.Matrix.Dense.IO
+                            Data.Matrix.Dense.Class
+                                Data.Matrix.Dense.Class.Base
+                                Data.Matrix.Dense.Class.Read
+                                Data.Matrix.Dense.Class.Write
+                                
                         -- Data.Matrix.Dense
-                        --     Data.Matrix.Dense.IO
-                        --     Data.Matrix.Dense.Internal
                         --     Data.Matrix.Dense.Operations
                         -- 
                         -- Data.Matrix.Perm
@@ -156,6 +165,7 @@ library
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex    
                         Data.Vector.Dense.Internal
+                        Data.Matrix.Dense.Internal
                         
     ghc-options:        -Wall                   
     extensions:         BangPatterns, FlexibleContexts, 

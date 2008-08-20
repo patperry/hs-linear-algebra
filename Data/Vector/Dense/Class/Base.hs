@@ -42,6 +42,8 @@ class (BaseTensor x Int e) => BaseVector x e where
     -- flag, create a vector view of the underlying memory.
     vectorViewArray :: ForeignPtr e -> Int -> Int -> Int -> Bool -> x n e
 
+    arrayFromVector :: x n e -> (ForeignPtr e, Int, Int, Int, Bool)
+
 instance (BaseVector x e) => Conj (x n e) where
     conj = conjVector
     

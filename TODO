@@ -36,3 +36,5 @@
 IOVector.
 
 * Move unsafeIOToM into separate file.
+
+* submatrix -> submatrixView.  Add getSubmatrix function?

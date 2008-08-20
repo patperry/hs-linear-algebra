@@ -75,8 +75,9 @@ instance (Elem e) => BaseVector (STVector s) e where
     isConj                    = liftSTVector isConj
     conjVector (ST x)         = ST $ conjVector x
     unsafeSubvectorWithStride s (ST x) o n = ST $ unsafeSubvectorWithStride s x o n
-    vectorViewArray f o n s c = ST $ vectorViewArray f o n s c
     withVectorPtr             = liftSTVector withVectorPtr
+    vectorViewArray f o n s c = ST $ vectorViewArray f o n s c
+    arrayFromVector           = liftSTVector arrayFromVector
 
 instance (Elem e) => ReadVector (STVector s) e (ST s) where
     
