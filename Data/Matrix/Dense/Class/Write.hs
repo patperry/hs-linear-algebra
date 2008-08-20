@@ -15,6 +15,8 @@ module Data.Matrix.Dense.Class.Write (
     newListMatrix,
     newRowsMatrix,
     newColsMatrix,
+    newRowMatrix,
+    newColMatrix,
     unsafeNewMatrix,
     
     -- * Copying matrices
@@ -33,6 +35,7 @@ module Data.Matrix.Dense.Class.Write (
     unsafeDoMatrixOp2
     ) where
 
+import Control.Monad( forM_ )
 import Foreign
 
 import BLAS.Elem
@@ -76,20 +79,30 @@ newListMatrix (m,n) es = do
 -- | Form a matrix from a list of column vectors.
 newColsMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
     (Int,Int) -> [x k e] -> m (a (k,l) e)
-newColsMatrix (m,n) _ = do
+newColsMatrix (m,n) cs = do
     a <- newZero (m,n)
-    --forM_ (zip [0..(n-1)] cs) $ \(j,c) ->
-    --    V.copyVector (unsafeCol (unsafeThaw a) j) c
+    forM_ (zip [0..(n-1)] cs) $ \(j,c) ->
+        copyVector (unsafeColView a j) c
     return a
 
 -- | Form a matrix from a list of row vectors.
 newRowsMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
     (Int,Int) -> [x l e] -> m (a (k,l) e)
-newRowsMatrix (m,n) _ = do
+newRowsMatrix (m,n) rs = do
     a <- newZero (m,n)
-    --forM_ (zip [0..(m-1)] rs) $ \(i,r) ->
-    --    copy (unsafeRow (unsafeThaw a) i) r
+    forM_ (zip [0..(m-1)] rs) $ \(i,r) ->
+        copyVector (unsafeRowView a i) r
     return a
+
+-- | Create a new matrix from a column vector.
+newColMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
+    x k e -> m (a (k,one) e)
+newColMatrix x = newColsMatrix (dim x,1) [x]
+
+-- | Create a new matrix from a row vector.
+newRowMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
+    x l e -> m (a (one,l) e)
+newRowMatrix x = newRowsMatrix (1,dim x) [x]
 
 
 ---------------------------  Copying Matrices --------------------------------

@@ -130,6 +130,7 @@ library
                         -- 
                         -- Data.Matrix.Diag 
                         
+                        Data.Matrix.Dense
                             Data.Matrix.Dense.IO
                             Data.Matrix.Dense.ST
                             Data.Matrix.Dense.Class
@@ -137,7 +138,6 @@ library
                                 Data.Matrix.Dense.Class.Read
                                 Data.Matrix.Dense.Class.Write
                                 
-                        -- Data.Matrix.Dense
                         --     Data.Matrix.Dense.Operations
                         -- 
                         -- Data.Matrix.Perm
