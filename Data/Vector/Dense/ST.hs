@@ -14,6 +14,8 @@ module Data.Vector.Dense.ST (
     runSTVector,
 
     module Data.Vector.Dense.IO,
+    unsafeIOVectorToSTVector,
+    unsafeSTVectorToIOVector,
     ) where
 
 import BLAS.Elem ( Elem, BLAS1 )
@@ -28,6 +30,12 @@ import Data.Vector.Dense.Internal ( newCopyVector, unsafeCopyVector,
 import qualified Data.Vector.Dense.IO as IO
 
 newtype STVector s n e = ST (IO.IOVector n e)
+
+unsafeIOVectorToSTVector :: IO.IOVector n e -> STVector s n e
+unsafeIOVectorToSTVector = ST
+
+unsafeSTVectorToIOVector :: STVector s n e -> IO.IOVector n e
+unsafeSTVectorToIOVector (ST x) = x
 
 liftSTVector :: (IO.IOVector n e -> a) -> STVector s n e -> a
 liftSTVector f (ST x) = f x
