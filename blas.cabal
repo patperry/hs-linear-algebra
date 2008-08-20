@@ -131,6 +131,7 @@ library
                         -- Data.Matrix.Diag 
                         
                             Data.Matrix.Dense.IO
+                            Data.Matrix.Dense.ST
                             Data.Matrix.Dense.Class
                                 Data.Matrix.Dense.Class.Base
                                 Data.Matrix.Dense.Class.Read
