@@ -88,6 +88,12 @@ library
                         BLAS.Internal
                         BLAS.Matrix
                             BLAS.Matrix.Base
+
+                            BLAS.Matrix.Diag
+                                BLAS.Matrix.Diag.Immutable
+                                BLAS.Matrix.Diag.Read
+                                BLAS.Matrix.Diag.View
+
                             BLAS.Matrix.RowCol
                                 BLAS.Matrix.RowCol.Immutable
                                 BLAS.Matrix.RowCol.Read

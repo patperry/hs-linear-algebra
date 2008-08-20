@@ -41,8 +41,7 @@ import BLAS.Matrix  hiding ( BaseMatrix, IRowCol(..) )
 import qualified BLAS.Matrix as BLAS
 
 import BLAS.Elem( Elem, BLAS1 )
---import BLAS.Internal( inlinePerformIO, checkedRow, checkedCol, checkedDiag,
---    checkedSubmatrix, diagStart, diagLen )
+import BLAS.Internal( diagStart, diagLen )
 
 import Data.Vector.Dense.Internal
 
@@ -191,6 +190,18 @@ unsafeColViewIOMatrix a j
             c = False
         in vectorViewArray f o m s c
 
+unsafeDiagViewIOMatrix :: (Elem e) => IOMatrix (m,n) e -> Int -> IOVector k e
+unsafeDiagViewIOMatrix a i 
+    | isHermIOMatrix a = 
+        conj $ unsafeDiagViewIOMatrix (hermIOMatrix a) (negate i)
+    | otherwise =            
+        let f = storageIOMatrix a
+            o = indexOfIOMatrix a (diagStart i)
+            n = diagLen (shapeIOMatrix a) i
+            s = ldaIOMatrix a + 1
+            c = False
+        in vectorViewArray f o n s c
+
 colViewsIOMatrix :: (Elem e) => IOMatrix (m,n) e -> [IOVector m e]
 colViewsIOMatrix a = [ unsafeColViewIOMatrix a i | i <- [0..(numCols a - 1)] ]
 
@@ -325,31 +336,6 @@ unsafeCopyMatrix = liftMatrix2 unsafeCopyVector
 unsafeSwapIOMatrix :: (Elem e) => IOMatrix mn e -> IOMatrix mn e -> IO ()
 unsafeSwapIOMatrix = liftMatrix2 unsafeSwap
 
-{-
--- | @diag a 0@ gets a vector view of the main diagonal of @a@.  @diag a k@ for 
--- @k@ positive gets a view of the @k@th superdiagonal.  For @k@ negative, it
--- gets a view of the @(-k)@th subdiagonal.
-diag :: (Elem e) => DMatrix t (m,n) e -> Int -> DVector t k e
-diag a = checkedDiag (shape a) (unsafeDiag a)
-
--- | Same as 'diag', but does not do any bounds checking.
-unsafeDiag :: (Elem e) => DMatrix t (m,n) e -> Int -> DVector t k e
-unsafeDiag a i 
-    | isHerm a = 
-        conj $ unsafeDiag (herm a) (negate i)
-    | otherwise =            
-        let f = storageOf a
-            o = indexOf a (diagStart i)
-            n = diagLen (shape a) i
-            s = ldaOf a + 1
-            c = False
-        in V.fromForeignPtr f o n s c
-
-
-
-
-
--}
 
 instance BaseTensor IOMatrix (Int,Int) e where
     shape  = shapeIOMatrix
@@ -401,9 +387,15 @@ instance (Elem e) => RowColView IOMatrix IOVector e where
     unsafeRowView = unsafeRowViewIOMatrix
     unsafeColView = unsafeColViewIOMatrix
 
-instance (Elem e, WriteVector x e IO) => RowColRead IOMatrix x e IO where
-    unsafeGetRow = undefined
-    unsafeGetCol = undefined
+instance (BLAS1 e) => RowColRead IOMatrix IOVector e IO where
+    unsafeGetRow a i = newCopyVector (unsafeRowView a i)
+    unsafeGetCol a j = newCopyVector (unsafeColView a j)
+
+instance (Elem e) => DiagView IOMatrix IOVector e where
+    unsafeDiagView = unsafeDiagViewIOMatrix
+
+instance (BLAS1 e) => DiagRead IOMatrix IOVector e IO where
+    unsafeGetDiag a i = newCopyVector (unsafeDiagView a i)
 
 instance (BLAS1 e) => ReadNumeric IOMatrix (Int,Int) e IO where
 
