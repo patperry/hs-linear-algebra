@@ -29,3 +29,10 @@
 
 
 * Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
+
+* Change copy/axpy to copyTensor/copyAxpy.  Put in aliases for copyVector etc.
+
+* Put unsafeSwap in a SwapTensor type class.  Remove the re-write rule in
+IOVector.
+
+* Move unsafeIOToM into separate file.
