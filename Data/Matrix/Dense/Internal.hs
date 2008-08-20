@@ -12,21 +12,10 @@ module Data.Matrix.Dense.Internal (
     -- * IOMatrix matrix data types
     IOMatrix,
 
-    -- * converting to and from vectors
-    maybeFromRow,
-    maybeFromCol,
-    maybeToVector,
-    liftMatrix,
-    liftMatrix2,
-
     module BLAS.Tensor,
     module BLAS.Numeric,
     module BLAS.Matrix,
     module Data.Matrix.Dense.Class,
-    
-    -- * Internal operations
-    unsafeDoMatrixOp2
-
     ) where
 
 import Control.Monad
@@ -62,83 +51,6 @@ data IOMatrix mn e =
 
 coerceIOMatrix :: IOMatrix mn e -> IOMatrix mn' e
 coerceIOMatrix = unsafeCoerce
-
--- | Create a matrix view of a row vector.  This will fail if the
--- vector is conjugated and the stride is not @1@.
-maybeFromRow :: (Elem e, BaseMatrix a e, BaseVector x e) => 
-    x m e -> Maybe (a (one,m) e)
-maybeFromRow x
-    | c && s == 1 =
-        Just $ matrixViewArray f o (n,1) (max 1 n) True
-    | not c =
-        Just $ matrixViewArray f o (1,n) s         False
-    | otherwise =
-        Nothing
-  where
-    (f,o,n,s,c) = arrayFromVector x
-
--- | Possibly create a matrix view of a column vector.  This will fail
--- if the stride of the vector is not @1@ and the vector is not conjugated.
-maybeFromCol :: (Elem e, BaseMatrix a e, BaseVector x e) => 
-    x n e -> Maybe (a (n,one) e)
-maybeFromCol x
-    | c = maybeFromRow (conj x) >>= return . herm
-    | s == 1 =
-        Just $ matrixViewArray f o (n,1) (max 1 n) False
-    | otherwise =
-        Nothing
-  where
-    (f,o,n,s,c) = arrayFromVector x
-
-maybeToVector :: (Elem e, BaseMatrix a e, RowColView a x e) => 
-    a mn e -> Maybe (x k e)
-maybeToVector a
-    | h = 
-        maybeToVector a' >>= return . conj
-    | ld == m =
-        Just $ vectorViewArray f o (m*n) 1  False
-    | m == 1 =
-        Just $ vectorViewArray f o n     ld False
-    | otherwise =
-        Nothing
-  where
-    a' = (coerceMatrix . herm . coerceMatrix) a
-    (f,o,(m,n),ld,h) = arrayFromMatrix a
-
--- | Take a unary elementwise vector operation and apply it to the elements
--- of a matrix.
-liftMatrix :: (Elem e, Monad m, BaseMatrix a e, RowColView a x e) => 
-    (x k e -> m ()) -> a mn e -> m ()
-liftMatrix f a =
-    case maybeToVector a of
-        Just x -> f x
-        _ -> 
-            let xs  = case isHerm a of
-                          True  -> rowViews (coerceMatrix a)
-                          False -> colViews (coerceMatrix a)
-            in mapM_ f xs
-
--- | Take a binary elementwise vector operation and apply it to the elements
--- of a pair of matrices.
-liftMatrix2 :: (Elem e, Monad m, BaseMatrix a e, BaseMatrix b e,
-                    RowColView a x e, RowColView b y e) => 
-    (x k e -> y k e -> m ()) ->
-        a mn e -> b mn e -> m ()
-liftMatrix2 f a b =
-    if isHerm a == isHerm b
-        then case (maybeToVector a, maybeToVector b) of
-                 ((Just x), (Just y)) -> f x y
-                 _                    -> elementwise
-        else elementwise
-  where
-    elementwise =             
-        let vecsA = if isHerm a then rowViews . coerceMatrix
-                                else colViews . coerceMatrix
-            vecsB = if isHerm a then rowViews . coerceMatrix
-                                else colViews . coerceMatrix
-            xs = vecsA a
-            ys = vecsB b
-        in zipWithM_ f xs ys
 
 
 -- | Create a new matrix of given shape, but do not initialize the elements.
@@ -318,21 +230,6 @@ canModifyElemIOMatrix :: IOMatrix mn e -> (Int,Int) -> IO Bool
 canModifyElemIOMatrix _ _ = return True
 {-# INLINE canModifyElemIOMatrix #-}
 
-newCopyMatrix :: (BLAS1 e, ReadMatrix a x e m, WriteMatrix b y e m) => 
-    a mn e -> m (b mn e)
-newCopyMatrix a 
-    | isHerm a =
-        newCopyMatrix ((herm . coerceMatrix) a) >>= 
-            return . coerceMatrix . herm
-    | otherwise = do
-        a' <- newMatrix_ (shape a)
-        unsafeCopyMatrix a' a
-        return a'
-
-unsafeCopyMatrix :: (BLAS1 e, ReadMatrix a x e m, WriteMatrix b y e m) => 
-    b mn e -> a mn e -> m ()
-unsafeCopyMatrix = liftMatrix2 unsafeCopyVector
-
 unsafeSwapIOMatrix :: (Elem e) => IOMatrix mn e -> IOMatrix mn e -> IO ()
 unsafeSwapIOMatrix = liftMatrix2 unsafeSwap
 
@@ -418,9 +315,3 @@ instance (BLAS1 e, ReadMatrix a x e IO, ReadMatrix b y e IO) => Numeric3 a b IOM
     unsafeDoSub = unsafeDoMatrixOp2 $ flip $ unsafeAxpy (-1)
     unsafeDoMul = unsafeDoMatrixOp2 $ unsafeMul
     unsafeDoDiv = unsafeDoMatrixOp2 $ unsafeDiv
-
-unsafeDoMatrixOp2 :: (BLAS1 e, ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m) =>
-    (c n e -> b n e -> m ()) -> a n e -> b n e -> c n e -> m ()
-unsafeDoMatrixOp2 f a b c = do
-    unsafeCopyMatrix c a
-    f c b

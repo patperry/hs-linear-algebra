@@ -12,4 +12,4 @@ module Data.Matrix.Dense.IO (
     
     ) where
 
-import Data.Matrix.Dense.Internal hiding ( unsafeDoMatrixOp2 )
+import Data.Matrix.Dense.Internal

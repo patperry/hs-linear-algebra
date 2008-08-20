@@ -28,7 +28,9 @@ module Data.Vector.Dense.Class.Write (
     newBasisVector,
     setBasis,
         
-    module Data.Vector.Dense.Class.Read
+    module Data.Vector.Dense.Class.Read,
+    
+    unsafeDoVectorOp2,
     ) where
 
 import Control.Monad( forM_ )
@@ -148,3 +150,11 @@ newZeroVector = newZero
 -- | Create a constant vector of the specified length.
 newConstantVector :: (WriteVector x e m) => Int -> e -> m (x n e)
 newConstantVector = newConstant
+
+------------------------------ Vector Operations -----------------------------
+
+unsafeDoVectorOp2 :: (BLAS1 e, ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (z n e -> y n e -> m ()) -> x n e -> y n e -> z n e -> m ()
+unsafeDoVectorOp2 f x y z = do
+    unsafeCopyVector z x
+    f z y

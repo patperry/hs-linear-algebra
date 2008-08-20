@@ -17,18 +17,26 @@ module Data.Matrix.Dense.Class.Write (
     newColsMatrix,
     unsafeNewMatrix,
     
+    -- * Copying matrices
+    newCopyMatrix,
+    copyMatrix,
+    unsafeCopyMatrix,
+    
     -- * Special matrices
     newZeroMatrix,
     newConstantMatrix,
     newIdentityMatrix,
     setIdentity,
         
-    module Data.Matrix.Dense.Class.Read
+    module Data.Matrix.Dense.Class.Read,
+    
+    unsafeDoMatrixOp2
     ) where
 
 import Foreign
 
 import BLAS.Elem
+import BLAS.Internal( checkBinaryOp)
 import BLAS.Matrix
 import BLAS.Tensor
 import Data.Vector.Dense.Class
@@ -84,6 +92,31 @@ newRowsMatrix (m,n) _ = do
     return a
 
 
+---------------------------  Copying Matrices --------------------------------
+
+newCopyMatrix :: (BLAS1 e, ReadMatrix a x e m, WriteMatrix b y e m) => 
+    a mn e -> m (b mn e)
+newCopyMatrix a 
+    | isHerm a =
+        newCopyMatrix ((herm . coerceMatrix) a) >>= 
+            return . coerceMatrix . herm
+    | otherwise = do
+        a' <- newMatrix_ (shape a)
+        unsafeCopyMatrix a' a
+        return a'
+
+-- | @copyMatrix dst src@ replaces the values in @dst@ with those in
+-- source.  The operands must be the same shape.
+copyMatrix :: (BLAS1 e, WriteMatrix b y e m,  ReadMatrix a x e m) => 
+    b mn e -> a mn e -> m ()
+copyMatrix b a = checkBinaryOp (shape b) (shape a) $ unsafeCopyMatrix b a
+{-# INLINE copyMatrix #-}
+
+unsafeCopyMatrix :: (BLAS1 e, WriteMatrix b y e m,  ReadMatrix a x e m) => 
+    b mn e -> a mn e -> m ()
+unsafeCopyMatrix = liftMatrix2 unsafeCopyVector
+
+
 ---------------------------  Special Matrices --------------------------------
 
 -- | Create a new matrix of the given shape with ones along the diagonal, 
@@ -109,3 +142,12 @@ newZeroMatrix = newZero
 -- | Create a constant matrix of the specified shape.
 newConstantMatrix :: (WriteMatrix a x e m) => (Int,Int) -> e -> m (a mn e)
 newConstantMatrix = newConstant
+
+
+------------------------------ Matrix Operations -----------------------------
+
+unsafeDoMatrixOp2 :: (BLAS1 e, ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m) =>
+    (c n e -> b n e -> m ()) -> a n e -> b n e -> c n e -> m ()
+unsafeDoMatrixOp2 f a b c = do
+    unsafeCopyMatrix c a
+    f c b

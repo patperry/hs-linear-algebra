@@ -13,4 +13,4 @@ module Data.Vector.Dense.IO (
     ) where
 
 import Data.Vector.Dense.Internal hiding ( unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector, unsafeDoVectorOp2 )
+    unsafeMulVector, unsafeDivVector )
