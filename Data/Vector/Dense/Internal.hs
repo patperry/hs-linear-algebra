@@ -26,7 +26,7 @@ module Data.Vector.Dense.Internal (
     unsafeAxpyVector,
     unsafeMulVector,
     unsafeDivVector,
-    unsafeDoBinaryOp,
+    unsafeDoVectorOp2,
     
     module BLAS.Tensor,
     module BLAS.Numeric,
@@ -449,14 +449,14 @@ instance (BLAS1 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
     unsafeDiv  = unsafeDivVector
 
 instance (BLAS1 e, ReadVector x e IO, ReadVector y e IO) => Numeric3 x y IOVector Int e IO where
-    unsafeDoAdd = unsafeDoBinaryOp $ flip $ unsafeAxpyVector 1
-    unsafeDoSub = unsafeDoBinaryOp $ flip $ unsafeAxpyVector (-1)
-    unsafeDoMul = unsafeDoBinaryOp $ unsafeMulVector
-    unsafeDoDiv = unsafeDoBinaryOp $ unsafeDivVector
+    unsafeDoAdd = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector 1
+    unsafeDoSub = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector (-1)
+    unsafeDoMul = unsafeDoVectorOp2 $ unsafeMulVector
+    unsafeDoDiv = unsafeDoVectorOp2 $ unsafeDivVector
     
-unsafeDoBinaryOp :: (BLAS1 e, ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+unsafeDoVectorOp2 :: (BLAS1 e, ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
     (z n e -> y n e -> m ()) -> x n e -> y n e -> z n e -> m ()
-unsafeDoBinaryOp f x y z = do
+unsafeDoVectorOp2 f x y z = do
     unsafeCopyVector z x
     f z y
     
