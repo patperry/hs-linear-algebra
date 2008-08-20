@@ -13,10 +13,6 @@ module Data.Vector.Dense.Internal (
     -- * The IOVector data type
     IOVector(..),
 
-    -- * Conversion to and from @ForeignPtr@s.
-    fromForeignPtr,
-    toForeignPtr,
-    
     -- * Vector Properties
     getSumAbs,
     getNorm2,
@@ -71,21 +67,6 @@ data IOVector n e =
          , isConjIOVector  :: {-# UNPACK #-} !Bool           -- ^ indicates whether or not the vector is conjugated
          }
 
-
--- | @fromForeignPtr fptr offset n inc c@ creates a vector view of a
--- region in memory starting at the given offset and having dimension @n@,
--- with a stride of @inc@, and with @isConj@ set to @c@.
-fromForeignPtr :: ForeignPtr e -> Int -> Int -> Int -> Bool -> IOVector n e
-fromForeignPtr = DV
-{-# INLINE fromForeignPtr #-}
-
--- | Gets the tuple @(fptr,offset,n,inc,c)@, where @n@ is the dimension and 
--- @inc@ is the stride of the vector, and @c@ indicates whether or not the
--- vector is conjugated.
-toForeignPtr :: IOVector n e -> (ForeignPtr e, Int, Int, Int, Bool)
-toForeignPtr (DV f o n s c) = (f, o, n, s, c)
-{-# INLINE toForeignPtr #-}
-
 unsafeSubvectorWithStrideIOVector :: Int -> IOVector n e -> Int -> Int -> IOVector m e
 unsafeSubvectorWithStrideIOVector s x o n =
     let f  = storageIOVector x
@@ -93,7 +74,7 @@ unsafeSubvectorWithStrideIOVector s x o n =
         n' = n
         s' = s * (strideIOVector x)
         c  = isConjIOVector x
-    in fromForeignPtr f o' n' s' c
+    in DV f o' n' s' c
 
 newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
 newIOVector_ n
@@ -101,7 +82,7 @@ newIOVector_ n
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
     | otherwise = do
         arr <- mallocForeignPtrArray n
-        return $ fromForeignPtr arr 0 n 1 False
+        return $ DV arr 0 n 1 False
 
 indexOfIOVector :: IOVector n e -> Int -> Int
 indexOfIOVector x i = offsetIOVector x + i * strideIOVector x
@@ -171,7 +152,7 @@ getAssocsIOVector x
         getAssocsIOVector (conjIOVector x) 
             >>= return . map (\(i,e) -> (i,conj e))
     | otherwise =
-        let (f,o,n,incX,_) = toForeignPtr x
+        let (DV f o n incX _) = x
             ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
         in return $ go n f incX ptr 0
   where
@@ -465,8 +446,9 @@ instance (Elem e) => WriteTensor IOVector Int e IO where
 instance (Elem e) => BaseVector IOVector e where
     stride                    = strideIOVector
     isConj                    = isConjIOVector
-    conjVector              = conjIOVector
+    conjVector                = conjIOVector
     unsafeSubvectorWithStride = unsafeSubvectorWithStrideIOVector
+    vectorViewArray           = DV
     withVectorPtr             = withIOVectorPtr
 
 instance (Elem e) => ReadVector IOVector e IO where

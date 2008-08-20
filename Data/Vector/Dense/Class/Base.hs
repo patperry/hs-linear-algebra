@@ -22,7 +22,7 @@ module Data.Vector.Dense.Class.Base (
 import BLAS.Internal ( checkedSubvector, checkedSubvectorWithStride )
 import BLAS.Conj
 import BLAS.Tensor
-import Foreign ( Ptr )
+import Foreign ( ForeignPtr, Ptr )
 import Unsafe.Coerce
 
 class (BaseTensor x Int e) => BaseVector x e where
@@ -37,6 +37,10 @@ class (BaseTensor x Int e) => BaseVector x e where
     unsafeSubvectorWithStride :: Int -> x n e -> Int -> Int -> x n' e
     
     withVectorPtr :: x n e -> (Ptr e -> IO a) -> IO a
+    
+    -- | Given a pointer, an offset, a length, a stride, and a conjugacy
+    -- flag, create a vector view of the underlying memory.
+    vectorViewArray :: ForeignPtr e -> Int -> Int -> Int -> Bool -> x n e
 
 instance (BaseVector x e) => Conj (x n e) where
     conj = conjVector
