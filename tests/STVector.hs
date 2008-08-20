@@ -107,8 +107,12 @@ prop_SetBasis (Index i n) =
 
 ----------------------------- Copying Vectors --------------------------------
 
-copy_S x y = ( (), y, y )
-prop_Copy = copy `implements2` copy_S
+newCopyVector_S x = ( x, x )
+prop_NewCopyVector = 
+    (\x -> newCopyVector x >>= abstract) `implements` newCopyVector_S
+
+copyVector_S x y = ( (), y, y )
+prop_CopyVector = copyVector `implements2` copyVector_S
 
 swap_S x y = ( (), y, x )
 prop_Swap = swap `implements2` swap_S
@@ -339,7 +343,8 @@ tests_STVector =
     , ("newBasisVector", mytest prop_NewBasisVector)
     , ("setBasis", mytest prop_SetBasis)
     
-    , ("copy", mytest prop_Copy)
+    , ("newCopyVector", mytest prop_NewCopyVector)
+    , ("copyVector", mytest prop_CopyVector)
     , ("swap", mytest prop_Swap)
 
     , ("doConj", mytest prop_DoConj)

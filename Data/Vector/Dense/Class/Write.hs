@@ -17,6 +17,11 @@ module Data.Vector.Dense.Class.Write (
     newListVector,
     unsafeNewVector,
     
+    -- * Copying vectors
+    newCopyVector,
+    copyVector,
+    unsafeCopyVector,
+    
     -- * Special vectors
     newZeroVector,
     newConstantVector,
@@ -26,7 +31,12 @@ module Data.Vector.Dense.Class.Write (
     module Data.Vector.Dense.Class.Read
     ) where
 
+import Control.Monad( forM_ )
 import Foreign
+
+import BLAS.C( BLAS1 )
+import BLAS.Internal( checkBinaryOp )
+import qualified BLAS.C as BLAS
 
 import BLAS.Tensor
 import Data.Vector.Dense.Class.Read
@@ -63,6 +73,49 @@ newListVector n es = do
     x <- newVector_ n
     unsafeIOToM $ withVectorPtr x $ flip pokeArray $ take n $ es ++ (repeat 0)
     return x
+
+
+---------------------------  Copying Vectors --------------------------------
+
+-- | Creats a new vector by copying another one.
+newCopyVector :: (BLAS1 e, ReadVector x e m, WriteVector y e m) => 
+    x n e -> m (y n e)    
+newCopyVector x
+    | isConj x = 
+        newCopyVector (conj x) >>= return . conj
+    | otherwise = do
+        y <- newVector_ (dim x)
+        unsafeCopyVector y x
+        return y
+
+-- | @copyVector dst src@ replaces the values in @dst@ with those in
+-- source.  The operands must be the same shape.
+copyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
+    y n e -> x n e -> m ()
+copyVector y x = checkBinaryOp (shape x) (shape y) $ unsafeCopyVector y x
+{-# INLINE copyVector #-}
+
+-- | Same as 'copyVector' but the sizes of the arguments are not checked.
+unsafeCopyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
+    y n e -> x n e -> m ()
+unsafeCopyVector y x
+    | isConj x && isConj y =
+        unsafeCopyVector (conj y) (conj x)
+    | isConj x || isConj y =
+        forM_ [0..(dim x - 1)] $ \i -> do
+            unsafeReadElem x i >>= unsafeWriteElem y i
+    | otherwise =
+        call2 BLAS.copy
+  where
+    call2 f =
+        let n    = dim x
+            incX = stride x
+            incY = stride y
+        in unsafeIOToM $
+               withVectorPtr x $ \pX ->
+                   withVectorPtr y $ \pY ->
+                       f n pX incX pY incY
+
 
 ---------------------------  Special Vectors --------------------------------
 

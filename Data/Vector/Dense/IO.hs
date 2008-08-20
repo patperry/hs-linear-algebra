@@ -13,7 +13,7 @@ module Data.Vector.Dense.IO (
     ) where
 
 import Data.Vector.Dense.Internal hiding ( DV, storageIOVector, offsetIOVector, 
-    dimIOVector, strideIOVector, isConjIOVector, fromForeignPtr, 
-    toForeignPtr, newCopyVector, unsafeCopyVector, unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector, unsafeDoBinaryOp )
+    dimIOVector, strideIOVector, isConjIOVector, 
+    unsafeAxpyVector, unsafeMulVector, unsafeDivVector, 
+    unsafeDoVectorOp2 )
 import BLAS.Numeric

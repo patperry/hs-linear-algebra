@@ -24,7 +24,7 @@ import Data.Vector.Dense ( Vector, UnsafeFreezeVector(..), UnsafeThawVector(..) 
 import Data.Vector.Dense.Class.Base
 import Data.Vector.Dense.IO hiding ( IOVector )
 import Data.Vector.Dense.Internal ( newCopyVector, unsafeCopyVector, 
-    unsafeAxpyVector, unsafeMulVector, unsafeDivVector, unsafeDoBinaryOp )
+    unsafeAxpyVector, unsafeMulVector, unsafeDivVector, unsafeDoVectorOp2 )
 import qualified Data.Vector.Dense.IO as IO
 
 newtype STVector s n e = ST (IO.IOVector n e)
@@ -90,8 +90,8 @@ instance (BLAS1 e) => WriteNumeric (STVector s) Int e (ST s) where
     shiftBy k                  = unsafeLiftSTVector (shiftBy k)
 
 instance (BLAS1 e, ReadVector x e (ST s)) => CopyTensor x (STVector s) Int e (ST s) where
-    newCopy    = newCopyVector    
-    unsafeCopy = unsafeCopyVector
+    newCopyTensor    = newCopyVector    
+    unsafeCopyTensor = unsafeCopyVector
     
 instance (BLAS1 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s) where
     unsafeAxpy = unsafeAxpyVector
@@ -99,7 +99,7 @@ instance (BLAS1 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s
     unsafeDiv  = unsafeDivVector
 
 instance (BLAS1 e, ReadVector x e (ST s), ReadVector y e (ST s)) => Numeric3 x y (STVector s) Int e (ST s) where
-    unsafeDoAdd = unsafeDoBinaryOp $ flip $ unsafeAxpyVector 1
-    unsafeDoSub = unsafeDoBinaryOp $ flip $ unsafeAxpyVector (-1)
-    unsafeDoMul = unsafeDoBinaryOp $ unsafeMulVector
-    unsafeDoDiv = unsafeDoBinaryOp $ unsafeDivVector
+    unsafeDoAdd = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector 1
+    unsafeDoSub = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector (-1)
+    unsafeDoMul = unsafeDoVectorOp2 $ unsafeMulVector
+    unsafeDoDiv = unsafeDoVectorOp2 $ unsafeDivVector
