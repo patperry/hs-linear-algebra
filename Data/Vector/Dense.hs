@@ -51,6 +51,7 @@ import BLAS.Numeric.Immutable
 
 import Data.Vector.Dense.IO hiding ( IOVector )
 import qualified Data.Vector.Dense.IO as IO
+import Data.Vector.Dense.Class.Write( newCopyVector )
 import Data.Vector.Dense.Class.Read hiding ( conjVector )
 import Data.Vector.Dense.Class.Base
 
@@ -78,15 +79,15 @@ instance UnsafeFreezeVector IO.IOVector where
 instance UnsafeThawVector IO.IOVector where
     unsafeThawVector = unsafeThawIOVector
     
-freezeVector :: (CopyTensor x y i e m, UnsafeFreezeVector y) =>
+freezeVector :: (ReadVector x e m, WriteVector y e m, UnsafeFreezeVector y, BLAS1 e) =>
     x n e -> m (Vector n e)
 freezeVector x = do
-    x' <- newCopy x
+    x' <- newCopyVector x
     return (unsafeFreezeVector x')
 
-thawVector :: (CopyTensor Vector y Int e m) =>
+thawVector :: (WriteVector y e m, BLAS1 e) =>
     Vector n e -> m (y n e)
-thawVector = newCopy
+thawVector = newCopyVector
 
 
 liftVector :: (IO.IOVector n e -> a) -> Vector n e -> a
@@ -200,7 +201,7 @@ replaceHelp :: (BLAS1 e) =>
         Vector n e -> [(Int, e)] -> Vector n e
 replaceHelp set x ies =
     unsafePerformIO $ do
-        y  <- newCopy (unsafeThawIOVector x)
+        y  <- newCopyVector (unsafeThawIOVector x)
         mapM_ (uncurry $ set y) ies
         return (unsafeFreezeVector y)
 {-# NOINLINE replaceHelp #-}

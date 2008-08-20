@@ -23,8 +23,6 @@ module Data.Vector.Dense.Internal (
     unsafeGetDot,
     
     -- * Internal Operations
-    newCopyVector,
-    unsafeCopyVector,
     unsafeAxpyVector,
     unsafeMulVector,
     unsafeDivVector,
@@ -244,28 +242,7 @@ modifyWithIOVector f x
 
     incX = strideIOVector x
 
----------------------------  Copying Vectors --------------------------------
-
-newCopyVector :: (BLAS1 e, ReadVector x e m, WriteVector y e m) => 
-    x n e -> m (y n e)    
-newCopyVector x
-    | isConj x = 
-        newCopyVector (conj x) >>= return . conj
-    | otherwise = do
-        y <- newVector_ (dim x)
-        unsafeCopyVector y x
-        return y
-
-unsafeCopyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
-    y n e -> x n e -> m ()
-unsafeCopyVector y x
-    | isConj x && isConj y =
-        unsafeCopyVector (conj y) (conj x)
-    | isConj x || isConj y =
-        forM_ [0..(dim x - 1)] $ \i -> do
-            unsafeReadElem x i >>= unsafeWriteElem y i
-    | otherwise =
-        call2 BLAS.copy x y
+---------------------------  Swapping Vectors --------------------------------
 
 unsafeSwapIOVector :: (Elem e) => IOVector n e -> IOVector n e -> IO ()
 unsafeSwapIOVector x y
@@ -441,7 +418,6 @@ instance (Elem e) => WriteTensor IOVector Int e IO where
     canModifyElem   = canModifyElemIOVector
     
     unsafeSwap      = unsafeSwapIOVector
-
     
 instance (Elem e) => BaseVector IOVector e where
     stride                    = strideIOVector
@@ -464,8 +440,8 @@ instance (BLAS1 e) => WriteNumeric IOVector Int e IO where
     shiftBy = shiftByIOVector
 
 instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
-    newCopy    = newCopyVector    
-    unsafeCopy = unsafeCopyVector
+    newCopyTensor    = newCopyVector    
+    unsafeCopyTensor = unsafeCopyVector
 
 instance (BLAS1 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
     unsafeAxpy = unsafeAxpyVector

@@ -61,6 +61,6 @@ getShifted k = getUnaryOp (shiftBy k)
 getUnaryOp :: (CopyTensor x y i e m) =>
     (y n e -> m ()) -> x n e -> m (y n e)
 getUnaryOp f x = do
-    y <- newCopy x
+    y <- newCopyTensor x
     f y
     return y
