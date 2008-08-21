@@ -32,6 +32,6 @@ main = do
 
     tests = [ ("Vector",   tests_Vector)
             , ("STVector", tests_STVector)
-            , ("Matrix", tests_Matrix)
+            , ("Matrix",   tests_Matrix)
             , ("STMatrix", tests_STMatrix)
             ]
