@@ -2,8 +2,12 @@
 import System.Environment
 
 import Driver
+
 import Vector
 import STVector
+import Matrix
+import STMatrix
+
 
 main :: IO ()
 main = do
@@ -28,4 +32,6 @@ main = do
 
     tests = [ ("Vector",   tests_Vector)
             , ("STVector", tests_STVector)
+            , ("Matrix", tests_Matrix)
+            , ("STMatrix", tests_STMatrix)
             ]

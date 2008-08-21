@@ -72,7 +72,7 @@ newMatrixHelp set n ies = do
 -- | Create a new matrix with the given elements in column-major order.
 newListMatrix :: (WriteMatrix a x e m) => (Int,Int) -> [e] -> m (a mn e)
 newListMatrix (m,n) es = do
-    a <- newMatrix_ (m,n)
+    a <- newZeroMatrix (m,n)
     unsafeIOToM $ withMatrixPtr a $ flip pokeArray (take (m*n) es)
     return a
 

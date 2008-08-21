@@ -32,6 +32,7 @@ module Data.Matrix.Dense (
     thawMatrix,
 
     module Data.Matrix.Dense.Class.Read,
+    module BLAS.Matrix.Base,
     module BLAS.Tensor.Immutable,
     module BLAS.Matrix.RowCol.Immutable,
     module BLAS.Matrix.Diag.Immutable,
@@ -51,6 +52,7 @@ import BLAS.Internal ( UnsafeIOToM(..), UnsafeInterleaveM, inlinePerformIO )
 import BLAS.Tensor.Immutable
 import BLAS.Matrix.RowCol.Immutable
 import BLAS.Matrix.Diag.Immutable
+import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
 import BLAS.Numeric.Immutable
 

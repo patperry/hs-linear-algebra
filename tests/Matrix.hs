@@ -1,104 +1,60 @@
-{-# OPTIONS -fglasgow-exts -fno-excess-precision -cpp #-}
------------------------------------------------------------------------------
--- |
--- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
--- License    : BSD3
--- Maintainer : Patrick Perry <patperry@stanford.edu>
--- Stability  : experimental
---
+{-# LANGUAGE PatternSignatures #-}
 
+module Matrix( tests_Matrix ) where
 
+import Driver
 import qualified Data.Array as Array
-import Data.Ix   ( inRange, range )
-import Data.List ( nub, sortBy )
-import Data.Ord  ( comparing )
-import System.Environment ( getArgs )
-import Test.QuickCheck.Parallel hiding ( vector )
-import qualified Test.QuickCheck as QC
 
+import BLAS.Elem
 import Data.Matrix.Dense
-import Data.Vector.Dense hiding ( shift, scale, invScale )
+import Data.Vector.Dense
 
-import BLAS.Elem ( BLAS1 )
-import qualified BLAS.Elem as E
-
-import Data.Complex ( Complex(..) )
-
-import Data.AEq
-import Numeric.IEEE
-
-import Test.QuickCheck.Complex
-import Test.QuickCheck.Vector hiding ( Assocs )
-import Test.QuickCheck.Vector.Dense hiding ( Pair )
-import Test.QuickCheck.Matrix
-import Test.QuickCheck.Matrix.Dense
+import Generators.Matrix.Dense hiding ( matrix )
         
-
-#ifdef COMPLEX
-field = "Complex Double"
-type E = Complex Double
-#else
-field = "Double"
-type E = Double
-#endif
 
 type V = Vector Int E
 type M = Matrix (Int,Int) E
 
-instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
-    arbitrary   = arbitrary >>= \(TestComplex x) -> return x
-    coarbitrary = coarbitrary . TestComplex
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
-    arbitrary   = arbitrary >>= \(TestVector x) -> return x
-    coarbitrary = coarbitrary . TestVector
-
-instance (Arbitrary e, BLAS1 e) => Arbitrary (Matrix (m,n) e) where
-    arbitrary   = arbitrary >>= \(TestMatrix x) -> return x
-    coarbitrary = coarbitrary . TestMatrix
-
-
-assocsEq :: (BLAS1 e, AEq e) => Matrix (m,n) e -> [((Int,Int), e)] -> Bool
-assocsEq x ijes =
-    let ijs = fst $ unzip ijes
-    in filter (\(ij,e) -> ij `elem` ijs) (sortBy (comparing fst) $ assocs x) === sortBy (comparing fst) ijes
-       && (all (==0) $ map snd $ filter (\(ij,e) -> not $ ij `elem` ijs) $ assocs x)
-
-prop_matrix_shape (Assocs mn ijes) =
+prop_matrix_shape (Assocs2 mn ijes) =
     shape (matrix mn ijes :: M) == mn
-prop_matrix_assocs (Assocs mn ijes) =
-    (matrix mn ijes :: M) `assocsEq` ijes
+prop_matrix_assocs (Assocs2 (m,n) ijes) =
+    assocs (matrix (m,n) ijes :: M) 
+    `assocsEq` 
+    (zip (range ((0,0),(m-1,n-1))) (repeat 0) ++ ijes)
 
-prop_listMatrix_shape (IndexPair mn) es =
+prop_listMatrix_shape (Nat2 mn) es =
     shape (listMatrix mn es :: M) == mn
-prop_listMatrix_assocs (IndexPair (m,n)) es =
+prop_listMatrix_assocs (Nat2 (m,n)) es =
     let es' = repeat es
-    in assocs (listMatrix (m,n) es' :: M) === zip [(i,j) | j <- range (0,n-1), i <- range (0,m-1)] es'
+    in assocs (listMatrix (m,n) es' :: M) 
+       === 
+       zip [(i,j) | j <- range (0,n-1), i <- range (0,m-1)] es'
 
-prop_zero_shape (IndexPair mn) =
+prop_zero_shape (Nat2 mn) =
     shape (zero mn :: M) == mn
-prop_zero_elems (IndexPair (m,n)) =
+prop_zero_elems (Nat2 (m,n)) =
     elems (zero (m,n) :: M) == replicate (m*n) 0
 
-prop_constant_shape (IndexPair mn) (e :: E) =
+prop_constant_shape (Nat2 mn) (e :: E) =
     shape (constant mn e :: M) == mn
-prop_constant_elems (IndexPair (m,n)) (e :: E) =
+prop_constant_elems (Nat2 (m,n)) (e :: E) =
     elems (constant (m,n) e :: M) == replicate (m*n) e
 
-prop_identity_shape (IndexPair mn) =
-    shape (identity mn :: M) == mn
-prop_identity_diag (IndexPair (m,n)) =
-    diag (identity (m,n) :: M) 0 === (constant (min m n) 1)
-prop_identity_row (Basis m i) (Basis n _) =
+prop_identityMatrix_shape (Nat2 mn) =
+    shape (identityMatrix mn :: M) == mn
+prop_identityMatrix_diag (Nat2 (m,n)) =
+    diag (identityMatrix (m,n) :: M) 0 === (constant (min m n) 1)
+prop_identityMatrix_row (Index i m) (Index _ n) =
     if i < min m n 
-        then row (identity (m,n) :: M) i === basis n i
-        else row (identity (m,n) :: M) i === zero n
-prop_identity_col (Basis m _) (Basis n j) =
+        then row (identityMatrix (m,n) :: M) i === basisVector n i
+        else row (identityMatrix (m,n) :: M) i === zeroVector n
+prop_identityMatrix_col (Index _ m) (Index j n) =
     if j < min m n
-        then col (identity (m,n) :: M) j === basis m j
-        else col (identity (m,n) :: M) j === zero m
+        then col (identityMatrix (m,n) :: M) j === basisVector m j
+        else col (identityMatrix (m,n) :: M) j === zeroVector m
 
-prop_replace_elems (a :: M) (Assocs _ ijes) =
+prop_replace_elems (a :: M) (Assocs2 _ ijes) =
     let ijes' = filter (\((i,j),_) -> i < numRows a && j < numCols a) ijes
         a'   = a // ijes'
         mn   = (numRows a - 1, numCols a - 1)
@@ -111,7 +67,7 @@ prop_submatrix_shape (SubMatrix a ij mn) =
     shape (submatrix a ij mn :: M) == mn
 prop_submatrix_rows (SubMatrix a (i,j) (m,n)) =
     rows (submatrix a (i,j) (m,n) :: M) === map (\k -> subvector (row a (i+k)) j n) [0..(m-1)]
-prop_submatrix_cols (SubMatrix a (i,j) (m,n)) (Index l) =
+prop_submatrix_cols (SubMatrix a (i,j) (m,n)) =
     cols (submatrix a (i,j) (m,n) :: M) === map (\l -> subvector (col a (j+l)) i m) [0..(n-1)]
 
 prop_shape (a :: M) = 
@@ -121,15 +77,17 @@ prop_size (a :: M) =
 prop_bounds (a :: M) =
     bounds a == ((0,0), (numRows a - 1, numCols a - 1))
     
-prop_at (MatAt (a :: M) (i,j)) =
+prop_at (MatrixAt (a :: M) (i,j)) =
     let ij = (i,j)
-        k  = i + j * numRows a
+        k  = if isHerm a then j + i * numCols a
+                         else i + j * numRows a
     in (a!ij) === ((elems a) !! k)
     
-prop_row_dim (MatAt (a :: M) (i,_)) =
+prop_row_dim (MatrixAt (a :: M) (i,_)) =
     dim (row a i) == numCols a
-prop_col_dim (MatAt (a :: M) (_,j)) =
+prop_col_dim (MatrixAt (a :: M) (_,j)) =
     dim (col a j) == numRows a
+    
 prop_rows_len (a :: M) =
     length (rows a) == numRows a
 prop_cols_len (a :: M) =
@@ -139,20 +97,28 @@ prop_rows_dims (a :: M) =
 prop_cols_dims (a :: M) =
     map dim (cols a) == replicate (numCols a) (numRows a)
 
-prop_indices (a :: M) =
-    let (m,n) = shape a
-    in indices a == [(i,j) | j <- range (0,n-1), i <- range(0,m-1)]
-prop_elems (a :: M) =
-    and $ zipWith (===) (elems a) $ concatMap elems (cols a)
+prop_indices (a :: M)
+    | isHerm a =
+        indices a == [(i,j) | i <- range (0,m-1), j <- range(0,n-1)]
+    | otherwise =
+        indices a == [(i,j) | j <- range (0,n-1), i <- range(0,m-1)]
+  where (m,n) = shape a
+  
+prop_elems (a :: M) 
+    | isHerm a =
+        elems a === concatMap elems (rows a)        
+    | otherwise =
+        elems a === concatMap elems (cols a)
+        
 prop_assocs (a :: M) = 
     assocs a === zip (indices a) (elems a)
 
 prop_scale_elems (a :: M) k =
     and $ zipWith (~==) (elems (k *> a)) (map (k*) (elems a))
-prop_herm_elem (MatAt (a :: M) (i,j)) =
-    (herm a) ! (j,i) == E.conj (a!(i,j))
+prop_herm_elem (MatrixAt (a :: M) (i,j)) =
+    (herm a) ! (j,i) == conj (a!(i,j))
 prop_herm_scale (a :: M) k =
-    herm (k *> a) === (E.conj k) *> (herm a)
+    herm (k *> a) === (conj k) *> (herm a)
 
 prop_herm_shape (a :: M) =
     shape (herm a) == (numCols a, numRows a)
@@ -164,63 +130,64 @@ prop_herm_cols (a :: M) =
 prop_herm_herm (a :: M) =
     herm (herm a) === a
 
-prop_diag_herm1 (MatAt (a :: M) (k,_)) =
+prop_diag_herm1 (MatrixAt (a :: M) (k,_)) =
     diag a (-k) === conj (diag (herm a) k)
-prop_diag_herm2 (MatAt (a :: M) (_,k)) =
+prop_diag_herm2 (MatrixAt (a :: M) (_,k)) =
     diag a k === conj (diag (herm a) (-k))
 
-prop_fromRow_shape (x :: V) =
-    shape (fromRow x :: M) == (1,dim x)
-prop_fromRow_elems (x :: V) =
-    elems (fromRow x :: M) === elems x
+prop_rowMatrix_shape (x :: V) =
+    shape (rowMatrix x :: M) == (1,dim x)
+prop_rowMatrix_elems (x :: V) =
+    elems (rowMatrix x :: M) === elems x
 
-prop_fromCol_shape (x :: V) =
-    shape (fromCol x :: M) == (dim x,1)
-prop_fromCol_elems (x :: V) =
-    elems (fromCol x :: M) === elems x
+prop_colMatrix_shape (x :: V) =
+    shape (colMatrix x :: M) == (dim x,1)
+prop_colMatrix_elems (x :: V) =
+    elems (colMatrix x :: M) === elems x
 
-
-prop_apply_basis (MatAt (a :: M) (_,j)) =
+{-
+prop_apply_basis (MatrixAt (a :: M) (_,j)) =
     a <*> (basis (numCols a) j :: V) ~== col a j
-prop_apply_herm_basis (MatAt (a :: M) (i,_)) =
+prop_apply_herm_basis (MatrixAt (a :: M) (i,_)) =
     (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
-prop_apply_scale k (MultMV (a :: M) x) =
+prop_apply_scale k (MatrixMV (a :: M) x) =
     a <*> (k *> x) ~== k *> (a <*> x)
-prop_apply_linear (MultMVPair (a :: M) x y) =
+prop_apply_linear (MatrixMVMatrixPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
-prop_compose_id_right (a :: M) =
+prop_applyMat_id_right (a :: M) =
     let n = numCols a
-    in a <**> (identity (n,n) :: M) ~== a
-prop_compose_id_left (a :: M) =
+    in a <**> (identityMatrix (n,n) :: M) ~== a
+prop_applyMat_id_left (a :: M) =
     let m = numRows a
-    in (identity (m,m) :: M) <**> a ~== a
-prop_compose_scale_left (MultMM (a:: M) b) k =
+    in (identityMatrix (m,m) :: M) <**> a ~== a
+prop_applyMat_scale_left (MatrixMM (a:: M) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
-prop_compose_scale_right (MultMM (a:: M) b) k =
+prop_applyMat_scale_right (MatrixMM (a:: M) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
-prop_compose_linear (MultMMPair (a :: M) b c) =
+prop_applyMat_linear (MatrixMMMatrixPair (a :: M) b c) =
     a <**> (b + c) ~== a <**> b + a <**> c
-prop_compose_herm (MultMM (a :: M) b) =
+prop_applyMat_herm (MatrixMM (a :: M) b) =
     herm b <**> herm a ~== herm (a <**> b)
-prop_compose_cols (MultMM (a :: M) b) =
+prop_applyMat_cols (MatrixMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
+-}
 
 prop_shift k (a :: M) =
     shift k a ~== a + constant (shape a) k
 prop_scale k (a :: M) =
     k *> a ~== a * constant (shape a) k
-prop_invScale k (a :: M) =
-    invScale k a ~== a / constant (shape a) k
 
-prop_plus (Pair (a :: M) b) =
-    elems (a + b) ~== zipWith (+) (elems a) (elems b)
-prop_minus (Pair (a :: M) b) =
-    elems (a - b) ~== zipWith (-) (elems a) (elems b)
-prop_times (Pair (a :: M) b) =
-    elems (a * b) ~== zipWith (*) (elems a) (elems b)
-prop_divide (Pair (a :: M) b) =
-    elems (a / b) ~== zipWith (/) (elems a) (elems b)
+prop_plus (MatrixPair (a :: M) b) =
+    colElems (a + b) ~== zipWith (+) (colElems a) (colElems b)
+prop_minus (MatrixPair (a :: M) b) =
+    colElems (a - b) ~== zipWith (-) (colElems a) (colElems b)
+prop_times (MatrixPair (a :: M) b) =
+    colElems (a * b) ~== zipWith (*) (colElems a) (colElems b)
+prop_divide (MatrixPair (a :: M) b) =
+    colElems (a / b) ~== zipWith (/) (colElems a) (colElems b)
+
+colElems a = concatMap elems (cols a)
 
 prop_negate (a :: M) =
     negate a ~== (-1) *> a
@@ -232,98 +199,92 @@ prop_signum (a :: M) =
 prop_recip (a :: M) =
     elems (recip a) ~== (map recip $ elems a)
 
-properties =
-    [ ("shape of matrix"       , pDet prop_matrix_shape)
-    , ("assocs of matrix"      , pDet prop_matrix_assocs)
-    , ("shape of listMatrix"   , pDet prop_listMatrix_shape)
-    , ("assocs of listMatrix"  , pDet prop_listMatrix_assocs)
-    , ("shape of zero"         , pDet prop_zero_shape)
-    , ("elems of zero"         , pDet prop_zero_elems)
+tests_Matrix =
+    [ ("shape of matrix"       , mytest prop_matrix_shape)
+    , ("assocs of matrix"      , mytest prop_matrix_assocs)
+    , ("shape of listMatrix"   , mytest prop_listMatrix_shape)
+    , ("assocs of listMatrix"  , mytest prop_listMatrix_assocs)
+    , ("shape of zero"         , mytest prop_zero_shape)
+    , ("elems of zero"         , mytest prop_zero_elems)
     
-    , ("shape of constant"     , pDet prop_constant_shape)
-    , ("elems of constant"     , pDet prop_constant_elems)
+    , ("shape of constant"     , mytest prop_constant_shape)
+    , ("elems of constant"     , mytest prop_constant_elems)
     
-    , ("shape of identity"     , pDet prop_identity_shape)
-    , ("diag of identity"      , pDet prop_identity_diag)
-    , ("row of identity"       , pDet prop_identity_row)
-    , ("col of identity"       , pDet prop_identity_col)
+    , ("shape of identityMatrix"     , mytest prop_identityMatrix_shape)
+    , ("diag of identityMatrix"      , mytest prop_identityMatrix_diag)
+    , ("row of identityMatrix"       , mytest prop_identityMatrix_row)
+    , ("col of identityMatrix"       , mytest prop_identityMatrix_col)
     
-    , ("elems of replace"      , pDet prop_replace_elems)
+    , ("elems of replace"      , mytest prop_replace_elems)
     
-    , ("numRows/numCols"       , pDet prop_shape)
-    , ("size"                  , pDet prop_size)
-    , ("bounds"                , pDet prop_bounds)
-    , ("at"                    , pDet prop_at)
-    , ("row dim"               , pDet prop_row_dim)
-    , ("col dim"               , pDet prop_col_dim)
-    , ("rows length"           , pDet prop_rows_len)
-    , ("cols length"           , pDet prop_cols_len)
-    , ("rows dims"             , pDet prop_rows_dims)
-    , ("cols dims"             , pDet prop_cols_dims)
+    , ("numRows/numCols"       , mytest prop_shape)
+    , ("size"                  , mytest prop_size)
+    , ("bounds"                , mytest prop_bounds)
+    , ("at"                    , mytest prop_at)
+    , ("row dim"               , mytest prop_row_dim)
+    , ("col dim"               , mytest prop_col_dim)
+    , ("rows length"           , mytest prop_rows_len)
+    , ("cols length"           , mytest prop_cols_len)
+    , ("rows dims"             , mytest prop_rows_dims)
+    , ("cols dims"             , mytest prop_cols_dims)
 
-    , ("indices"               , pDet prop_indices)
-    , ("elems"                 , pDet prop_elems)
-    , ("assocs"                , pDet prop_assocs)
+    , ("indices"               , mytest prop_indices)
+    , ("elems"                 , mytest prop_elems)
+    , ("assocs"                , mytest prop_assocs)
     
-    , ("shape of submatrix"    , pDet prop_submatrix_shape)
-    , ("rows of submatrix"     , pDet prop_submatrix_rows)
-    , ("col of submatrix"      , pDet prop_submatrix_cols)
+    , ("shape of submatrix"    , mytest prop_submatrix_shape)
+    , ("rows of submatrix"     , mytest prop_submatrix_rows)
+    , ("col of submatrix"      , mytest prop_submatrix_cols)
     
-    , ("elems of scale"        , pDet prop_scale_elems)
-    , ("elem of herm"          , pDet prop_herm_elem)
-    , ("herm/scale"            , pDet prop_herm_scale)
+    , ("elems of scale"        , mytest prop_scale_elems)
+    , ("elem of herm"          , mytest prop_herm_elem)
+    , ("herm/scale"            , mytest prop_herm_scale)
                                
-    , ("shape . herm"          , pDet prop_herm_shape)
-    , ("rows . herm"           , pDet prop_herm_rows)
-    , ("cols . herm"           , pDet prop_herm_cols)
+    , ("shape . herm"          , mytest prop_herm_shape)
+    , ("rows . herm"           , mytest prop_herm_rows)
+    , ("cols . herm"           , mytest prop_herm_cols)
                                
-    , ("herm . herm == id"     , pDet prop_herm_herm)
+    , ("herm . herm == id"     , mytest prop_herm_herm)
                                
-    , ("subdiag . herm"        , pDet prop_diag_herm1)
-    , ("superdiag . herm"      , pDet prop_diag_herm2)
+    , ("subdiag . herm"        , mytest prop_diag_herm1)
+    , ("superdiag . herm"      , mytest prop_diag_herm2)
                                
-    , ("shape . fromRow"       , pDet prop_fromRow_shape)
-    , ("elems . fromRow"       , pDet prop_fromRow_elems)
-    , ("shape . fromCol"       , pDet prop_fromCol_shape)
-    , ("elems . fromCol"       , pDet prop_fromCol_elems)
-                               
-    , ("apply basis"           , pDet prop_apply_basis)
-    , ("apply herm basis"      , pDet prop_apply_herm_basis)
-    , ("apply scale"           , pDet prop_apply_scale)
-    , ("apply linear"          , pDet prop_apply_linear)
+    , ("shape . rowMatrix"       , mytest prop_rowMatrix_shape)
+    , ("elems . rowMatrix"       , mytest prop_rowMatrix_elems)
+    , ("shape . colMatrix"       , mytest prop_colMatrix_shape)
+    , ("elems . colMatrix"       , mytest prop_colMatrix_elems)
+{-                               
+    , ("apply basis"           , mytest prop_apply_basis)
+    , ("apply herm basis"      , mytest prop_apply_herm_basis)
+    , ("apply scale"           , mytest prop_apply_scale)
+    , ("apply linear"          , mytest prop_apply_linear)
     
-    , ("compose id left"       , pDet prop_compose_id_left)
-    , ("compose id right"      , pDet prop_compose_id_right)
-    , ("compose scale left"    , pDet prop_compose_scale_left)
-    , ("compose scale right"   , pDet prop_compose_scale_right)
-    , ("compose linear"        , pDet prop_compose_linear)
-    , ("compose herm"          , pDet prop_compose_herm)
-    , ("compose cols"          , pDet prop_compose_cols)
+    , ("applyMat id left"       , mytest prop_applyMat_id_left)
+    , ("applyMat id right"      , mytest prop_applyMat_id_right)
+    , ("applyMat scale left"    , mytest prop_applyMat_scale_left)
+    , ("applyMat scale right"   , mytest prop_applyMat_scale_right)
+    , ("applyMat linear"        , mytest prop_applyMat_linear)
+    , ("applyMat herm"          , mytest prop_applyMat_herm)
+    , ("applyMat cols"          , mytest prop_applyMat_cols)
+-}    
+    , ("shift"                 , mytest prop_shift)
+    , ("scale"                 , mytest prop_scale)
     
-    , ("shift"                 , pDet prop_shift)
-    , ("scale"                 , pDet prop_scale)
-    , ("invScale"              , pDet prop_invScale)
+    , ("plus"                  , mytest prop_plus)
+    , ("minus"                 , mytest prop_minus)
+    , ("times"                 , mytest prop_times)
+    , ("divide"                , mytest prop_divide)
     
-    , ("plus"                  , pDet prop_plus)
-    , ("minus"                 , pDet prop_minus)
-    , ("times"                 , pDet prop_times)
-    , ("divide"                , pDet prop_divide)
-    
-    , ("negate"                , pDet prop_negate)
-    , ("abs"                   , pDet prop_abs)
-    , ("signum"                , pDet prop_signum)
-    , ("recip"                 , pDet prop_recip)
-
+    , ("negate"                , mytest prop_negate)
+    , ("abs"                   , mytest prop_abs)
+    , ("signum"                , mytest prop_signum)
+    , ("recip"                 , mytest prop_recip)
     ]
 
 
-main = do
-    args <- getArgs
-    n <- case args of
-             (a:_) -> readIO a
-             _     -> return 1
-    main' n
-
-main' n = do
-    putStrLn $ "Running tests for " ++ field
-    pRun n 400 properties
+assocsEq :: [((Int,Int), E)] -> [((Int,Int), E)] -> Bool
+assocsEq ies ies' = ordered ies ~== ordered ies'
+  where
+    ordered = sortAssocs . nubAssocs
+    nubAssocs = reverse . nubBy ((==) `on` fst) . reverse      
+    sortAssocs = sortBy (comparing fst)

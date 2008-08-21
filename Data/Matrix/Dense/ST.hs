@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances,
+        Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.ST
@@ -11,7 +12,7 @@
 module Data.Matrix.Dense.ST (
     -- * The @STMatrix@ data type
     STMatrix,
-    -- runSTMatrix,
+    runSTMatrix,
 
     module Data.Matrix.Dense.IO,
 
@@ -23,8 +24,9 @@ import BLAS.Elem ( Elem, BLAS1 )
 
 import Control.Monad.ST
 
--- import Data.Vector.Dense ( Vector, UnsafeFreezeVector(..), UnsafeThawVector(..) )
+import Data.Matrix.Dense ( Matrix, UnsafeFreezeMatrix(..), UnsafeThawMatrix(..) )
 import Data.Vector.Dense.ST
+
 import Data.Matrix.Dense.IO hiding ( IOMatrix )
 import qualified Data.Matrix.Dense.IO as IO
 import qualified BLAS.Matrix.Base as BLAS
@@ -36,6 +38,14 @@ unsafeIOMatrixToSTMatrix = ST
 
 unsafeSTMatrixToIOMatrix :: STMatrix s mn e -> IO.IOMatrix mn e
 unsafeSTMatrixToIOMatrix (ST a) = a
+
+instance UnsafeFreezeMatrix (STMatrix s) where
+    unsafeFreezeMatrix = liftSTMatrix unsafeFreezeMatrix
+instance UnsafeThawMatrix (STMatrix s) where
+    unsafeThawMatrix = ST . unsafeThawMatrix
+
+runSTMatrix :: (forall s . ST s (STMatrix s n e)) -> Matrix n e
+runSTMatrix x = runST $ x >>= return . unsafeFreezeMatrix
 
 
 liftSTMatrix :: (IO.IOMatrix mn e -> a) -> STMatrix s mn e -> a

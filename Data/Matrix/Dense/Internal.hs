@@ -137,7 +137,9 @@ indexOfIOMatrix a (i,j) =
     
     
 shapeIOMatrix :: IOMatrix mn e -> (Int,Int)
-shapeIOMatrix a = (numRowsIOMatrix a, numColsIOMatrix a)
+shapeIOMatrix a 
+    | isHermIOMatrix a = (numColsIOMatrix a, numRowsIOMatrix a)
+    | otherwise        = (numRowsIOMatrix a, numColsIOMatrix a)
 
 boundsIOMatrix :: IOMatrix mn e -> ((Int,Int), (Int,Int))
 boundsIOMatrix a = case shapeIOMatrix a of (m,n) -> ((0,0),(m-1,n-1))

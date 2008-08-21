@@ -120,16 +120,16 @@ prop_recip (x :: V) =
 
 ------------------------- Binary Vector Operations ---------------------------
 
-prop_plus (Pair (x :: V) y) =
+prop_plus (VectorPair (x :: V) y) =
     elems (x + y) ~== zipWith (+) (elems x) (elems y)
     
-prop_minus (Pair (x :: V) y) =
+prop_minus (VectorPair (x :: V) y) =
     elems (x - y) ~== zipWith (-) (elems x) (elems y)
     
-prop_times (Pair (x :: V) y) =
+prop_times (VectorPair (x :: V) y) =
     elems (x * y) ~== zipWith (*) (elems x) (elems y)
     
-prop_divide (Pair (x :: V) y) =
+prop_divide (VectorPair (x :: V) y) =
     elems (x / y) ~== zipWith (/) (elems x) (elems y)
 
 
@@ -154,19 +154,19 @@ prop_whichMaxAbs2 (x :: V) =
 prop_dot_self (x :: V) =
     (sqrt $ x <.> x) ~== (fromReal $ norm2 x)
     
-prop_dot_conj (Pair (x :: V) y) =
+prop_dot_conj (VectorPair (x :: V) y) =
     (x <.> y) ~== (conj $ y <.> x)
     
-prop_dot_scale1 k (Pair (x :: V) y) =
+prop_dot_scale1 k (VectorPair (x :: V) y) =
     (x <.> (k *> y)) ~== k * (x <.> y)
     
-prop_dot_scale2 k (Pair (x :: V) y) =
+prop_dot_scale2 k (VectorPair (x :: V) y) =
     ((k *> x) <.> y) ~== (conj k) * (x <.> y)
     
-prop_dot_linear1 (Triple (x :: V) y z) =
+prop_dot_linear1 (VectorTriple (x :: V) y z) =
     (x <.> (y + z)) ~== (x <.> y + x <.> z)
     
-prop_dot_linear2 (Triple (x :: V) y z) =
+prop_dot_linear2 (VectorTriple (x :: V) y z) =
     ((x + y) <.> z) ~== (x <.> z + y <.> z)
 
 ------------------------------------------------------------------------------

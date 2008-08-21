@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Vector.Dense
+-- Module     : Generators.Vector.Dense
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
@@ -13,9 +13,6 @@ module Generators.Vector.Dense (
     VectorTriple(..),
     
     vector,
-    rawVector,
-    conjVector,
-    subVector
     ) where
 
 import Test.QuickCheck hiding ( vector )
@@ -24,10 +21,23 @@ import qualified Test.QuickCheck as QC
 import Data.Vector.Dense hiding ( vector )
 import BLAS.Elem ( Elem, BLAS1 )
 
-data SubVector n e = SubVector Int (Vector n e) Int Int deriving (Show)
-data VectorPair n e = Pair (Vector n e) (Vector n e) deriving (Show)
-data VectorTriple n e = Triple (Vector n e) (Vector n e) (Vector n e) deriving (Show)
-
+data SubVector n e = 
+    SubVector Int 
+              (Vector n e) 
+              Int 
+              Int 
+    deriving (Show)
+    
+data VectorPair n e = 
+    VectorPair (Vector n e) 
+               (Vector n e) 
+    deriving (Show)
+    
+data VectorTriple n e = 
+    VectorTriple (Vector n e) 
+                 (Vector n e) 
+                 (Vector n e) 
+    deriving (Show)
 
 vector :: (Elem e, Arbitrary e) => Int -> Gen (Vector n e)
 vector n =
@@ -72,9 +82,9 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
         n <- choose (0,m)
         x <- vector n
         y <- vector n
-        return $ Pair x y
+        return $ VectorPair x y
         
-    coarbitrary (Pair x y) = 
+    coarbitrary (VectorPair x y) = 
         coarbitrary (x,y)
         
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
@@ -83,8 +93,8 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
         x <- vector n
         y <- vector n
         z <- vector n
-        return $ Triple x y z
+        return $ VectorTriple x y z
         
-    coarbitrary (Triple x y z) = 
+    coarbitrary (VectorTriple x y z) = 
         coarbitrary (x,y,z)
         

@@ -32,13 +32,16 @@ extra-source-files:     INSTALL
                         tests/Driver.hs
                         
                         tests/Generators/Vector/Dense.hs
+                        tests/Generators/Matrix.hs
+                        tests/Generators/Matrix/Dense.hs
                         
                         tests/Vector.hs
                         tests/STVector.hs
+                        tests/Matrix.hs
+                        tests/STMatrix.hs
 
                         tests/Banded.hs
                         tests/Diag.hs
-                        tests/Matrix.hs
                         tests/Perm.hs
                         tests/HermMatrix.hs
                         tests/HermBanded.hs
@@ -121,8 +124,6 @@ library
 
                         BLAS.Types
 
-                        -- BLAS.Vector
-                        -- 
                         -- Data.Matrix.Banded
                         --     Data.Matrix.Banded.IO
                         --     Data.Matrix.Banded.Internal
@@ -159,9 +160,7 @@ library
                                 Data.Vector.Dense.Class.Write
 
                         -- Test.QuickCheck.Permutation
-                        -- Test.QuickCheck.Matrix
                         -- Test.QuickCheck.Matrix.Banded
-                        -- Test.QuickCheck.Matrix.Dense
                         -- Test.QuickCheck.Matrix.Diag
                         -- Test.QuickCheck.Matrix.Perm
                         -- Test.QuickCheck.Matrix.Herm.Banded
@@ -178,7 +177,7 @@ library
     extensions:         BangPatterns, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses
-    build-depends:      base, ieee, permutation, storable-complex, QuickCheck
+    build-depends:      base, ieee, permutation, storable-complex
 
     
     if flag(atlas)
