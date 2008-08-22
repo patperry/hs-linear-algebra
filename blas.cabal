@@ -89,25 +89,19 @@ library
                             BLAS.Elem.Base
 
                         BLAS.Internal
-                        -- BLAS.Matrix
-                        --        BLAS.Matrix.Apply.Read
-                        --    BLAS.Matrix.Base
 
-                        --    BLAS.Matrix.Diag
-                        --        BLAS.Matrix.Diag.Immutable
-                        --        BLAS.Matrix.Diag.Read
-                        --        BLAS.Matrix.Diag.View
+                        BLAS.Matrix
+                            BLAS.Matrix.Base
 
-                        --    BLAS.Matrix.RowCol
-                        --        BLAS.Matrix.RowCol.Immutable
-                        --        BLAS.Matrix.RowCol.Read
-                        --        BLAS.Matrix.RowCol.View
-                                
-                        --     BLAS.Matrix.Immutable
-                        --     BLAS.Matrix.ReadOnly
-                        --     BLAS.Matrix.Solve
-                        --         BLAS.Matrix.Solve.Immutable
-                        --         BLAS.Matrix.Solve.ReadOnly
+                            BLAS.Matrix.Diag
+                                BLAS.Matrix.Diag.Immutable
+                                BLAS.Matrix.Diag.Read
+                                BLAS.Matrix.Diag.View
+
+                            BLAS.Matrix.RowCol
+                                BLAS.Matrix.RowCol.Immutable
+                                BLAS.Matrix.RowCol.Read
+                                BLAS.Matrix.RowCol.View
 
                         BLAS.Numeric
                             BLAS.Numeric.Immutable
@@ -136,13 +130,10 @@ library
                         -- 
                         -- Data.Matrix.Diag 
                         
-                        -- Data.Matrix.Dense
-                        --    Data.Matrix.Dense.IO
-                        --    Data.Matrix.Dense.ST
-                        --    Data.Matrix.Dense.Class
-                        --        Data.Matrix.Dense.Class.Base
-                        --        Data.Matrix.Dense.Class.Read
-                        --       Data.Matrix.Dense.Class.Write
+                        Data.Matrix.Dense
+                            Data.Matrix.Dense.IO
+                            Data.Matrix.Dense.ST
+                            Data.Matrix.Dense.Class
 
                         --     Data.Matrix.Dense.Operations
                         -- 
@@ -184,7 +175,14 @@ library
                         Data.Vector.Dense.Class.Properties
                         Data.Vector.Dense.Class.Operations
                         
-                        -- Data.Matrix.Dense.Internal
+                        Data.Matrix.Dense.Internal
+                        Data.Matrix.Dense.Class.Internal
+                        Data.Matrix.Dense.Class.Creating
+                        Data.Matrix.Dense.Class.Elements
+                        Data.Matrix.Dense.Class.Special
+                        Data.Matrix.Dense.Class.Views
+                        Data.Matrix.Dense.Class.Copying
+                        Data.Matrix.Dense.Class.Operations
                         
     ghc-options:        -Wall                   
     extensions:         BangPatterns, FlexibleContexts, 

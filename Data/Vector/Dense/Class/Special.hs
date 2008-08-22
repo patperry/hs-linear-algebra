@@ -20,6 +20,8 @@ module Data.Vector.Dense.Class.Special (
 
 import Foreign
 
+import BLAS.Tensor
+
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense.Class.Creating
 

@@ -15,16 +15,12 @@ module BLAS.Matrix.Diag.View (
 import BLAS.Internal( checkedDiag )
 import BLAS.Tensor( shape )
 import BLAS.Matrix.Base
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Class( BaseVector )
 
 class (BaseMatrix a e, BaseVector x e) => DiagView a x e | a -> x where
     -- | Same as 'diagView' but index is not range-checked.    
-    unsafeDiagView :: a (k,l) e -> Int -> x n e
+    unsafeDiagView :: a mn e -> Int -> x k e
 
 -- | Get a vector view of the given diagonal in a matrix.
-diagView :: (DiagView a x e) => a (k,l) e -> Int -> x n e
+diagView :: (DiagView a x e) => a mn e -> Int -> x k e
 diagView a = checkedDiag (shape a) (unsafeDiagView a)
-
-
-
-

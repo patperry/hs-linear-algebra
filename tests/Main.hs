@@ -5,8 +5,8 @@ import Driver
 
 import Vector
 import STVector
---import Matrix
---import STMatrix
+import Matrix
+import STMatrix
 
 
 main :: IO ()
@@ -32,6 +32,6 @@ main = do
 
     tests = [ ("Vector",   tests_Vector)
             , ("STVector", tests_STVector)
---            , ("Matrix",   tests_Matrix)
---            , ("STMatrix", tests_STMatrix)
+            , ("Matrix",   tests_Matrix)
+            , ("STMatrix", tests_STMatrix)
             ]

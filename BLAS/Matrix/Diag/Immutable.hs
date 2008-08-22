@@ -19,8 +19,8 @@ import Data.Vector.Dense
 
 class (BaseMatrix a e) => IDiag a e where
     -- | Same as 'diag' but index is not range-checked.
-    unsafeDiag :: a (m,n) e -> Int -> Vector k e
+    unsafeDiag :: a mn e -> Int -> Vector k e
     
 -- | Get the given row in a matrix.
-diag :: (IDiag a e) => a (m,n) e -> Int -> Vector n e
+diag :: (IDiag a e) => a mn e -> Int -> Vector k e
 diag a = checkedDiag (shape a) (unsafeDiag a)

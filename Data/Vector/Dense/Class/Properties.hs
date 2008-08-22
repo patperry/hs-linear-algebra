@@ -22,6 +22,8 @@ import BLAS.Conj
 import BLAS.Internal (  checkVecVecOp )
 import qualified BLAS.C as BLAS
 
+import BLAS.Tensor
+
 import Data.Vector.Dense.Class.Internal
 
 

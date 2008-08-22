@@ -19,7 +19,7 @@ module BLAS.Matrix.RowCol.View (
 import BLAS.Internal( checkedRow, checkedCol )
 import BLAS.Tensor( shape )
 import BLAS.Matrix.Base
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Class( BaseVector )
 
 class (BaseMatrix a e, BaseVector x e) => RowColView a x e | a -> x where
     -- | Same as 'rowView' but index is not range-checked.

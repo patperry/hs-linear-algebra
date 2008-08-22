@@ -9,9 +9,6 @@
 --
 
 module Data.Vector.Dense.Class.Internal (
-    module BLAS.Tensor,
-    module BLAS.Numeric,
-
     -- * Vector types
     IOVector,
     STVector,
@@ -215,7 +212,6 @@ newZeroVector n = do
     setZeroVector x
     return x
 
-
 -- | Set every element in the vector to zero.
 setZeroVector :: (WriteVector y e m) => y n e -> m ()
 setZeroVector x 
@@ -224,15 +220,13 @@ setZeroVector x
                               flip clearArray (dim x)
     | otherwise     = setConstantVector 0 x
 
-
 -- | Create a constant vector of the specified length.
 newConstantVector :: (WriteVector y e m) => Int -> e -> m (y n e)
 newConstantVector n e = do
     x <- newVector_ n
     setConstantVector e x
     return x
-    
-    
+        
 -- | Set every element in the vector to a constant.
 setConstantVector :: (WriteVector y e m) => e -> y n e -> m ()
 setConstantVector e x 

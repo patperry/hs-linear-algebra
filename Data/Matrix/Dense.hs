@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense
@@ -9,80 +8,35 @@
 --
 
 module Data.Matrix.Dense (
-    -- * Dense matrix type
-    Matrix,
-
-    -- * Creating matrices
-    matrix, 
-    listMatrix,
-    rowsMatrix,
-    colsMatrix,
-    rowMatrix,
-    colMatrix,
+    module Data.Matrix.Dense.Internal,
     
-    -- * Special matrices
-    zeroMatrix,
-    constantMatrix,
-    identityMatrix,
-
     -- * Converting between mutable and immutable matrices
     UnsafeFreezeMatrix(..),
     UnsafeThawMatrix(..),
     freezeMatrix,
     thawMatrix,
-
-    module Data.Matrix.Dense.Class.Read,
-    module BLAS.Matrix.Base,
-    module BLAS.Tensor.Immutable,
-    module BLAS.Matrix.RowCol.Immutable,
-    module BLAS.Matrix.Diag.Immutable,
-    module BLAS.Numeric.Immutable,
-    
-    -- * Unsafe operations
-    unsafeMatrix,
-    
     ) where
 
-import Data.AEq
-import System.IO.Unsafe
+import BLAS.Elem
+import Data.Matrix.Dense.Internal hiding ( M )
+import qualified Data.Matrix.Dense.Internal as I
+import Data.Matrix.Dense.ST
+import Data.Matrix.Dense.IO
 
-import BLAS.Elem ( Elem, BLAS1 )
-import BLAS.Internal ( UnsafeIOToM(..), UnsafeInterleaveM, inlinePerformIO )
-
-import BLAS.Tensor.Immutable
-import BLAS.Matrix.RowCol.Immutable
-import BLAS.Matrix.Diag.Immutable
-import BLAS.Matrix.Base hiding ( BaseMatrix )
-import qualified BLAS.Matrix.Base as BLAS
-import BLAS.Numeric.Immutable
-
-import Data.Vector.Dense
-import Data.Vector.Dense.IO( IOVector )
-import Data.Vector.Dense.Class
-
-import Data.Matrix.Dense.IO hiding ( IOMatrix, liftMatrix, liftMatrix2 )
-import qualified Data.Matrix.Dense.IO as IO
-import Data.Matrix.Dense.Class.Write( newCopyMatrix )
-import Data.Matrix.Dense.Class.Read hiding ( liftMatrix, liftMatrix2 )
-
-newtype Matrix mn e = M (IO.IOMatrix mn e)
-
-unsafeFreezeIOMatrix :: IO.IOMatrix mn e -> Matrix mn e
-unsafeFreezeIOMatrix = M
-
-unsafeThawIOMatrix :: Matrix mn e -> IO.IOMatrix mn e
-unsafeThawIOMatrix (M a) = a
 
 class UnsafeFreezeMatrix a where
     unsafeFreezeMatrix :: a mn e -> Matrix mn e
+instance UnsafeFreezeMatrix IOMatrix where
+    unsafeFreezeMatrix = I.M
+instance UnsafeFreezeMatrix (STMatrix s) where
+    unsafeFreezeMatrix = unsafeFreezeMatrix . unsafeSTMatrixToIOMatrix    
     
 class UnsafeThawMatrix a where
     unsafeThawMatrix :: Matrix mn e -> a mn e
-    
-instance UnsafeFreezeMatrix IO.IOMatrix where
-    unsafeFreezeMatrix = unsafeFreezeIOMatrix
-instance UnsafeThawMatrix IO.IOMatrix where
-    unsafeThawMatrix = unsafeThawIOMatrix
+instance UnsafeThawMatrix IOMatrix where
+    unsafeThawMatrix (I.M a) = a
+instance UnsafeThawMatrix (STMatrix s) where
+    unsafeThawMatrix = unsafeIOMatrixToSTMatrix . unsafeThawMatrix
     
 freezeMatrix :: (ReadMatrix a x e m, WriteMatrix b y e m, UnsafeFreezeMatrix b, BLAS1 e) =>
     a mn e -> m (Matrix mn e)
@@ -93,259 +47,3 @@ freezeMatrix x = do
 thawMatrix :: (WriteMatrix a y e m, BLAS1 e) =>
     Matrix mn e -> m (a mn e)
 thawMatrix = newCopyMatrix
-
-liftMatrix :: (IO.IOMatrix n e -> a) -> Matrix n e -> a
-liftMatrix f (M x) = f x
-{-# INLINE liftMatrix #-}
-
-liftMatrix2 :: 
-    (IO.IOMatrix n e -> IO.IOMatrix n e -> a) -> 
-        Matrix n e -> Matrix n e -> a
-liftMatrix2 f x = liftMatrix (liftMatrix f x)
-{-# INLINE liftMatrix2 #-}
-
-unsafeLiftMatrix :: (IO.IOMatrix n e -> IO a) -> Matrix n e -> a
-unsafeLiftMatrix f = unsafePerformIO . liftMatrix f
-{-# NOINLINE unsafeLiftMatrix #-}
-
-unsafeLiftMatrix2 :: 
-    (IO.IOMatrix n e -> IO.IOMatrix n e -> IO a) -> 
-        Matrix n e -> Matrix n e -> a
-unsafeLiftMatrix2 f x y = unsafePerformIO $ liftMatrix2 f x y
-{-# NOINLINE unsafeLiftMatrix2 #-}
-
-inlineLiftMatrix :: (IO.IOMatrix n e -> IO a) -> Matrix n e -> a
-inlineLiftMatrix f = inlinePerformIO . liftMatrix f
-{-# INLINE inlineLiftMatrix #-}
-
-
--- | Create a new matrix of the given size and initialize the given elements to
--- the given values.  All other elements get set to zero.
-matrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
-matrix mn ies = unsafeFreezeIOMatrix $ unsafePerformIO $ newMatrix mn ies
-{-# NOINLINE matrix #-}
-
--- | Create a new matrix with the given elements in row-major order.
-listMatrix :: (Elem e) => (Int,Int) -> [e] -> Matrix (m,n) e
-listMatrix mn es = unsafeFreezeIOMatrix $ unsafePerformIO $ newListMatrix mn es
-{-# NOINLINE listMatrix #-}
-
--- | Same as 'matrix' but does not do any bounds checking.
-unsafeMatrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
-unsafeMatrix mn ies = unsafeFreezeIOMatrix $ unsafePerformIO $ unsafeNewMatrix mn ies
-{-# NOINLINE unsafeMatrix #-}
-
--- | Create a matrix of the given shape from a list of rows
-rowsMatrix :: (BLAS1 e) => (Int,Int) -> [Vector n e] -> Matrix (m,n) e
-rowsMatrix mn rs = unsafeFreezeIOMatrix $ unsafePerformIO $ newRowsMatrix mn rs
-{-# NOINLINE rowsMatrix #-}
-
--- | Create a matrix of the given shape from a list of columns
-colsMatrix :: (BLAS1 e) => (Int,Int) -> [Vector m e] -> Matrix (m,n) e
-colsMatrix mn cs = unsafeFreezeIOMatrix $ unsafePerformIO $ newColsMatrix mn cs
-{-# NOINLINE colsMatrix #-}
-
--- | Get a matrix from a row vector.
-rowMatrix :: (BLAS1 e) => Vector n e -> Matrix (one,n) e
-rowMatrix x = 
-    case maybeFromRow $ unsafeThawIOVector x of
-        Just x' -> unsafeFreezeIOMatrix x'
-        Nothing -> unsafeFreezeIOMatrix $ unsafePerformIO $ newRowMatrix x
-  where
-    unsafeThawIOVector :: Vector n e -> IOVector n e
-    unsafeThawIOVector = unsafeThawVector
-{-# NOINLINE rowMatrix #-}
-
--- | Get a matrix from a column vector.
-colMatrix :: (BLAS1 e) => Vector m e -> Matrix (m,one) e
-colMatrix x = 
-    case maybeFromCol $ unsafeThawIOVector x of
-        Just x' -> unsafeFreezeIOMatrix x'
-        Nothing -> unsafeFreezeIOMatrix $ unsafePerformIO $ newColMatrix x
-  where
-    unsafeThawIOVector :: Vector n e -> IOVector n e
-    unsafeThawIOVector = unsafeThawVector
-{-# NOINLINE colMatrix #-}
-
--- | Get a new zero of the given shape.
-zeroMatrix :: (BLAS1 e) => (Int,Int) -> Matrix (m,n) e
-zeroMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newZeroMatrix mn
-{-# NOINLINE zeroMatrix #-}
-
--- | Get a new constant of the given shape.
-constantMatrix :: (BLAS1 e) => (Int,Int) -> e -> Matrix (m,n) e
-constantMatrix mn e = unsafeFreezeIOMatrix $ unsafePerformIO $ newConstantMatrix mn e
-{-# NOINLINE constantMatrix #-}
-
--- | Get a new matrix of the given shape with ones along the diagonal and
--- zeroes everywhere else.
-identityMatrix :: (BLAS1 e) => (Int,Int) -> Matrix (m,n) e
-identityMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newIdentityMatrix mn
-{-# NOINLINE identityMatrix #-}
-
-
-instance BaseTensor Matrix (Int,Int) e where
-    shape  = liftMatrix shape
-    bounds = liftMatrix bounds
-
-instance (BLAS1 e) => ITensor Matrix (Int,Int) e where
-    constant mn e = coerceMatrix $ constantMatrix mn e
-    zero mn       = coerceMatrix $ zeroMatrix mn
-
-    (//)          = replaceHelp writeElem
-    unsafeReplace = replaceHelp unsafeWriteElem
-    
-    unsafeAt a i  = inlineLiftMatrix (flip unsafeReadElem i) a
-    {-# INLINE unsafeAt #-}
-    
-    size          = inlineLiftMatrix getSize
-    elems         = inlineLiftMatrix getElems
-    indices       = inlineLiftMatrix getIndices
-    assocs        = inlineLiftMatrix getAssocs
-
-    tmap f a 
-        | isHerm a  = coerceMatrix $ herm $ 
-                          listMatrix (n,m) $ map (conj . f) (elems a)
-        | otherwise = coerceMatrix $
-                          listMatrix (m,n) $ map f (elems a)
-      where
-        (m,n) = shape a
-
-
-replaceHelp :: (BLAS1 e) => 
-    (IO.IOMatrix mn e -> (Int,Int) -> e -> IO ()) ->
-        Matrix mn e -> [((Int,Int), e)] -> Matrix mn e
-replaceHelp set x ies =
-    unsafePerformIO $ do
-        y  <- newCopyMatrix (unsafeThawIOMatrix x)
-        mapM_ (uncurry $ set y) ies
-        return (unsafeFreezeMatrix y)
-{-# NOINLINE replaceHelp #-}
-
-instance (BLAS1 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
-    getSize        = return . size
-    getAssocs      = return . assocs
-    getIndices     = return . indices
-    getElems       = return . elems
-    getAssocs'     = getAssocs
-    getIndices'    = getIndices
-    getElems'      = getElems
-    unsafeReadElem x i = return (unsafeAt x i)
-
-instance (BLAS1 e) => INumeric Matrix (Int,Int) e where
-    (*>) k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getScaled k) x
-    {-# NOINLINE (*>) #-}
-
-    shift k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getShifted k) x
-    {-# NOINLINE shift #-}
-
-instance (BLAS1 e, Monad m) => ReadNumeric Matrix (Int,Int) e m where
-
-instance (Elem e) => BLAS.BaseMatrix Matrix e where
-    herm (M a) = M (herm a)
-    
-instance (Elem e) => BaseMatrix Matrix e where
-    lda                         = liftMatrix lda
-    isHerm                      = liftMatrix isHerm
-    unsafeSubmatrix (M a) ij mn = M $ unsafeSubmatrix a ij mn
-    withMatrixPtr               = liftMatrix withMatrixPtr
-    matrixViewArray f o mn l h  = M $ matrixViewArray f o mn l h
-    arrayFromMatrix (M a )      = arrayFromMatrix a
-
-instance (BLAS1 e, UnsafeIOToM m) => ReadMatrix Matrix Vector e m where
-
-instance (Elem e) => IRowCol Matrix e where
-    unsafeRow (M a) i = unsafeFreezeVector $ unsafeRowView a i
-    unsafeCol (M a) j = unsafeFreezeVector $ unsafeColView a j
-
-instance (Elem e) => RowColView Matrix Vector e where
-    unsafeRowView = unsafeRow
-    unsafeColView = unsafeCol
-
-instance (BLAS1 e, UnsafeInterleaveM m, WriteVector x e m) => RowColRead Matrix x e m where
-    unsafeGetRow a i = newCopyVector (unsafeRowView a i)
-    unsafeGetCol a j = newCopyVector (unsafeColView a j)
-
-instance (Elem e) => IDiag Matrix e where
-    unsafeDiag (M a) i = unsafeFreezeVector $ unsafeDiagView a i
-
-instance (Elem e) => DiagView Matrix Vector e where
-    unsafeDiagView = unsafeDiag
-
-instance (BLAS1 e, Monad m, WriteVector x e m) => DiagRead Matrix x e m where
-    unsafeGetDiag a i = newCopyVector (unsafeDiagView a i)
-
-instance (BLAS1 e) => Num (Matrix mn e) where
-    (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAdd x y
-    (-) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getSub x y
-    (*) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getMul x y
-    negate      = ((-1) *>)
-    abs         = tmap abs
-    signum      = tmap signum
-    fromInteger = (constant (1,1)) . fromInteger
-    
-instance (BLAS1 e) => Fractional (Matrix mn e) where
-    (/) x y      = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getDiv x y
-    recip        = tmap recip
-    fromRational = (constant (1,1)) . fromRational 
-
-instance (BLAS1 e, Floating e) => Floating (Matrix (m,n) e) where
-    pi    = constant (1,1) pi
-    exp   = tmap exp
-    sqrt  = tmap sqrt
-    log   = tmap log
-    (**)  = tzipWith (**)
-    sin   = tmap sin
-    cos   = tmap cos
-    tan   = tmap tan
-    asin  = tmap asin
-    acos  = tmap acos
-    atan  = tmap atan
-    sinh  = tmap sinh
-    cosh  = tmap cosh
-    tanh  = tmap tanh
-    asinh = tmap asinh
-    acosh = tmap acosh
-    atanh = tmap atanh
-
-tzipWith :: (BLAS1 e) =>
-    (e -> e -> e) -> Matrix mn e -> Matrix mn e -> Matrix mn e
-tzipWith f a b
-    | shape b /= mn =
-        error ("tzipWith: matrix shapes differ; first has shape `" ++
-                show mn ++ "' and second has shape `" ++
-                show (shape b) ++ "'")
-    | otherwise =
-        coerceMatrix $
-            listMatrix mn $ zipWith f (colElems a) (colElems b)
-  where
-    mn = shape a
-    colElems = (concatMap elems) . cols . coerceMatrix
-
-instance (BLAS1 e, Show e) => Show (Matrix mn e) where
-    show a | isHerm a = 
-                "herm (" ++ show (herm $ coerceMatrix a) ++ ")"
-           | otherwise =
-                "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
-        
-compareHelp :: (BLAS1 e) => 
-    (e -> e -> Bool) -> Matrix mn e -> Matrix mn e -> Bool
-compareHelp cmp a b
-    | shape a /= shape b =
-        False
-    | isHerm a == isHerm b =
-        let elems' = if isHerm a then elems . herm .coerceMatrix
-                                 else elems
-        in
-            and $ zipWith cmp (elems' a) (elems' b)
-    | otherwise =
-        and $ zipWith cmp (colElems a) (colElems b)
-  where
-    colElems c = concatMap elems (cols $ coerceMatrix c)
-
-instance (BLAS1 e, Eq e) => Eq (Matrix mn e) where
-    (==) = compareHelp (==)
-
-instance (BLAS1 e, AEq e) => AEq (Matrix mn e) where
-    (===) = compareHelp (===)
-    (~==) = compareHelp (~==)

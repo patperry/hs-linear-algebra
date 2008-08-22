@@ -17,9 +17,13 @@ module Data.Vector.Dense.Class.Creating (
 
     ) where
 
-import BLAS.UnsafeIOToM
-import Data.Vector.Dense.Class.Internal
 import Foreign
+
+import BLAS.Tensor
+import BLAS.UnsafeIOToM
+
+import Data.Vector.Dense.Class.Internal
+
 
 
 -- | Creates a new vector with the given association list.  Unspecified

@@ -11,8 +11,8 @@ module Data.Vector.Dense.Class.Copying (
     -- * Copying vectors
     newCopyVector,
     copyVector,
-    unsafeCopyVector,
     swapVector,
+    unsafeCopyVector,
     unsafeSwapVector,
     
 
@@ -21,6 +21,8 @@ module Data.Vector.Dense.Class.Copying (
 import BLAS.C( BLAS1 )
 import qualified BLAS.C as BLAS
 import BLAS.Internal( checkBinaryOp )
+
+import BLAS.Tensor
 
 import Data.Vector.Dense.Class.Internal
 

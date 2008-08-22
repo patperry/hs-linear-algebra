@@ -16,13 +16,13 @@ import BLAS.Internal( checkedDiag )
 import BLAS.Tensor( shape )
 
 import BLAS.Matrix.Base
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Class( WriteVector )
 
-class (BaseMatrix a e, WriteVector x e m) => DiagRead a x e m where
+class (BaseMatrix a e) => DiagRead a e m where
     -- | Same as 'getDiag' but index is not range-checked.
-    unsafeGetDiag :: a (k,l) e -> Int -> m (x n e)
+    unsafeGetDiag :: (WriteVector x e m) => a mn e -> Int -> m (x k e)
 
 -- | Get the given diagonal in a matrix.  Negative indices correspond
 -- to sub-diagonals.
-getDiag :: (DiagRead a x e m) => a (k,l) e -> Int -> m (x n e)
+getDiag :: (DiagRead a e m, WriteVector x e m) => a mn e -> Int -> m (x k e)
 getDiag a = checkedDiag (shape a) (unsafeGetDiag a)

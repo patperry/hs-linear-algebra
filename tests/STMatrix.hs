@@ -80,23 +80,23 @@ newZeroMatrix_S = zeroMatrix
 prop_NewZeroMatrix (Nat2 mn) = 
     newZeroMatrix mn `equivalent` newZeroMatrix_S mn
 
-setZero_S a = ( (), newZeroMatrix_S (shape a) )
-prop_SetZero = setZero `implements` setZero_S
+setZeroMatrix_S a = ( (), newZeroMatrix_S (shape a) )
+prop_SetZeroMatrix = setZeroMatrix `implements` setZeroMatrix_S
 
 newConstantMatrix_S mn e = constantMatrix mn e
 prop_NewConstantMatrix (Nat2 mn) e = 
     newConstantMatrix mn e `equivalent` newConstantMatrix_S mn e
 
-setConstant_S e a = ( (), newConstantMatrix_S (shape a) e )
-prop_SetConstant e = setConstant e `implements` setConstant_S e
+setConstantMatrix_S e a = ( (), newConstantMatrix_S (shape a) e )
+prop_SetConstantMatrix e = setConstantMatrix e `implements` setConstantMatrix_S e
 
 newIdentityMatrix_S = identityMatrix
 prop_NewIdentityMatrix (Nat2 mn) = 
     newIdentityMatrix mn `equivalent` newIdentityMatrix_S mn
 
-setIdentity_S a = ( (), newIdentityMatrix_S (shape a) )
-prop_SetIdentity =
-    setIdentity `implements` setIdentity_S
+setIdentityMatrix_S a = ( (), newIdentityMatrix_S (shape a) )
+prop_SetIdentityMatrix =
+    setIdentityMatrix `implements` setIdentityMatrix_S
 
 
 ----------------------------- Copying Vectors --------------------------------
@@ -339,11 +339,11 @@ tests_STMatrix =
     , ("getAssocs'", mytest prop_GetAssocsStrictModifyWith)
 
     , ("newZeroMatrix", mytest prop_NewZeroMatrix)
-    , ("setZero", mytest prop_SetZero)
+    , ("setZeroMatrix", mytest prop_SetZeroMatrix)
     , ("newConstantMatrix", mytest prop_NewConstantMatrix)
-    , ("setConstant", mytest prop_SetConstant)
+    , ("setConstantMatrix", mytest prop_SetConstantMatrix)
     , ("newIdentityMatrix", mytest prop_NewIdentityMatrix)
-    , ("setIdentity", mytest prop_SetIdentity)
+    , ("setIdentityMatrix", mytest prop_SetIdentityMatrix)
     
  {-    
     , ("newCopyVector", mytest prop_NewCopyVector)
