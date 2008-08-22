@@ -68,10 +68,14 @@ subVector n = do
 instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
     arbitrary = sized $ \m ->
         choose (0,m) >>= vector
+        
+    coarbitrary = undefined
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (SubVector n e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
+        
+    coarbitrary = undefined
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
     arbitrary = sized $ \m -> do
@@ -80,6 +84,8 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
         y <- vector n
         return $ VectorPair x y
         
+    coarbitrary = undefined
+        
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
     arbitrary = sized $ \m -> do
         n <- choose (0,m)
@@ -87,4 +93,5 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
         y <- vector n
         z <- vector n
         return $ VectorTriple x y z
-        
+    
+    coarbitrary = undefined

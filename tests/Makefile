@@ -1,6 +1,3 @@
-# To build and run the tests, make sure you have blas installed and that you
-# also have QuickCheck2 installed.
-
 
 
 all:
