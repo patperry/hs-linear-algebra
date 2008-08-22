@@ -110,10 +110,11 @@ coerceVector = unsafeCoerce
 
 shapeVector :: (BaseVector x e) => x n e -> Int
 shapeVector = dim
+{-# INLINE shapeVector #-}
 
 boundsVector :: (BaseVector x e) => x n e -> (Int,Int)
 boundsVector x = (0, dim x - 1)
-
+{-# INLINE boundsVector #-}
 
 -------------------------- ReadTensor functions -----------------------------
     
