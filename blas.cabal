@@ -21,7 +21,7 @@ copyright:       (c) 2008. Patrick Perry <patperry@stanford.edu>
 author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@stanford.edu>
 cabal-version:   >= 1.2.0
-tested-with:     GHC == 6.8.2
+tested-with:     GHC == 6.8.3
 
 extra-source-files:     INSTALL
                         NEWS
@@ -89,18 +89,19 @@ library
                             BLAS.Elem.Base
 
                         BLAS.Internal
-                        BLAS.Matrix
-                            BLAS.Matrix.Base
+                        -- BLAS.Matrix
+                        --        BLAS.Matrix.Apply.Read
+                        --    BLAS.Matrix.Base
 
-                            BLAS.Matrix.Diag
-                                BLAS.Matrix.Diag.Immutable
-                                BLAS.Matrix.Diag.Read
-                                BLAS.Matrix.Diag.View
+                        --    BLAS.Matrix.Diag
+                        --        BLAS.Matrix.Diag.Immutable
+                        --        BLAS.Matrix.Diag.Read
+                        --        BLAS.Matrix.Diag.View
 
-                            BLAS.Matrix.RowCol
-                                BLAS.Matrix.RowCol.Immutable
-                                BLAS.Matrix.RowCol.Read
-                                BLAS.Matrix.RowCol.View
+                        --    BLAS.Matrix.RowCol
+                        --        BLAS.Matrix.RowCol.Immutable
+                        --        BLAS.Matrix.RowCol.Read
+                        --        BLAS.Matrix.RowCol.View
                                 
                         --     BLAS.Matrix.Immutable
                         --     BLAS.Matrix.ReadOnly
@@ -120,9 +121,13 @@ library
                             BLAS.Tensor.Copy
                             BLAS.Tensor.Immutable
                             BLAS.Tensor.Read
+                            BLAS.Tensor.Swap
                             BLAS.Tensor.Write
 
                         BLAS.Types
+
+                        BLAS.UnsafeInterleaveM
+                        BLAS.UnsafeIOToM
 
                         -- Data.Matrix.Banded
                         --     Data.Matrix.Banded.IO
@@ -131,14 +136,14 @@ library
                         -- 
                         -- Data.Matrix.Diag 
                         
-                        Data.Matrix.Dense
-                            Data.Matrix.Dense.IO
-                            Data.Matrix.Dense.ST
-                            Data.Matrix.Dense.Class
-                                Data.Matrix.Dense.Class.Base
-                                Data.Matrix.Dense.Class.Read
-                                Data.Matrix.Dense.Class.Write
-                                
+                        -- Data.Matrix.Dense
+                        --    Data.Matrix.Dense.IO
+                        --    Data.Matrix.Dense.ST
+                        --    Data.Matrix.Dense.Class
+                        --        Data.Matrix.Dense.Class.Base
+                        --        Data.Matrix.Dense.Class.Read
+                        --       Data.Matrix.Dense.Class.Write
+
                         --     Data.Matrix.Dense.Operations
                         -- 
                         -- Data.Matrix.Perm
@@ -155,9 +160,6 @@ library
                             Data.Vector.Dense.IO
                             Data.Vector.Dense.ST
                             Data.Vector.Dense.Class
-                                Data.Vector.Dense.Class.Base
-                                Data.Vector.Dense.Class.Read
-                                Data.Vector.Dense.Class.Write
 
                         -- Test.QuickCheck.Permutation
                         -- Test.QuickCheck.Matrix.Banded
@@ -169,9 +171,20 @@ library
                         -- Test.QuickCheck.Matrix.Tri.Dense
                         
     other-modules:      BLAS.C.Double
-                        BLAS.C.Zomplex    
+                        BLAS.C.Zomplex
+                        
                         Data.Vector.Dense.Internal
-                        Data.Matrix.Dense.Internal
+                        Data.Vector.Dense.Class.Internal
+                        Data.Vector.Dense.Class.Internal.Base
+                        Data.Vector.Dense.Class.Creating
+                        Data.Vector.Dense.Class.Elements
+                        Data.Vector.Dense.Class.Special
+                        Data.Vector.Dense.Class.Views
+                        Data.Vector.Dense.Class.Copying
+                        Data.Vector.Dense.Class.Properties
+                        Data.Vector.Dense.Class.Operations
+                        
+                        -- Data.Matrix.Dense.Internal
                         
     ghc-options:        -Wall                   
     extensions:         BangPatterns, FlexibleContexts, 

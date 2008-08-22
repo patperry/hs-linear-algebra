@@ -12,16 +12,14 @@ module BLAS.Tensor.Write (
     WriteTensor(..),
     writeElem,
     modifyElem,
-    swap,
-    
-    module BLAS.Tensor.Read
     ) where
 
 import Data.Ix( inRange )
+import BLAS.Tensor.Base
 import BLAS.Tensor.Read
 
 -- | Class for modifiable mutable tensors.
-class (ReadTensor x i e m) => (WriteTensor x i e m) | x -> m where
+class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     -- | Creates a new tensor with elements all initialized to zero.
     newZero :: i -> m (x n e)
     
@@ -57,8 +55,6 @@ class (ReadTensor x i e m) => (WriteTensor x i e m) | x -> m where
     -- | Replace each element by a function applied to it
     modifyWith :: (e -> e) -> x n e -> m ()
     
-    unsafeSwap :: x n e -> x n e -> m ()
-
 
 -- | Set the value of the element at the given index.
 writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()
@@ -87,16 +83,4 @@ modifyElem x i f = do
             unsafeModifyElem x i f
   where
     s = shape x
-    
--- | Swap the values stored in two tensors of the same shape.
-swap :: (WriteTensor x i e m) => x n e -> x n e -> m ()
-swap x y
-    | n1 /= n2 =
-        fail $ "tried to swap tensors of shapes `" ++ show n1 ++ "'"
-               ++ " and `" ++ show n2 ++ "'"
-    | otherwise =
-        unsafeSwap x y
-  where
-    n1 = shape x
-    n2 = shape y
     

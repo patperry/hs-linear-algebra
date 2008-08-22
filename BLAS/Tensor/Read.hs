@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.Tensor.Read
@@ -11,16 +11,13 @@
 module BLAS.Tensor.Read (
     ReadTensor(..),
     readElem,
-    
-    module BLAS.Tensor.Base
     ) where
 
 import Data.Ix
-import BLAS.Elem.Base
 import BLAS.Tensor.Base
 
 -- | Class for mutable read-only tensors.
-class (BaseTensor x i e, Elem e, Monad m) => ReadTensor x i e m where
+class (BaseTensor x i e, Monad m) => ReadTensor x i e m | x -> i where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     

@@ -11,7 +11,6 @@
 module BLAS.Tensor.Immutable (
     ITensor(..),
     (!),
-    module BLAS.Tensor.Base
     ) where
 
 import BLAS.Tensor.Base
@@ -49,7 +48,7 @@ class (Elem e, BaseTensor x i e) => ITensor x i e where
     -- accum :: (e -> e' -> e) -> x e -> [(i,e')] -> x e
     
     -- | Apply a function elementwise to a tensor.
-    tmap :: (ITensor x i e') => (e -> e') -> x n e -> x n e'
+    tmap :: (e -> e) -> x n e -> x n e
     
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
@@ -59,9 +58,6 @@ class (Elem e, BaseTensor x i e) => ITensor x i e where
     
     -- | Get a new constant tensor of the given shape.
     constant :: i -> e -> x n e
-
---    -- | Scale a tensor by the given value.
---    (*>) :: e -> x n e -> x n e
 
 -- | Get the value at the given index.  Range-checks the argument.
 (!) :: (ITensor x i e, Show i) => x n e -> i -> e

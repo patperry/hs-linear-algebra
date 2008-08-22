@@ -2,29 +2,29 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Immutable
+-- Module     : BLAS.Matrix.Apply.Immutable
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Immutable (
-    IMatrix(..)
+module BLAS.Matrix.Apply.Immutable (
+    IApply(..)
     ) where
 
-import BLAS.Access
 import BLAS.Elem ( BLAS3 )
 import BLAS.Internal ( checkMatVecMult, checkMatMatMult )
-import BLAS.Matrix.ReadOnly
+import BLAS.Matrix.Base
+
 import Data.Vector.Dense
-import Data.Matrix.Dense.Internal
+import Data.Matrix.Dense
 
 import System.IO.Unsafe ( unsafePerformIO )
 
 infixr 7 <*>, <**>
 
-class (RMatrix a e) => IMatrix a e where
+class (BaseMatrix a e) => IApply a e where
     -- | Apply to a vector
     (<*>) :: a (m,n) e -> Vector n e -> Vector m e
     (<*>) a x = 
@@ -61,7 +61,7 @@ class (RMatrix a e) => IMatrix a e where
     {-# NOINLINE unsafeSApplyMat #-}
 
 
-instance (BLAS3 e) => IMatrix (DMatrix Imm) e where
+-- instance (BLAS3 e) => IApply Matrix e where
 
 {-# RULES
 "scale.apply/sapply"       forall k a x. (<*>) (k *> a) x = sapply k a x

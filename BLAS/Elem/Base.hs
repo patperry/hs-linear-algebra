@@ -10,7 +10,7 @@
 
 module BLAS.Elem.Base (
     Elem(..),
-    module BLAS.Conj
+    module BLAS.Conj,
     ) where
 
 import BLAS.Conj
@@ -32,7 +32,6 @@ class (Storable e, Fractional e, Conj e) => Elem e where
     -- | Coerce an element to a double
     toReal :: e -> Double
     
-
 instance Elem Double where
     norm     = abs
     norm1    = abs
@@ -44,3 +43,4 @@ instance Elem (Complex Double) where
     norm1 (x :+ y)   = abs x + abs y
     fromReal x       = x :+ 0
     toReal  (x :+ _) = x
+    

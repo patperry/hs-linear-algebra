@@ -14,6 +14,8 @@ module BLAS.Tensor.Copy (
     ) where
 
 import BLAS.Internal( checkBinaryOp )
+import BLAS.Tensor.Base
+import BLAS.Tensor.Read
 import BLAS.Tensor.Write
 
 -- | Class for mutable dense read-only tensors.

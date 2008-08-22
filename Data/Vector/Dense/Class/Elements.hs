@@ -1,19 +1,17 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Dense.Read
+-- Module     : Data.Vector.Dense.Class.Elements
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Numeric.Read (
-    ReadNumeric,
+module Data.Vector.Dense.Class.Elements (
+    -- * Reading and writing vector elements
+    module BLAS.Tensor.Read,
+    module BLAS.Tensor.Write,
     ) where
 
-import BLAS.Elem
 import BLAS.Tensor.Read
-
-class (Elem e, ReadTensor x i e m) => ReadNumeric x i e m
-
+import BLAS.Tensor.Write

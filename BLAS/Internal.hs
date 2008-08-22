@@ -11,8 +11,6 @@
 
 
 module BLAS.Internal (
-    UnsafeIOToM(..),
-    UnsafeInterleaveM(..),
     clearArray,
     bzero,
     inlinePerformIO,
@@ -41,12 +39,12 @@ module BLAS.Internal (
     diagLen,    
     ) where
 
-import Control.Monad.ST ( ST, unsafeIOToST, unsafeInterleaveST )
+
 import Data.Ix     ( inRange )
 import Foreign                  ( Ptr, Storable, castPtr, sizeOf )
 import Foreign.C.Types          ( CSize )
 import Text.Printf ( printf )
-import System.IO.Unsafe( unsafeInterleaveIO )
+
 
 #if defined(__GLASGOW_HASKELL__)
 import GHC.Base                 ( realWorld# )
@@ -54,24 +52,6 @@ import GHC.IOBase               ( IO(IO) )
 #else
 import System.IO.Unsafe         ( unsafePerformIO )
 #endif
-
-
-class (Monad m) => UnsafeInterleaveM m where
-    unsafeInterleaveM :: m a -> m a
-
-instance UnsafeInterleaveM IO where
-    unsafeInterleaveM = unsafeInterleaveIO
-instance UnsafeInterleaveM (ST s) where
-    unsafeInterleaveM = unsafeInterleaveST
-
-class (Monad m) => UnsafeIOToM m where
-    unsafeIOToM :: IO a -> m a
-    
-instance UnsafeIOToM IO where
-    unsafeIOToM = id
-instance UnsafeIOToM (ST s) where
-    unsafeIOToM = unsafeIOToST
-    
 
 
 clearArray :: Storable e => Ptr e -> Int -> IO ()

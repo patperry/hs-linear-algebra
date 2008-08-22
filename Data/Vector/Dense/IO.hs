@@ -8,9 +8,11 @@
 --
 
 module Data.Vector.Dense.IO (
-    module Data.Vector.Dense.Internal,
+    -- * The IOVector data type
+    IOVector,
     
+    module Data.Vector.Dense.Class,
     ) where
 
-import Data.Vector.Dense.Internal hiding ( unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector )
+import Data.Vector.Dense.Class.Internal( IOVector )
+import Data.Vector.Dense.Class

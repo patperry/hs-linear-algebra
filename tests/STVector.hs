@@ -100,9 +100,9 @@ newBasisVector_S n i = replicate i 0 ++ [1] ++ replicate (n-i-1) 0
 prop_NewBasisVector (Index i n) = 
     newBasisVector n i `equivalent` newBasisVector_S n i
 
-setBasis_S i x = ( (), newBasisVector_S (length x) i )
-prop_SetBasis (Index i n) = 
-    implementsFor n (setBasis i) (setBasis_S i)
+setBasisVector_S i x = ( (), newBasisVector_S (length x) i )
+prop_SetBasisVector (Index i n) = 
+    implementsFor n (setBasisVector i) (setBasisVector_S i)
 
 
 ----------------------------- Copying Vectors --------------------------------
@@ -114,8 +114,8 @@ prop_NewCopyVector =
 copyVector_S x y = ( (), y, y )
 prop_CopyVector = copyVector `implements2` copyVector_S
 
-swap_S x y = ( (), y, x )
-prop_Swap = swap `implements2` swap_S
+swapVector_S x y = ( (), y, x )
+prop_SwapVector = swapVector `implements2` swapVector_S
 
 
 -------------------------- Unsary Vector Operations --------------------------
@@ -341,11 +341,11 @@ tests_STVector =
     , ("newConstantVector", mytest prop_NewConstantVector)
     , ("setConstant", mytest prop_SetConstant)
     , ("newBasisVector", mytest prop_NewBasisVector)
-    , ("setBasis", mytest prop_SetBasis)
+    , ("setBasisVector", mytest prop_SetBasisVector)
     
     , ("newCopyVector", mytest prop_NewCopyVector)
     , ("copyVector", mytest prop_CopyVector)
-    , ("swap", mytest prop_Swap)
+    , ("swapVector", mytest prop_SwapVector)
 
     , ("doConj", mytest prop_DoConj)
     , ("scaleBy", mytest prop_ScaleBy)

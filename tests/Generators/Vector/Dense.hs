@@ -39,7 +39,7 @@ data VectorTriple n e =
                  (Vector n e) 
     deriving (Show)
 
-vector :: (Elem e, Arbitrary e) => Int -> Gen (Vector n e)
+vector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 vector n =
     frequency [ (3, rawVector n)  
               , (2, conjVector n)
@@ -47,17 +47,17 @@ vector n =
                     return $ subvectorWithStride s x o n)
               ]    
 
-rawVector :: (Elem e, Arbitrary e) => Int -> Gen (Vector n e)
+rawVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 rawVector n = do
     es <- QC.vector n
     return $ listVector n es
 
-conjVector :: (Elem e, Arbitrary e) => Int -> Gen (Vector n e)
+conjVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
 conjVector n = do
     x <- vector n
     return $ (conj x)
 
-subVector :: (Elem e, Arbitrary e) => Int -> Gen (SubVector n e)
+subVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (SubVector n e)
 subVector n = do
     o <- choose (0,5)
     s <- choose (1,5)
@@ -68,14 +68,10 @@ subVector n = do
 instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
     arbitrary = sized $ \m ->
         choose (0,m) >>= vector
-    coarbitrary x =
-        coarbitrary (elems x)
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (SubVector n e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
-    coarbitrary (SubVector s x o n) = 
-        coarbitrary (s,x,o,n)
 
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
     arbitrary = sized $ \m -> do
@@ -84,9 +80,6 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
         y <- vector n
         return $ VectorPair x y
         
-    coarbitrary (VectorPair x y) = 
-        coarbitrary (x,y)
-        
 instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
     arbitrary = sized $ \m -> do
         n <- choose (0,m)
@@ -94,7 +87,4 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
         y <- vector n
         z <- vector n
         return $ VectorTriple x y z
-        
-    coarbitrary (VectorTriple x y z) = 
-        coarbitrary (x,y,z)
         
