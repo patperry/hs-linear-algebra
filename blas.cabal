@@ -98,6 +98,10 @@ library
                                 BLAS.Matrix.Apply.Immutable
                                 BLAS.Matrix.Apply.Read
 
+                            BLAS.Matrix.Solve
+                                BLAS.Matrix.Solve.Immutable
+                                BLAS.Matrix.Solve.Read
+
                             BLAS.Matrix.Diag
                                 BLAS.Matrix.Diag.Immutable
                                 BLAS.Matrix.Diag.Read

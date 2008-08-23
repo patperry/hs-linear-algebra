@@ -17,36 +17,25 @@ module BLAS.Matrix.Solve.Immutable (
     
     ) where
 
+import BLAS.Elem
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
-import BLAS.Matrix.Solve.ReadOnly
+import BLAS.Matrix.Base
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix, shape )
 
-import System.IO.Unsafe ( unsafePerformIO )
-
 infixr 7 <\>, <\\>
 
-class RSolve a e => ISolve a e where
+class (BaseMatrix a e, BLAS1 e) => ISolve a e where
     unsafeSolve :: a (m,n) e -> Vector m e -> Vector n e
-    unsafeSolve a y =
-        unsafePerformIO $ unsafeGetSolve a y
-    {-# NOINLINE unsafeSolve #-}
+    unsafeSolve = unsafeSSolve 1
     
     unsafeSolveMat :: a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
-    unsafeSolveMat a c =
-        unsafePerformIO $ unsafeGetSolveMat a c
-    {-# NOINLINE unsafeSolveMat #-}
+    unsafeSolveMat = unsafeSSolveMat 1
 
     unsafeSSolve :: e -> a (m,n) e -> Vector m e -> Vector n e
-    unsafeSSolve alpha a y =
-        unsafePerformIO $ unsafeGetSSolve alpha a y
-    {-# NOINLINE unsafeSSolve #-}
     
     unsafeSSolveMat :: e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
-    unsafeSSolveMat alpha a c =
-        unsafePerformIO $ unsafeGetSSolveMat alpha a c
-    {-# NOINLINE unsafeSSolveMat #-}
 
 
 -- | Solve for a vector
