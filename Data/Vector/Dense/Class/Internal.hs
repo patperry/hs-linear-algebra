@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns, MultiParamTypeClasses, FunctionalDependencies,
+        FlexibleContexts, FlexibleInstances #-}
 {-# OPTIONS_HADDOCK hide, prune #-}
 -----------------------------------------------------------------------------
 -- |
