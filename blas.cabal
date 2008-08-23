@@ -149,7 +149,7 @@ library
                         Data.Matrix.Herm
                         --     Data.Matrix.Herm.Banded
 
-                        -- Data.Matrix.Tri
+                        Data.Matrix.Tri
                         --     Data.Matrix.Tri.Banded
                         --     Data.Matrix.Tri.Dense
 
@@ -189,7 +189,7 @@ library
                         Data.Matrix.Dense.Class.Copying
                         Data.Matrix.Dense.Class.Operations
                         
-    ghc-options:        -Wall                   
+    ghc-options:        -Wall
     extensions:         BangPatterns, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses
