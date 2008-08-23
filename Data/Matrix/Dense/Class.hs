@@ -25,14 +25,15 @@ module Data.Matrix.Dense.Class (
     module Data.Matrix.Dense.Class.Copying,
     module Data.Matrix.Dense.Class.Operations,
     
-    -- * Low-level properties
+    -- * Low-level functions
     lda,
     isHerm,
+    withMatrixPtr,
     
     ) where
 
 import Data.Matrix.Dense.Class.Internal( BaseMatrix(..), lda, isHerm,
-    ReadMatrix, WriteMatrix, coerceMatrix )
+    ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
 import BLAS.Tensor.Base
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import Data.Matrix.Dense.Class.Creating

@@ -138,7 +138,9 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
     unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
 
-import BLAS.Matrix hiding ( BaseMatrix )
+import BLAS.Matrix.Base hiding ( BaseMatrix )
+import BLAS.Matrix.Diag
+import BLAS.Matrix.RowCol
 import qualified BLAS.Matrix.Base as BLAS
 
 

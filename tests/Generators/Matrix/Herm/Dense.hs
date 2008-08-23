@@ -1,33 +1,36 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Matrix.Herm.Dense
+-- Module     : Generators.Matrix.Herm.Dense
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Herm.Dense 
-    where
+module Generators.Matrix.Herm.Dense( 
+    HermMatrix(..),
+    HermMatrixMV(..),
+    HermMatrixMM(..),
+    ) where
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( dvector )
-import Test.QuickCheck.Matrix ( matrixSized )
-import Test.QuickCheck.Matrix.Dense ( dmatrix, rawMatrix )
+import Generators.Vector.Dense ( vector )
+import Generators.Matrix ( matrixSized )
+import Generators.Matrix.Dense ( matrix )
 
 import BLAS.Elem ( BLAS2 )
 import BLAS.Types ( flipUpLo )
 
-import Data.Vector.Dense
-import Data.Matrix.Dense
+import Data.Vector.Dense hiding ( vector )
+import Data.Matrix.Dense hiding ( matrix )
 import Data.Matrix.Herm
 
 
 
 hermMatrix :: (BLAS2 e, Arbitrary e) => Int -> Gen (Matrix (n,n) e)
 hermMatrix n  = do
-    a <- rawMatrix (n,n)
+    a <- matrix (n,n)
     let h = (a + herm a)
     elements [ h, herm h ]
 
@@ -65,7 +68,7 @@ data HermMatrixMV n e =
 instance (Arbitrary e, BLAS2 e) => Arbitrary (HermMatrixMV n e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
-        x <- dvector (numCols a)
+        x <- vector (numCols a)
         return $ HermMatrixMV h a x
         
     coarbitrary = undefined
@@ -81,7 +84,7 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (HermMatrixMM m n e) where
     arbitrary = matrixSized $ \k -> do
         (HermMatrix h a) <- arbitrary
         n <- choose (0,k)
-        b <- dmatrix (numCols a,n)
+        b <- matrix (numCols a,n)
         return $ HermMatrixMM h a b
             
     coarbitrary = undefined

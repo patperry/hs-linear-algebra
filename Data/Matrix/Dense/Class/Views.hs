@@ -22,7 +22,7 @@ module Data.Matrix.Dense.Class.Views (
 
 import BLAS.Internal( checkedSubmatrix )
 import BLAS.Tensor( shape )
-import BLAS.Matrix( herm )
+import BLAS.Matrix.Base( herm )
 
 import BLAS.Matrix.RowCol.View
 import BLAS.Matrix.RowCol.Read

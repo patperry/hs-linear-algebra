@@ -7,6 +7,7 @@ import Vector
 import STVector
 import Matrix
 import STMatrix
+import HermMatrix
 
 
 main :: IO ()
@@ -30,8 +31,9 @@ main = do
     when (not . and $ results) $ fail "\nNot all tests passed!"
  where
 
-    tests = [ ("Vector",   tests_Vector)
-            , ("STVector", tests_STVector)
-            , ("Matrix",   tests_Matrix)
-            , ("STMatrix", tests_STMatrix)
+    tests = [ ("Vector"      , tests_Vector)
+            , ("STVector"    , tests_STVector)
+            , ("Matrix"      , tests_Matrix)
+            , ("STMatrix"    , tests_STMatrix)
+            , ("Herm Matrix" , tests_HermMatrix)
             ]

@@ -29,14 +29,15 @@ module Data.Vector.Dense.Class (
     module Data.Vector.Dense.Class.Properties,
     module Data.Vector.Dense.Class.Operations,
     
-    -- * Low-level properties
+    -- * Low-level functions
     stride,
     isConj,
+    withVectorPtr,
     
     ) where
 
 import Data.Vector.Dense.Class.Internal( BaseVector(..), dim, stride, isConj,
-    ReadVector, WriteVector, coerceVector )
+    ReadVector, WriteVector, coerceVector, withVectorPtr )
 import BLAS.Tensor.Base
 import BLAS.Conj
 import Data.Vector.Dense.Class.Creating

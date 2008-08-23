@@ -1,10 +1,10 @@
 
 
 all:
-	ghc --make -fforce-recomp -DREAL Main.hs -o test-real
+	ghc --make -fforce-recomp -XPatternSignatures -DREAL Main.hs -o test-real
 	./test-real
 	
-	ghc --make -fforce-recomp -DCOMPLEX Main.hs -o test-complex
+	ghc --make -fforce-recomp -XPatternSignatures -DCOMPLEX Main.hs -o test-complex
 	./test-complex
 	
 clean:

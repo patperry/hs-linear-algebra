@@ -18,7 +18,7 @@ module Data.Matrix.Dense.Class.Special (
     ) where
 
 import BLAS.Tensor( unsafeWriteElem )
-import BLAS.Matrix( numRows, numCols )
+import BLAS.Matrix.Base( numRows, numCols )
 
 import Data.Matrix.Dense.Class.Internal
 
