@@ -8,6 +8,7 @@ import STVector
 import Matrix
 import STMatrix
 import HermMatrix
+import TriMatrix
 
 
 main :: IO ()
@@ -36,4 +37,5 @@ main = do
             , ("Matrix"      , tests_Matrix)
             , ("STMatrix"    , tests_STMatrix)
             , ("Herm Matrix" , tests_HermMatrix)
+            , ("Tri Matrix"  , tests_TriMatrix)
             ]

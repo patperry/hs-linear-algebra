@@ -1,29 +1,33 @@
-{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Matrix.Tri.Dense
--- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
+-- Module     : Generators.Matrix.Tri.Dense
+-- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Tri.Dense
-    where
+module Generators.Matrix.Tri.Dense (
+    TriMatrix(..),
+    TriMatrixMV(..),
+    TriMatrixMM(..),
+    TriMatrixSV(..),
+    TriMatrixSM(..),
+    ) where
 
 import Data.Ix ( range )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( dvector )
-import Test.QuickCheck.Matrix.Dense ( dmatrix )
-import Test.QuickCheck.Matrix ( matrixSized )
+import Generators.Vector.Dense ( vector )
+import qualified Generators.Matrix.Dense as Test
+import Generators.Matrix ( matrixSized )
 
-import Data.Vector.Dense
+import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
 import BLAS.Elem ( BLAS1, BLAS3 )
 
-import Data.Matrix.Tri.Dense ( Tri, UpLo(..), Diag(..), fromBase )
+import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
 
 import Unsafe.Coerce
 
@@ -84,7 +88,7 @@ data TriMatrixMV m n e =
 instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
-        x <- dvector (numCols a)
+        x <- vector (numCols a)
         return $ TriMatrixMV t a x
 
     coarbitrary = undefined
@@ -101,7 +105,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMM m k n e) where
     arbitrary = matrixSized $ \s -> do
         (TriMatrix t a) <- arbitrary
         n <- choose (0,s)
-        b <- dmatrix (numCols a, n)
+        b <- Test.matrix (numCols a, n)
         return $ TriMatrixMM t a b
             
     coarbitrary = undefined
@@ -115,7 +119,7 @@ data TriMatrixSV m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
-        x <- dvector (numCols a)
+        x <- vector (numCols a)
         let y = a <*> x
         return (TriMatrixSV t y)
         
@@ -131,7 +135,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m k n e) where
     arbitrary = matrixSized $ \s -> do
         (TriMatrix t a) <- arbitrary
         n <- choose (0, s)
-        b <- dmatrix (numCols a, n)
+        b <- Test.matrix (numCols a, n)
         let c = a <**> b
         return (TriMatrixSM t c)
         
