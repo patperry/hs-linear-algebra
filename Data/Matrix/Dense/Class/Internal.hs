@@ -101,6 +101,10 @@ module Data.Matrix.Dense.Class.Internal (
     unsafeDoMulMatrix,
     unsafeDoDivMatrix,
     
+    -- * ReadApply functions
+    gemv,
+    gemm,
+    
     -- * Utility functions
     fptrOfMatrix,
     offsetOfMatrix,
@@ -118,6 +122,9 @@ import Foreign
 import Unsafe.Coerce
 
 import BLAS.Elem
+import BLAS.C.Types
+import qualified BLAS.C.Level2 as BLAS
+import qualified BLAS.C.Level3 as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
 import BLAS.UnsafeInterleaveM
@@ -129,7 +136,7 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, 
     newCopyVector, unsafeCopyVector, unsafeSwapVector, 
     doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector )
+    unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
 
 import BLAS.Matrix hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
@@ -210,7 +217,7 @@ maybeFromCol x
   where
     (f,o,n,s,c) = arrayFromVector x
 
-maybeToVector :: (BaseMatrix a x e, RowColView a x e) => 
+maybeToVector :: (BaseMatrix a x e) => 
     a mn e -> Maybe (x k e)
 maybeToVector a
     | h = 
@@ -525,7 +532,86 @@ unsafeDoDivMatrix :: (ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e 
 unsafeDoDivMatrix = unsafeDoMatrixOp2 $ unsafeDivMatrix
 
 
+-------------------------- ReadApply functions -------------------------------
+
+-- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
+gemv :: (ReadMatrix a z e m, ReadVector x e m, WriteVector y e m, BLAS3 e) => 
+    e -> a (k,l) e -> x l e -> e -> y k e -> m ()
+gemv alpha a x beta y
+    | numRows a == 0 || numCols a == 0 =
+        scaleBy beta y
+        
+    | isConj y && (isConj x || stride x == 1) =
+        let order  = colMajor
+            transA = if isConj x then noTrans else conjTrans
+            transB = blasTransOf (herm a)
+            m      = 1
+            n      = dim y
+            k      = dim x
+            ldA    = stride x
+            ldB    = lda a
+            ldC    = stride y
+            alpha' = conj alpha
+            beta'  = conj beta
+        in unsafeIOToM $
+               withVectorPtr x $ \pA ->
+               withMatrixPtr a $ \pB ->
+               withVectorPtr y $ \pC ->
+                   BLAS.gemm order transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
+    
+    | (isConj y && otherwise) || isConj x = do
+        doConj y
+        gemv alpha a x beta (conj y)
+        doConj y
+        
+    | otherwise =
+        let order  = colMajor
+            transA = blasTransOf a
+            (m,n)  = case (isHerm a) of
+                         False -> shape a
+                         True  -> (flipShape . shape) a
+            ldA    = lda a
+            incX   = stride x
+            incY   = stride y
+        in unsafeIOToM $
+               withMatrixPtr a $ \pA ->
+               withVectorPtr x $ \pX ->
+               withVectorPtr y $ \pY -> do
+                   BLAS.gemv order transA m n alpha pA ldA pX incX beta pY incY
+
+-- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
+gemm :: (BLAS3 e, ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m) => 
+    e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+gemm alpha a b beta c
+    | numRows a == 0 || numCols a == 0 || numCols b == 0 = 
+        scaleBy beta c
+    | isHerm c = gemm (conj alpha) (herm b) (herm a) (conj beta) (herm c)
+    | otherwise =
+        let order  = colMajor
+            transA = blasTransOf a
+            transB = blasTransOf b
+            (m,n)  = shape c
+            k      = numCols a
+            ldA    = lda a
+            ldB    = lda b
+            ldC    = lda c
+        in unsafeIOToM $
+               withMatrixPtr a $ \pA ->
+               withMatrixPtr b $ \pB ->
+               withMatrixPtr c $ \pC ->
+                   BLAS.gemm order transA transB m n k alpha pA ldA pB ldB beta pC ldC
+
+
 --------------------------- Utility functions -------------------------------
+
+blasTransOf :: (BaseMatrix a x e) => a mn e -> CBLASTrans
+blasTransOf a = 
+    case (isHerm a) of
+          False -> noTrans
+          True  -> conjTrans
+
+flipShape :: (Int,Int) -> (Int,Int)
+flipShape (m,n) = (n,m)
 
 withMatrixPtr :: (BaseMatrix a x e, Storable e) =>
     a mn e -> (Ptr e -> IO b) -> IO b

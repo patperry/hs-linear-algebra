@@ -9,7 +9,7 @@
 
 module BLAS.Numeric.Binary (
     -- * In-place binary operations
-    axpy,
+    axpyTensor,
     (+=),
     (-=),
     (*=),
@@ -45,9 +45,9 @@ class (ReadTensor x i e m, WriteTensor y i e m) => Numeric2 x y i e m where
 
 -- | @axpy alpha x y@ replaces @y@ with @alpha x + y@.  The operands
 -- must be the same shape.
-axpy :: (Numeric2 x y i e m) => e -> x n e -> y n e -> m ()
-axpy k = checkTensorOp2 $ unsafeAxpy k
-{-# INLINE axpy #-}
+axpyTensor :: (Numeric2 x y i e m) => e -> x n e -> y n e -> m ()
+axpyTensor k = checkTensorOp2 $ unsafeAxpy k
+{-# INLINE axpyTensor #-}
 
 -- | @y += x@ replaces @y@ with @y + x@.  The operands
 -- must be the same shape.

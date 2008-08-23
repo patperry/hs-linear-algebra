@@ -159,8 +159,8 @@ prop_MulEquals = (*=) `implements2` mulEquals_S
 divEquals_S x y = ( (), zipWith (/) x y, y )
 prop_DivEquals = (//=) `implements2` divEquals_S
 
-axpy_S alpha x y = ( (), x, zipWith (\xi yi -> alpha * xi + yi) x y )
-prop_Axpy alpha = axpy alpha `implements2` axpy_S alpha
+axpyVector_S alpha x y = ( (), x, zipWith (\xi yi -> alpha * xi + yi) x y )
+prop_AxpyVector alpha = axpyVector alpha `implements2` axpyVector_S alpha
 
 getAdd_S x y = ( zipWith (+) x y, x, y )
 prop_GetAdd =
@@ -356,7 +356,7 @@ tests_STVector =
     , ("getScaled", mytest prop_GetScaled)
     , ("getShifted", mytest prop_GetShifted)
 
-    , ("axpy", mytest prop_Axpy)
+    , ("axpyVector", mytest prop_AxpyVector)
     , ("(+=)", mytest prop_AddEquals)
     , ("(-=)", mytest prop_SubEquals)
     , ("(*=)", mytest prop_MulEquals)

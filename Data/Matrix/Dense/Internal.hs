@@ -59,18 +59,30 @@ import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 
 import BLAS.Numeric.Immutable
+import BLAS.Numeric
 
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
+import BLAS.Tensor
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
 import BLAS.Matrix.RowCol.Immutable
+import BLAS.Matrix.RowCol.View
+import BLAS.Matrix.RowCol.Read
 import BLAS.Matrix.Diag.Immutable
+import BLAS.Matrix.Diag.View
+import BLAS.Matrix.Diag.Read
 import BLAS.Numeric.Immutable
 
-import Data.Matrix.Dense.Class
-import Data.Matrix.Dense.Class.Internal hiding ( liftMatrix, liftMatrix2 )
+import Data.Matrix.Dense.Class.Creating
+import Data.Matrix.Dense.Class.Special
+import Data.Matrix.Dense.Class.Views( submatrix, unsafeSubmatrix )
+import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHerm, lda,
+    unsafeGetRowMatrix, unsafeGetColMatrix, unsafeGetDiagMatrix,
+    unsafeRowViewMatrix, unsafeColViewMatrix, unsafeDiagViewMatrix,
+    BaseMatrix(..), IOMatrix, maybeFromRow, maybeFromCol, newCopyMatrix,
+    ReadMatrix )
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
 

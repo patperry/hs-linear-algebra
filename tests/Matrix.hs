@@ -145,14 +145,13 @@ prop_colMatrix_shape (x :: V) =
 prop_colMatrix_elems (x :: V) =
     elems (colMatrix x :: M) === elems x
 
-{-
 prop_apply_basis (MatrixAt (a :: M) (_,j)) =
-    a <*> (basis (numCols a) j :: V) ~== col a j
+    a <*> (basisVector (numCols a) j :: V) ~== col a j
 prop_apply_herm_basis (MatrixAt (a :: M) (i,_)) =
-    (herm a) <*> (basis (numRows a) i :: V) ~== conj (row a i)
+    (herm a) <*> (basisVector (numRows a) i :: V) ~== conj (row a i)
 prop_apply_scale k (MatrixMV (a :: M) x) =
-    a <*> (k *> x) ~== k *> (a <*> x)
-prop_apply_linear (MatrixMVMatrixPair (a :: M) x y) =
+    sapply k a x ~== k *> (a <*> x)
+prop_apply_linear (MatrixMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
 prop_applyMat_id_right (a :: M) =
@@ -165,13 +164,12 @@ prop_applyMat_scale_left (MatrixMM (a:: M) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
 prop_applyMat_scale_right (MatrixMM (a:: M) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
-prop_applyMat_linear (MatrixMMMatrixPair (a :: M) b c) =
+prop_applyMat_linear (MatrixMMPair (a :: M) b c) =
     a <**> (b + c) ~== a <**> b + a <**> c
 prop_applyMat_herm (MatrixMM (a :: M) b) =
     herm b <**> herm a ~== herm (a <**> b)
 prop_applyMat_cols (MatrixMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
--}
 
 prop_shift k (a :: M) =
     shift k a ~== a + constant (shape a) k
@@ -253,7 +251,7 @@ tests_Matrix =
     , ("elems . rowMatrix"       , mytest prop_rowMatrix_elems)
     , ("shape . colMatrix"       , mytest prop_colMatrix_shape)
     , ("elems . colMatrix"       , mytest prop_colMatrix_elems)
-{-                               
+
     , ("apply basis"           , mytest prop_apply_basis)
     , ("apply herm basis"      , mytest prop_apply_herm_basis)
     , ("apply scale"           , mytest prop_apply_scale)
@@ -266,7 +264,6 @@ tests_Matrix =
     , ("applyMat linear"        , mytest prop_applyMat_linear)
     , ("applyMat herm"          , mytest prop_applyMat_herm)
     , ("applyMat cols"          , mytest prop_applyMat_cols)
--}    
     , ("shift"                 , mytest prop_shift)
     , ("scale"                 , mytest prop_scale)
     
