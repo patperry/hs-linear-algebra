@@ -152,7 +152,6 @@ library
 
                         Data.Matrix.Tri
                         --     Data.Matrix.Tri.Banded
-                        --     Data.Matrix.Tri.Dense
 
                         Data.Vector.Dense
                             Data.Vector.Dense.IO

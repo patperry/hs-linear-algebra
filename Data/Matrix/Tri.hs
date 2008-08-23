@@ -33,7 +33,14 @@ module Data.Matrix.Tri (
     upperUTall,
 
     coerceTri,
+    
+    module BLAS.Matrix.Apply,
+    module BLAS.Matrix.Solve,
     ) where
+
+import BLAS.Matrix.Apply
+import BLAS.Matrix.Solve
+
 
 import Control.Monad( when )
 import Control.Monad.ST( ST )
@@ -140,7 +147,7 @@ instance (Show (a (m,n) e), BaseMatrix a e) => Show (Tri a (m,n) e) where
                        _ | isFat a    -> "Fat"
                        _              -> "Tall"
 
---------------------------- Tri Matrix Functions ----------------------------
+------------------------ Tri Matrix Apply Functions -------------------------
 
 instance (BLAS3 e) => IApply (Tri Matrix) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
@@ -341,3 +348,149 @@ trmm alpha t b =
            withMatrixPtr b $ \pB ->
                BLAS.trmm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
 
+
+------------------------ Tri Matrix Solve Functions -------------------------
+
+instance (BLAS3 e) => ISolve (Tri Matrix) e where
+    unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
+    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
+
+instance (BLAS3 e) => ReadSolve (Tri IOMatrix) e IO where
+    unsafeDoSSolve     = unsafeDoSSolveTriMatrix
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
+    unsafeDoSSolve_    = trsv
+    unsafeDoSSolveMat_ = trsm
+
+instance (BLAS3 e) => ReadSolve (Tri (STMatrix s)) e (ST s) where
+    unsafeDoSSolve     = unsafeDoSSolveTriMatrix
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
+    unsafeDoSSolve_    = trsv
+    unsafeDoSSolveMat_ = trsm
+
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadSolve (Tri Matrix) e m where
+    unsafeDoSSolve     = unsafeDoSSolveTriMatrix
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
+    unsafeDoSSolve_    = trsv
+    unsafeDoSSolveMat_ = trsm
+
+
+
+unsafeDoSSolveTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+    ReadVector y e m, WriteVector x e m) =>
+        e -> Tri a (k,l) e -> y k e -> x l e -> m ()
+unsafeDoSSolveTriMatrix alpha t y x =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' (coerceVector x)
+            
+        (Lower,Right (t',_),_) -> do
+            let y1 = unsafeSubvector y 0            (numRows t')
+            unsafeCopyVector x y1
+            trsv alpha t' x
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' x
+
+        (Upper,_,Right (t',r)) ->
+            let x1 = unsafeSubvector x 0            (numCols t')
+                x2 = unsafeSubvector x (numCols t') (numCols r)
+            in do
+                unsafeCopyVector x1 y
+                trsv alpha t' x1
+                setZero x2
+  where
+    (u,d,a) = toBase t
+
+
+unsafeDoSSolveMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+    ReadMatrix c y e m, WriteMatrix b x e m) =>
+        e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+unsafeDoSSolveMatTriMatrix alpha t c b =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyMatrix b (coerceMatrix c)
+            trsm alpha t' (coerceMatrix b)
+            
+        (Lower,Right (t',_),_) -> do
+            let c1 = unsafeSubmatrix c (0,0)          (numRows t',numCols c)
+            unsafeCopyMatrix b c1
+            trsm alpha t' b
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyMatrix (coerceMatrix b) c
+            trsm alpha t' (coerceMatrix b)
+
+        (Upper,_,Right (t',r)) ->
+            let b1 = unsafeSubmatrix b (0,0)          (numCols t',numCols b)
+                b2 = unsafeSubmatrix b (numCols t',0) (numCols r ,numCols b)
+            in do
+                unsafeCopyMatrix b1 c
+                trsm alpha t' b1
+                setZero b2
+  where
+    (u,d,a) = toBase t
+
+
+trsv :: (ReadMatrix a x e m, WriteVector y e m, BLAS3 e) => 
+    e -> Tri a (k,k) e -> y n e -> m ()
+trsv alpha t x
+    | dim x == 0 = return ()
+
+    | isConj x =
+        let (u,d,a) = toBase t
+            order   = colMajor
+            side    = rightSide
+            (h,u')  = if isHerm a then (NoTrans, flipUpLo u) else (ConjTrans, u)
+            uploA   = cblasUpLo u'
+            transA  = cblasTrans h
+            diagA   = cblasDiag d
+            m       = 1
+            n       = dim x
+            alpha'  = conj alpha
+            ldA     = lda a
+            ldB     = stride x
+        in unsafeIOToM $
+               withMatrixPtr a $ \pA ->
+               withVectorPtr x $ \pB ->
+                   BLAS.trsm order side uploA transA diagA m n alpha' pA ldA pB ldB
+
+    | otherwise =
+        let (u,d,a) = toBase t
+            order     = colMajor
+            (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+            uploA     = cblasUpLo u'
+            diagA     = cblasDiag d
+            n         = dim x
+            ldA       = lda a
+            incX      = stride x
+        in do
+            when (alpha /= 1) $ scaleBy alpha x
+            unsafeIOToM $
+                withMatrixPtr a $ \pA ->
+                withVectorPtr x $ \pX ->
+                    BLAS.trsv order uploA transA diagA n pA ldA pX incX
+
+trsm :: (ReadMatrix a x e m, WriteMatrix b y e m, BLAS3 e) => 
+    e -> Tri a (k,k) e -> b (k,l) e -> m ()
+trsm _ _ b
+    | numRows b == 0 || numCols b == 0 = return ()
+trsm alpha t b =
+    let (u,d,a)   = toBase t
+        order     = colMajor
+        (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
+        (m,n)     = shape b
+        (side,h',m',n',alpha')
+                  = if isHerm b
+                        then (rightSide, flipTrans h, n, m, conj alpha)
+                        else (leftSide , h          , m, n, alpha     )
+        uploA     = cblasUpLo u'
+        transA    = cblasTrans h'
+        diagA     = cblasDiag d
+        ldA       = lda a
+        ldB       = lda b
+    in unsafeIOToM $     
+           withMatrixPtr a $ \pA ->
+           withMatrixPtr b $ \pB -> do
+               BLAS.trsm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
