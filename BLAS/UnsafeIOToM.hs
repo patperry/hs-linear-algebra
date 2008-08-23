@@ -19,5 +19,8 @@ class (Monad m) => UnsafeIOToM m where
     
 instance UnsafeIOToM IO where
     unsafeIOToM = id
+    {-# INLINE unsafeIOToM #-}
+    
 instance UnsafeIOToM (ST s) where
     unsafeIOToM = unsafeIOToST
+    {-# INLINE unsafeIOToM #-}

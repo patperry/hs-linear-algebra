@@ -444,11 +444,17 @@ unsafeSTVectorToIOVector (ST x) = x
 
 instance (Elem e) => BaseVector IOVector e where
     vectorViewArray                = DV
+    {-# INLINE vectorViewArray #-}
+    
     arrayFromVector (DV f o n s c) = (f,o,n,s,c)
+    {-# INLINE arrayFromVector #-}
 
 instance (Elem e) => BaseVector (STVector s) e where
     vectorViewArray f o n s c = ST $ DV f o n s c
+    {-# INLINE vectorViewArray #-}    
+    
     arrayFromVector (ST x)    = arrayFromVector x
+    {-# INLINE arrayFromVector #-}
 
 instance (Elem e) => BaseTensor IOVector Int e where
     bounds = boundsVector

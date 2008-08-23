@@ -33,3 +33,24 @@
 * submatrix -> submatrixView.  Add getSubmatrix function?
 
 * Add addVector, subVector, addMatrix, subMatrix, etc.
+
+* RowColRead -> ReadRowCol; same for View and Diag
+
+* Optimization: Put vector/matrix fields in the typeclass and inline them.  
+Implementation for IOVector:
+
+    fptrOfVector (DV f _ _ _ _) = f
+    {-# INLINE fptrOfVector #-}
+
+    offsetOfVector (DV _ o _ _ _) = o
+    {-# INLINE offsetOfVector #-}
+    
+    dim (DV _ _ n _ _) = n
+    {-# INLINE dim #-}
+    
+    stride (DV _ _ _ s _) = s
+    {-# INLINE stride #-}
+    
+    isConj (DV _ _ _ _ c) = c
+    {-# INLINE isConj #-}
+
