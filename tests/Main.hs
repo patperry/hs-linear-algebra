@@ -9,6 +9,7 @@ import Matrix
 import STMatrix
 import HermMatrix
 import TriMatrix
+import Diag
 
 
 main :: IO ()
@@ -38,4 +39,5 @@ main = do
             , ("STMatrix"    , tests_STMatrix)
             , ("Herm Matrix" , tests_HermMatrix)
             , ("Tri Matrix"  , tests_TriMatrix)
+            , ("Diag"        , tests_Diag)
             ]

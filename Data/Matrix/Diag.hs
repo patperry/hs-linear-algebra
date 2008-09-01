@@ -19,6 +19,8 @@ module Data.Matrix.Diag (
     -- * Coercing shapes
     coerceDiag,
     
+    module BLAS.Matrix,
+    
     ) where
 
 import Control.Monad( zipWithM_ )
