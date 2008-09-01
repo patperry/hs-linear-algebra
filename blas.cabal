@@ -96,10 +96,9 @@ library
                             BLAS.Matrix.Base
                             BLAS.Matrix.Immutable
                             BLAS.Matrix.Mutable
-
                             BLAS.Matrix.Solve
                                 BLAS.Matrix.Solve.Immutable
-                                BLAS.Matrix.Solve.Read
+                                BLAS.Matrix.Solve.Mutable
 
                         BLAS.Numeric
                             BLAS.Numeric.Immutable

@@ -9,8 +9,8 @@
 
 module BLAS.Matrix.Solve (
     module BLAS.Matrix.Solve.Immutable,
-    module BLAS.Matrix.Solve.Read,
+    module BLAS.Matrix.Solve.Mutable,
     ) where
 
 import BLAS.Matrix.Solve.Immutable
-import BLAS.Matrix.Solve.Read
+import BLAS.Matrix.Solve.Mutable

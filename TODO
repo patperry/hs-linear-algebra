@@ -63,5 +63,3 @@ Implementation for IOVector:
     
     isConj (DV _ _ _ _ c) = c
     {-# INLINE isConj #-}
-
-* ReadSolve -> MSolve

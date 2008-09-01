@@ -352,19 +352,19 @@ instance (BLAS3 e) => ISolve (Tri Matrix) e where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
 
-instance (BLAS3 e) => ReadSolve (Tri IOMatrix) e IO where
+instance (BLAS3 e) => MSolve (Tri IOMatrix) e IO where
     unsafeDoSSolve     = unsafeDoSSolveTriMatrix
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
     unsafeDoSSolve_    = trsv
     unsafeDoSSolveMat_ = trsm
 
-instance (BLAS3 e) => ReadSolve (Tri (STMatrix s)) e (ST s) where
+instance (BLAS3 e) => MSolve (Tri (STMatrix s)) e (ST s) where
     unsafeDoSSolve     = unsafeDoSSolveTriMatrix
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
     unsafeDoSSolve_    = trsv
     unsafeDoSSolveMat_ = trsm
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadSolve (Tri Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Tri Matrix) e m where
     unsafeDoSSolve     = unsafeDoSSolveTriMatrix
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
     unsafeDoSSolve_    = trsv
