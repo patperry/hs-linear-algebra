@@ -119,9 +119,12 @@ data TriMatrixSV m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
-        x <- vector (numCols a)
-        let y = a <*> x
-        return (TriMatrixSV t y)
+        if any (== 0) (elems $ diag a 0)
+            then arbitrary
+            else do
+                x <- vector (numCols a)
+                let y = a <*> x
+                return (TriMatrixSV t y)
         
     coarbitrary = undefined
 
@@ -134,10 +137,13 @@ data TriMatrixSM m k n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m k n e) where
     arbitrary = matrixSized $ \s -> do
         (TriMatrix t a) <- arbitrary
-        n <- choose (0, s)
-        b <- Test.matrix (numCols a, n)
-        let c = a <**> b
-        return (TriMatrixSM t c)
+        if any (== 0) (elems $ diag a 0)
+            then arbitrary
+            else do
+                n <- choose (0, s)
+                b <- Test.matrix (numCols a, n)
+                let c = a <**> b
+                return (TriMatrixSM t c)
         
     coarbitrary = undefined
     

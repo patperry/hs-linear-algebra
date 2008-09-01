@@ -41,14 +41,14 @@ prop_tri_sapplyMat k (TriMatrixMM (t :: TM) a b) =
 
 prop_tri_solve (TriMatrixSV (t :: TM) y) =
     let x = t <\> y
-    in t <*> x ~== y -- || (any isUndef $ elems x)
+    in t <*> x ~== y
 
 prop_tri_ssolve k (TriMatrixSV (t :: TM) y) =
     ssolve k t y ~== t <\> (k *> y)
 
 prop_tri_solveMat (TriMatrixSM (t :: TM) b) =
     let a = t <\\> b
-    in t <**> a ~== b -- || (any isUndef $ elems a)
+    in t <**> a ~== b
 
 prop_tri_ssolveMat k (TriMatrixSM (t :: TM) b) =
     ssolveMat k t b ~== t <\\> (k *> b)
