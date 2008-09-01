@@ -41,7 +41,8 @@ import Data.Vector.Dense( Vector )
 import Data.Vector.Dense.IO( IOVector )
 import Data.Vector.Dense.ST( STVector, runSTVector )
 import Data.Vector.Dense.Class( BaseVector, ReadVector, WriteVector,
-    conj, dim, coerceVector, scaleBy, unsafeCopyVector, unsafeDivVector )
+    conj, dim, coerceVector, scaleBy, unsafeCopyVector, unsafeAxpyVector,
+    unsafeMulVector, unsafeDivVector, newCopyVector )
 
 data Diag x nn e = forall n. Diag (x n e)
 
@@ -61,90 +62,59 @@ instance (BaseVector x e) => BaseTensor (Diag x) (Int,Int) e where
 instance (BaseVector x e) => BLAS.BaseMatrix (Diag x) e where
     herm (Diag x) = Diag (conj x)
     
-{-
-instance (BLAS1 e) => ITensor (Diag Vector) (Int,Int) e where
-    zero (m,n) | m /= n = error "tried to make a non-square diagonal matrix"
-               | otherwise = coerceDiag $ diagFromVector $ zero n
-
-    constant (m,n) e | m /= n = error "tried to make a non-square diagonal matrix"
-                     | otherwise = coerceDiag $ diagFromVector $ constant n e
-               
-    size = size . vectorFromDiag . coerceDiag
-    
-    assocs a =
-        let ies = assocs $ vectorFromDiag $ coerceDiag a
-        in map (\(i,e) -> ((i,i),e)) ies
-    
-    (//) = replaceHelp (//)
-    
-    tmap f a = (coerceDiag . diagFromVector) 
-                   (tmap f $ vectorFromDiag $ coerceDiag a)
-    
-    unsafeAt a (i,j) | i /= j = 0
-                     | otherwise = unsafeAt (vectorFromDiag $ coerceDiag a) i
-                     
-    unsafeReplace = replaceHelp unsafeReplace
-    
-replaceHelp :: (BLAS1 e) => 
-       (Vector n e -> [(Int,e)] -> Vector n e) 
-    -> Diag Vector nn e -> [((Int,Int),e)] -> Diag Vector nn e
-replaceHelp f a ijes =
-    let iies = filter (\((i,j),_) -> i == j) ijes
-        ies  = map (\((i,_),e) -> (i,e)) iies
-        x'   = f (vectorFromDiag $ coerceDiag a) ies
-    in coerceDiag $ diagFromVector x'
-    
-    
-instance (BLAS1 e) => ReadTensor (Diag Vector) (Int,Int) e IO where
-    getSize = getSize . toVector
-    
-    newCopy a = do
-        x' <- newCopy $ toVector a
-        return $ fromVector x'
-    
-    unsafeReadElem a (i,j)
-        | i /= j    = return 0
-        | otherwise = unsafeReadElem (toVector a) i
         
+instance (BLAS1 e) => IMatrix (Diag Vector) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
 
-        
-instance (BLAS1 e) => MTensor (DiagMatrix Mut (n,n)) (Int,Int) e IO where
-    setZero = setZero . toVector
-    
-    setConstant k = setConstant k . toVector
-    
-    canModifyElem a (i,j) = return (i == j && i >= 0 && i < numRows a)
-    
-    unsafeWriteElem a (i,_) = unsafeWriteElem (toVector a) i
-    
-    modifyWith f a = modifyWith f (toVector a)
-    
-        
-instance (BLAS2 e) => IMatrix (DiagMatrix Imm) e
+instance (BLAS1 e) => MMatrix (Diag IOVector) e IO where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddDiagVector
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatDiagVector
+    unsafeDoSApply_      = unsafeDoSApplyDiagVector_
+    unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
 
-instance (BLAS2 e) => RMatrix (DiagMatrix t) e where
-    unsafeDoSApplyAdd alpha a x beta y = do
-        x' <- newCopy x
-        unsafeDoSApply_ 1 (coerceDiag a) (V.unsafeThaw x')
-        scaleBy beta y
-        V.unsafeAxpy alpha x' (V.coerceVector y)
+instance (BLAS1 e) => MMatrix (Diag (STVector s)) e (ST s) where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddDiagVector
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatDiagVector
+    unsafeDoSApply_      = unsafeDoSApplyDiagVector_
+    unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
 
-    unsafeDoSApplyAddMat alpha a b beta c = do
-        M.scaleBy beta c
-        ks <- unsafeInterleaveIO $ getElems (toVector $ coerceDiag a)
-        let (kxs) = zip ks (rows b)
-            ys    = rows c
-        zipWithM_ (\(k,x) y -> V.unsafeAxpy (alpha*k) x y) kxs ys
+instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MMatrix (Diag Vector) e m where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddDiagVector
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatDiagVector
+    unsafeDoSApply_      = unsafeDoSApplyDiagVector_
+    unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
 
-    unsafeDoSApply_ alpha a x = do
-        V.unsafeTimesEquals x (toVector a)
-        V.scaleBy alpha x
 
-    unsafeDoSApplyMat_ alpha a b = do
-        ks <- unsafeInterleaveIO $ getElems (toVector a)
-        zipWithM_ (\k r -> scaleBy (alpha*k) r) ks (rows b)
+unsafeDoSApplyAddDiagVector :: (ReadVector z e m, ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+    e -> Diag z (r,s) e -> x s e -> e -> y r e -> m ()
+unsafeDoSApplyAddDiagVector alpha a x beta y = do
+    x' <- newCopyVector x
+    unsafeDoSApplyDiagVector_ 1 (coerceDiag a) x'
+    scaleBy beta y
+    unsafeAxpyVector alpha x' (coerceVector y)
 
--}
+unsafeDoSApplyAddMatDiagVector :: (ReadVector x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS1 e) =>
+    e -> Diag x (r,s) e -> b (s,t) e ->  e -> c (r,t) e -> m ()
+unsafeDoSApplyAddMatDiagVector alpha a b beta c = do
+    scaleBy beta c
+    ks <- getElems (vectorFromDiag $ coerceDiag a)
+    let (kxs) = zip ks (rowViews b)
+        ys    = rowViews c
+    zipWithM_ (\(k,x) y -> unsafeAxpyVector (alpha*k) x y) kxs ys
+
+unsafeDoSApplyDiagVector_ :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+    e -> Diag x (s,s) e -> y s e -> m ()
+unsafeDoSApplyDiagVector_ alpha a x = do
+    unsafeMulVector x (vectorFromDiag a)
+    scaleBy alpha x
+
+unsafeDoSApplyMatDiagVector_ :: (ReadVector x e m, WriteMatrix b y e m, BLAS1 e) =>
+    e -> Diag x (s,s) e -> b (s,t) e ->  m ()
+unsafeDoSApplyMatDiagVector_ alpha a b = do
+    ks <- getElems (vectorFromDiag a)
+    zipWithM_ (\k r -> scaleBy (alpha*k) r) ks (rowViews b)
+
 
 instance (BLAS1 e) => ISolve (Diag Vector) e where
     unsafeSSolve alpha a y    = runSTVector $ unsafeGetSSolve    alpha a y
@@ -205,3 +175,63 @@ instance (Eq e, BLAS1 e) => Eq (Diag Vector (n,n) e) where
 instance (AEq e, BLAS1 e) => AEq (Diag Vector (n,n) e) where
     (===) x y = (===) (vectorFromDiag x) (vectorFromDiag y)
     (~==) x y = (~==) (vectorFromDiag x) (vectorFromDiag y)
+
+{-
+instance (BLAS1 e) => ITensor (Diag Vector) (Int,Int) e where
+    zero (m,n) | m /= n = error "tried to make a non-square diagonal matrix"
+               | otherwise = coerceDiag $ diagFromVector $ zero n
+
+    constant (m,n) e | m /= n = error "tried to make a non-square diagonal matrix"
+                     | otherwise = coerceDiag $ diagFromVector $ constant n e
+               
+    size = size . vectorFromDiag . coerceDiag
+    
+    assocs a =
+        let ies = assocs $ vectorFromDiag $ coerceDiag a
+        in map (\(i,e) -> ((i,i),e)) ies
+    
+    (//) = replaceHelp (//)
+    
+    tmap f a = (coerceDiag . diagFromVector) 
+                   (tmap f $ vectorFromDiag $ coerceDiag a)
+    
+    unsafeAt a (i,j) | i /= j = 0
+                     | otherwise = unsafeAt (vectorFromDiag $ coerceDiag a) i
+                     
+    unsafeReplace = replaceHelp unsafeReplace
+    
+replaceHelp :: (BLAS1 e) => 
+       (Vector n e -> [(Int,e)] -> Vector n e) 
+    -> Diag Vector nn e -> [((Int,Int),e)] -> Diag Vector nn e
+replaceHelp f a ijes =
+    let iies = filter (\((i,j),_) -> i == j) ijes
+        ies  = map (\((i,_),e) -> (i,e)) iies
+        x'   = f (vectorFromDiag $ coerceDiag a) ies
+    in coerceDiag $ diagFromVector x'
+    
+    
+instance (BLAS1 e) => ReadTensor (Diag Vector) (Int,Int) e IO where
+    getSize = getSize . toVector
+    
+    newCopy a = do
+        x' <- newCopy $ toVector a
+        return $ fromVector x'
+    
+    unsafeReadElem a (i,j)
+        | i /= j    = return 0
+        | otherwise = unsafeReadElem (toVector a) i
+        
+
+        
+instance (BLAS1 e) => MTensor (DiagMatrix Mut (n,n)) (Int,Int) e IO where
+    setZero = setZero . toVector
+    
+    setConstant k = setConstant k . toVector
+    
+    canModifyElem a (i,j) = return (i == j && i >= 0 && i < numRows a)
+    
+    unsafeWriteElem a (i,_) = unsafeWriteElem (toVector a) i
+    
+    modifyWith f a = modifyWith f (toVector a)
+    
+-}
