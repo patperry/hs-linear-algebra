@@ -34,13 +34,10 @@ module Data.Matrix.Tri (
 
     coerceTri,
     
-    module BLAS.Matrix.Apply,
-    module BLAS.Matrix.Solve,
+    module BLAS.Matrix,
     ) where
 
-import BLAS.Matrix.Apply
-import BLAS.Matrix.Solve
-
+import BLAS.Matrix
 
 import Control.Monad( when )
 import Control.Monad.ST( ST )
@@ -50,7 +47,7 @@ import BLAS.C( BLAS3 )
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import BLAS.UnsafeIOToM
 import BLAS.UnsafeInterleaveM
-import BLAS.Matrix hiding ( diag )
+import BLAS.Matrix
 --import BLAS.Tensor
 import BLAS.Types ( UpLo(..), Diag(..), Trans(..), flipTrans, flipUpLo )
 import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
@@ -149,23 +146,23 @@ instance (Show (a (m,n) e), BaseMatrix a e) => Show (Tri a (m,n) e) where
 
 ------------------------ Tri Matrix Apply Functions -------------------------
 
-instance (BLAS3 e) => IApply (Tri Matrix) e where
+instance (BLAS3 e) => IMatrix (Tri Matrix) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS3 e) => ReadApply (Tri IOMatrix) e IO where
+instance (BLAS3 e) => MMatrix (Tri IOMatrix) e IO where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
     unsafeDoSApply_      = trmv
     unsafeDoSApplyMat_   = trmm
 
-instance (BLAS3 e) => ReadApply (Tri (STMatrix s)) e (ST s) where
+instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
     unsafeDoSApply_      = trmv
     unsafeDoSApplyMat_   = trmm
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadApply (Tri Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Matrix) e m where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
     unsafeDoSApply_      = trmv
@@ -173,7 +170,7 @@ instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadApply (Tri Matrix)
 
 
 
-unsafeDoSApplyAddTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSApplyAddTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadVector x e m, WriteVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
 unsafeDoSApplyAddTriMatrix alpha t x beta y =
@@ -185,7 +182,7 @@ unsafeDoSApplyAddTriMatrix alpha t x beta y =
             scaleBy beta y
             unsafeAxpyVector 1 y' y
 
-unsafeDoSApplyAddMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSApplyAddMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadMatrix b x e m, WriteMatrix c y e m) =>
         e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatTriMatrix alpha t b beta c =
@@ -197,7 +194,7 @@ unsafeDoSApplyAddMatTriMatrix alpha t b beta c =
             scaleBy beta c
             unsafeAxpyMatrix 1 c' c
 
-unsafeDoSApplyTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSApplyTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadVector x e m, WriteVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoSApplyTriMatrix alpha t x y =
@@ -227,7 +224,7 @@ unsafeDoSApplyTriMatrix alpha t x y =
   where
     (u,d,a) = toBase t
 
-unsafeDoSApplyMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSApplyMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadMatrix b x e m, WriteMatrix c y e m) =>
         e -> Tri a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 unsafeDoSApplyMatTriMatrix alpha t b c =
@@ -375,7 +372,7 @@ instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadSolve (Tri Matrix)
 
 
 
-unsafeDoSSolveTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSSolveTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadVector y e m, WriteVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriMatrix alpha t y x =
@@ -404,7 +401,7 @@ unsafeDoSSolveTriMatrix alpha t y x =
     (u,d,a) = toBase t
 
 
-unsafeDoSSolveMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, ReadApply a e m, 
+unsafeDoSSolveMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
     ReadMatrix c y e m, WriteMatrix b x e m) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriMatrix alpha t c b =

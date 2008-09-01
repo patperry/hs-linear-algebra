@@ -145,18 +145,18 @@ hemm' :: (ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS3 e) 
 hemm' alpha a b beta c = 
     hemm alpha (coerceHerm a) b beta (coerceMatrix c)
 
-instance (BLAS3 e) => IApply (Herm Matrix) e where
+instance (BLAS3 e) => IMatrix (Herm Matrix) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS3 e) => ReadApply (Herm (STMatrix s)) e (ST s) where
+instance (BLAS3 e) => MMatrix (Herm (STMatrix s)) e (ST s) where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
 
-instance (BLAS3 e) => ReadApply (Herm IOMatrix) e IO where
+instance (BLAS3 e) => MMatrix (Herm IOMatrix) e IO where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => ReadApply (Herm Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Herm Matrix) e m where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'

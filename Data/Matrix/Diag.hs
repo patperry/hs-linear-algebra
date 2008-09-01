@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, ExistentialQuantification #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Diag
@@ -9,85 +9,75 @@
 --
 
 module Data.Matrix.Diag (
-    module BLAS.Matrix,
-    module BLAS.Tensor,
-
     -- * The diagonal matrix types
-    DiagMatrix,
     Diag,
-    IODiag,
     
     -- * Converting to and from @Vector@s
-    fromVector,
-    toVector,
-
+    diagFromVector,
+    vectorFromDiag,
+    
     ) where
 
-import BLAS.Access
-import BLAS.Elem ( BLAS1, BLAS2 )
-import BLAS.Matrix hiding ( Matrix )
-import qualified BLAS.Matrix as Base
+import BLAS.Elem( BLAS1 )
+import BLAS.Matrix hiding ( BaseMatrix )
+import qualified BLAS.Matrix as BLAS
 import BLAS.Tensor
-
-import Control.Monad ( zipWithM_ )
-
-import Data.AEq
-import Data.Matrix.Dense.Internal ( rows )
-import Data.Matrix.Dense.Operations ( unsafeCopyMatrix )
-import qualified Data.Matrix.Dense.Operations as M
-import qualified Data.Matrix.Dense.Internal as M
-import Data.Vector.Dense.Internal
-import qualified Data.Vector.Dense.Internal as V
-import qualified Data.Vector.Dense.Operations as V
-import Data.Vector.Dense.Operations ( (//=), scaleBy, invScaleBy,
-    unsafeCopyVector )
-
-import System.IO.Unsafe
 import Unsafe.Coerce
 
-newtype DiagMatrix t mn e = Diag (DVector t mn e)
-type Diag   = DiagMatrix Imm
-type IODiag = DiagMatrix Mut
+import Data.Vector.Dense( Vector )
+import Data.Vector.Dense.Class( BaseVector, conj, dim, coerceVector )
 
-coerceDiag :: DiagMatrix t mn e -> DiagMatrix t mn' e
+data Diag x nn e = forall n. Diag (x n e)
+
+coerceDiag :: Diag x mn e -> Diag x mn' e
 coerceDiag = unsafeCoerce
 
-fromVector :: DVector t n e -> DiagMatrix t (n,n) e
-fromVector = Diag . unsafeCoerce
+diagFromVector :: (BaseVector x e) => x n e -> Diag x (n,n) e
+diagFromVector = Diag . coerceVector
 
-toVector :: DiagMatrix t (n,n) e -> DVector t n e
-toVector (Diag x) = unsafeCoerce x
+vectorFromDiag :: (BaseVector x e) => Diag x (n,n) e -> x n e
+vectorFromDiag (Diag x) = coerceVector x
 
-instance (BLAS1 e) => Scalable (DiagMatrix Imm (n,n)) e where
-    (*>) k (Diag x) = Diag $ k *> x
+instance (BaseVector x e) => BaseTensor (Diag x) (Int,Int) e where
+    shape  (Diag x) = (n,n) where n = dim x
+    bounds (Diag x) = ((0,0),(n-1,n-1)) where n = dim x
 
+instance (BaseVector x e) => BLAS.BaseMatrix (Diag x) e where
+    herm (Diag x) = Diag (conj x)
 
-replaceHelp :: (BLAS1 e) => 
-       (Vector n e -> [(Int,e)] -> Vector n e) 
-    -> Diag (n,n) e -> [((Int,Int),e)] -> Diag (n,n) e
-replaceHelp f a ijes =
-    let iies = filter (\((i,j),_) -> i == j) ijes
-        ies  = map (\((i,_),e) -> (i,e)) iies
-        x'   = f (toVector a) ies
-    in fromVector x'
-    
-    
-instance (BLAS1 e) => ITensor (DiagMatrix Imm (n,n)) (Int,Int) e where
-    size = size . toVector
+instance (BLAS1 e) => ITensor (Diag Vector) (Int,Int) e where
+    zero (m,n) | m /= n = error "tried to make a non-square diagonal matrix"
+               | otherwise = coerceDiag $ diagFromVector $ zero n
+
+    constant (m,n) e | m /= n = error "tried to make a non-square diagonal matrix"
+                     | otherwise = coerceDiag $ diagFromVector $ constant n e
+               
+    size = size . vectorFromDiag . coerceDiag
     
     assocs a =
-        let ies = assocs $ toVector a
+        let ies = assocs $ vectorFromDiag $ coerceDiag a
         in map (\(i,e) -> ((i,i),e)) ies
     
     (//) = replaceHelp (//)
     
-    amap f a = fromVector (amap f $ toVector a)
+    tmap f a = (coerceDiag . diagFromVector) 
+                   (tmap f $ vectorFromDiag $ coerceDiag a)
     
     unsafeAt a (i,j) | i /= j = 0
-                     | otherwise = unsafeAt (toVector a) i
+                     | otherwise = unsafeAt (vectorFromDiag $ coerceDiag a) i
                      
     unsafeReplace = replaceHelp unsafeReplace
     
+replaceHelp :: (BLAS1 e) => 
+       (Vector n e -> [(Int,e)] -> Vector n e) 
+    -> Diag Vector nn e -> [((Int,Int),e)] -> Diag Vector nn e
+replaceHelp f a ijes =
+    let iies = filter (\((i,j),_) -> i == j) ijes
+        ies  = map (\((i,_),e) -> (i,e)) iies
+        x'   = f (vectorFromDiag $ coerceDiag a) ies
+    in coerceDiag $ diagFromVector x'
+    
+{-
     
 instance (BLAS1 e) => RTensor (DiagMatrix t (n,n)) (Int,Int) e IO where
     getSize = getSize . toVector
@@ -113,13 +103,6 @@ instance (BLAS1 e) => MTensor (DiagMatrix Mut (n,n)) (Int,Int) e IO where
     modifyWith f a = modifyWith f (toVector a)
     
         
-instance Base.Matrix (DiagMatrix t) where
-    numRows (Diag x) = dim x
-    numCols = numRows
-
-    herm (Diag x) = unsafeCoerce $ Diag (conj x)
-
-
 instance (BLAS2 e) => IMatrix (DiagMatrix Imm) e
 
 instance (BLAS2 e) => RMatrix (DiagMatrix t) e where
@@ -178,3 +161,4 @@ instance (Eq e, BLAS1 e) => Eq (DiagMatrix Imm (n,n) e) where
 instance (AEq e, BLAS1 e) => AEq (DiagMatrix Imm (n,n) e) where
     (===) (Diag x) (Diag y) = (===) x y
     (~==) (Diag x) (Diag y) = (~==) x y
+-}

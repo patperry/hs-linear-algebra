@@ -30,11 +30,17 @@
 
 * Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
 
+* Matrix creation functions are inconsistent in phantom types.  Some have
+  pairs, some do not.
+
 * submatrix -> submatrixView.  Add getSubmatrix function?
 
 * Add addVector, subVector, addMatrix, subMatrix, etc.
 
-* RowColRead -> ReadRowCol; same for View and Diag
+* Optimization: Cache the base pointer.  
+    (unsafeForeignPtrToPtr (fptrOf x) `advancePtr` offsetOf x).
+    Don't store the offset.  Be careful to use touchForeignPtr after using 
+    it.
 
 * Optimization: Put vector/matrix fields in the typeclass and inline them.  
 Implementation for IOVector:
@@ -54,3 +60,4 @@ Implementation for IOVector:
     isConj (DV _ _ _ _ c) = c
     {-# INLINE isConj #-}
 
+* ReadSolve -> MSolve

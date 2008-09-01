@@ -11,7 +11,7 @@ module Data.Matrix.Dense (
     module Data.Matrix.Dense.Internal,
     
     -- * Matrix and vector multiplication
-    module BLAS.Matrix.Apply.Immutable,
+    module BLAS.Matrix.Immutable,
     
     -- * Converting between mutable and immutable matrices
     UnsafeFreezeMatrix(..),
@@ -25,7 +25,7 @@ import Data.Matrix.Dense.Internal hiding ( M )
 import qualified Data.Matrix.Dense.Internal as I
 import Data.Matrix.Dense.ST
 import Data.Matrix.Dense.IO
-import BLAS.Matrix.Apply.Immutable
+import BLAS.Matrix.Immutable
 
 class UnsafeFreezeMatrix a where
     unsafeFreezeMatrix :: a mn e -> Matrix mn e
@@ -50,3 +50,13 @@ freezeMatrix x = do
 thawMatrix :: (WriteMatrix a y e m, BLAS1 e) =>
     Matrix mn e -> m (a mn e)
 thawMatrix = newCopyMatrix
+
+
+{-
+-- | Same as 'diag' but index is not range-checked.
+unsafeDiag :: a mn e -> Int -> Vector k e
+    
+-- | Get the given row in a matrix.
+diag :: (IDiag a e) => a mn e -> Int -> Vector k e
+diag a = checkedDiag (shape a) (unsafeDiag a)
+-}

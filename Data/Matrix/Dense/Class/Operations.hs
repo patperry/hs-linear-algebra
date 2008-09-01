@@ -13,7 +13,7 @@ module Data.Matrix.Dense.Class.Operations (
     unsafeAxpyMatrix,
     
     module BLAS.Numeric,
-    module BLAS.Matrix.Apply.Read,
+    module BLAS.Matrix.Mutable,
     
     ) where
 
@@ -21,7 +21,7 @@ import BLAS.Elem( BLAS1 )
 import BLAS.Internal( checkBinaryOp )
 import BLAS.Tensor( shape )
 import BLAS.Numeric
-import BLAS.Matrix.Apply.Read
+import BLAS.Matrix.Mutable
 
 import Data.Matrix.Dense.Class.Internal
 

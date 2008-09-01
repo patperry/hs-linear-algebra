@@ -71,19 +71,14 @@ module Data.Matrix.Dense.Class.Internal (
     -- * SwapTensor functions
     unsafeSwapMatrix,
 
-    -- * RowColView functions
-    unsafeRowViewMatrix,
-    unsafeColViewMatrix,
-    
-    -- * RowColRead functions
+    -- * Vector views
+    rowViews,
+    colViews,
+    unsafeRowView,
+    unsafeColView,
+    unsafeDiagView,
     unsafeGetRowMatrix,
     unsafeGetColMatrix,
-    
-    -- * DiagView functions
-    unsafeDiagViewMatrix,
-    
-    -- * DiagRead functions
-    unsafeGetDiagMatrix,
     
     -- * Numeric functions
     doConjMatrix,
@@ -139,19 +134,17 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
-import BLAS.Matrix.Diag
-import BLAS.Matrix.RowCol
 import qualified BLAS.Matrix.Base as BLAS
 
 
-class (BLAS.BaseMatrix a e, RowColView a x e, DiagView a x e, BaseVector x e) => 
+class (BLAS.BaseMatrix a e, BaseVector x e) => 
     BaseMatrix a x e | a -> x where
         matrixViewArray :: ForeignPtr e -> Int -> (Int,Int) -> Int -> Bool -> a mn e
         arrayFromMatrix :: a mn e -> (ForeignPtr e, Int, (Int,Int), Int, Bool)
 
 class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
            ReadNumeric a (Int,Int) e m, BaseMatrix a x e, 
-           RowColRead a e m, DiagRead a e m, ReadVector x e m) => 
+           ReadVector x e m) => 
     ReadMatrix a x e m | a -> x where
 
 class (WriteTensor a (Int,Int) e m, WriteNumeric a (Int,Int) e m,
@@ -418,11 +411,11 @@ unsafeSwapMatrix :: (WriteMatrix a x e m, BLAS1 e) => a mn e -> a mn e -> m ()
 unsafeSwapMatrix = liftMatrix2 unsafeSwapVector
 
 
-------------------------- RowColView functions ------------------------------
+------------------------------ Vector views ---------------------------------
 
-unsafeRowViewMatrix :: (BaseMatrix a x e, Elem e) => 
+unsafeRowView :: (BaseMatrix a x e) => 
     a (k,l) e -> Int -> x l e
-unsafeRowViewMatrix a i
+unsafeRowView a i
     | isHerm a =
         conj $ unsafeColView (herm a) i
     | otherwise =
@@ -433,9 +426,9 @@ unsafeRowViewMatrix a i
             c = False
         in vectorViewArray f o n s c
 
-unsafeColViewMatrix :: (BaseMatrix a x e, Elem e) => 
+unsafeColView :: (BaseMatrix a x e) => 
     a (k,l) e -> Int -> x k e
-unsafeColViewMatrix a j 
+unsafeColView a j 
     | isHerm a =
         conj $ unsafeRowView (herm a) j
     | otherwise =
@@ -446,24 +439,10 @@ unsafeColViewMatrix a j
             c = False
         in vectorViewArray f o m s c
 
-
-------------------------- RowColRead functions ------------------------------
-
-unsafeGetRowMatrix :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
-    a (k,l) e -> Int -> m (y l e)    
-unsafeGetRowMatrix a i = newCopyVector (unsafeRowView a i)
-
-unsafeGetColMatrix :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
-    a (k,l) e -> Int -> m (y k e)
-unsafeGetColMatrix a j = newCopyVector (unsafeColView a j)
-
-
---------------------------- DiagView functions ------------------------------
-
-unsafeDiagViewMatrix :: (BaseMatrix a x e) => a mn e -> Int -> x k e
-unsafeDiagViewMatrix a i 
+unsafeDiagView :: (BaseMatrix a x e) => a mn e -> Int -> x k e
+unsafeDiagView a i 
     | isHerm a = 
-        conj $ unsafeDiagViewMatrix (herm $ coerceMatrix a) (negate i)
+        conj $ unsafeDiagView (herm $ coerceMatrix a) (negate i)
     | otherwise =            
         let f = fptrOfMatrix a
             o = indexOfMatrix a (diagStart i)
@@ -472,12 +451,23 @@ unsafeDiagViewMatrix a i
             c = False
         in vectorViewArray f o n s c
 
+-- | Get a list of vector views of the rows of the matrix.
+rowViews :: (BaseMatrix a x e) => a (m,n) e -> [x n e]
+rowViews a = [ unsafeRowView a i | i <- [0..numRows a - 1] ]
 
---------------------------- DiagRead functions ------------------------------
+-- | Get a list of vector views of the columns of the matrix.
+colViews :: (BaseMatrix a x e) => a (m,n) e -> [x m e]
+colViews a = [ unsafeColView a j | j <- [0..numCols a - 1] ]
 
-unsafeGetDiagMatrix :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
-    a mn e -> Int -> m (y k e)
-unsafeGetDiagMatrix a i = newCopyVector (unsafeDiagView a i)
+-- | Same as 'getRow' but not range-checked.
+unsafeGetRowMatrix :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+    a (k,l) e -> Int -> m (y l e)    
+unsafeGetRowMatrix a i = newCopyVector (unsafeRowView a i)
+
+-- | Same as 'getCol' but not range-checked.
+unsafeGetColMatrix :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+    a (k,l) e -> Int -> m (y k e)
+unsafeGetColMatrix a j = newCopyVector (unsafeColView a j)
 
 
 --------------------------- Numeric functions -------------------------------
@@ -738,34 +728,6 @@ instance (BLAS1 e) => ReadMatrix (STMatrix s) (STVector s) e (ST s) where
     
 instance (BLAS1 e) => WriteMatrix IOMatrix IOVector e IO where
 instance (BLAS1 e) => WriteMatrix (STMatrix s) (STVector s) e (ST s) where
-
-instance (Elem e) => RowColView IOMatrix IOVector e where
-    unsafeRowView = unsafeRowViewMatrix
-    unsafeColView = unsafeColViewMatrix
-
-instance (Elem e) => RowColView (STMatrix s) (STVector s) e where
-    unsafeRowView = unsafeRowViewMatrix
-    unsafeColView = unsafeColViewMatrix
-
-instance (BLAS1 e) => RowColRead IOMatrix e IO where
-    unsafeGetRow = unsafeGetRowMatrix
-    unsafeGetCol = unsafeGetColMatrix
-
-instance (BLAS1 e) => RowColRead (STMatrix s) e (ST s) where
-    unsafeGetRow = unsafeGetRowMatrix
-    unsafeGetCol = unsafeGetColMatrix
-
-instance (Elem e) => DiagView IOMatrix IOVector e where
-    unsafeDiagView = unsafeDiagViewMatrix
-
-instance (Elem e) => DiagView (STMatrix s) (STVector s) e where
-    unsafeDiagView = unsafeDiagViewMatrix
-
-instance (BLAS1 e) => DiagRead IOMatrix e IO where
-    unsafeGetDiag = unsafeGetDiagMatrix
-
-instance (BLAS1 e) => DiagRead (STMatrix s) e (ST s) where
-    unsafeGetDiag = unsafeGetDiagMatrix
 
 instance (BLAS1 e) => ReadNumeric IOMatrix (Int,Int) e IO where
 instance (BLAS1 e) => ReadNumeric (STMatrix s) (Int,Int) e (ST s) where

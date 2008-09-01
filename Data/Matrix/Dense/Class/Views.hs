@@ -13,23 +13,28 @@ module Data.Matrix.Dense.Class.Views (
     unsafeSubmatrix,
 
     -- * Row and Column views
-    module BLAS.Matrix.RowCol.View,
-    module BLAS.Matrix.RowCol.Read,
-    module BLAS.Matrix.Diag.View,
-    module BLAS.Matrix.Diag.Read,
+    rowViews,
+    colViews,
+    rowView,
+    colView,
+    diagView,
+    unsafeRowView,
+    unsafeColView,
+    unsafeDiagView,
+    
+    -- * Getting rows and columns
+    getDiag,
+    unsafeGetDiag,
     
     ) where
 
-import BLAS.Internal( checkedSubmatrix )
+import BLAS.Elem( BLAS1 )
+import BLAS.Internal( checkedSubmatrix, checkedRow, checkedCol, checkedDiag )
 import BLAS.Tensor( shape )
 import BLAS.Matrix.Base( herm )
 
-import BLAS.Matrix.RowCol.View
-import BLAS.Matrix.RowCol.Read
-import BLAS.Matrix.Diag.View
-import BLAS.Matrix.Diag.Read
-
 import Data.Matrix.Dense.Class.Internal
+import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )
 
 
 -- | @submatrix a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
@@ -50,3 +55,27 @@ unsafeSubmatrix a (i,j) (m,n)
             o = indexOfMatrix a (i,j)
             l = lda a
         in matrixViewArray f o (m,n) l False
+
+
+-- | Get a vector view of the given diagonal in a matrix.
+diagView :: (BaseMatrix a x e) => a mn e -> Int -> x k e
+diagView a = checkedDiag (shape a) (unsafeDiagView a)
+
+-- | Get a vector view of the given row in a matrix.
+rowView :: (BaseMatrix a x e) => a (m,n) e -> Int -> x n e
+rowView a = checkedRow (shape a) (unsafeRowView a)
+
+-- | Get a vector view of the given column in a matrix.
+colView :: (BaseMatrix a x e) => a (m,n) e -> Int -> x m e
+colView a = checkedCol (shape a) (unsafeColView a)
+
+-- | Get the given diagonal in a matrix.  Negative indices correspond
+-- to sub-diagonals.
+getDiag :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+    a mn e -> Int -> m (y k e)
+getDiag a = checkedDiag (shape a) (unsafeGetDiag a)
+
+-- | Same as 'getDiag' but not range-checked.
+unsafeGetDiag :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+    a mn e -> Int -> m (y k e)
+unsafeGetDiag a i = newCopyVector (unsafeDiagView a i)

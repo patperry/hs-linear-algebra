@@ -94,24 +94,12 @@ library
 
                         BLAS.Matrix
                             BLAS.Matrix.Base
-
-                            BLAS.Matrix.Apply
-                                BLAS.Matrix.Apply.Immutable
-                                BLAS.Matrix.Apply.Read
+                            BLAS.Matrix.Immutable
+                            BLAS.Matrix.Mutable
 
                             BLAS.Matrix.Solve
                                 BLAS.Matrix.Solve.Immutable
                                 BLAS.Matrix.Solve.Read
-
-                            BLAS.Matrix.Diag
-                                BLAS.Matrix.Diag.Immutable
-                                BLAS.Matrix.Diag.Read
-                                BLAS.Matrix.Diag.View
-
-                            BLAS.Matrix.RowCol
-                                BLAS.Matrix.RowCol.Immutable
-                                BLAS.Matrix.RowCol.Read
-                                BLAS.Matrix.RowCol.View
 
                         BLAS.Numeric
                             BLAS.Numeric.Immutable
@@ -137,8 +125,8 @@ library
                         --     Data.Matrix.Banded.IO
                         --     Data.Matrix.Banded.Internal
                         --     Data.Matrix.Banded.Operations
-                        -- 
-                        -- Data.Matrix.Diag 
+                         
+                        Data.Matrix.Diag 
                         
                         Data.Matrix.Dense
                             Data.Matrix.Dense.IO

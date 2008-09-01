@@ -24,7 +24,6 @@ import Foreign( pokeArray )
 
 import BLAS.Elem
 import BLAS.UnsafeIOToM
-import BLAS.Matrix.RowCol
 
 import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Class.Internal

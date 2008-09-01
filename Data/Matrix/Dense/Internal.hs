@@ -38,9 +38,9 @@ module Data.Matrix.Dense.Internal (
     submatrix,
     unsafeSubmatrix,
     
-    -- * Row and column views
-    module BLAS.Matrix.RowCol.Immutable,
-    module BLAS.Matrix.Diag.Immutable,
+    -- * Vector views
+    diag,
+    unsafeDiag,
 
     -- * Matrix operations
     module BLAS.Numeric.Immutable,
@@ -67,20 +67,13 @@ import BLAS.Tensor
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
-import BLAS.Matrix.RowCol.Immutable
-import BLAS.Matrix.RowCol.View
-import BLAS.Matrix.RowCol.Read
-import BLAS.Matrix.Diag.Immutable
-import BLAS.Matrix.Diag.View
-import BLAS.Matrix.Diag.Read
 import BLAS.Numeric.Immutable
 
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
-import Data.Matrix.Dense.Class.Views( submatrix, unsafeSubmatrix )
-import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHerm, lda,
-    unsafeGetRowMatrix, unsafeGetColMatrix, unsafeGetDiagMatrix,
-    unsafeRowViewMatrix, unsafeColViewMatrix, unsafeDiagViewMatrix,
+import Data.Matrix.Dense.Class.Views( submatrix, unsafeSubmatrix,
+    diagView, unsafeDiagView )
+import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHerm, lda, colViews,
     BaseMatrix(..), IOMatrix, maybeFromRow, maybeFromCol, newCopyMatrix,
     ReadMatrix )
 import Data.Vector.Dense.Class.Internal
@@ -185,6 +178,16 @@ identityMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newIdentityMatrix m
 {-# NOINLINE identityMatrix #-}
 
 
+-- | Get a the given diagonal in a matrix.  Negative indices correspond to
+-- sub-diagonals.
+diag :: (Elem e) => Matrix mn e -> Int -> Vector k e
+diag = diagView
+
+-- | Same as 'diag' but index is not range-checked.
+unsafeDiag :: (Elem e) => Matrix mn e -> Int -> Vector k e
+unsafeDiag = unsafeDiagView
+
+
 instance (Elem e) => BaseTensor Matrix (Int,Int) e where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
@@ -252,27 +255,6 @@ instance (Elem e) => BaseMatrix Matrix Vector e where
 instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
     ReadMatrix Matrix Vector e m where
 
-instance (Elem e) => IRowCol Matrix e where
-    unsafeRow = unsafeRowViewMatrix
-    unsafeCol = unsafeColViewMatrix
-
-instance (Elem e) => RowColView Matrix Vector e where
-    unsafeRowView = unsafeRow
-    unsafeColView = unsafeCol
-
-instance (BLAS1 e, UnsafeInterleaveM m) => RowColRead Matrix e m where
-    unsafeGetRow = unsafeGetRowMatrix
-    unsafeGetCol = unsafeGetColMatrix
-
-instance (Elem e) => IDiag Matrix e where
-    unsafeDiag = unsafeDiagViewMatrix
-
-instance (Elem e) => DiagView Matrix Vector e where
-    unsafeDiagView = unsafeDiag
-
-instance (BLAS1 e, UnsafeInterleaveM m) => DiagRead Matrix e m where
-    unsafeGetDiag = unsafeGetDiagMatrix
-
 instance (BLAS1 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAdd x y
     (-) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getSub x y
@@ -318,7 +300,7 @@ tzipWith f a b
             listMatrix mn $ zipWith f (colElems a) (colElems b)
   where
     mn = shape a
-    colElems = (concatMap elems) . cols . coerceMatrix
+    colElems = (concatMap elems) . colViews . coerceMatrix
 
 instance (BLAS1 e, Show e) => Show (Matrix mn e) where
     show a | isHerm a = 
@@ -339,7 +321,7 @@ compareHelp cmp a b
     | otherwise =
         and $ zipWith cmp (colElems a) (colElems b)
   where
-    colElems c = concatMap elems (cols $ coerceMatrix c)
+    colElems c = concatMap elems (colViews $ coerceMatrix c)
 
 instance (BLAS1 e, Eq e) => Eq (Matrix mn e) where
     (==) = compareHelp (==)
