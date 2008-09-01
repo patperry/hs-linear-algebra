@@ -27,9 +27,6 @@
     "scale2/minus" forall k x y.   minus x (scale k y) = add 1 x (-k) y
       #-}
 
-
-* Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
-
 * Matrix creation functions are inconsistent in phantom types.  Some have
   pairs, some do not.
 
@@ -38,6 +35,8 @@
 * Add getDense/toDense to MMatrix/IMatrix
 
 * Add addVector, subVector, addMatrix, subMatrix, etc.
+
+* Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
 
 * Optimization: Cache the base pointer.  
     (unsafeForeignPtrToPtr (fptrOf x) `advancePtr` offsetOf x).

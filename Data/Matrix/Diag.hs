@@ -16,16 +16,32 @@ module Data.Matrix.Diag (
     diagFromVector,
     vectorFromDiag,
     
+    -- * Coercing shapes
+    coerceDiag,
+    
     ) where
+
+import Control.Monad( zipWithM_ )
+import Control.Monad.ST( ST )
 
 import BLAS.Elem( BLAS1 )
 import BLAS.Matrix hiding ( BaseMatrix )
 import qualified BLAS.Matrix as BLAS
 import BLAS.Tensor
+import BLAS.UnsafeInterleaveM
+import BLAS.UnsafeIOToM
 import Unsafe.Coerce
 
+import Data.AEq
+
+import Data.Matrix.Dense.Class( ReadMatrix, WriteMatrix, unsafeCopyMatrix, 
+    rowViews, coerceMatrix )
+import Data.Matrix.Dense.ST( runSTMatrix )
 import Data.Vector.Dense( Vector )
-import Data.Vector.Dense.Class( BaseVector, conj, dim, coerceVector )
+import Data.Vector.Dense.IO( IOVector )
+import Data.Vector.Dense.ST( STVector, runSTVector )
+import Data.Vector.Dense.Class( BaseVector, ReadVector, WriteVector,
+    conj, dim, coerceVector, scaleBy, unsafeCopyVector, unsafeDivVector )
 
 data Diag x nn e = forall n. Diag (x n e)
 
@@ -44,7 +60,8 @@ instance (BaseVector x e) => BaseTensor (Diag x) (Int,Int) e where
 
 instance (BaseVector x e) => BLAS.BaseMatrix (Diag x) e where
     herm (Diag x) = Diag (conj x)
-
+    
+{-
 instance (BLAS1 e) => ITensor (Diag Vector) (Int,Int) e where
     zero (m,n) | m /= n = error "tried to make a non-square diagonal matrix"
                | otherwise = coerceDiag $ diagFromVector $ zero n
@@ -77,9 +94,8 @@ replaceHelp f a ijes =
         x'   = f (vectorFromDiag $ coerceDiag a) ies
     in coerceDiag $ diagFromVector x'
     
-{-
     
-instance (BLAS1 e) => RTensor (DiagMatrix t (n,n)) (Int,Int) e IO where
+instance (BLAS1 e) => ReadTensor (Diag Vector) (Int,Int) e IO where
     getSize = getSize . toVector
     
     newCopy a = do
@@ -90,6 +106,7 @@ instance (BLAS1 e) => RTensor (DiagMatrix t (n,n)) (Int,Int) e IO where
         | i /= j    = return 0
         | otherwise = unsafeReadElem (toVector a) i
         
+
         
 instance (BLAS1 e) => MTensor (DiagMatrix Mut (n,n)) (Int,Int) e IO where
     setZero = setZero . toVector
@@ -127,38 +144,64 @@ instance (BLAS2 e) => RMatrix (DiagMatrix t) e where
         ks <- unsafeInterleaveIO $ getElems (toVector a)
         zipWithM_ (\k r -> scaleBy (alpha*k) r) ks (rows b)
 
-
-instance (BLAS2 e) => ISolve (DiagMatrix Imm) e
-
-
-instance (BLAS2 e) => RSolve (DiagMatrix Imm) e where
-    unsafeDoSSolve alpha a y x = do
-        unsafeCopyVector x (unsafeCoerce y)
-        unsafeDoSSolve_ alpha (coerceDiag a) x
-        
-    unsafeDoSSolveMat alpha a c b = do
-        unsafeCopyMatrix b (unsafeCoerce c)
-        unsafeDoSSolveMat_ alpha (coerceDiag a) b
-    
-    unsafeDoSSolve_ alpha a x = do
-        V.scaleBy alpha x
-        x //= (toVector a)
-
-    unsafeDoSSolveMat_ alpha a b = do
-        M.scaleBy alpha b
-        ks <- unsafeInterleaveIO $ getElems (toVector a)
-        zipWithM_ (\k r -> invScaleBy k r) ks (rows b)
-
-
-instance (Show e, BLAS1 e) => Show (DiagMatrix Imm (n,n) e) where
-    show (Diag x) = "fromVector (" ++ show x ++ ")"
-
-
-instance (Eq e, BLAS1 e) => Eq (DiagMatrix Imm (n,n) e) where
-    (==) (Diag x) (Diag y) = (==) x y
-
-
-instance (AEq e, BLAS1 e) => AEq (DiagMatrix Imm (n,n) e) where
-    (===) (Diag x) (Diag y) = (===) x y
-    (~==) (Diag x) (Diag y) = (~==) x y
 -}
+
+instance (BLAS1 e) => ISolve (Diag Vector) e where
+    unsafeSSolve alpha a y    = runSTVector $ unsafeGetSSolve    alpha a y
+    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
+
+instance (BLAS1 e) => MSolve (Diag IOVector) e IO where
+    unsafeDoSSolve     = unsafeDoSSolveDiagVector
+    unsafeDoSSolveMat  = unsafeDoSSolveMatDiagVector
+    unsafeDoSSolve_    = unsafeDoSSolveDiagVector_
+    unsafeDoSSolveMat_ = unsafeDoSSolveMatDiagVector_
+
+instance (BLAS1 e) => MSolve (Diag (STVector s)) e (ST s) where
+    unsafeDoSSolve     = unsafeDoSSolveDiagVector
+    unsafeDoSSolveMat  = unsafeDoSSolveMatDiagVector
+    unsafeDoSSolve_    = unsafeDoSSolveDiagVector_
+    unsafeDoSSolveMat_ = unsafeDoSSolveMatDiagVector_
+
+instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Diag Vector) e m where
+    unsafeDoSSolve     = unsafeDoSSolveDiagVector
+    unsafeDoSSolveMat  = unsafeDoSSolveMatDiagVector
+    unsafeDoSSolve_    = unsafeDoSSolveDiagVector_
+    unsafeDoSSolveMat_ = unsafeDoSSolveMatDiagVector_
+
+
+
+unsafeDoSSolveDiagVector :: (ReadVector z e m, ReadVector y e m, WriteVector x e m, BLAS1 e) =>
+    e -> Diag z (r,s) e -> y r e -> x s e -> m ()
+unsafeDoSSolveDiagVector alpha a y x = do
+    unsafeCopyVector x (coerceVector y)
+    unsafeDoSSolveDiagVector_ alpha (coerceDiag a) x
+
+unsafeDoSSolveMatDiagVector :: (ReadVector x e m, ReadMatrix c z e m, WriteMatrix b y e m, BLAS1 e) =>
+    e -> Diag x (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+unsafeDoSSolveMatDiagVector alpha a c b = do
+    unsafeCopyMatrix b (coerceMatrix c)
+    unsafeDoSSolveMatDiagVector_ alpha (coerceDiag a) b
+
+unsafeDoSSolveDiagVector_ :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+    e -> Diag x (k,k) e -> y k e -> m ()
+unsafeDoSSolveDiagVector_ alpha a x = do
+    scaleBy alpha x
+    unsafeDivVector x (vectorFromDiag a)
+
+unsafeDoSSolveMatDiagVector_ :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) =>
+    e -> Diag x (k,k) e -> a (k,l) e -> m ()
+unsafeDoSSolveMatDiagVector_ alpha a b = do
+    scaleBy alpha b
+    ks <- unsafeInterleaveM $ getElems (vectorFromDiag a)
+    zipWithM_ (\k r -> scaleBy (1/k) r) ks (rowViews b)
+
+
+instance (Show e, BLAS1 e) => Show (Diag Vector (n,n) e) where
+    show x = "diagFromVector (" ++ show (vectorFromDiag x) ++ ")"
+
+instance (Eq e, BLAS1 e) => Eq (Diag Vector (n,n) e) where
+    (==) x y = (==) (vectorFromDiag x) (vectorFromDiag y)
+
+instance (AEq e, BLAS1 e) => AEq (Diag Vector (n,n) e) where
+    (===) x y = (===) (vectorFromDiag x) (vectorFromDiag y)
+    (~==) x y = (~==) (vectorFromDiag x) (vectorFromDiag y)
