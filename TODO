@@ -33,8 +33,6 @@
 * Matrix creation functions are inconsistent in phantom types.  Some have
   pairs, some do not.
 
-* submatrix -> submatrixView.  
-
 * Add getSubmatrix function to MMatrix.
 
 * Add getDense/toDense to MMatrix/IMatrix

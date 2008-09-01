@@ -234,8 +234,8 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
             trmm alpha t' c
             
         (Lower,Right (t',r),_) -> do
-            let c1 = unsafeSubmatrix c (0,0)          (numRows t',numCols c)
-                c2 = unsafeSubmatrix c (numRows t',0) (numRows r ,numCols c)
+            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
+                c2 = unsafeSubmatrixView c (numRows t',0) (numRows r ,numCols c)
             unsafeCopyMatrix c1 b
             trmm alpha t' c1
             unsafeDoSApplyAddMat alpha r b 0 c2
@@ -245,8 +245,8 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
             trmm alpha t' (coerceMatrix c)
 
         (Upper,_,Right (t',r)) ->
-            let b1 = unsafeSubmatrix b (0,0)          (numCols t',numCols b)
-                b2 = unsafeSubmatrix b (numCols t',0) (numCols r ,numCols b)
+            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
+                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
             in do
                 unsafeCopyMatrix c b1
                 trmm alpha t' c
@@ -260,9 +260,9 @@ toLower :: (Dense.BaseMatrix a x e) => Diag -> a (m,n) e
                   (Tri a (n,n) e, a (d,n) e)
 toLower diag a =
     if m <= n
-        then Left $  fromBase Lower diag (unsafeSubmatrix a (0,0) (m,m))
-        else let t = fromBase Lower diag (unsafeSubmatrix a (0,0) (n,n))
-                 r = unsafeSubmatrix a (n,0) (d,n)
+        then Left $  fromBase Lower diag (unsafeSubmatrixView a (0,0) (m,m))
+        else let t = fromBase Lower diag (unsafeSubmatrixView a (0,0) (n,n))
+                 r = unsafeSubmatrixView a (n,0) (d,n)
              in Right (t,r)
   where
     (m,n) = shape a
@@ -273,9 +273,9 @@ toUpper :: (Dense.BaseMatrix a x e) => Diag -> a (m,n) e
                   (Tri a (m,m) e, a (m,d) e)
 toUpper diag a =
     if n <= m
-        then Left $  fromBase Upper diag (unsafeSubmatrix a (0,0) (n,n))
-        else let t = fromBase Upper diag (unsafeSubmatrix a (0,0) (m,m))
-                 r = unsafeSubmatrix a (0,m) (m,d)
+        then Left $  fromBase Upper diag (unsafeSubmatrixView a (0,0) (n,n))
+        else let t = fromBase Upper diag (unsafeSubmatrixView a (0,0) (m,m))
+                 r = unsafeSubmatrixView a (0,m) (m,d)
              in Right (t,r)
   where
     (m,n) = shape a
@@ -411,7 +411,7 @@ unsafeDoSSolveMatTriMatrix alpha t c b =
             trsm alpha t' (coerceMatrix b)
             
         (Lower,Right (t',_),_) -> do
-            let c1 = unsafeSubmatrix c (0,0)          (numRows t',numCols c)
+            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
             unsafeCopyMatrix b c1
             trsm alpha t' b
             
@@ -420,8 +420,8 @@ unsafeDoSSolveMatTriMatrix alpha t c b =
             trsm alpha t' (coerceMatrix b)
 
         (Upper,_,Right (t',r)) ->
-            let b1 = unsafeSubmatrix b (0,0)          (numCols t',numCols b)
-                b2 = unsafeSubmatrix b (numCols t',0) (numCols r ,numCols b)
+            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
+                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
             in do
                 unsafeCopyMatrix b1 c
                 trsm alpha t' b1

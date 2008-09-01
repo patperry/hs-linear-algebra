@@ -71,7 +71,7 @@ import BLAS.Numeric.Immutable
 
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
-import Data.Matrix.Dense.Class.Views( submatrix, unsafeSubmatrix,
+import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
     diagView, unsafeDiagView )
 import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHerm, lda, colViews,
     BaseMatrix(..), IOMatrix, maybeFromRow, maybeFromCol, newCopyMatrix,
@@ -177,6 +177,15 @@ identityMatrix :: (BLAS1 e) => (Int,Int) -> Matrix (m,n) e
 identityMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newIdentityMatrix mn
 {-# NOINLINE identityMatrix #-}
 
+
+-- | @submatrix a ij mn@ returns the submatrix of @a@ with element @(0,0)@
+-- being element @ij@ in @a@, and having shape @mn@.
+submatrix :: (Elem e) => Matrix mn e -> (Int,Int) -> (Int,Int) -> Matrix mn' e
+submatrix = submatrixView
+
+-- | Same as 'submatrix' but indices are not range-checked.
+unsafeSubmatrix :: (Elem e) => Matrix mn e -> (Int,Int) -> (Int,Int) -> Matrix mn' e
+unsafeSubmatrix = unsafeSubmatrixView
 
 -- | Get a the given diagonal in a matrix.  Negative indices correspond to
 -- sub-diagonals.

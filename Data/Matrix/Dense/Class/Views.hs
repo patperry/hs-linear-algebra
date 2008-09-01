@@ -9,8 +9,8 @@
 
 module Data.Matrix.Dense.Class.Views (
     -- * Matrix views
-    submatrix,
-    unsafeSubmatrix,
+    submatrixView,
+    unsafeSubmatrixView,
 
     -- * Row and Column views
     rowViews,
@@ -37,19 +37,19 @@ import Data.Matrix.Dense.Class.Internal
 import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )
 
 
--- | @submatrix a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
+-- | @submatrixView a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
-submatrix :: (BaseMatrix a x e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
-submatrix a = checkedSubmatrix (shape a) (unsafeSubmatrix a)
-{-# INLINE submatrix #-}
+submatrixView :: (BaseMatrix a x e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
+submatrixView a = checkedSubmatrix (shape a) (unsafeSubmatrixView a)
+{-# INLINE submatrixView #-}
 
--- | Same as 'submatrix' but indices are not range-checked.
-unsafeSubmatrix :: (BaseMatrix a x e) => 
+-- | Same as 'submatrixView' but indices are not range-checked.
+unsafeSubmatrixView :: (BaseMatrix a x e) => 
     a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
-unsafeSubmatrix a (i,j) (m,n)
+unsafeSubmatrixView a (i,j) (m,n)
     | isHerm a  = 
         coerceMatrix $ herm $ 
-            unsafeSubmatrix (herm $ coerceMatrix a) (j,i) (n,m)
+            unsafeSubmatrixView (herm $ coerceMatrix a) (j,i) (n,m)
     | otherwise =
         let f = fptrOfMatrix a
             o = indexOfMatrix a (i,j)
