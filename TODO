@@ -42,6 +42,10 @@
 
 * Merge UnsafeIOToM and UnsafeInterleaveM
 
+* Add "Mult" class and get rid of <**>
+
+* Add "Solv" class and get rid of <\\>
+
 * Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
 
 * Optimization: better "swapElem" for vector and matrix
