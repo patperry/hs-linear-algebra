@@ -1,22 +1,22 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Matrix.Perm
+-- Module     : Generators.Matrix.Perm
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Perm
+module Generators.Matrix.Perm
     where
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Test.QuickCheck.Permutation
-import Test.QuickCheck.Vector.Dense ( dvector )
-import Test.QuickCheck.Matrix.Dense ( dmatrix )
-import Test.QuickCheck.Matrix ( matrixSized )
+import Generators.Permutation
+import Generators.Vector.Dense ( vector )
+import Generators.Matrix.Dense ( matrix )
+import Generators.Matrix ( matrixSized )
 
 import BLAS.Elem ( Elem, BLAS1 )
 
@@ -65,7 +65,7 @@ data PermMV n e = PermMV (Perm (n,n) e) (Vector n e) deriving Show
 instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMV n e) where
     arbitrary = do
         (TestPerm p) <- arbitrary
-        x <- dvector (numCols p)
+        x <- vector (numCols p)
         return $ PermMV p x
     
     coarbitrary = undefined
@@ -76,7 +76,7 @@ data PermMVPair n e =
 instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMVPair n e) where
     arbitrary = do
         (PermMV p x) <- arbitrary
-        y <- dvector (numCols p)
+        y <- vector (numCols p)
         return $ PermMVPair p x y
         
     coarbitrary = undefined
@@ -87,7 +87,7 @@ instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TestPerm p) <- arbitrary
         n <- choose (0,s)
-        a <- dmatrix (numCols p, n)
+        a <- matrix (numCols p, n)
         return $ PermMM p a
         
     coarbitrary = undefined
@@ -98,7 +98,7 @@ data PermMMPair m n e =
 instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMMPair m n e) where
     arbitrary = do
         (PermMM p a)<- arbitrary
-        b <- dmatrix (shape a)
+        b <- matrix (shape a)
         return $ PermMMPair p a b
         
     coarbitrary = undefined

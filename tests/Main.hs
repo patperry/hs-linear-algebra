@@ -10,6 +10,7 @@ import STMatrix
 import HermMatrix
 import TriMatrix
 import Diag
+import Perm
 
 
 main :: IO ()
@@ -40,4 +41,5 @@ main = do
             , ("Herm Matrix" , tests_HermMatrix)
             , ("Tri Matrix"  , tests_TriMatrix)
             , ("Diag"        , tests_Diag)
+            , ("Perm"        , tests_Perm)
             ]

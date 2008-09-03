@@ -33,19 +33,21 @@ extra-source-files:     INSTALL
                         
                         tests/Generators/Vector/Dense.hs
                         tests/Generators/Matrix.hs
-                        tests/Generators/Matrix/Diag.hs
                         tests/Generators/Matrix/Dense.hs
+                        tests/Generators/Matrix/Diag.hs
+                        tests/Generators/Matrix/Perm.hs
                         tests/Generators/Matrix/Herm/Dense.hs
                         tests/Generators/Matrix/Tri/Dense.hs
+                        tests/Generators/Permutation.hs
                         
                         tests/Vector.hs
                         tests/STVector.hs
                         tests/Matrix.hs
                         tests/STMatrix.hs
-
-                        tests/Banded.hs
                         tests/Diag.hs
                         tests/Perm.hs
+
+                        tests/Banded.hs
                         tests/HermMatrix.hs
                         tests/HermBanded.hs
                         tests/TriBanded.hs
@@ -146,10 +148,7 @@ library
                             Data.Vector.Dense.ST
                             Data.Vector.Dense.Class
 
-                        -- Test.QuickCheck.Permutation
                         -- Test.QuickCheck.Matrix.Banded
-
-                        -- Test.QuickCheck.Matrix.Perm
                         -- Test.QuickCheck.Matrix.Herm.Banded
                         -- Test.QuickCheck.Matrix.Tri.Banded
                         

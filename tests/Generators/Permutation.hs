@@ -1,14 +1,15 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Permutation
+-- Module     : Generators.Permutation
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Permutation
-    where
+module Generators.Permutation (
+    permutation
+    ) where
 
 import Data.List ( sortBy )
 import Data.Ord ( comparing )
@@ -24,13 +25,12 @@ permutation n = do
     let is = (snd . unzip) $ sortBy (comparing fst) $ zip xs [0..]
     return $ P.permutation n is
     
-newtype TestPermutation = TestPermutation Permutation deriving Show
 
-instance Arbitrary TestPermutation where
+instance Arbitrary Permutation where
     arbitrary = do
         n <- arbitrary >>= return . abs
         p <- permutation n
-        return $ TestPermutation p
+        return $ p
         
-    coarbitrary (TestPermutation p) = 
-            coarbitrary $ P.toList p
+    coarbitrary p = 
+        coarbitrary $ P.toList p
