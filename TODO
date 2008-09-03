@@ -36,7 +36,15 @@
 
 * Add addVector, subVector, addMatrix, subMatrix, etc.
 
+* Put better checks in swapElem for WriteTensor
+
+* STDiag and IODiag instead of current type?
+
+* Merge UnsafeIOToM and UnsafeInterleaveM
+
 * Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
+
+* Optimization: better "swapElem" for vector and matrix
 
 * Optimization: Cache the base pointer.  
     (unsafeForeignPtrToPtr (fptrOf x) `advancePtr` offsetOf x).

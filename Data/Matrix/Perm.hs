@@ -9,11 +9,7 @@
 --
 
 module Data.Matrix.Perm (
-    module BLAS.Matrix.Base,
-    module BLAS.Matrix.Immutable,
-    module BLAS.Matrix.ReadOnly,
-    module BLAS.Matrix.Solve.Immutable,
-    module BLAS.Matrix.Solve.ReadOnly,
+    module BLAS.Matrix,
 
     Perm(..),
     
@@ -30,19 +26,23 @@ module Data.Matrix.Perm (
     ) where
 
 import Control.Monad ( forM_ )
-import Foreign ( peek, poke )
-
-import BLAS.Elem ( Elem, BLAS1 )
-import qualified BLAS.Elem as E
-
-import BLAS.Matrix.Base hiding ( Matrix )
-import qualified BLAS.Matrix.Base as Base
-import BLAS.Matrix.Immutable
-import BLAS.Matrix.ReadOnly
-import BLAS.Matrix.Solve.Immutable
-import BLAS.Matrix.Solve.ReadOnly
-
 import Data.AEq
+
+import BLAS.Elem
+import BLAS.Matrix
+import BLAS.Tensor
+import BLAS.UnsafeIOToM
+import BLAS.UnsafeInterleaveM
+
+import Data.Matrix.Dense.Class( ReadMatrix, WriteMatrix, unsafeRowView,
+    unsafeAxpyMatrix, coerceMatrix )
+import Data.Vector.Dense.Class( ReadVector, WriteVector, dim, isConj, 
+    scaleBy, unsafeAxpyVector, unsafeSwapVector, coerceVector )
+import Data.Vector.Dense.ST( runSTVector )
+import Data.Matrix.Dense.ST( runSTMatrix )
+
+{-
+
 
 import Data.Vector.Dense.IO ( dim, isConj, conj, unsafeSwapVectors, 
     unsafeCopyVector, unsafeWithElemPtr, unsafeReadElem, unsafeWriteElem, 
@@ -51,6 +51,7 @@ import qualified Data.Vector.Dense.IO as V
     
 import Data.Matrix.Dense.IO ( unsafeRow, unsafeCopyMatrix, coerceMatrix )
 import qualified Data.Matrix.Dense.IO as M
+-}
 
 import Data.Permutation ( Permutation )
 import qualified Data.Permutation as P
@@ -77,89 +78,107 @@ toPermutation (P sigma h) = if h then P.inverse sigma else sigma
 coercePerm :: Perm mn e -> Perm mn' e
 coercePerm = unsafeCoerce
 
-          
-instance Base.Matrix Perm where
-    numRows (P sigma _) = P.size sigma
-    numRows (I n)       = n
+instance BaseTensor Perm (Int,Int) e where
+    shape (P sigma _) = (n,n) where n = P.size sigma
+    shape (I n)       = (n,n)
     
-    numCols a = numRows a
+    bounds p = ((0,0), (m-1,n-1)) where (m,n) = shape p
     
+instance BaseMatrix Perm e where
     herm a@(P _ _) = a{ isHerm=(not . isHerm) a }
-    herm a@(I _)   = (unsafeCoerce a)
+    herm a@(I _)   = coercePerm a
 
+
+{-          
+instance (BLAS1 e) => IMatrix Perm e where
+instance (BLAS1 e) => RMatrix Perm e where
+
+-}
 
 instance (BLAS1 e) => IMatrix Perm e where
-          
-         
-instance (BLAS1 e) => RMatrix Perm e where
-    unsafeDoApply_   (I _)   _ = return ()
-    unsafeDoApply_ p@(P _ _) x
-        | isHerm p  = P.invertWith swap sigma
-        | otherwise = P.applyWith swap sigma
-      where
-        sigma = baseOf p
-        swap i j = 
-            unsafeWithElemPtr x i $ \pI ->
-                unsafeWithElemPtr x j $ \pJ -> do
-                    xi <- peek pI
-                    xj <- peek pJ
-                    poke pI xj
-                    poke pJ xi
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
+
+instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MMatrix Perm e m where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddPerm
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatPerm
+    unsafeDoSApply_      = unsafeDoSApplyPerm_
+    unsafeDoSApplyMat_   = unsafeDoSApplyMatPerm_
 
 
-    unsafeDoApplyMat_   (I _)   _ = return ()
-    unsafeDoApplyMat_ p@(P _ _) a
-        | isHerm p  = P.invertWith swap sigma
-        | otherwise = P.applyWith swap sigma
-      where
-        sigma = baseOf p
-        swap i j = unsafeSwapVectors (unsafeRow a i) (unsafeRow a j)
+unsafeDoSApplyPerm_ :: (WriteVector y e m) => e -> Perm (k,k) e -> y k e -> m ()
+unsafeDoSApplyPerm_ alpha   (I _)   x = scaleBy alpha x
+unsafeDoSApplyPerm_ alpha p@(P _ _) x
+    | isHerm p  = P.invertWith swap sigma >> scaleBy alpha x
+    | otherwise = P.applyWith swap sigma  >> scaleBy alpha x
+  where
+    sigma = baseOf p
+    swap  = unsafeSwapElem x
+
+unsafeDoSApplyMatPerm_ :: (WriteMatrix c z e m, BLAS1 e) => 
+    e -> Perm (k,k) e -> c (k,l) e -> m ()
+unsafeDoSApplyMatPerm_ alpha   (I _)   a = scaleBy alpha a
+unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
+    | isHerm p  = P.invertWith swap sigma >> scaleBy alpha a
+    | otherwise = P.applyWith  swap sigma >> scaleBy alpha a
+  where
+    sigma    = baseOf p
+    swap i j = unsafeSwapVector (unsafeRowView a i) (unsafeRowView a j)
 
 
-    unsafeDoSApply k (I _) x y = do
-        unsafeCopyVector y (coerceVector x)
-        V.scaleBy k y
-    unsafeDoSApply k p x y
-        | isConj x =
-            unsafeDoSApply (E.conj k) p (conj x) (conj y)
-        | otherwise =
-            let n     = dim x
-                sigma = baseOf p
-            in do
-                forM_ [0..(n-1)] $ \i ->
-                    let i' = P.unsafeApply sigma i
-                    in case (isHerm p) of
-                           False -> unsafeReadElem x i  
-                                    >>= unsafeWriteElem y i'
-                           True  -> unsafeReadElem x i' 
-                                    >>= unsafeWriteElem y i
-                V.scaleBy k y
-
-
-    unsafeDoSApplyMat alpha (I _) b c = do
-        unsafeCopyMatrix c (coerceMatrix b)
-        M.scaleBy alpha c
-    unsafeDoSApplyMat alpha p b c =
-        let m     = numCols p
+unsafeDoSApplyAddPerm :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+    e -> Perm (k,l) e -> x l e -> e -> y k e -> m ()
+unsafeDoSApplyAddPerm alpha (I _) x beta y = do
+    scaleBy beta y
+    unsafeAxpyVector alpha (coerceVector x) y
+unsafeDoSApplyAddPerm alpha p x beta y
+    | isConj x =
+        unsafeDoSApplyAddPerm (conj alpha) p (conj x) (conj beta) (conj y)
+    | otherwise =
+        let n     = dim x
             sigma = baseOf p
         in do
-            forM_ [0..(m-1)] $ \i ->
+            scaleBy beta y
+            forM_ [0..(n-1)] $ \i ->
                 let i' = P.unsafeApply sigma i
                 in case (isHerm p) of
-                       False -> unsafeCopyVector (unsafeRow c i') 
-                                                 (unsafeRow b i)
-                       True  -> unsafeCopyVector (unsafeRow c i)
-                                                 (unsafeRow b i')
-            M.scaleBy alpha c
+                       False -> do
+                           e <- unsafeReadElem x i  
+                           f <- unsafeReadElem y i'
+                           unsafeWriteElem y i' (alpha*e + f)
+                           
+                       True  -> do
+                           e <- unsafeReadElem x i'
+                           f <- unsafeReadElem y i
+                           unsafeWriteElem y i (alpha*e + f)
 
+unsafeDoSApplyAddMatPerm :: (ReadMatrix b x e m, WriteMatrix c y e m, BLAS1 e) =>
+    e -> Perm (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+unsafeDoSApplyAddMatPerm alpha (I _) b beta c = do
+    scaleBy beta c
+    unsafeAxpyMatrix alpha b (coerceMatrix c)
+unsafeDoSApplyAddMatPerm alpha p b beta c =
+    let m     = numCols p
+        sigma = baseOf p
+    in do
+        scaleBy beta c
+        forM_ [0..(m-1)] $ \i ->
+            let i' = P.unsafeApply sigma i
+            in case (isHerm p) of
+                   False -> unsafeAxpyVector alpha (unsafeRowView b i)
+                                (unsafeRowView c i') 
+                   True  -> unsafeAxpyVector alpha (unsafeRowView b i') 
+                                (unsafeRowView c i)
 
 instance (BLAS1 e) => ISolve Perm e where
+    unsafeSSolve alpha a y    = runSTVector $ unsafeGetSSolve    alpha a y
+    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
     
-instance (BLAS1 e) => RSolve Perm e where    
-    unsafeDoSolve_ p          = unsafeDoApply_ (herm p)
-    unsafeDoSolveMat_ p       = unsafeDoApplyMat_ (herm p)
-    unsafeDoSSolve alpha p    = unsafeDoSApply alpha (coercePerm $ herm p)
-    unsafeDoSSolveMat alpha p = unsafeDoSApplyMat alpha (coercePerm $ herm p)
+instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MSolve Perm e m where    
+    unsafeDoSSolve_ alpha p       = unsafeDoSApplyPerm_ alpha (herm p)
+    unsafeDoSSolveMat_ alpha p    = unsafeDoSApplyMatPerm_ alpha (herm p)
+    unsafeDoSSolve alpha p x y    = unsafeDoSApplyAddPerm alpha (coercePerm $ herm p) x 0 y
+    unsafeDoSSolveMat alpha p a b = unsafeDoSApplyAddMatPerm alpha (coercePerm $ herm p) a 0 b
 
 
 instance (Elem e) => Show (Perm (n,n) e) where
@@ -168,7 +187,7 @@ instance (Elem e) => Show (Perm (n,n) e) where
            | otherwise = "fromPermutation (" ++ show (baseOf p) ++ ")"
     
     
-instance (Elem e) => Eq (Perm (n,n) e) where
+instance Eq (Perm (n,n) e) where
     (==) (I n) (I n') = n == n'
     (==) (I n) p
         | isHerm p   = (==) (I n) (herm p)
@@ -181,7 +200,7 @@ instance (Elem e) => Eq (Perm (n,n) e) where
                       && sigma == (P.inverse sigma')
 
 
-instance (Elem e) => AEq (Perm (n,n) e) where
+instance AEq (Perm (n,n) e) where
     (===) = (==)
     (~==) = (==)
     

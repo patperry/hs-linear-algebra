@@ -20,7 +20,6 @@ class (WriteTensor x i e m) => SwapTensor x i e m where
     -- | Same as 'swapTensor' but arguments are not range-checed.
     unsafeSwapTensor :: x n e -> x n e -> m ()
 
-
 -- | Swap the values stored in two tensors of the same shape.
 swapTensor :: (SwapTensor x i e m) => x n e -> x n e -> m ()
 swapTensor x y

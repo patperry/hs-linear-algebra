@@ -133,7 +133,7 @@ library
                             Data.Matrix.Dense.ST
                             Data.Matrix.Dense.Class
 
-                        -- Data.Matrix.Perm
+                        Data.Matrix.Perm
 
                         Data.Matrix.Herm
                         --     Data.Matrix.Herm.Banded
