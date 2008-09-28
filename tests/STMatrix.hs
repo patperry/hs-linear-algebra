@@ -99,98 +99,80 @@ prop_SetIdentityMatrix =
     setIdentityMatrix `implements` setIdentityMatrix_S
 
 
------------------------------ Copying Vectors --------------------------------
+---------------------------- Copying Matrices --------------------------------
 
-{-
-newCopyVector_S x = ( x, x )
-prop_NewCopyVector = 
-    (\x -> newCopyVector x >>= abstract) `implements` newCopyVector_S
+newCopyMatrix_S a = ( a, a )
+prop_NewCopyMatrix = 
+    (\a -> newCopyMatrix a >>= abstract) `implements` newCopyMatrix_S
 
-copyVector_S x y = ( (), y, y )
-prop_CopyVector = copyVector `implements2` copyVector_S
+copyMatrix_S a b = ( (), b, b )
+prop_CopyMatrix = copyMatrix `implements2` copyMatrix_S
 
-swap_S x y = ( (), y, x )
-prop_Swap = swap `implements2` swap_S
+swapMatrix_S a b = ( (), b, a )
+prop_SwapMatrix = swapMatrix `implements2` swapMatrix_S
 
 
--------------------------- Unsary Vector Operations --------------------------
+-------------------------- Unsary Matrix Operations --------------------------
 
-doConj_S x = ( (), map conj x )
+doConj_S x = ( (), tmap conj x )
 prop_DoConj = doConj `implements` doConj_S
 
-scaleBy_S k x = ( (), map (k*) x )
+scaleBy_S k x = ( (), tmap (k*) x )
 prop_ScaleBy k = scaleBy k `implements` scaleBy_S k
 
-shiftBy_S k x = ( (), map (k+) x )
+shiftBy_S k x = ( (), tmap (k+) x )
 prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 
-modifyWith_S f x = ( (), map f x )
+modifyWith_S f x = ( (), tmap f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
-getConj_S x = ( map conj x, x )
+getConj_S x = ( tmap conj x, x )
 prop_GetConj = 
     (\x -> getConj x >>= abstract) `implements` getConj_S
 
-getScaled_S k x = ( map (k*) x, x )
+getScaled_S k x = ( tmap (k*) x, x )
 prop_GetScaled k = 
     (\x -> getScaled k x >>= abstract) `implements` (getScaled_S k)
 
-getShifted_S k x = ( map (k+) x, x )
+getShifted_S k x = ( tmap (k+) x, x )
 prop_GetShifted k = 
     (\x -> getShifted k x >>= abstract) `implements` (getShifted_S k)
 
 
-------------------------- Binary Vector Operations ---------------------------
+------------------------- Binary Matrix Operations ---------------------------
 
-addEquals_S x y = ( (), zipWith (+) x y, y )
+axpyMatrix_S alpha x y = ( (), x, alpha *> x + y )
+prop_AxpyMatrix alpha = axpyMatrix alpha `implements2` axpyMatrix_S alpha
+
+addEquals_S x y = ( (), x + y, y )
 prop_AddEquals = (+=) `implements2` addEquals_S
 
-subEquals_S x y = ( (), zipWith (-) x y, y )
+subEquals_S x y = ( (), x - y, y )
 prop_SubEquals = (-=) `implements2` subEquals_S
 
-mulEquals_S x y = ( (), zipWith (*) x y, y )
+mulEquals_S x y = ( (), x * y, y )
 prop_MulEquals = (*=) `implements2` mulEquals_S
 
-divEquals_S x y = ( (), zipWith (/) x y, y )
+divEquals_S x y = ( (), x / y, y )
 prop_DivEquals = (//=) `implements2` divEquals_S
 
-axpy_S alpha x y = ( (), x, zipWith (\xi yi -> alpha * xi + yi) x y )
-prop_Axpy alpha = axpy alpha `implements2` axpy_S alpha
-
-getAdd_S x y = ( zipWith (+) x y, x, y )
+getAdd_S x y = ( x + y, x, y )
 prop_GetAdd =
     (\x y -> getAdd x y >>= abstract) `implements2` getAdd_S
 
-getSub_S x y = ( zipWith (-) x y, x, y )
+getSub_S x y = ( x - y, x, y )
 prop_GetSub =
     (\x y -> getSub x y >>= abstract) `implements2` getSub_S
 
-getMul_S x y = ( zipWith (*) x y, x, y )
+getMul_S x y = ( x * y, x, y )
 prop_GetMul =
     (\x y -> getMul x y >>= abstract) `implements2` getMul_S
 
-getDiv_S x y = ( zipWith (/) x y, x, y )
+getDiv_S x y = ( x / y, x, y )
 prop_GetDiv =
     (\x y -> getDiv x y >>= abstract) `implements2` getDiv_S
 
 
--------------------------- Vector Properties ---------------------------------
-
-getSumAbs_S x = ( foldl' (+) 0 $ map norm1 x, x )
-prop_GetSumAbs = getSumAbs `implements` getSumAbs_S
-
-getNorm2_S x = ( sqrt $ foldl' (+) 0 $ map (**2) $ map norm x, x )
-prop_GetNorm2 = getNorm2 `implements` getNorm2_S
-
-getWhichMaxAbs_S x = ( (i,x!!i), x) 
-    where i = fst $ maximumBy (comparing snd) $ reverse $ zip [0..] $ map norm1 x
-prop_GetWhichMaxAbs = 
-    implementsIf (return . (>0) . dim) getWhichMaxAbs getWhichMaxAbs_S
-
-getDot_S x y = ( foldl' (+) 0 $ zipWith (*) (map conj x) y, x, y )
-prop_GetDot = getDot `implements2` getDot_S
-
--}
 ------------------------------------------------------------------------
 -- 
 -- The specification language
@@ -216,11 +198,10 @@ commutes x a f = do
               
     return passed
 
-{-
-commutes2 :: (AEq a, Show a, AEq e, Elem e) =>
-    STVector s n e -> STVector s n e -> 
-    (STVector s n e ->  STVector s n e -> ST s a) ->
-        ([e] -> [e] -> (a,[e],[e])) -> ST s Bool
+commutes2 :: (AEq a, Show a, AEq e, BLAS1 e) =>
+    STMatrix s (m,n) e -> STMatrix s (m,n) e -> 
+    (STMatrix s (m,n) e ->  STMatrix s (m,n) e -> ST s a) ->
+        (Matrix (m,n) e -> Matrix (m,n) e -> (a,Matrix (m,n) e,Matrix (m,n) e)) -> ST s Bool
 commutes2 x y a f = do
     oldX <- abstract x
     oldY <- abstract y
@@ -236,7 +217,6 @@ commutes2 x y a f = do
             return ()
             
     return passed
--}
 
 equivalent :: (forall s . ST s (STMatrix s (m,n) E)) -> Matrix (m,n) E -> Bool
 equivalent x s = runST $ do
@@ -254,15 +234,13 @@ a `implements` f =
     forAll arbitrary $ \(Nat2 mn) ->
         implementsFor mn a f
 
-{-
 implements2 :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
-    ([E] -> [E] -> (a,[E],[E])) -> 
+    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
+    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
         Property
 a `implements2` f =
-    forAll arbitrary $ \(Nat n) ->
-        implementsFor2 n a f
--}
+    forAll arbitrary $ \(Nat2 mn) ->
+        implementsFor2 mn a f
 
 implementsFor :: (AEq a, Show a) =>
     (Int,Int) ->
@@ -274,18 +252,17 @@ implementsFor mn a f =
         runST $ do
             commutes (unsafeThawMatrix x) a f
 
-{-
 implementsFor2 :: (AEq a, Show a) =>
-    Int ->
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
-    ([E] -> [E] -> (a,[E],[E])) -> 
+    (Int,Int) ->
+    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
+    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
         Property
-implementsFor2 n a f =
-    forAll (Test.vector n) $ \x ->
-    forAll (Test.vector n) $ \y ->
+implementsFor2 mn a f =
+    forAll (Test.matrix mn) $ \x ->
+    forAll (Test.matrix mn) $ \y ->
         runST $ do
-            commutes2 (unsafeThawVector x) (unsafeThawVector y) a f
--}
+            commutes2 (unsafeThawMatrix x) (unsafeThawMatrix y) a f
+
 
 implementsIf :: (AEq a, Show a) =>
     (forall s . STMatrix s (m,n) E -> ST s Bool) ->
@@ -301,23 +278,21 @@ implementsIf pre a f =
         runST ( do
             commutes (unsafeThawMatrix x) a f )
 
-{-
 implementsIf2 :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> STVector s n E -> ST s Bool) ->
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
-    ([E] -> [E] -> (a,[E],[E])) -> 
+    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s Bool) ->
+    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
+    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
         Property
 implementsIf2 pre a f =
-    forAll arbitrary $ \(Nat n) ->
-    forAll (Test.vector n) $ \x ->
-    forAll (Test.vector n) $ \y ->
+    forAll arbitrary $ \(Nat2 mn) ->
+    forAll (Test.matrix mn) $ \x ->
+    forAll (Test.matrix mn) $ \y ->
         runST ( do
-            x' <- thawVector x
-            y' <- thawVector y
+            x' <- thawMatrix x
+            y' <- thawMatrix y
             pre x' y') ==>
         runST ( do
-            commutes2 (unsafeThawVector x) (unsafeThawVector y) a f )
--}
+            commutes2 (unsafeThawMatrix x) (unsafeThawMatrix y) a f )
             
 ------------------------------------------------------------------------
 
@@ -345,10 +320,9 @@ tests_STMatrix =
     , ("newIdentityMatrix", mytest prop_NewIdentityMatrix)
     , ("setIdentityMatrix", mytest prop_SetIdentityMatrix)
     
- {-    
-    , ("newCopyVector", mytest prop_NewCopyVector)
-    , ("copyVector", mytest prop_CopyVector)
-    , ("swap", mytest prop_Swap)
+    , ("newCopyMatrix", mytest prop_NewCopyMatrix)
+    , ("copyMatrix", mytest prop_CopyMatrix)
+    , ("swapMatrix", mytest prop_SwapMatrix)
 
     , ("doConj", mytest prop_DoConj)
     , ("scaleBy", mytest prop_ScaleBy)
@@ -359,7 +333,7 @@ tests_STMatrix =
     , ("getScaled", mytest prop_GetScaled)
     , ("getShifted", mytest prop_GetShifted)
 
-    , ("axpy", mytest prop_Axpy)
+    , ("axpyMatrix", mytest prop_AxpyMatrix)
     , ("(+=)", mytest prop_AddEquals)
     , ("(-=)", mytest prop_SubEquals)
     , ("(*=)", mytest prop_MulEquals)
@@ -370,9 +344,4 @@ tests_STMatrix =
     , ("getMul", mytest prop_GetMul)
     , ("getDiv", mytest prop_GetDiv)
 
-    , ("getSumAbs", mytest prop_GetSumAbs)
-    , ("getNorm2", mytest prop_GetNorm2)
-    , ("getWhichMaxAbs", mytest prop_GetWhichMaxAbs)
-    , ("getDot", mytest prop_GetDot)
--}
     ]
