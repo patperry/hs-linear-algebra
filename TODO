@@ -42,9 +42,9 @@
 
 * Merge UnsafeIOToM and UnsafeInterleaveM
 
-* Add "Mult" class and get rid of <**>
+* Add "Mult" class and get rid of <**> ?
 
-* Add "Solv" class and get rid of <\\>
+* Add "Solv" class and get rid of <\\> ?
 
 * Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
 
@@ -72,3 +72,6 @@ Implementation for IOVector:
     
     isConj (DV _ _ _ _ c) = c
     {-# INLINE isConj #-}
+
+* Optimization: The ReadTensor/WriteTensor functions for Banded matrices are
+really terrible.  Re-write these to be more efficient.

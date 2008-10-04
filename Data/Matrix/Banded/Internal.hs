@@ -115,22 +115,6 @@ data BMatrix t mn e
 type Banded = BMatrix Imm
 type IOBanded = BMatrix Mut
 
-fromForeignPtr :: ForeignPtr e -> Int -> (Int,Int) -> (Int,Int) -> Int -> Bool
-    -> BMatrix t (m,n) e
-fromForeignPtr f o (m,n) (kl,ku) l h = BM f o m n kl ku l h
-
-toForeignPtr :: BMatrix t (m,n) e -> (ForeignPtr e, Int, (Int,Int), (Int,Int), Int, Bool)
-toForeignPtr (BM f o m n kl ku l h) = (f, o, (m,n), (kl,ku), l, h)
-
-unsafeFreeze :: BMatrix t mn e -> Banded mn e
-unsafeFreeze = unsafeCoerce
-
-unsafeThaw :: BMatrix t mn e -> IOBanded mn e
-unsafeThaw = unsafeCoerce
-
--- | Coerce the phantom shape type from one type to another.
-coerceBanded :: BMatrix t mn e -> BMatrix t kl e
-coerceBanded = unsafeCoerce
 
 toLists :: (BLAS1 e) => Banded (m,n) e -> ((Int,Int), (Int,Int),[[e]])
 toLists a = ( (m,n)
@@ -145,61 +129,9 @@ toLists a = ( (m,n)
     padEnd   i = replicate (max (m-n+i) 0) 0
     paddedDiag i = (padBegin i) ++ (elems $ diag a i) ++ (padEnd i)
 
-toRawMatrix :: (Elem e) => BMatrix t (m,n) e -> ((Int,Int), (Int,Int), DMatrix t (m',n') e, Bool)
-toRawMatrix (BM f o m n kl ku ld h) = 
-    ((m,n), (kl,ku), M.fromForeignPtr f o (kl+1+ku,n) ld False, h)
-
-fromRawMatrix :: (Elem e) => (Int,Int) -> (Int,Int) -> DMatrix t (m,n) e -> Bool -> Maybe (BMatrix t (m',n') e)
-fromRawMatrix (m,n) (kl,ku) a h = 
-    if M.isHerm a 
-        then Nothing
-        else let (f,o,(m',n'),ld,_) = M.toForeignPtr a
-             in case undefined of
-                 _ | m' /= kl+1+ku -> 
-                     error $ "fromMatrix: number of rows must be equal to number of diagonals"
-                 _ | n' /= n ->
-                     error $ "fromMatrix: numbers of columns must be equal"
-                 _ ->
-                     Just $ BM f o m n kl ku ld h
                 
 
-bandwidth :: BMatrix t (m,n) e -> (Int,Int)
-bandwidth a = 
-    let (kl,ku) = (numLower a, numUpper a)
-    in (negate kl, ku)
 
-numLower :: BMatrix t (m,n) e -> Int
-numLower a | isHerm a  = upBW a
-           | otherwise = lowBW a
-
-numUpper :: BMatrix t (m,n) e -> Int
-numUpper a | isHerm a  = lowBW a
-           | otherwise = upBW a
-
-
-newBanded_ :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (BMatrix t (m,n) e)
-newBanded_ (m,n) (kl,ku)
-    | m < 0 || n < 0 =
-        err "dimensions must be non-negative."
-    | kl < 0 =
-        err "lower bandwdth must be non-negative."
-    | m /= 0 && kl >= m =
-        err "lower bandwidth must be less than m."
-    | ku < 0 =
-        err "upper bandwidth must be non-negative."
-    | n /= 0 && ku >= n =
-        err "upper bandwidth must be less than n."
-    | otherwise =
-        let off = 0
-            m'  = kl + 1 + ku
-            l   = m'
-            h   = False
-        in do    
-            ptr <- mallocForeignPtrArray (m' * n)
-            return $ fromForeignPtr ptr off (m,n) (kl,ku) l h
-    where
-      err s = ioError $ userError $ 
-                  "newBanded_ " ++ show (m,n) ++ " " ++ show (kl,ku) ++ ": " ++ s
 
 banded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
 banded mn kl ijes = unsafePerformIO $ newBanded mn kl ijes
@@ -255,20 +187,7 @@ diag :: (Elem e) => BMatrix t (m,n) e -> Int -> DVector t k e
 diag a = checkedDiag (shape a) (unsafeDiag a) 
 
 
-indexOf :: BMatrix t (m,n) e -> (Int,Int) -> Int
-indexOf (BM _ off _ _ _ ku ld h) (i,j) =
-    let (i',j') = if h then (j,i) else (i,j)
-    in off + ku + (i' - j') + j' * ld
-    --off + i' * tda + (j' - i' + kl)
-           
 
-hasStorage :: BMatrix t (m,n) e -> (Int,Int) -> Bool
-hasStorage (BM _ _ m n kl ku _ h) (i,j) =
-    let (i',j') = if h then (j,i) else (i,j)
-    in (  inRange (0,m-1) i'
-       && inRange (0,n-1) j'
-       && inRange (max 0 (j'-ku), min (m-1) (j'+kl)) i'
-       )
               
             
 unsafeWithElemPtr :: (Elem e) => BMatrix t (m,n) e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
@@ -406,50 +325,7 @@ instance (BLAS1 e) => RTensor (BMatrix t (m,n)) (Int,Int) e IO where
             a' <- newCopy a
             return $ fromJust $ fromRawMatrix mn kl a' h
     
-    getSize (BM _ _ m n kl ku _ _) = 
-        return $ foldl' (+) 0 $ 
-             map (diagLen (m,n)) [(-kl)..ku]
-    
-    unsafeReadElem a (i,j)
-        | isHerm a = 
-            unsafeReadElem (herm a) (j,i) >>= return . E.conj
-        | hasStorage a (i,j) =
-            withForeignPtr (fptrOf a) $ \ptr ->
-                peekElemOff ptr (indexOf a (i,j))
-        | otherwise =
-            return 0
 
-    getIndices a =
-        return $ filter (\ij -> inlinePerformIO $ canModifyElem (unsafeThaw a) ij)
-                        (range $ bounds a)
-
-    getElems a = getAssocs a >>= return . (map snd)
-
-    getAssocs a = do
-        is <- unsafeInterleaveIO $ getIndices a
-        mapM (\i -> unsafeReadElem a i >>= \e -> return (i,e)) is
-
-instance (BLAS1 e) => MTensor (BMatrix Mut (m,n)) (Int,Int) e IO where
-    setZero a = case toRawMatrix a of (_,_,a',_) -> setZero a'
-    
-    setConstant e a = 
-        let (_,_,a',h) = toRawMatrix a
-            e' = if h then E.conj e else e
-        in setConstant e' a'
-        
-    canModifyElem a ij = return $ hasStorage a ij
-
-    unsafeWriteElem a (i,j) e
-        | isHerm a = 
-            unsafeWriteElem (herm a) (j,i) (E.conj e)
-        | otherwise =
-            withForeignPtr (fptrOf a) $ \ptr ->
-                pokeElemOff ptr (indexOf a (i,j)) e
-
-    modifyWith f a = 
-        let (_,_,a',h) = toRawMatrix a
-        in if h then modifyWith f a'
-                else modifyWith f (herm a)
 
 instance (BLAS1 e) => Show (BMatrix Imm (m,n) e) where
     show a 
