@@ -166,7 +166,9 @@ library
                         Data.Vector.Dense.Class.Properties
                         Data.Vector.Dense.Class.Operations
                         
+                        Data.Matrix.Banded.Class.Creating
                         Data.Matrix.Banded.Class.Internal
+                        Data.Matrix.Banded.Class.Views
                         
                         Data.Matrix.Dense.Internal
                         Data.Matrix.Dense.Class.Internal

@@ -15,10 +15,11 @@ module Data.Matrix.Banded.Class.Internal (
     WriteBanded,
 
     -- * Low-level Banded properties
-    lda,
-    isHerm,
     bandedViewMatrix,
     matrixFromBanded,
+    lda,
+    isHerm,
+    hermBanded,
 
     -- * Bandwidth properties
     bandwidth,
@@ -27,6 +28,30 @@ module Data.Matrix.Banded.Class.Internal (
 
     -- * Coercing the Banded shape
     coerceBanded,
+
+    -- * WriteTensor functions
+    newBanded_,
+    newZeroBanded,
+    setZeroBanded,
+    newConstantBanded,
+    setConstantBanded,
+    modifyWithBanded,
+    canModifyElemBanded,
+    unsafeWriteElemBanded,
+
+    -- * Vector views
+    unsafeBandRowView,
+    unsafeBandColView,
+    unsafeGetRowBanded,
+    unsafeGetColBanded,
+    
+    -- * Utility functions
+    withBandedPtr,
+    withBandedElemPtr,
+    fptrOfBanded,
+    offsetOfBanded,
+    indexOfBanded,
+    indicesBanded,
     
     ) where
 
@@ -54,10 +79,12 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     newCopyVector, unsafeCopyVector, unsafeSwapVector, 
     doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
     unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
+import Data.Vector.Dense.Class.Creating( newListVector )
+import Data.Vector.Dense.Class.Operations( getConjVector )
 
 import qualified Data.Matrix.Dense.Class as M
-import Data.Matrix.Dense.Class( BaseMatrix, arrayFromMatrix, matrixViewArray,
-    coerceMatrix )
+import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
+    arrayFromMatrix, matrixViewArray, coerceMatrix, colViews )
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
@@ -69,11 +96,10 @@ class (BLAS.BaseMatrix a e, BaseVector x e) =>
         arrayFromBanded :: a mn e -> (ForeignPtr e, Int, (Int,Int), (Int,Int), Int, Bool)
 
 class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
-           ReadNumeric a (Int,Int) e m, BaseBanded a x e, 
-           ReadVector x e m) => 
+           BaseBanded a x e, ReadVector x e m) => 
     ReadBanded a x e m | a -> x where
 
-class (WriteTensor a (Int,Int) e m, WriteNumeric a (Int,Int) e m,
+class (WriteTensor a (Int,Int) e m,
            WriteVector x e m, ReadBanded a x e m) => 
     WriteBanded a x e m | a -> m, m -> a, a -> x where
 
@@ -295,7 +321,112 @@ canModifyElemBanded a ij = return $ hasStorageBanded a ij
 {-# INLINE canModifyElemBanded #-}
 
 
+------------------------------ Vector views ---------------------------------
+
+unsafeBandRowView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeBandRowView a i =
+    if h then
+        case unsafeBandColView a' i of (nb, v, na) -> (nb, conj v, na)        
+    else
+        let nb   = max (i - kl)         0
+            na   = max (n - 1 - i - ku) 0
+            r    = min (ku + i)         (kl + ku)
+            c    = max (i - kl)         0 
+            off' = off + r + c * ld
+            inc  = ld - 1
+            len  = n - (nb + na)
+        in if len >= 0 
+            then (nb, vectorViewArray f off' len inc False, na)
+            else (n , vectorViewArray f off' 0   inc False,  0)
+  where
+    (f,off,(_,n),(kl,ku),ld,h) = arrayFromBanded a
+    a' = (hermBanded . coerceBanded) a
+
+unsafeBandColView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeBandColView a j =
+    if h then
+        case unsafeBandRowView a' j of (nb, v, na) -> (nb, conj v, na)
+    else
+        let nb    = max (j - ku)         0
+            na    = max (m - 1 - j - kl) 0
+            r     = max (ku - j) 0 
+            c     = j 
+            off'  = off + r + c * ld
+            inc   = 1
+            len   = m - (nb + na)
+        in if len >= 0
+            then (nb, vectorViewArray f off' len inc False, na)
+            else (m , vectorViewArray f off' 0   inc False,  0)
+  where
+    (f,off,(m,_),(kl,ku),ld,h) = arrayFromBanded a
+    a' = (hermBanded . coerceBanded) a
+
+unsafeGetRowBanded :: (ReadBanded a x e m, WriteVector y e m) => 
+    a (k,l) e -> Int -> m (y l e)
+unsafeGetRowBanded a i = 
+    let (nb,x,na) = unsafeBandRowView a i
+        n = numCols a
+    in do
+        es <- getElems x
+        newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
+
+unsafeGetColBanded :: (ReadBanded a x e m, WriteVector y e m) => 
+    a (k,l) e -> Int -> m (y k e)
+unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
+
+
+-------------------------- Matrix multiplication ----------------------------
+
+-- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
+gbmv :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
+    e -> a (k,l) e -> x l e -> e -> y k e -> m ()
+gbmv alpha a x beta y
+    | isConj x = do
+        x' <- getConjVector (conj x)
+        gbmv alpha a x' beta y
+    | isConj y = do
+        doConj y
+        gbmv alpha a x beta (conj y)
+        doConj y
+    | otherwise =
+        let order  = colMajor
+            transA = blasTransOf a
+            (m,n)  = case (isHerm a) of
+                         False -> shape a
+                         True  -> (flipShape . shape) a
+            (kl,ku) = case (isHerm a) of
+                          False -> (numLower a, numUpper a)
+                          True  -> (numUpper a, numLower a)
+            ldA    = lda a
+            incX   = stride x
+            incY   = stride y
+        in unsafeIOToM $
+               withBandedPtr a $ \pA ->
+               withVectorPtr x $ \pX ->
+               withVectorPtr y $ \pY -> do
+                   BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
+
+-- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
+gbmm :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS2 e) => 
+    e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+gbmm alpha a b beta c =
+    sequence_ $
+        zipWith (\x y -> gbmv alpha a x beta y) (colViews b) (colViews c)
+
 --------------------------- Utility functions -------------------------------
+
+withBandedPtr :: (BaseBanded a x e, Storable e) => 
+    a mn e -> (Ptr e -> IO b) -> IO b
+withBandedPtr a f =
+    withForeignPtr (fptrOfBanded a) $ \ptr ->
+        f $ ptr `advancePtr` (offsetOfBanded a)
+
+withBandedElemPtr :: (BaseBanded a x e, Storable e) => 
+    a mn e -> (Int,Int) -> (Ptr e -> IO b) -> IO b
+withBandedElemPtr a (i,j) f
+    | isHerm a  = withBandedElemPtr (hermBanded $ coerceBanded a) (j,i) f
+    | otherwise = withForeignPtr (fptrOfBanded a) $ \ptr ->
+                      f $ ptr `advancePtr` (indexOfBanded a (i,j))
 
 indexOfBanded :: (BaseBanded a x e) => a mn e -> (Int,Int) -> Int
 indexOfBanded a (i,j) =
@@ -321,3 +452,12 @@ indicesBanded a =
                  else [ (i,j) | j <- range (0,n-1), i <- range (0,m-1) ]
     in filter (hasStorageBanded a) is
   where (m,n) = shapeBanded a
+
+blasTransOf :: (BaseBanded a x e) => a mn e -> CBLASTrans
+blasTransOf a = 
+    case (isHerm a) of
+          False -> noTrans
+          True  -> conjTrans
+
+flipShape :: (Int,Int) -> (Int,Int)
+flipShape (m,n) = (n,m)

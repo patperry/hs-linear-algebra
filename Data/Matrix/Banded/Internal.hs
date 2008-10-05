@@ -141,96 +141,30 @@ unsafeBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Bande
 unsafeBanded mn kl ijes = unsafePerformIO $ unsafeNewBanded mn kl ijes
 {-# NOINLINE unsafeBanded #-}
 
-newBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> IO (BMatrix t (m,n) e)
-newBanded = newBandedHelp writeElem
 
-unsafeNewBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> IO (BMatrix t (m,n) e)
-unsafeNewBanded = newBandedHelp unsafeWriteElem
-
-newBandedHelp :: (BLAS1 e) => 
-       (IOBanded (m,n) e -> (Int,Int) -> e -> IO ()) 
-    -> (Int,Int) -> (Int,Int) -> [((Int,Int),e)] -> IO (BMatrix t (m,n) e)
-newBandedHelp set (m,n) (kl,ku) ijes = do
-    x <- newBanded_ (m,n) (kl,ku)
-    withForeignPtr (fptrOf x) $ flip clearArray ((kl+1+ku)*n)
-    mapM_ (uncurry $ set $ unsafeThaw x) ijes
-    return x
 
 listsBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
 listsBanded mn kl xs = unsafePerformIO $ newListsBanded mn kl xs
 {-# NOINLINE listsBanded #-}
 
-newListsBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [[e]] -> IO (BMatrix t (m,n) e)
-newListsBanded (m,n) (kl,ku) xs = do
-    a <- newBanded_ (m,n) (kl,ku)
-    zipWithM_ (writeDiagElems (unsafeThaw a)) [(negate kl)..ku] xs
-    return a
-  where
-    writeDiagElems a i es =
-        let d   = diag a i
-            nb  = max 0 (negate i)
-            es' = drop nb es
-        in zipWithM_ (unsafeWriteElem d) [0..(dim d - 1)] es'
 
-unsafeDiag :: (Elem e) => BMatrix t (m,n) e -> Int -> DVector t k e
-unsafeDiag a d
-    | isHerm a = conj $ unsafeDiag (herm a) (negate d)
-    | otherwise =
-        let f      = fptrOf a
-            off    = indexOf a (diagStart d)
-            len    = diagLen (shape a) d
-            stride = ldaOf a
-            c      = False
-        in V.fromForeignPtr f off len stride c
-        
-diag :: (Elem e) => BMatrix t (m,n) e -> Int -> DVector t k e
-diag a = checkedDiag (shape a) (unsafeDiag a) 
 
 
 
               
             
-unsafeWithElemPtr :: (Elem e) => BMatrix t (m,n) e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
-unsafeWithElemPtr a (i,j) f
-    | isHerm a  = unsafeWithElemPtr (herm a) (j,i) f
-    | otherwise = withForeignPtr (fptrOf a) $ \ptr ->
-                      f $ ptr `advancePtr` (indexOf a (i,j))
 
-unsafeWithBasePtr :: (Elem e) => BMatrix t (m,n) e -> (Ptr e -> IO a) -> IO a
-unsafeWithBasePtr a f =
-    withForeignPtr (fptrOf a) $ \ptr ->
-        f $ ptr `advancePtr` (offsetOf a)
 
-row :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector n e
-row a = checkedRow (shape a) (unsafeRow a)
 
 unsafeRow :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector n e
 unsafeRow a i = unsafePerformIO $ getRow a i
 {-# NOINLINE unsafeRow #-}
 
-getRow :: (BLAS1 e) => BMatrix t (m,n) e -> Int -> IO (DVector r n e)
-getRow a = checkedRow (shape a) (unsafeGetRow a)
 
-unsafeGetRow :: (BLAS1 e) => BMatrix t (m,n) e -> Int -> IO (DVector r n e)
-unsafeGetRow a i = 
-    let (nb,x,na) = unsafeRowView a i
-        n = numCols a
-    in do
-        es <- getElems x
-        newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
-
-col :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector m e
-col a = checkedCol (shape a) (unsafeCol a)
 
 unsafeCol :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector m e
 unsafeCol a i = unsafePerformIO $ getCol a i
 {-# NOINLINE unsafeCol #-}
-
-getCol :: (BLAS1 e) => BMatrix t (m,n) e -> Int -> IO (DVector r m e)
-getCol a = checkedCol (shape a) (unsafeGetCol a)
-
-unsafeGetCol :: (BLAS1 e) => BMatrix t (m,n) e -> Int -> IO (DVector r m e)
-unsafeGetCol a j = unsafeGetRow (herm a) j >>= return . conj
 
 rows :: (BLAS1 e) => Banded (m,n) e -> [Vector n e]
 rows a = [ unsafeRow a i | i <- [0..(numRows a - 1)] ]
@@ -238,45 +172,6 @@ rows a = [ unsafeRow a i | i <- [0..(numRows a - 1)] ]
 cols :: (BLAS1 e) => Banded (m,n) e -> [Vector m e]
 cols a = [ unsafeCol a i | i <- [0..(numCols a - 1)] ]
 
-unsafeColView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
-unsafeColView a@(BM f off m _ kl ku ld _) j
-    | isHerm a = 
-        case unsafeRowView (herm a) j of (nb, v, na) -> (nb, conj v, na)
-    | otherwise =
-        let nb     = max (j - ku)         0
-            na     = max (m - 1 - j - kl) 0
-            r      = max (ku - j) 0 
-            c      = j 
-            off'   = off + r + c * ld
-            stride = 1
-            len    = m - (nb + na)
-        in if len >= 0
-            then (nb, V.fromForeignPtr f off' len stride False, na)
-            else (m , V.fromForeignPtr f off' 0   stride False,  0)
-
-
-unsafeRowView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
-unsafeRowView a@(BM f off _ n kl ku ld _) i
-    | isHerm a =
-        case unsafeColView (herm a) i of (nb, v, na) -> (nb, conj v, na)        
-    | otherwise =
-        let nb     = max (i - kl)         0
-            na     = max (n - 1 - i - ku) 0
-            r      = min (ku + i)         (kl + ku)
-            c      = max (i - kl)         0 
-            off'   = off + r + c * ld
-            stride = ld - 1
-            len    = n - (nb + na)
-        in if len >= 0 
-            then (nb, V.fromForeignPtr f off' len stride False, na)
-            else (n , V.fromForeignPtr f off' 0   stride False,  0)
-
-
-rowView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
-rowView a = checkedRow (shape a) (unsafeRowView a) 
-
-colView :: (Elem e) => BMatrix t (m,n) e -> Int -> (Int, DVector t k e, Int)
-colView a = checkedCol (shape a) (unsafeColView a)
 
 
 instance C.Matrix (BMatrix t) where
