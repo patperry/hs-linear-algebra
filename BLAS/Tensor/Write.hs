@@ -21,13 +21,6 @@ import BLAS.Tensor.Read
 
 -- | Class for modifiable mutable tensors.
 class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
-    -- | Creates a new tensor with elements all initialized to zero.
-    newZero :: i -> m (x n e)
-    
-    -- | Creates a new tensor with elements all initialized to the 
-    -- given value.
-    newConstant :: i -> e -> m (x n e)
-    
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize

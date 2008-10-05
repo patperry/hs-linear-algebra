@@ -38,7 +38,7 @@ unsafeNewVector = newVectorHelp unsafeWriteElem
 newVectorHelp :: (WriteVector x e m) => 
     (x n e -> Int -> e -> m ()) -> Int -> [(Int,e)] -> m (x n e)
 newVectorHelp set n ies = do
-    x <- newZero n
+    x <- newZeroVector n
     mapM_ (uncurry $ set x) ies
     return x
 

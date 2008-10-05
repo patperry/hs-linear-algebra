@@ -27,9 +27,11 @@ module BLAS.Numeric.Ternary (
 
 import BLAS.Internal ( checkBinaryOp, checkTernaryOp )
 import BLAS.Tensor
+import BLAS.Numeric.Read
+import BLAS.Numeric.Write
 
 -- | Class for mutable dense read-only tensors.
-class (ReadTensor x i e m, ReadTensor y i e m, WriteTensor z i e m) => Numeric3 x y z i e m where
+class (ReadNumeric x i e m, ReadNumeric y i e m, WriteNumeric z i e m) => Numeric3 x y z i e m where
     -- | Same as 'doAdd' but does not check that the arguments are the same
     -- shape.
     unsafeDoAdd :: x n e -> y n e -> z n e -> m ()

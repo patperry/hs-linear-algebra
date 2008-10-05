@@ -491,8 +491,6 @@ instance (Elem e) => ReadVector IOVector e IO where
 instance (Elem e) => ReadVector (STVector s) e (ST s) where    
 
 instance (BLAS1 e) => WriteTensor IOVector Int e IO where
-    newZero         = newZeroVector
-    newConstant     = newConstantVector
     setConstant     = setConstantVector
     setZero         = setZeroVector
     canModifyElem   = canModifyElemVector
@@ -500,8 +498,6 @@ instance (BLAS1 e) => WriteTensor IOVector Int e IO where
     modifyWith      = modifyWithVector
     
 instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
-    newZero         = newZeroVector
-    newConstant     = newConstantVector
     setConstant     = setConstantVector
     setZero         = setZeroVector
     canModifyElem   = canModifyElemVector
@@ -512,14 +508,18 @@ instance (BLAS1 e) => WriteVector IOVector e IO where
 instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
 
 instance (BLAS1 e) => WriteNumeric IOVector Int e IO where
-    doConj  = doConjVector
-    scaleBy = scaleByVector
-    shiftBy = shiftByVector
+    newZero     = newZeroVector
+    newConstant = newConstantVector
+    doConj      = doConjVector
+    scaleBy     = scaleByVector
+    shiftBy     = shiftByVector
 
 instance (BLAS1 e) => WriteNumeric (STVector s) Int e (ST s) where
-    doConj  = doConjVector
-    scaleBy = scaleByVector
-    shiftBy = shiftByVector
+    newZero     = newZeroVector
+    newConstant = newConstantVector
+    doConj      = doConjVector
+    scaleBy     = scaleByVector
+    shiftBy     = shiftByVector
 
 instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
     newCopyTensor    = newCopyVector    

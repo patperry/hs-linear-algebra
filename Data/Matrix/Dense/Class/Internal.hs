@@ -694,8 +694,6 @@ instance (BLAS1 e) => ReadTensor (STMatrix s) (Int,Int) e (ST s) where
     unsafeReadElem = unsafeReadElemMatrix
 
 instance (BLAS1 e) => WriteTensor IOMatrix (Int,Int) e IO where
-    newZero         = newZeroMatrix
-    newConstant     = newConstantMatrix
     setConstant     = setConstantMatrix
     setZero         = setZeroMatrix
     modifyWith      = modifyWithMatrix
@@ -703,8 +701,6 @@ instance (BLAS1 e) => WriteTensor IOMatrix (Int,Int) e IO where
     canModifyElem   = canModifyElemMatrix
 
 instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
-    newZero         = newZeroMatrix
-    newConstant     = newConstantMatrix
     setConstant     = setConstantMatrix
     setZero         = setZeroMatrix
     modifyWith      = modifyWithMatrix
@@ -733,14 +729,18 @@ instance (BLAS1 e) => ReadNumeric IOMatrix (Int,Int) e IO where
 instance (BLAS1 e) => ReadNumeric (STMatrix s) (Int,Int) e (ST s) where
 
 instance (BLAS1 e) => WriteNumeric IOMatrix (Int,Int) e IO where
-    doConj  = doConjMatrix
-    scaleBy = scaleByMatrix
-    shiftBy = shiftByMatrix
+    newZero     = newZeroMatrix
+    newConstant = newConstantMatrix
+    doConj      = doConjMatrix
+    scaleBy     = scaleByMatrix
+    shiftBy     = shiftByMatrix
 
 instance (BLAS1 e) => WriteNumeric (STMatrix s) (Int,Int) e (ST s) where
-    doConj  = doConjMatrix
-    scaleBy = scaleByMatrix
-    shiftBy = shiftByMatrix
+    newZero     = newZeroMatrix
+    newConstant = newConstantMatrix
+    doConj      = doConjMatrix
+    scaleBy     = scaleByMatrix
+    shiftBy     = shiftByMatrix
 
 instance (BLAS1 e, ReadMatrix a x e IO) => CopyTensor a IOMatrix (Int,Int) e IO where
     newCopyTensor    = newCopyMatrix

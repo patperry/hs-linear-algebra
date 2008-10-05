@@ -15,8 +15,6 @@ module BLAS.Numeric.Write (
     getConj,
     getScaled,
     getShifted,
-    
-    module BLAS.Numeric.Read,
     ) where
 
 import BLAS.Elem
@@ -24,6 +22,13 @@ import BLAS.Tensor
 import BLAS.Numeric.Read
 
 class (ReadNumeric x i e m, WriteTensor x i e m) => WriteNumeric x i e m where
+    -- | Creates a new numeric with elements all initialized to zero.
+    newZero :: i -> m (x n e)
+    
+    -- | Creates a new numeric with elements all initialized to the $
+    -- given value.
+    newConstant :: i -> e -> m (x n e)
+    
     -- | Replace every element with its complex conjugate.
     doConj :: x n e -> m ()
     doConj = modifyWith conj
