@@ -9,6 +9,7 @@
 
 module Data.Vector.Dense.Class.Operations (
     -- * Vector operations
+    getConjVector,
     axpyVector,
     mulVector,
     divVector,
@@ -25,6 +26,13 @@ import BLAS.Internal( checkBinaryOp )
 import BLAS.Numeric
 import BLAS.Tensor( shape )
 import Data.Vector.Dense.Class.Internal
+
+getConjVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+    x n e -> m (y n e)
+getConjVector x = do
+    y <- newCopyVector x
+    doConjVector y
+    return y
 
 axpyVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
     e -> x n e -> y n e -> m ()
