@@ -34,12 +34,12 @@ bandColView a = checkedCol (shape a) (unsafeBandColView a)
 
 unsafeBandDiagView :: (BaseBanded a x e) => a mn e -> Int -> x k e
 unsafeBandDiagView a d
-    | isHerm a = conj $ unsafeBandDiagView a' (negate d)
+    | isHermBanded a = conj $ unsafeBandDiagView a' (negate d)
     | otherwise =
         let f   = fptrOfBanded a
             off = indexOfBanded a (diagStart d)
             len = diagLen (shape a) d
-            inc = lda a
+            inc = ldaOfBanded a
             c   = False
         in vectorViewArray f off len inc c
   where

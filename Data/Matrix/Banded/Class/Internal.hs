@@ -23,8 +23,8 @@ module Data.Matrix.Banded.Class.Internal (
     -- * Low-level Banded properties
     bandedViewMatrix,
     matrixFromBanded,
-    lda,
-    isHerm,
+    ldaOfBanded,
+    isHermBanded,
     hermBanded,
 
     -- * Bandwidth properties
@@ -131,13 +131,13 @@ upBW :: (BaseBanded a x e) => a mn e -> Int
 upBW a = let (_,_,_,(_,ku),_,_) = arrayFromBanded a in ku
 {-# INLINE upBW #-}
 
-lda :: (BaseBanded a x e) => a mn e -> Int
-lda a = let (_,_,_,_,l,_) = arrayFromBanded a in l
-{-# INLINE lda #-}
+ldaOfBanded :: (BaseBanded a x e) => a mn e -> Int
+ldaOfBanded a = let (_,_,_,_,l,_) = arrayFromBanded a in l
+{-# INLINE ldaOfBanded #-}
 
-isHerm :: (BaseBanded a x e) => a mn e -> Bool
-isHerm a = let (_,_,_,_,_,h) = arrayFromBanded a in h
-{-# INLINE isHerm #-}
+isHermBanded :: (BaseBanded a x e) => a mn e -> Bool
+isHermBanded a = let (_,_,_,_,_,h) = arrayFromBanded a in h
+{-# INLINE isHermBanded #-}
 
 matrixFromBanded :: (BaseBanded b x e, BaseMatrix a x e) => 
     b mn e -> ((Int,Int), (Int,Int), a mn' e, Bool)
@@ -169,13 +169,13 @@ bandwidth a =
 {-# INLINE bandwidth #-}
 
 numLower :: (BaseBanded a x e) =>  a mn e -> Int
-numLower a | isHerm a  = upBW a
-           | otherwise = lowBW a
+numLower a | isHermBanded a = upBW a
+           | otherwise      = lowBW a
 {-# INLINE numLower #-}
 
 numUpper :: (BaseBanded a x e) =>  a mn e -> Int
-numUpper a | isHerm a  = lowBW a
-           | otherwise = upBW a
+numUpper a | isHermBanded a = lowBW a
+           | otherwise      = upBW a
 {-# INLINE numUpper #-}
 
 
@@ -188,8 +188,8 @@ coerceBanded = unsafeCoerce
 -------------------------- BaseTensor functions -----------------------------
 
 shapeBanded :: (BaseBanded a x e) => a mn e -> (Int,Int)
-shapeBanded a | isHerm a  = (size2 a, size1 a)
-              | otherwise = (size1 a, size2 a)
+shapeBanded a | isHermBanded a = (size2 a, size1 a)
+              | otherwise      = (size1 a, size2 a)
 {-# INLINE shapeBanded #-}
 
 boundsBanded :: (BaseBanded a x e) => a mn e -> ((Int,Int), (Int,Int))
@@ -237,7 +237,7 @@ getAssocsBanded' a = do
 
 unsafeReadElemBanded :: (ReadBanded a x e m) => a mn e -> (Int,Int) -> m e
 unsafeReadElemBanded a (i,j)
-    | isHerm a = 
+    | isHermBanded a = 
         unsafeReadElemBanded (hermBanded $ coerceBanded a) (j,i) 
         >>= return . conj
     | hasStorageBanded a (i,j) =
@@ -295,7 +295,7 @@ setZeroBanded = setConstantBanded 0
 
 setConstantBanded :: (WriteBanded a x e m) => e -> a mn e -> m ()
 setConstantBanded e a
-    | isHerm a = setConstantBanded (conj e) a'
+    | isHermBanded a = setConstantBanded (conj e) a'
     | otherwise = do
         is <- getIndicesBanded a
         mapM_ (\i -> unsafeWriteElemBanded a i e) is
@@ -305,7 +305,7 @@ setConstantBanded e a
 unsafeWriteElemBanded :: (WriteBanded a x e m) => 
     a mn e -> (Int,Int) -> e -> m ()
 unsafeWriteElemBanded a (i,j) e
-    | isHerm a  = unsafeWriteElemBanded a' (j,i) $ conj e
+    | isHermBanded a  = unsafeWriteElemBanded a' (j,i) $ conj e
     | otherwise = unsafeIOToM $
                       withForeignPtr (fptrOfBanded a) $ \ptr ->
                           pokeElemOff ptr (indexOfBanded a (i,j)) e
@@ -392,13 +392,13 @@ gbmv alpha a x beta y
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
-            (m,n)  = case (isHerm a) of
+            (m,n)  = case (isHermBanded a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
-            (kl,ku) = case (isHerm a) of
+            (kl,ku) = case (isHermBanded a) of
                           False -> (numLower a, numUpper a)
                           True  -> (numUpper a, numLower a)
-            ldA    = lda a
+            ldA    = ldaOfBanded a
             incX   = stride x
             incY   = stride y
         in unsafeIOToM $
@@ -425,7 +425,7 @@ withBandedPtr a f =
 withBandedElemPtr :: (BaseBanded a x e, Storable e) => 
     a mn e -> (Int,Int) -> (Ptr e -> IO b) -> IO b
 withBandedElemPtr a (i,j) f
-    | isHerm a  = withBandedElemPtr (hermBanded $ coerceBanded a) (j,i) f
+    | isHermBanded a  = withBandedElemPtr (hermBanded $ coerceBanded a) (j,i) f
     | otherwise = withForeignPtr (fptrOfBanded a) $ \ptr ->
                       f $ ptr `advancePtr` (indexOfBanded a (i,j))
 
@@ -448,7 +448,7 @@ sizeBanded a =
 
 indicesBanded :: (BaseBanded a x e) => a mn e -> [(Int,Int)]
 indicesBanded a =
-    let is = if isHerm a 
+    let is = if isHermBanded a 
                  then [ (i,j) | i <- range (0,m-1), j <- range (0,n-1) ]
                  else [ (i,j) | j <- range (0,n-1), i <- range (0,m-1) ]
     in filter (hasStorageBanded a) is
@@ -456,7 +456,7 @@ indicesBanded a =
 
 blasTransOf :: (BaseBanded a x e) => a mn e -> CBLASTrans
 blasTransOf a = 
-    case (isHerm a) of
+    case (isHermBanded a) of
           False -> noTrans
           True  -> conjTrans
 
