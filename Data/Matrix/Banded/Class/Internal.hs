@@ -87,9 +87,8 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
 import Data.Vector.Dense.Class.Creating( newListVector )
 import Data.Vector.Dense.Class.Operations( getConjVector )
 
-import qualified Data.Matrix.Dense.Class.Internal as M
 import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
-    arrayFromMatrix, matrixViewArray, colViews )
+    isHermMatrix, arrayFromMatrix, matrixViewArray, colViews )
 
 
 class (BLAS.BaseMatrix a e, BaseVector x e) => 
@@ -150,7 +149,7 @@ matrixFromBanded b =
 bandedViewMatrix :: (BaseMatrix a x e, BaseBanded b x e) => 
     (Int,Int) -> (Int,Int) -> a mn e -> Bool -> Maybe (b mn' e)
 bandedViewMatrix (m,n) (kl,ku) a h = 
-    if M.isHerm a 
+    if isHermMatrix a 
         then Nothing
         else let (f,o,(m',n'),ld,_) = arrayFromMatrix a
              in case undefined of

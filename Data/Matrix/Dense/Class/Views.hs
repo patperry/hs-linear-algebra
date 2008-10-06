@@ -47,13 +47,13 @@ submatrixView a = checkedSubmatrix (shape a) (unsafeSubmatrixView a)
 unsafeSubmatrixView :: (BaseMatrix a x e) => 
     a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
 unsafeSubmatrixView a (i,j) (m,n)
-    | isHerm a  = 
+    | isHermMatrix a  = 
         coerceMatrix $ herm $ 
             unsafeSubmatrixView (herm $ coerceMatrix a) (j,i) (n,m)
     | otherwise =
         let f = fptrOfMatrix a
             o = indexOfMatrix a (i,j)
-            l = lda a
+            l = ldaOfMatrix a
         in matrixViewArray f o (m,n) l False
 
 

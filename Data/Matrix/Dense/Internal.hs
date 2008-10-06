@@ -46,8 +46,8 @@ module Data.Matrix.Dense.Internal (
     module BLAS.Numeric.Immutable,
 
     -- * Low-level properties
-    lda,
-    isHerm,
+    ldaOfMatrix,
+    isHermMatrix,
     ) where
 
 import Data.AEq
@@ -73,9 +73,9 @@ import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
 import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
     diagView, unsafeDiagView )
-import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHerm, lda, colViews,
-    BaseMatrix(..), IOMatrix, maybeFromRow, maybeFromCol, newCopyMatrix,
-    ReadMatrix )
+import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix, 
+    ldaOfMatrix, colViews, BaseMatrix(..), IOMatrix, maybeFromRow, 
+    maybeFromCol, newCopyMatrix, ReadMatrix )
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
 
@@ -217,10 +217,10 @@ instance (BLAS1 e) => ITensor Matrix (Int,Int) e where
     assocs        = inlineLiftMatrix getAssocs
 
     tmap f a 
-        | isHerm a  = coerceMatrix $ herm $ 
-                          listMatrix (n,m) $ map (conj . f) (elems a)
-        | otherwise = coerceMatrix $
-                          listMatrix (m,n) $ map f (elems a)
+        | isHermMatrix a = coerceMatrix $ herm $ 
+                               listMatrix (n,m) $ map (conj . f) (elems a)
+        | otherwise      = coerceMatrix $
+                               listMatrix (m,n) $ map f (elems a)
       where
         (m,n) = shape a
 
@@ -312,7 +312,7 @@ tzipWith f a b
     colElems = (concatMap elems) . colViews . coerceMatrix
 
 instance (BLAS1 e, Show e) => Show (Matrix mn e) where
-    show a | isHerm a = 
+    show a | isHermMatrix a = 
                 "herm (" ++ show (herm $ coerceMatrix a) ++ ")"
            | otherwise =
                 "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
@@ -322,9 +322,9 @@ compareHelp :: (BLAS1 e) =>
 compareHelp cmp a b
     | shape a /= shape b =
         False
-    | isHerm a == isHerm b =
-        let elems' = if isHerm a then elems . herm .coerceMatrix
-                                 else elems
+    | isHermMatrix a == isHermMatrix b =
+        let elems' = if isHermMatrix a then elems . herm .coerceMatrix
+                                       else elems
         in
             and $ zipWith cmp (elems' a) (elems' b)
     | otherwise =

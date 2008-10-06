@@ -97,11 +97,11 @@ hemv alpha h x beta y
         let order = colMajor
             (u,a) = toBase h
             n     = numCols a
-            u'    = case isHerm a of
+            u'    = case isHermMatrix a of
                         True  -> flipUpLo u
                         False -> u
             uploA = cblasUpLo u'
-            ldA   = lda a
+            ldA   = ldaOfMatrix a
             incX  = stride x
             incY  = stride y
         in unsafeIOToM $
@@ -114,19 +114,19 @@ hemm :: (ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS3 e) =
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
 hemm alpha h b beta c
     | numRows b == 0 || numCols b == 0 || numCols c == 0 = return ()
-    | (isHerm a) /= (isHerm c) || (isHerm a) /= (isHerm b) =
+    | (isHermMatrix a) /= (isHermMatrix c) || (isHermMatrix a) /= (isHermMatrix b) =
         zipWithM_ (\x y -> hemv alpha h x beta y) (colViews b) (colViews c)
     | otherwise =
         let order   = colMajor
             (m,n)   = shape c
             (side,u',m',n')
-                    = if isHerm a
+                    = if isHermMatrix a
                           then (rightSide, flipUpLo u, n, m)
                           else (leftSide,  u,          m, n)
             uploA   = cblasUpLo u'
-            ldA     = lda a
-            ldB     = lda b
-            ldC     = lda c
+            ldA     = ldaOfMatrix a
+            ldB     = ldaOfMatrix b
+            ldC     = ldaOfMatrix c
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
                withMatrixPtr b $ \pB ->

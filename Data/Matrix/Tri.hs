@@ -291,14 +291,14 @@ trmv alpha t x
         let (u,d,a) = toBase t
             order   = colMajor
             side    = rightSide
-            (h,u')  = if isHerm a then (NoTrans, flipUpLo u) else (ConjTrans, u)
+            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
             uploA   = cblasUpLo u'
             transA  = cblasTrans h
             diagA   = cblasDiag d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
-            ldA     = lda a
+            ldA     = ldaOfMatrix a
             ldB     = stride x
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
@@ -308,11 +308,11 @@ trmv alpha t x
     | otherwise =
         let (u,d,a)   = toBase t
             order     = colMajor
-            (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+            (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
             uploA     = cblasUpLo u'
             diagA     = cblasDiag d
             n         = dim x
-            ldA       = lda a
+            ldA       = ldaOfMatrix a
             incX      = stride x
         in do
             when (alpha /= 1) $ scaleBy alpha x
@@ -329,17 +329,17 @@ trmm _ _ b
 trmm alpha t b =
     let (u,d,a)   = toBase t
         order     = colMajor
-        (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
+        (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
-                  = if isHerm b
+                  = if isHermMatrix b
                         then (rightSide, flipTrans h, n, m, conj alpha)
                         else (leftSide , h          , m, n, alpha       )
         uploA     = cblasUpLo u'
         transA    = cblasTrans h'
         diagA     = cblasDiag d
-        ldA       = lda a
-        ldB       = lda b
+        ldA       = ldaOfMatrix a
+        ldB       = ldaOfMatrix b
     in unsafeIOToM $
            withMatrixPtr a $ \pA ->
            withMatrixPtr b $ \pB ->
@@ -439,14 +439,14 @@ trsv alpha t x
         let (u,d,a) = toBase t
             order   = colMajor
             side    = rightSide
-            (h,u')  = if isHerm a then (NoTrans, flipUpLo u) else (ConjTrans, u)
+            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
             uploA   = cblasUpLo u'
             transA  = cblasTrans h
             diagA   = cblasDiag d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
-            ldA     = lda a
+            ldA     = ldaOfMatrix a
             ldB     = stride x
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
@@ -456,11 +456,11 @@ trsv alpha t x
     | otherwise =
         let (u,d,a) = toBase t
             order     = colMajor
-            (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
+            (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
             uploA     = cblasUpLo u'
             diagA     = cblasDiag d
             n         = dim x
-            ldA       = lda a
+            ldA       = ldaOfMatrix a
             incX      = stride x
         in do
             when (alpha /= 1) $ scaleBy alpha x
@@ -476,17 +476,17 @@ trsm _ _ b
 trsm alpha t b =
     let (u,d,a)   = toBase t
         order     = colMajor
-        (h,u')    = if isHerm a then (ConjTrans, flipUpLo u) else (NoTrans, u)
+        (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
-                  = if isHerm b
+                  = if isHermMatrix b
                         then (rightSide, flipTrans h, n, m, conj alpha)
                         else (leftSide , h          , m, n, alpha     )
         uploA     = cblasUpLo u'
         transA    = cblasTrans h'
         diagA     = cblasDiag d
-        ldA       = lda a
-        ldB       = lda b
+        ldA       = ldaOfMatrix a
+        ldB       = ldaOfMatrix b
     in unsafeIOToM $     
            withMatrixPtr a $ \pA ->
            withMatrixPtr b $ \pB -> do

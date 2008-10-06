@@ -22,8 +22,8 @@ module Data.Matrix.Dense.Class.Internal (
     WriteMatrix,
     
     -- * Basic matrix properties
-    lda,
-    isHerm,
+    ldaOfMatrix,
+    isHermMatrix,
 
     -- * Coercing the matrix shape
     coerceMatrix,
@@ -170,13 +170,13 @@ size2 :: (BaseMatrix a x e) => a mn e -> Int
 size2 a = let (_,_,(_,n),_,_) = arrayFromMatrix a in n
 {-# INLINE size2 #-}
 
-lda :: (BaseMatrix a x e) => a mn e -> Int
-lda a = let (_,_,_,l,_) = arrayFromMatrix a in l
-{-# INLINE lda #-}
+ldaOfMatrix :: (BaseMatrix a x e) => a mn e -> Int
+ldaOfMatrix a = let (_,_,_,l,_) = arrayFromMatrix a in l
+{-# INLINE ldaOfMatrix #-}
 
-isHerm :: (BaseMatrix a x e) => a mn e -> Bool
-isHerm a = let (_,_,_,_,h) = arrayFromMatrix a in h
-{-# INLINE isHerm #-}
+isHermMatrix :: (BaseMatrix a x e) => a mn e -> Bool
+isHermMatrix a = let (_,_,_,_,h) = arrayFromMatrix a in h
+{-# INLINE isHermMatrix #-}
 
 -- | Cast the shape type of the matrix.
 coerceMatrix :: (BaseMatrix a x e) => a mn e -> a mn' e
@@ -238,7 +238,7 @@ liftMatrix f a =
     case maybeToVector a of
         Just x -> f x
         _ -> 
-            let xs  = case isHerm a of
+            let xs  = case isHermMatrix a of
                           True  -> rowViews (coerceMatrix a)
                           False -> colViews (coerceMatrix a)
             in mapM_ f xs
@@ -249,17 +249,17 @@ liftMatrix2 :: (Monad m, BaseMatrix a x e, BaseMatrix b y e) =>
     (x k e -> y k e -> m ()) ->
         a mn e -> b mn e -> m ()
 liftMatrix2 f a b =
-    if isHerm a == isHerm b
+    if isHermMatrix a == isHermMatrix b
         then case (maybeToVector a, maybeToVector b) of
                  ((Just x), (Just y)) -> f x y
                  _                    -> elementwise
         else elementwise
   where
     elementwise =             
-        let vecsA = if isHerm a then rowViews . coerceMatrix
-                                else colViews . coerceMatrix
-            vecsB = if isHerm a then rowViews . coerceMatrix
-                                else colViews . coerceMatrix
+        let vecsA = if isHermMatrix a then rowViews . coerceMatrix
+                                      else colViews . coerceMatrix
+            vecsB = if isHermMatrix a then rowViews . coerceMatrix
+                                      else colViews . coerceMatrix
             xs = vecsA a
             ys = vecsB b
         in zipWithM_ f xs ys
@@ -268,8 +268,8 @@ liftMatrix2 f a b =
 -------------------------- BaseTensor functions -----------------------------
 
 shapeMatrix :: (BaseMatrix a x e) => a mn e -> (Int,Int)
-shapeMatrix a | isHerm a  = (size2 a, size1 a)
-              | otherwise = (size1 a, size2 a)
+shapeMatrix a | isHermMatrix a  = (size2 a, size1 a)
+              | otherwise       = (size1 a, size2 a)
 {-# INLINE shapeMatrix #-}
 
 boundsMatrix :: (BaseMatrix a x e) => a mn e -> ((Int,Int), (Int,Int))
@@ -296,8 +296,8 @@ getIndicesMatrix = return . indicesMatrix
 
 getElemsMatrix :: (ReadMatrix a x e m) => a mn e -> m [e]
 getElemsMatrix a
-    | isHerm a = getElemsMatrix (herm $ coerceMatrix a) >>= 
-                     return . map conj
+    | isHermMatrix a = getElemsMatrix (herm $ coerceMatrix a) >>= 
+                           return . map conj
     | otherwise = 
         liftM concat $
             unsafeInterleaveM $ 
@@ -315,8 +315,8 @@ getIndicesMatrix' = getIndicesMatrix
 
 getElemsMatrix' :: (ReadMatrix a x e m) => a mn e -> m [e]
 getElemsMatrix' a
-    | isHerm a = getElemsMatrix' (herm $ coerceMatrix a) >>= 
-                     return . map conj
+    | isHermMatrix a = getElemsMatrix' (herm $ coerceMatrix a) >>= 
+                           return . map conj
     | otherwise = 
         liftM concat $
             mapM getElems' (colViews $ coerceMatrix a)
@@ -329,8 +329,8 @@ getAssocsMatrix' a = do
 
 unsafeReadElemMatrix :: (ReadMatrix a x e m) => a mn e -> (Int,Int) -> m e
 unsafeReadElemMatrix a (i,j)
-    | isHerm a  = unsafeReadElem (herm $ coerceMatrix a) (j,i) >>= 
-                      return . conj
+    | isHermMatrix a = unsafeReadElem (herm $ coerceMatrix a) (j,i) >>= 
+                           return . conj
     | otherwise = unsafeIOToM $
                       withForeignPtr (fptrOfMatrix a) $ \ptr ->
                           peekElemOff ptr (indexOfMatrix a (i,j))
@@ -372,10 +372,10 @@ setConstantMatrix e = liftMatrix (setConstant e)
 unsafeWriteElemMatrix :: (WriteMatrix a x e m) => 
     a mn e -> (Int,Int) -> e -> m ()
 unsafeWriteElemMatrix a (i,j) e
-    | isHerm a  = unsafeWriteElem a' (j,i) $ conj e
-    | otherwise = unsafeIOToM $
-                      withForeignPtr (fptrOfMatrix a) $ \ptr ->
-                          pokeElemOff ptr (indexOfMatrix a (i,j)) e
+    | isHermMatrix a  = unsafeWriteElem a' (j,i) $ conj e
+    | otherwise       = unsafeIOToM $
+                            withForeignPtr (fptrOfMatrix a) $ \ptr ->
+                                pokeElemOff ptr (indexOfMatrix a (i,j)) e
   where
     a' = (herm . coerceMatrix) a
 
@@ -392,7 +392,7 @@ canModifyElemMatrix _ _ = return True
 newCopyMatrix :: (BLAS1 e, ReadMatrix a x e m, WriteMatrix b y e m) => 
     a mn e -> m (b mn e)
 newCopyMatrix a 
-    | isHerm a =
+    | isHermMatrix a =
         newCopyMatrix ((herm . coerceMatrix) a) >>= 
             return . coerceMatrix . herm
     | otherwise = do
@@ -416,20 +416,20 @@ unsafeSwapMatrix = liftMatrix2 unsafeSwapVector
 unsafeRowView :: (BaseMatrix a x e) => 
     a (k,l) e -> Int -> x l e
 unsafeRowView a i
-    | isHerm a =
+    | isHermMatrix a =
         conj $ unsafeColView (herm a) i
     | otherwise =
         let f = fptrOfMatrix a
             o = indexOfMatrix a (i,0)
             n = numCols a
-            s = lda a
+            s = ldaOfMatrix a
             c = False
         in vectorViewArray f o n s c
 
 unsafeColView :: (BaseMatrix a x e) => 
     a (k,l) e -> Int -> x k e
 unsafeColView a j 
-    | isHerm a =
+    | isHermMatrix a =
         conj $ unsafeRowView (herm a) j
     | otherwise =
         let f = fptrOfMatrix a
@@ -441,13 +441,13 @@ unsafeColView a j
 
 unsafeDiagView :: (BaseMatrix a x e) => a mn e -> Int -> x k e
 unsafeDiagView a i 
-    | isHerm a = 
+    | isHermMatrix a = 
         conj $ unsafeDiagView (herm $ coerceMatrix a) (negate i)
     | otherwise =            
         let f = fptrOfMatrix a
             o = indexOfMatrix a (diagStart i)
             n = diagLen (shape a) i
-            s = lda a + 1
+            s = ldaOfMatrix a + 1
             c = False
         in vectorViewArray f o n s c
 
@@ -541,7 +541,7 @@ gemv alpha a x beta y
             n      = dim y
             k      = dim x
             ldA    = stride x
-            ldB    = lda a
+            ldB    = ldaOfMatrix a
             ldC    = stride y
             alpha' = conj alpha
             beta'  = conj beta
@@ -559,10 +559,10 @@ gemv alpha a x beta y
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
-            (m,n)  = case (isHerm a) of
+            (m,n)  = case (isHermMatrix a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
-            ldA    = lda a
+            ldA    = ldaOfMatrix a
             incX   = stride x
             incY   = stride y
         in unsafeIOToM $
@@ -577,16 +577,16 @@ gemm :: (BLAS3 e, ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m) =
 gemm alpha a b beta c
     | numRows a == 0 || numCols a == 0 || numCols b == 0 = 
         scaleBy beta c
-    | isHerm c = gemm (conj alpha) (herm b) (herm a) (conj beta) (herm c)
+    | isHermMatrix c = gemm (conj alpha) (herm b) (herm a) (conj beta) (herm c)
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
             transB = blasTransOf b
             (m,n)  = shape c
             k      = numCols a
-            ldA    = lda a
-            ldB    = lda b
-            ldC    = lda c
+            ldA    = ldaOfMatrix a
+            ldB    = ldaOfMatrix b
+            ldC    = ldaOfMatrix c
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
                withMatrixPtr b $ \pB ->
@@ -598,7 +598,7 @@ gemm alpha a b beta c
 
 blasTransOf :: (BaseMatrix a x e) => a mn e -> CBLASTrans
 blasTransOf a = 
-    case (isHerm a) of
+    case (isHermMatrix a) of
           False -> noTrans
           True  -> conjTrans
 
@@ -614,18 +614,18 @@ withMatrixPtr a f =
 
 indexOfMatrix :: (BaseMatrix a x e) => a mn e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 
-    let (i',j') = case isHerm a of
+    let (i',j') = case isHermMatrix a of
                         True  -> (j,i)
                         False -> (i,j)
         o = offsetOfMatrix a
-        l = lda a
+        l = ldaOfMatrix a
     in o + i' + j'*l
 {-# INLINE indexOfMatrix #-}
 
 indicesMatrix :: (BaseMatrix a x e) => a mn e -> [(Int,Int)]
 indicesMatrix a 
-    | isHerm a  = [ (i,j) | i <- range (0,m-1), j <- range (0,n-1) ]
-    | otherwise = [ (i,j) | j <- range (0,n-1), i <- range (0,m-1) ]
+    | isHermMatrix a = [ (i,j) | i <- range (0,m-1), j <- range (0,n-1) ]
+    | otherwise      = [ (i,j) | j <- range (0,n-1), i <- range (0,m-1) ]
   where (m,n) = shape a
 
 unsafeDoMatrixOp2 :: (BLAS1 e, ReadMatrix a x e m, ReadMatrix b y e m, WriteMatrix c z e m) =>
