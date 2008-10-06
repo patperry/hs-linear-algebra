@@ -102,11 +102,6 @@ import qualified Data.Vector.Dense.Internal as V
 
         
 
-
-type Banded = BMatrix Imm
-type IOBanded = BMatrix Mut
-
-
 toLists :: (BLAS1 e) => Banded (m,n) e -> ((Int,Int), (Int,Int),[[e]])
 toLists a = ( (m,n)
             , (kl,ku)

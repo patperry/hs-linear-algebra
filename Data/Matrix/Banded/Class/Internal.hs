@@ -468,14 +468,14 @@ flipShape (m,n) = (n,m)
 
 -- | The Banded matrix data type.
 data IOBanded mn e =
-    BM {-# UNPACK #-} !(ForeignPtr e) -- ^ base storage
-       {-# UNPACK #-} !Int            -- ^ offset into storage
-       {-# UNPACK #-} !Int            -- ^ numer of rows
-       {-# UNPACK #-} !Int            -- ^ number of columns
-       {-# UNPACK #-} !Int            -- ^ lower bandwidth
-       {-# UNPACK #-} !Int            -- ^ upper bandwidth
-       {-# UNPACK #-} !Int            -- ^ lda of storage
-       {-# UNPACK #-} !Bool           -- ^ isHerm flag
+    BM {-# UNPACK #-} !(ForeignPtr e) -- base storage
+       {-# UNPACK #-} !Int            -- offset into storage
+       {-# UNPACK #-} !Int            -- numer of rows
+       {-# UNPACK #-} !Int            -- number of columns
+       {-# UNPACK #-} !Int            -- lower bandwidth
+       {-# UNPACK #-} !Int            -- upper bandwidth
+       {-# UNPACK #-} !Int            -- lda of storage
+       {-# UNPACK #-} !Bool           -- isHerm flag
 
 newtype STBanded s mn e = ST (IOBanded mn e)
 
