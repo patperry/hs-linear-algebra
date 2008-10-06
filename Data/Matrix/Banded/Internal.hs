@@ -101,16 +101,7 @@ import Data.Vector.Dense.Internal ( DVector, Vector, conj, dim, newListVector )
 import qualified Data.Vector.Dense.Internal as V
 
         
-data BMatrix t mn e 
-    = BM { fptrOf   :: {-# UNPACK #-} !(ForeignPtr e)
-         , offsetOf :: {-# UNPACK #-} !Int
-         , size1    :: {-# UNPACK #-} !Int
-         , size2    :: {-# UNPACK #-} !Int
-         , lowBW    :: {-# UNPACK #-} !Int
-         , upBW     :: {-# UNPACK #-} !Int
-         , ldaOf    :: {-# UNPACK #-} !Int
-         , isHerm   :: {-# UNPACK #-} !Bool
-         }
+
 
 type Banded = BMatrix Imm
 type IOBanded = BMatrix Mut

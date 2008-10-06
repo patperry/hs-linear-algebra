@@ -9,6 +9,12 @@
 --
 
 module Data.Matrix.Banded.Class.Internal (
+    -- * Banded matrix types
+    IOBanded,
+    STBanded,
+    unsafeIOBandedToSTBanded,
+    unsafeSTBandedToIOBanded,
+
     -- * Banded type classes
     BaseBanded(..),
     ReadBanded,
@@ -65,29 +71,25 @@ import Unsafe.Coerce
 import BLAS.Elem
 import BLAS.C.Types
 import qualified BLAS.C.Level2 as BLAS
-import qualified BLAS.C.Level3 as BLAS
-import BLAS.Internal( diagStart, diagLen )
+import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 import BLAS.UnsafeInterleaveM
 
+import BLAS.Matrix.Base hiding ( BaseMatrix )
+import qualified BLAS.Matrix.Base as BLAS
+import BLAS.Matrix.Mutable
 
-import BLAS.Numeric
 import BLAS.Tensor
 
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,
-    BaseVector(..), ReadVector, WriteVector, 
-    newCopyVector, unsafeCopyVector, unsafeSwapVector, 
-    doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
+    BaseVector(..), ReadVector, WriteVector, doConjVector,
+    withVectorPtr, stride, isConj )
 import Data.Vector.Dense.Class.Creating( newListVector )
 import Data.Vector.Dense.Class.Operations( getConjVector )
 
-import qualified Data.Matrix.Dense.Class as M
+import qualified Data.Matrix.Dense.Class.Internal as M
 import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
-    arrayFromMatrix, matrixViewArray, coerceMatrix, colViews )
-
-import BLAS.Matrix.Base hiding ( BaseMatrix )
-import qualified BLAS.Matrix.Base as BLAS
+    arrayFromMatrix, matrixViewArray, colViews )
 
 
 class (BLAS.BaseMatrix a e, BaseVector x e) => 
@@ -385,9 +387,9 @@ gbmv alpha a x beta y
         x' <- getConjVector (conj x)
         gbmv alpha a x' beta y
     | isConj y = do
-        doConj y
+        doConjVector y
         gbmv alpha a x beta (conj y)
-        doConj y
+        doConjVector y
     | otherwise =
         let order  = colMajor
             transA = blasTransOf a
@@ -461,3 +463,99 @@ blasTransOf a =
 
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
+
+
+------------------------------------ Instances ------------------------------
+
+-- | The Banded matrix data type.
+data IOBanded mn e =
+    BM {-# UNPACK #-} !(ForeignPtr e) -- ^ base storage
+       {-# UNPACK #-} !Int            -- ^ offset into storage
+       {-# UNPACK #-} !Int            -- ^ numer of rows
+       {-# UNPACK #-} !Int            -- ^ number of columns
+       {-# UNPACK #-} !Int            -- ^ lower bandwidth
+       {-# UNPACK #-} !Int            -- ^ upper bandwidth
+       {-# UNPACK #-} !Int            -- ^ lda of storage
+       {-# UNPACK #-} !Bool           -- ^ isHerm flag
+
+newtype STBanded s mn e = ST (IOBanded mn e)
+
+unsafeIOBandedToSTBanded :: IOBanded mn e -> STBanded s mn e
+unsafeIOBandedToSTBanded = ST
+
+unsafeSTBandedToIOBanded :: STBanded s mn e -> IOBanded mn e
+unsafeSTBandedToIOBanded (ST x) = x
+
+instance (Elem e) => BaseBanded IOBanded IOVector e where
+    bandedViewArray f o (m,n) (kl,ku) ld h = BM f o m n kl ku ld h
+    arrayFromBanded (BM f o m n kl ku ld h) = (f,o,(m,n),(kl,ku),ld,h)
+
+instance (Elem e) => BaseBanded (STBanded s) (STVector s) e where
+    bandedViewArray f o (m,n) (kl,ku) ld h       = ST (BM f o m n kl ku ld h)
+    arrayFromBanded (ST (BM f o m n kl ku ld h)) = (f,o,(m,n),(kl,ku),ld,h)
+
+instance (Elem e) => BaseTensor IOBanded (Int,Int) e where
+    shape  = shapeBanded
+    bounds = boundsBanded
+    
+instance (Elem e) => BaseTensor (STBanded s) (Int,Int) e where
+    shape  = shapeBanded
+    bounds = boundsBanded
+
+instance (Elem e) => BLAS.BaseMatrix IOBanded e where
+    herm = hermBanded
+    
+instance (Elem e) => BLAS.BaseMatrix (STBanded s) e where
+    herm = hermBanded
+
+instance (BLAS1 e) => ReadBanded IOBanded     IOVector     e IO
+instance (BLAS1 e) => ReadBanded (STBanded s) (STVector s) e (ST s)
+
+instance (BLAS1 e) => ReadTensor IOBanded (Int,Int) e IO where
+    getSize        = getSizeBanded
+    getAssocs      = getAssocsBanded
+    getIndices     = getIndicesBanded
+    getElems       = getElemsBanded
+    getAssocs'     = getAssocsBanded'
+    getIndices'    = getIndicesBanded'
+    getElems'      = getElemsBanded'
+    unsafeReadElem = unsafeReadElemBanded
+    
+instance (BLAS1 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
+    getSize        = getSizeBanded
+    getAssocs      = getAssocsBanded
+    getIndices     = getIndicesBanded
+    getElems       = getElemsBanded
+    getAssocs'     = getAssocsBanded'
+    getIndices'    = getIndicesBanded'
+    getElems'      = getElemsBanded'
+    unsafeReadElem = unsafeReadElemBanded
+
+instance (BLAS1 e) => WriteBanded IOBanded IOVector e IO where
+instance (BLAS1 e) => WriteBanded (STBanded s) (STVector s) e (ST s) where
+
+instance (BLAS1 e) => WriteTensor IOBanded (Int,Int) e IO where
+    setConstant     = setConstantBanded
+    setZero         = setZeroBanded
+    modifyWith      = modifyWithBanded
+    unsafeWriteElem = unsafeWriteElemBanded
+    canModifyElem   = canModifyElemBanded
+
+instance (BLAS1 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
+    setConstant     = setConstantBanded
+    setZero         = setZeroBanded
+    modifyWith      = modifyWithBanded
+    unsafeWriteElem = unsafeWriteElemBanded
+    canModifyElem   = canModifyElemBanded
+
+instance (BLAS2 e) => MMatrix IOBanded e IO where
+    unsafeDoSApplyAdd    = gbmv
+    unsafeDoSApplyAddMat = gbmm
+    unsafeGetRow         = unsafeGetRowBanded
+    unsafeGetCol         = unsafeGetColBanded
+
+instance (BLAS2 e) => MMatrix (STBanded s) e (ST s) where
+    unsafeDoSApplyAdd    = gbmv
+    unsafeDoSApplyAddMat = gbmm
+    unsafeGetRow         = unsafeGetRowBanded
+    unsafeGetCol         = unsafeGetColBanded
