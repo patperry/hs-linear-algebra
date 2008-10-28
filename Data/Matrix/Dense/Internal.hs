@@ -202,9 +202,6 @@ instance (Elem e) => BaseTensor Matrix (Int,Int) e where
     bounds = liftMatrix bounds
 
 instance (BLAS1 e) => ITensor Matrix (Int,Int) e where
-    constant mn e = coerceMatrix $ constantMatrix mn e
-    zero mn       = coerceMatrix $ zeroMatrix mn
-
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -271,15 +268,15 @@ instance (BLAS1 e) => Num (Matrix mn e) where
     negate      = ((-1) *>)
     abs         = tmap abs
     signum      = tmap signum
-    fromInteger = (constant (1,1)) . fromInteger
+    fromInteger = coerceMatrix . (constantMatrix (1,1)) . fromInteger
     
 instance (BLAS1 e) => Fractional (Matrix mn e) where
     (/) x y      = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getDiv x y
     recip        = tmap recip
-    fromRational = (constant (1,1)) . fromRational 
+    fromRational = coerceMatrix . (constantMatrix (1,1)) . fromRational 
 
 instance (BLAS1 e, Floating e) => Floating (Matrix (m,n) e) where
-    pi    = constant (1,1) pi
+    pi    = constantMatrix (1,1) pi
     exp   = tmap exp
     sqrt  = tmap sqrt
     log   = tmap log

@@ -170,9 +170,6 @@ instance (Elem e) => BaseTensor Vector Int e where
     bounds = liftVector bounds
 
 instance (BLAS1 e) => ITensor Vector Int e where
-    constant      = constantVector
-    zero          = zeroVector
-
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -229,15 +226,15 @@ instance (BLAS1 e) => Num (Vector n e) where
     negate      = ((-1) *>)
     abs         = tmap abs
     signum      = tmap signum
-    fromInteger = (constant 1) . fromInteger
+    fromInteger = (constantVector 1) . fromInteger
     
 instance (BLAS1 e) => Fractional (Vector n e) where
     (/) x y      = unsafeFreezeIOVector $ unsafeLiftVector2 getDiv x y
     recip        = tmap recip
-    fromRational = (constant 1) . fromRational 
+    fromRational = (constantVector 1) . fromRational 
     
 instance (BLAS1 e, Floating e) => Floating (Vector n e) where
-    pi    = constant 1 pi
+    pi    = constantVector 1 pi
     exp   = tmap exp
     sqrt  = tmap sqrt
     log   = tmap log

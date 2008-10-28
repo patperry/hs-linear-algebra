@@ -53,12 +53,6 @@ class (Elem e, BaseTensor x i e) => ITensor x i e where
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
     
-    -- | Get a zero tensor of the given shape.
-    zero :: i -> x n e
-    
-    -- | Get a new constant tensor of the given shape.
-    constant :: i -> e -> x n e
-
 -- | Get the value at the given index.  Range-checks the argument.
 (!) :: (ITensor x i e, Show i) => x n e -> i -> e
 (!) x i =
