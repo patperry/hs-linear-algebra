@@ -12,11 +12,16 @@ module Data.Matrix.Banded.Class (
     BaseBanded(..),
     ReadBanded,
     WriteBanded,
-    
-    -- * Matrix shape
+        
+    -- * Banded matrix shape
     module BLAS.Tensor.Base,
     module BLAS.Matrix.Base,
     coerceBanded,
+    
+    -- * Bandwidth
+    numLower,
+    numUpper,
+    bandwidth,
 
     module Data.Matrix.Banded.Class.Creating,
     module Data.Matrix.Banded.Class.Elements,
@@ -28,11 +33,13 @@ module Data.Matrix.Banded.Class (
     ldaOfBanded,
     isHermBanded,
     withBandedPtr,
+    withBandedElemPtr,
     
     ) where
 
-import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ldaOfBanded,
-    isHermBanded, ReadBanded, WriteBanded, coerceBanded, withBandedPtr )
+import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded, 
+    WriteBanded, numLower, numUpper, bandwidth, ldaOfBanded, isHermBanded,
+    coerceBanded, withBandedPtr, withBandedElemPtr )
 import BLAS.Tensor.Base
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import Data.Matrix.Banded.Class.Creating

@@ -138,7 +138,6 @@ library
                         Data.Matrix.Perm
 
                         Data.Matrix.Herm
-                        --     Data.Matrix.Herm.Banded
 
                         Data.Matrix.Tri
                         --     Data.Matrix.Tri.Banded

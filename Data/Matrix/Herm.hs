@@ -35,6 +35,10 @@ import BLAS.UnsafeIOToM
 import BLAS.Matrix
 import BLAS.Types ( UpLo(..), flipUpLo )
 
+import Data.Matrix.Banded( Banded )
+import Data.Matrix.Banded.Class 
+import Data.Matrix.Banded.IO( IOBanded )
+import Data.Matrix.Banded.ST( STBanded )
 import Data.Matrix.Dense( Matrix )
 import Data.Matrix.Dense.Class hiding ( BaseMatrix )
 import Data.Matrix.Dense.IO( IOMatrix )
@@ -160,3 +164,74 @@ instance (BLAS3 e) => MMatrix (Herm IOMatrix) e IO where
 instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Herm Matrix) e m where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
+
+
+------------------------- Banded Matrix instances ----------------------------
+
+hbmv :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
+    e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
+hbmv alpha h x beta y
+    | numRows h == 0 =
+        return ()
+    | isConj y = do
+        doConj y
+        hbmv alpha h x beta (conj y)
+        doConj y
+    | isConj x = do
+        x' <- newCopyVector x
+        doConj x'
+        hbmv alpha h (conj x') beta y
+    | otherwise =
+        let order = colMajor
+            (u,a) = toBase h
+            n     = numCols a
+            k     = case u of 
+                        Upper -> numUpper a
+                        Lower -> numLower a      
+            u'    = case (isHermBanded a) of
+                        True  -> flipUpLo u
+                        False -> u
+            uploA = cblasUpLo u'
+            ldA   = ldaOfBanded a
+            incX  = stride x
+            incY  = stride y
+            withPtrA 
+                  = case u' of Upper -> withBandedPtr a
+                               Lower -> withBandedElemPtr a (0,0)
+        in unsafeIOToM $
+               withPtrA $ \pA ->
+               withVectorPtr x $ \pX ->
+               withVectorPtr y $ \pY -> do
+                   BLAS.hbmv order uploA n k alpha pA ldA pX incX beta pY incY
+
+hbmm :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS2 e) => 
+    e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
+hbmm alpha h b beta c =
+    zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
+
+hbmv' :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
+    e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
+hbmv' alpha a x beta y = 
+    hbmv alpha (coerceHerm a) x beta (coerceVector y)
+
+hbmm' :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS3 e) => 
+    e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+hbmm' alpha a b beta c = 
+    hbmm alpha (coerceHerm a) b beta (coerceMatrix c)
+
+instance (BLAS3 e) => IMatrix (Herm Banded) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+
+instance (BLAS3 e) => MMatrix (Herm (STBanded s)) e (ST s) where
+    unsafeDoSApplyAdd    = hbmv'
+    unsafeDoSApplyAddMat = hbmm'
+
+instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
+    unsafeDoSApplyAdd    = hbmv'
+    unsafeDoSApplyAddMat = hbmm'
+
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Herm Banded) e m where
+    unsafeDoSApplyAdd    = hbmv'
+    unsafeDoSApplyAddMat = hbmm'
+
