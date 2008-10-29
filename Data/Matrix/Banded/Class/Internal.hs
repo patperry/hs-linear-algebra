@@ -46,18 +46,22 @@ module Data.Matrix.Banded.Class.Internal (
     unsafeWriteElemBanded,
 
     -- * Vector views
-    unsafeBandRowView,
-    unsafeBandColView,
+    unsafeRowViewBanded,
+    unsafeColViewBanded,
     unsafeGetRowBanded,
     unsafeGetColBanded,
     
     -- * Utility functions
+    shapeBanded,
+    boundsBanded,
     withBandedPtr,
     withBandedElemPtr,
     fptrOfBanded,
     offsetOfBanded,
     indexOfBanded,
     indicesBanded,
+    gbmv,
+    gbmm,
     
     ) where
 
@@ -324,10 +328,10 @@ canModifyElemBanded a ij = return $ hasStorageBanded a ij
 
 ------------------------------ Vector views ---------------------------------
 
-unsafeBandRowView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
-unsafeBandRowView a i =
+unsafeRowViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeRowViewBanded a i =
     if h then
-        case unsafeBandColView a' i of (nb, v, na) -> (nb, conj v, na)        
+        case unsafeColViewBanded a' i of (nb, v, na) -> (nb, conj v, na)        
     else
         let nb   = max (i - kl)         0
             na   = max (n - 1 - i - ku) 0
@@ -343,10 +347,10 @@ unsafeBandRowView a i =
     (f,off,(_,n),(kl,ku),ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
 
-unsafeBandColView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
-unsafeBandColView a j =
+unsafeColViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeColViewBanded a j =
     if h then
-        case unsafeBandRowView a' j of (nb, v, na) -> (nb, conj v, na)
+        case unsafeRowViewBanded a' j of (nb, v, na) -> (nb, conj v, na)
     else
         let nb    = max (j - ku)         0
             na    = max (m - 1 - j - kl) 0
@@ -365,7 +369,7 @@ unsafeBandColView a j =
 unsafeGetRowBanded :: (ReadBanded a x e m, WriteVector y e m) => 
     a (k,l) e -> Int -> m (y l e)
 unsafeGetRowBanded a i = 
-    let (nb,x,na) = unsafeBandRowView a i
+    let (nb,x,na) = unsafeRowViewBanded a i
         n = numCols a
     in do
         es <- getElems x

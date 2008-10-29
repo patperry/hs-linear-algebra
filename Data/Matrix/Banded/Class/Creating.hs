@@ -52,7 +52,7 @@ newListsBanded (m,n) (kl,ku) xs = do
     return a
   where
     writeDiagElems a i es =
-        let d   = bandDiagView a i
+        let d   = diagViewBanded a i
             nb  = max 0 (negate i)
             es' = drop nb es
         in zipWithM_ (unsafeWriteElem d) [0..(dim d - 1)] es'

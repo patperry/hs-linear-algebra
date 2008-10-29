@@ -9,61 +9,41 @@
 --
 
 module Data.Matrix.Banded (
-    -- * Banded matrix type
-    Banded,
+    module Data.Matrix.Banded.Internal,
     
-    module BLAS.Matrix.Base,
-    module BLAS.Tensor.Base,
-    module BLAS.Tensor.Dense.Immutable,
-    module BLAS.Tensor.Immutable,
-    module BLAS.Tensor.Scalable,
-    module Data.Matrix.Banded.Operations,
-
-    -- * Creating banded matrices
-    banded, 
-    listsBanded,
-    
-    -- * Properties
-    numLower,
-    numUpper,
-    bandwidth,
-    
-    -- * Rows and columns
-    row,
-    col,
-    rows,
-    cols,
-
-    -- * Diagonals
-    diag,
-    toLists,
-
-    -- * Casting matrices
-    coerceBanded,
-    
-    -- * Converting between vectors and matrices
-    
-    -- * Unsafe operations
-    unsafeBanded,
-    unsafeRow,
-    unsafeCol,
-    unsafeDiag,
-    
+    -- * Converting between mutable and immutable banded matrices
+    UnsafeFreezeBanded(..),
+    UnsafeThawBanded(..),
+    freezeBanded,
+    thawBanded,
     ) where
 
-import BLAS.Access
-import BLAS.Elem ( BLAS1 )
-import BLAS.Matrix.Base hiding ( Matrix )
-import BLAS.Tensor.Base
-import BLAS.Tensor.Dense.Immutable
-import BLAS.Tensor.Immutable
-import BLAS.Tensor.Scalable
+import BLAS.Elem
+import Data.Matrix.Banded.Internal hiding ( B )
+import qualified Data.Matrix.Banded.Internal as I
+import Data.Matrix.Banded.ST
+import Data.Matrix.Banded.IO
 
-import Data.Matrix.Banded.Internal
-import qualified Data.Matrix.Banded.Internal as B
-import Data.Matrix.Banded.Operations hiding ( RMatrix(..), getScaled, 
-    getInvScaled, doConj, scaleBy, invScaleBy )
-import Data.Vector.Dense hiding ( scale, invScale )
+class UnsafeFreezeBanded a where
+    unsafeFreezeBanded :: a mn e -> Banded mn e
+instance UnsafeFreezeBanded IOBanded where
+    unsafeFreezeBanded = I.B
+instance UnsafeFreezeBanded (STBanded s) where
+    unsafeFreezeBanded = unsafeFreezeBanded . unsafeSTBandedToIOBanded    
+    
+class UnsafeThawBanded a where
+    unsafeThawBanded :: Banded mn e -> a mn e
+instance UnsafeThawBanded IOBanded where
+    unsafeThawBanded (I.B a) = a
+instance UnsafeThawBanded (STBanded s) where
+    unsafeThawBanded = unsafeIOBandedToSTBanded . unsafeThawBanded
+    
+freezeBanded :: (ReadBanded a x e m, WriteBanded b y e m, UnsafeFreezeBanded b, BLAS1 e) =>
+    a mn e -> m (Banded mn e)
+freezeBanded x = do
+    x' <- newCopyBanded x
+    return (unsafeFreezeBanded x')
 
-instance (BLAS1 e) => Scalable (BMatrix Imm (m,n)) e where
-    (*>) = scale
+thawBanded :: (WriteBanded a y e m, BLAS1 e) =>
+    Banded mn e -> m (a mn e)
+thawBanded = newCopyBanded

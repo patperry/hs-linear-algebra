@@ -50,13 +50,3 @@ freezeMatrix x = do
 thawMatrix :: (WriteMatrix a y e m, BLAS1 e) =>
     Matrix mn e -> m (a mn e)
 thawMatrix = newCopyMatrix
-
-
-{-
--- | Same as 'diag' but index is not range-checked.
-unsafeDiag :: a mn e -> Int -> Vector k e
-    
--- | Get the given row in a matrix.
-diag :: (IDiag a e) => a mn e -> Int -> Vector k e
-diag a = checkedDiag (shape a) (unsafeDiag a)
--}

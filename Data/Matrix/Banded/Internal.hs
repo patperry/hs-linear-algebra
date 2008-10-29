@@ -10,99 +10,169 @@
 --
 
 module Data.Matrix.Banded.Internal (
-    -- * Banded matrix data types
-    BMatrix(..),
-    Banded,
-    IOBanded,
+    -- * Banded matrix type
+    Banded(..),
 
+    -- * Banded shape
+    module BLAS.Tensor.Base,
     module BLAS.Matrix.Base,
-    module BLAS.Tensor,
-
-    -- * Converting to and from foreign pointers
-    toForeignPtr,
-    fromForeignPtr,
-    
-    -- * To and from the underlying storage matrix
-    toRawMatrix,
-    fromRawMatrix,
-    
-    -- * Bandwith properties
     bandwidth,
     numLower,
     numUpper,
-    
-    -- * Creating new matrices
-    -- ** Pure
+    coerceBanded,
+
+    -- * Creating banded matrices
     banded,
     listsBanded,
-    -- ** Impure
-    newBanded_,
-    newBanded,
-    newListsBanded,
-    
-    -- * Getting rows and columns
-    row,
-    col,
-    rows,
-    cols,
-    getRow,
-    getCol,
-    toLists,
-    
-    -- * Vector views
-    diag,
-    rowView,
-    colView,
-    
-    -- * Casting matrices
-    coerceBanded,
-    
-    -- * Unsafe operations
     unsafeBanded,
-    unsafeNewBanded,
-    unsafeFreeze,
-    unsafeThaw,
-    unsafeWithElemPtr,
-    unsafeWithBasePtr,
-    unsafeDiag,
-    unsafeGetRow,
-    unsafeGetCol,
-    unsafeRow,
-    unsafeCol,
-    unsafeRowView,
-    unsafeColView,
+
+    -- * Reading banded matrix elements
+    module BLAS.Tensor.Immutable,
+    
+    -- * Special banded matrices
+    zeroBanded,
+    constantBanded,
+
+    -- * Vector views
+    diagBanded,
+    unsafeDiagBanded,
+
+    -- * Banded operations
+    module BLAS.Numeric.Immutable,
+
+    -- * Low-level properties
+    ldaOfBanded,
+    isHermBanded,
+    
+    -- * Matrix and vector multiplication
+    module BLAS.Matrix.Immutable,
+
     ) where
 
-import Control.Arrow ( second )
-import Control.Monad ( zipWithM_ )
-import Data.Ix ( inRange, range )
-import Data.List ( foldl' )
-import Data.Maybe ( fromJust )
-import Foreign
-import System.IO.Unsafe
-import Unsafe.Coerce          
-
-import BLAS.Access
-import BLAS.Elem ( Elem, BLAS1 )
-import qualified BLAS.Elem as E
-import BLAS.Internal ( checkedRow, checkedCol, checkedDiag, diagStart, 
-    diagLen, clearArray, inlinePerformIO )
-                  
-import BLAS.Matrix.Base hiding ( Matrix )
-import qualified BLAS.Matrix.Base as C
-import BLAS.Tensor
-
 import Data.AEq
+import System.IO.Unsafe
 
-import Data.Matrix.Dense.Internal ( DMatrix )
-import qualified Data.Matrix.Dense.Internal as M
-                                
-import Data.Vector.Dense.Internal ( DVector, Vector, conj, dim, newListVector )
-import qualified Data.Vector.Dense.Internal as V
 
-        
+import BLAS.Internal ( inlinePerformIO )
+import BLAS.Elem( Elem, BLAS1, BLAS2 )
+import BLAS.Tensor.Base
+import BLAS.Tensor.Immutable
+import BLAS.Tensor.Read
+import BLAS.UnsafeIOToM
+import BLAS.UnsafeInterleaveM
 
-toLists :: (BLAS1 e) => Banded (m,n) e -> ((Int,Int), (Int,Int),[[e]])
+import BLAS.Matrix.Base hiding ( BaseMatrix )
+import BLAS.Matrix.Immutable
+import BLAS.Matrix.Mutable
+import qualified BLAS.Matrix.Base as BLAS
+
+import BLAS.Numeric.Immutable
+
+import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded,
+    IOBanded, coerceBanded, numLower, numUpper, bandwidth, isHermBanded,
+    shapeBanded, boundsBanded, ldaOfBanded, gbmv, gbmm, unsafeGetRowBanded,
+    unsafeGetColBanded )
+import Data.Matrix.Banded.Class.Creating( newListsBanded, unsafeNewBanded, 
+    newBanded )
+import Data.Matrix.Banded.Class.Elements( writeElem, unsafeWriteElem )
+import Data.Matrix.Banded.Class.Special( newZeroBanded, newConstantBanded )
+import Data.Matrix.Banded.Class.Views( diagViewBanded, unsafeDiagViewBanded )
+import Data.Matrix.Banded.Class.Copying( newCopyBanded )
+
+import Data.Vector.Dense( Vector )
+import Data.Vector.Dense.ST( runSTVector )
+import Data.Matrix.Dense.ST( runSTMatrix )
+
+newtype Banded mn e = B (IOBanded mn e)
+
+unsafeFreezeIOBanded :: IOBanded mn e -> Banded mn e
+unsafeFreezeIOBanded = B
+
+unsafeThawIOBanded :: Banded mn e -> IOBanded mn e
+unsafeThawIOBanded (B a) = a
+
+
+liftBanded :: (IOBanded mn e -> a) -> Banded mn e -> a
+liftBanded f (B x) = f x
+{-# INLINE liftBanded #-}
+
+
+-- liftBanded2 :: 
+--     (IOBanded mn e -> IOBanded mn e -> a) -> 
+--         Banded mn e -> Banded mn e -> a
+-- liftBanded2 f x = liftBanded (liftBanded f x)
+-- {-# INLINE liftBanded2 #-}
+-- 
+-- unsafeLiftBanded :: (IOBanded mn e -> IO a) -> Banded mn e -> a
+-- unsafeLiftBanded f = unsafePerformIO . liftBanded f
+-- {-# NOINLINE unsafeLiftBanded #-}
+-- 
+-- unsafeLiftBanded2 :: 
+--     (IOBanded mn e -> IOBanded mn e -> IO a) -> 
+--         Banded mn e -> Banded mn e -> a
+-- unsafeLiftBanded2 f x y = unsafePerformIO $ liftBanded2 f x y
+-- {-# NOINLINE unsafeLiftBanded2 #-}
+
+
+inlineLiftBanded :: (IOBanded n e -> IO a) -> Banded n e -> a
+inlineLiftBanded f = inlinePerformIO . liftBanded f
+{-# INLINE inlineLiftBanded #-}
+
+
+banded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+banded mn kl ijes = 
+    unsafeFreezeIOBanded $ unsafePerformIO $ newBanded mn kl ijes
+{-# NOINLINE banded #-}
+
+unsafeBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+unsafeBanded mn kl ijes = 
+    unsafeFreezeIOBanded $ unsafePerformIO $ unsafeNewBanded mn kl ijes
+{-# NOINLINE unsafeBanded #-}
+
+listsBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
+listsBanded mn kl xs = 
+    unsafeFreezeIOBanded $ unsafePerformIO $ newListsBanded mn kl xs
+{-# NOINLINE listsBanded #-}
+
+zeroBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> Banded (m,n) e
+zeroBanded mn kl =
+    unsafeFreezeIOBanded $ unsafePerformIO $ newZeroBanded mn kl
+{-# NOINLINE zeroBanded #-}
+
+constantBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> e -> Banded (m,n) e
+constantBanded mn kl e =
+    unsafeFreezeIOBanded $ unsafePerformIO $ newConstantBanded mn kl e
+{-# NOINLINE constantBanded #-}
+
+-- | Get a the given diagonal in a banded matrix.  Negative indices correspond 
+-- to sub-diagonals.
+diagBanded :: (Elem e) => Banded mn e -> Int -> Vector k e
+diagBanded = diagViewBanded
+
+-- | Same as 'diagBanded' but index is not range-checked.
+unsafeDiagBanded :: (Elem e) => Banded mn e -> Int -> Vector k e
+unsafeDiagBanded = unsafeDiagViewBanded
+
+instance (Elem e) => BaseTensor Banded (Int,Int) e where
+    shape  = shapeBanded . unsafeThawIOBanded
+    bounds = boundsBanded . unsafeThawIOBanded
+
+instance (BLAS1 e) => ITensor Banded (Int,Int) e where
+    (//)          = replaceHelp writeElem
+    unsafeReplace = replaceHelp unsafeWriteElem
+    
+    unsafeAt x i  = inlineLiftBanded (flip unsafeReadElem i) x
+    {-# INLINE unsafeAt #-}
+    
+    size          = inlineLiftBanded getSize
+    elems         = inlineLiftBanded getElems
+    indices       = inlineLiftBanded getIndices
+    assocs        = inlineLiftBanded getAssocs
+
+    tmap f a      = coerceBanded $ listsBanded mn bw (map (map f) es)
+      where (mn,bw,es) = toLists a
+
+toLists :: (BLAS1 e) => Banded mn e -> ((Int,Int), (Int,Int),[[e]])
 toLists a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
@@ -111,124 +181,79 @@ toLists a = ( (m,n)
     (m,n)   = shape a
     (kl,ku) = (numLower a, numUpper a)
     
-    padBegin i = replicate (max (-i) 0)    0
-    padEnd   i = replicate (max (m-n+i) 0) 0
-    paddedDiag i = (padBegin i) ++ (elems $ diag a i) ++ (padEnd i)
-
-                
-
-
-
-banded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
-banded mn kl ijes = unsafePerformIO $ newBanded mn kl ijes
-{-# NOINLINE banded #-}
-
-unsafeBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
-unsafeBanded mn kl ijes = unsafePerformIO $ unsafeNewBanded mn kl ijes
-{-# NOINLINE unsafeBanded #-}
-
-
-
-listsBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
-listsBanded mn kl xs = unsafePerformIO $ newListsBanded mn kl xs
-{-# NOINLINE listsBanded #-}
-
-
-
-
-
-              
-            
-
-
-
-unsafeRow :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector n e
-unsafeRow a i = unsafePerformIO $ getRow a i
-{-# NOINLINE unsafeRow #-}
-
-
-
-unsafeCol :: (BLAS1 e) => Banded (m,n) e -> Int -> Vector m e
-unsafeCol a i = unsafePerformIO $ getCol a i
-{-# NOINLINE unsafeCol #-}
-
-rows :: (BLAS1 e) => Banded (m,n) e -> [Vector n e]
-rows a = [ unsafeRow a i | i <- [0..(numRows a - 1)] ]
-
-cols :: (BLAS1 e) => Banded (m,n) e -> [Vector m e]
-cols a = [ unsafeCol a i | i <- [0..(numCols a - 1)] ]
-
-
-
-instance C.Matrix (BMatrix t) where
-    numRows a | isHerm a  = size2 a
-              | otherwise = size1 a
-              
-    numCols a | isHerm a  = size1 a
-              | otherwise = size2 a
-
-    herm a = let h' = (not . isHerm) a
-             in coerceBanded $ a{ isHerm=h' }
-
-    
-instance (BLAS1 e) => ITensor (BMatrix Imm (m,n)) (Int,Int) e where
-    size = inlinePerformIO . getSize
-    
-    unsafeAt a = inlinePerformIO . (unsafeReadElem a)
-    
-    indices = inlinePerformIO . getIndices
-    elems   = inlinePerformIO . getElems
-    assocs  = inlinePerformIO . getAssocs
-
-    (//)          = replaceHelp writeElem
-    unsafeReplace = replaceHelp unsafeWriteElem
-
-    amap f a = banded (shape a) (numLower a, numUpper a) ies
-      where
-        ies = map (second f) (assocs a)
+    padBegin i   = replicate (max (-i) 0)    0
+    padEnd   i   = replicate (max (m-n+i) 0) 0
+    paddedDiag i = (  padBegin i
+                   ++ elems (unsafeDiagViewBanded a i) 
+                   ++ padEnd i 
+                   )
 
 replaceHelp :: (BLAS1 e) => 
-       (IOBanded (m,n) e -> (Int,Int) -> e -> IO ())
-    -> Banded (m,n) e -> [((Int,Int), e)] -> Banded (m,n) e
+       (IOBanded mn e -> (Int,Int) -> e -> IO ())
+    -> Banded mn e -> [((Int,Int), e)] -> Banded mn e
 replaceHelp set x ies =
-    unsafeFreeze $ unsafePerformIO $ do
-        y  <- newCopy (unsafeThaw x)
+    unsafeFreezeIOBanded $ unsafePerformIO $ do
+        y  <- newCopyBanded (unsafeThawIOBanded x)
         mapM_ (uncurry $ set y) ies
         return y
 {-# NOINLINE replaceHelp #-}
+
+instance (BLAS1 e) => INumeric Banded (Int,Int) e where
+    (*>) k  = tmap (k*)
+    shift k = tmap (k+)
+
+instance (BLAS1 e, Monad m) => ReadTensor Banded (Int,Int) e m where
+    getSize        = return . size
+    getAssocs      = return . assocs
+    getIndices     = return . indices
+    getElems       = return . elems
+    getAssocs'     = getAssocs
+    getIndices'    = getIndices
+    getElems'      = getElems
+    unsafeReadElem x i = return (unsafeAt x i)
+
+instance (Elem e) => BLAS.BaseMatrix Banded e where
+    herm (B a) = B (herm a)
     
-    
-    
-instance (BLAS1 e) => RTensor (BMatrix t (m,n)) (Int,Int) e IO where
-    newCopy b = 
-        let (mn,kl,a,h) = toRawMatrix b
-        in do
-            a' <- newCopy a
-            return $ fromJust $ fromRawMatrix mn kl a' h
-    
+instance (Elem e) => BaseBanded Banded Vector e where
+    bandedViewArray f o mn bw l h = B $ bandedViewArray f o mn bw l h
+    arrayFromBanded (B a )        = arrayFromBanded a
+
+instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
+    ReadBanded Banded Vector e m where
+
+instance (BLAS2 e) => IMatrix Banded e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+    unsafeRow a i             = runSTVector $ unsafeGetRow a i
+    unsafeCol a j             = runSTVector $ unsafeGetCol a j
+
+instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix Banded e m where
+    unsafeDoSApplyAdd    = gbmv
+    unsafeDoSApplyAddMat = gbmm
+    unsafeGetRow         = unsafeGetRowBanded
+    unsafeGetCol         = unsafeGetColBanded
 
 
-instance (BLAS1 e) => Show (BMatrix Imm (m,n) e) where
+instance (BLAS1 e) => Show (Banded mn e) where
     show a 
-        | isHerm a = 
-           "herm (" ++ show (herm a) ++ ")"
+        | isHermBanded a = 
+           "herm (" ++ show (herm $ coerceBanded a) ++ ")"
         | otherwise = 
              let (mn,kl,es) = toLists a 
              in "listsBanded " ++ show mn ++ " " ++ show kl ++ " " ++ show es
-       
-       
+
 compareHelp :: (BLAS1 e) => 
-    (e -> e -> Bool) -> Banded (m,n) e -> Banded (m,n) e -> Bool
+    (e -> e -> Bool) -> Banded mn e -> Banded mn e -> Bool
 compareHelp cmp x y
-    | isHerm x && isHerm y =
-        compareHelp cmp (herm x) (herm y)
+    | isHermBanded x && isHermBanded y =
+        compareHelp cmp (herm $ coerceBanded x) (herm $ coerceBanded y)
 compareHelp cmp x y =
     (shape x == shape y) && (and $ zipWith cmp (elems x) (elems y))
 
-instance (BLAS1 e, Eq e) => Eq (BMatrix Imm (m,n) e) where
+instance (BLAS1 e, Eq e) => Eq (Banded mn e) where
     (==) = compareHelp (==)
 
-instance (BLAS1 e, AEq e) => AEq (BMatrix Imm (m,n) e) where
+instance (BLAS1 e, AEq e) => AEq (Banded mn e) where
     (===) = compareHelp (===)
-    (~==) = compareHelp (~==)       
-             
+    (~==) = compareHelp (~==)

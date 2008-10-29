@@ -20,7 +20,9 @@ module Data.Matrix.Banded.Class (
 
     module Data.Matrix.Banded.Class.Creating,
     module Data.Matrix.Banded.Class.Elements,
+    module Data.Matrix.Banded.Class.Special,
     module Data.Matrix.Banded.Class.Views,
+    module Data.Matrix.Banded.Class.Copying,
     
     -- * Low-level functions
     ldaOfBanded,
@@ -35,4 +37,6 @@ import BLAS.Tensor.Base
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import Data.Matrix.Banded.Class.Creating
 import Data.Matrix.Banded.Class.Elements
+import Data.Matrix.Banded.Class.Special
 import Data.Matrix.Banded.Class.Views
+import Data.Matrix.Banded.Class.Copying

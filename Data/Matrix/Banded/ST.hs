@@ -12,7 +12,7 @@
 module Data.Matrix.Banded.ST (
     -- * The @STBanded@ data type
     STBanded,
-    --runSTBanded,
+    runSTBanded,
 
     unsafeIOBandedToSTBanded,
     unsafeSTBandedToIOBanded,
@@ -20,12 +20,12 @@ module Data.Matrix.Banded.ST (
     module Data.Matrix.Banded.Class,
     ) where
 
---import Control.Monad.ST
+import Control.Monad.ST
 
---import Data.Matrix.Banded.Internal( Banded(..) )
+import Data.Matrix.Banded.Internal( Banded(..) )
 import Data.Matrix.Banded.Class
 import Data.Matrix.Banded.Class.Internal( STBanded, unsafeIOBandedToSTBanded,
     unsafeSTBandedToIOBanded )
 
---runSTMatrix :: (forall s . ST s (STMatrix s n e)) -> Matrix n e
---runSTMatrix x = runST $ x >>= return . M . unsafeSTMatrixToIOMatrix
+runSTBanded :: (forall s . ST s (STBanded s mn e)) -> Banded mn e
+runSTBanded x = runST $ x >>= return . B . unsafeSTBandedToIOBanded

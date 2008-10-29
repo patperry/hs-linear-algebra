@@ -9,12 +9,13 @@
 
 module Data.Matrix.Banded.Class.Views (
     -- * Row and column views
-    bandDiagView,
-    bandRowView,
-    bandColView,
-    unsafeBandDiagView,
-    unsafeBandRowView,
-    unsafeBandColView,
+    diagViewBanded,
+    rowViewBanded,
+    colViewBanded,
+    
+    unsafeDiagViewBanded,
+    unsafeRowViewBanded,
+    unsafeColViewBanded,
     
     ) where
 
@@ -23,18 +24,18 @@ import BLAS.Internal( checkedRow, checkedCol, checkedDiag, diagStart, diagLen )
 import Data.Matrix.Banded.Class.Internal
 import Data.Vector.Dense.Class
 
-bandDiagView :: (BaseBanded a x e) => a mn e -> Int -> x k e
-bandDiagView a = checkedDiag (shape a) (unsafeBandDiagView a) 
+diagViewBanded :: (BaseBanded a x e) => a mn e -> Int -> x k e
+diagViewBanded a = checkedDiag (shape a) (unsafeDiagViewBanded a) 
 
-bandRowView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
-bandRowView a = checkedRow (shape a) (unsafeBandRowView a) 
+rowViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
 
-bandColView :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
-bandColView a = checkedCol (shape a) (unsafeBandColView a)
+colViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 
-unsafeBandDiagView :: (BaseBanded a x e) => a mn e -> Int -> x k e
-unsafeBandDiagView a d
-    | isHermBanded a = conj $ unsafeBandDiagView a' (negate d)
+unsafeDiagViewBanded :: (BaseBanded a x e) => a mn e -> Int -> x k e
+unsafeDiagViewBanded a d
+    | isHermBanded a = conj $ unsafeDiagViewBanded a' (negate d)
     | otherwise =
         let f   = fptrOfBanded a
             off = indexOfBanded a (diagStart d)

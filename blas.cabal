@@ -123,11 +123,10 @@ library
                         BLAS.UnsafeInterleaveM
                         BLAS.UnsafeIOToM
 
+                        Data.Matrix.Banded
                             Data.Matrix.Banded.IO
                             Data.Matrix.Banded.ST
                             Data.Matrix.Banded.Class
-                        --     Data.Matrix.Banded.Internal
-                        --     Data.Matrix.Banded.Operations
                          
                         Data.Matrix.Diag 
                         
@@ -167,8 +166,11 @@ library
                         Data.Vector.Dense.Class.Properties
                         Data.Vector.Dense.Class.Operations
                         
+                        Data.Matrix.Banded.Internal
+                        Data.Matrix.Banded.Class.Copying
                         Data.Matrix.Banded.Class.Creating
                         Data.Matrix.Banded.Class.Elements
+                        Data.Matrix.Banded.Class.Special
                         Data.Matrix.Banded.Class.Internal
                         Data.Matrix.Banded.Class.Views
                         
