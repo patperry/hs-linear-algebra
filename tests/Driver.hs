@@ -10,6 +10,7 @@ module Driver (
     Index2(..),
     Assocs2(..),
     
+    module Control.Arrow,
     module Control.Monad,
     module Control.Monad.ST,
     
@@ -34,6 +35,7 @@ module Driver (
 
     ) where
 
+import Control.Arrow
 import Control.Monad
 import Control.Monad.ST
 

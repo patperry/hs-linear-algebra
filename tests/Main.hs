@@ -7,6 +7,7 @@ import Vector
 import STVector
 import Matrix
 import STMatrix
+import Banded
 import HermMatrix
 import TriMatrix
 import Diag
@@ -38,6 +39,7 @@ main = do
             , ("STVector"    , tests_STVector)
             , ("Matrix"      , tests_Matrix)
             , ("STMatrix"    , tests_STMatrix)
+            , ("Banded"      , tests_Banded)
             , ("Herm Matrix" , tests_HermMatrix)
             , ("Tri Matrix"  , tests_TriMatrix)
             , ("Diag"        , tests_Diag)

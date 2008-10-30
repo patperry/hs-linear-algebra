@@ -8,28 +8,36 @@
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Banded
-    where
+module Generators.Matrix.Banded (
+    banded,
+    
+    BandedAt(..),
+    ListsBanded(..),
+    BandedMV(..),
+    BandedMVPair(..),
+    BandedMM(..),
+    BandedMMPair(..),
+    ) where
 
 import Control.Monad( forM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
-import Test.QuickCheck.Matrix.Dense ( dmatrix )
+
+import Generators.Vector.Dense ( vector )
+import Generators.Matrix.Dense ( matrix )
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix )
-import Data.Matrix.Banded
+import Data.Matrix.Banded hiding ( banded )
 import BLAS.Elem ( Elem, BLAS1 )
 
-newtype TestBanded m n e = TestBanded (Banded (m,n) e) deriving (Eq, Show)
 
-bmatrix :: (BLAS1 e, Arbitrary e) => 
+banded :: (BLAS1 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
-bmatrix mn kl = frequency [ (3, rawBanded mn kl)  
-                          , (2, hermedBanded mn kl)
-                          ]
+banded mn kl = frequency [ (3, rawBanded mn kl)  
+                         , (2, hermedBanded mn kl)
+                         ]
 
 rawBanded :: (BLAS1 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
@@ -43,14 +51,13 @@ rawBanded (m,n) (k,l) = do
     splitDiags xs = let (d,xs') = splitAt len xs
                     in d:(splitDiags xs')
 
-
 hermedBanded :: (BLAS1 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 hermedBanded (m,n) (l,u) = do
     x <- rawBanded (n,m) (u,l)
     return $ (herm x)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TestBanded m n e) where
+instance (Arbitrary e, BLAS1 e) => Arbitrary (Banded (m,n) e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -58,10 +65,10 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TestBanded m n e) where
             n <- choose (0,k')
             kl <- if m == 0 then return 0 else choose (0,m-1)
             ku <- if n == 0 then return 0 else choose (0,n-1)
-            bmatrix (m,n) (kl,ku) >>= return . TestBanded
+            banded (m,n) (kl,ku)
         
-    coarbitrary (TestBanded x) =
-        coarbitrary (elems x)
+    coarbitrary x =
+        coarbitrary (assocs x)
 
 data BandedAt m n e = BandedAt (Banded (m,n) e) (Int,Int) deriving (Eq, Show)
 instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedAt m n e) where
@@ -74,7 +81,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedAt m n e) where
             ku <- choose (0,n-1)
             i  <- choose (0,m-1)
             j  <- choose (0,n-1)
-            a  <- bmatrix (m,n) (kl,ku)
+            a  <- banded (m,n) (kl,ku)
             
             return $ BandedAt a (i,j)
 
@@ -113,8 +120,8 @@ instance (Arbitrary e, Elem e) => Arbitrary (MatrixPair m n e) where
         in do
             m <- choose (0,k')
             n <- choose (0,k')
-            a <- dmatrix (m,n)
-            b <- dmatrix (m,n)
+            a <- matrix (m,n)
+            b <- matrix (m,n)
             return $ Pair a b
         
     coarbitrary = undefined
@@ -130,8 +137,8 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMV m n e) where
             n <- choose (0,k')
             kl <- if m == 0 then return 0 else choose (0,m-1)
             ku <- if n == 0 then return 0 else choose (0,n-1)
-            a <- bmatrix (m,n) (kl,ku)             
-            x <- dvector n
+            a <- banded (m,n) (kl,ku)             
+            x <- vector n
             return $ BandedMV a x
             
     coarbitrary = undefined
@@ -142,11 +149,11 @@ data BandedMVPair m n e = BandedMVPair (Banded (m,n) e) (Vector n e) (Vector n e
 instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMVPair m n e) where
     arbitrary = do
         (BandedMV a x) <- arbitrary
-        y <- dvector (dim x)
+        y <- vector (dim x)
         return $ BandedMVPair a x y
         
     coarbitrary (BandedMVPair a x y) =
-        coarbitrary (BandedMV a x, TestVector y)
+        coarbitrary (BandedMV a x, y)
         
 data BandedMM m n k e = BandedMM (Banded (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
 
@@ -159,8 +166,8 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMM m n k e) where
             n <- choose (0,s')
             kl <- if m == 0 then return 0 else choose (0,m-1)
             ku <- if k == 0 then return 0 else choose (0,k-1)
-            a <- bmatrix (m,k) (kl,ku)             
-            b <- dmatrix (k,n)
+            a <- banded (m,k) (kl,ku)             
+            b <- matrix (k,n)
             return $ BandedMM a b
             
     coarbitrary = undefined
@@ -171,7 +178,7 @@ data BandedMMPair m n k e = BandedMMPair (Banded (m,k) e) (Matrix (k,n) e) (Matr
 instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMMPair m n k e) where
     arbitrary = do
         (BandedMM a b) <- arbitrary
-        c <- dmatrix (shape b)
+        c <- matrix (shape b)
         return $ BandedMMPair a b c
         
     coarbitrary = undefined

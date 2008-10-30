@@ -89,7 +89,7 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, doConjVector,
     withVectorPtr, stride, isConj )
 import Data.Vector.Dense.Class.Creating( newListVector )
-import Data.Vector.Dense.Class.Operations( getConjVector )
+import Data.Vector.Dense.Class.Operations( getConjVector, scaleBy )
 
 import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
     isHermMatrix, arrayFromMatrix, matrixViewArray, colViews )
@@ -386,6 +386,8 @@ unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
 gbmv :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 gbmv alpha a x beta y
+    | numRows a == 0 || numCols a == 0 =
+        scaleBy beta y
     | isConj x = do
         x' <- getConjVector (conj x)
         gbmv alpha a x' beta y

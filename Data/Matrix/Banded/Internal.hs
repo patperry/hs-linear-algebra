@@ -53,7 +53,7 @@ import Data.AEq
 import System.IO.Unsafe
 
 
-import BLAS.Internal ( inlinePerformIO )
+import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
 import BLAS.Elem( Elem, BLAS1, BLAS2 )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
@@ -68,6 +68,7 @@ import qualified BLAS.Matrix.Base as BLAS
 
 import BLAS.Numeric.Immutable
 
+import Data.Ix( inRange, range )
 import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded,
     IOBanded, coerceBanded, numLower, numUpper, bandwidth, isHermBanded,
     shapeBanded, boundsBanded, ldaOfBanded, gbmv, gbmm, unsafeGetRowBanded,
@@ -76,10 +77,10 @@ import Data.Matrix.Banded.Class.Creating( newListsBanded, unsafeNewBanded,
     newBanded )
 import Data.Matrix.Banded.Class.Elements( writeElem, unsafeWriteElem )
 import Data.Matrix.Banded.Class.Special( newZeroBanded, newConstantBanded )
-import Data.Matrix.Banded.Class.Views( diagViewBanded, unsafeDiagViewBanded )
+import Data.Matrix.Banded.Class.Views( unsafeDiagViewBanded )
 import Data.Matrix.Banded.Class.Copying( newCopyBanded )
 
-import Data.Vector.Dense( Vector )
+import Data.Vector.Dense( Vector, zeroVector )
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Matrix.Dense.ST( runSTMatrix )
 
@@ -146,12 +147,15 @@ constantBanded mn kl e =
 
 -- | Get a the given diagonal in a banded matrix.  Negative indices correspond 
 -- to sub-diagonals.
-diagBanded :: (Elem e) => Banded mn e -> Int -> Vector k e
-diagBanded = diagViewBanded
+diagBanded :: (BLAS1 e) => Banded mn e -> Int -> Vector k e
+diagBanded a = checkedDiag (shape a) (unsafeDiagBanded a)
 
 -- | Same as 'diagBanded' but index is not range-checked.
-unsafeDiagBanded :: (Elem e) => Banded mn e -> Int -> Vector k e
-unsafeDiagBanded = unsafeDiagViewBanded
+unsafeDiagBanded :: (BLAS1 e) => Banded mn e -> Int -> Vector k e
+unsafeDiagBanded a i 
+    | inRange (bandwidth a) i = unsafeDiagViewBanded a i
+    | otherwise               = zeroVector $ diagLen (shape a) i
+
 
 instance (Elem e) => BaseTensor Banded (Int,Int) e where
     shape  = shapeBanded . unsafeThawIOBanded
@@ -245,11 +249,21 @@ instance (BLAS1 e) => Show (Banded mn e) where
 
 compareHelp :: (BLAS1 e) => 
     (e -> e -> Bool) -> Banded mn e -> Banded mn e -> Bool
-compareHelp cmp x y
-    | isHermBanded x && isHermBanded y =
-        compareHelp cmp (herm $ coerceBanded x) (herm $ coerceBanded y)
-compareHelp cmp x y =
-    (shape x == shape y) && (and $ zipWith cmp (elems x) (elems y))
+compareHelp cmp a b
+    | shape a /= shape b =
+        False
+    | isHermBanded a == isHermBanded b && bandwidth a == bandwidth b =
+        let elems' = if isHermBanded a then elems . herm .coerceBanded
+                                       else elems
+        in
+            and $ zipWith cmp (elems' a) (elems' b)
+    | otherwise =
+        let l = max (numLower a) (numLower b)
+            u = max (numUpper a) (numUpper b)
+        in
+            and $ zipWith cmp (diagElems (-l,u) a) (diagElems (-l,u) b)
+  where
+    diagElems bw c = concatMap elems [ diagBanded c i | i <- range bw ]
 
 instance (BLAS1 e, Eq e) => Eq (Banded mn e) where
     (==) = compareHelp (==)

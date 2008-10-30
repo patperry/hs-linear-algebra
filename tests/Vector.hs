@@ -94,10 +94,10 @@ prop_basisVector_elems (Index i n) =
 -------------------------- Unsary Vector Operations --------------------------
 
 prop_shift k (x :: V) =
-    shift k x ~== x + constant (dim x) k
+    shift k x ~== x + constantVector (dim x) k
 
 prop_scale k (x :: V) =
-    k *> x ~== x * constant (dim x) k
+    k *> x ~== x * constantVector (dim x) k
 
 prop_conj_elems (x :: V) =
     and $ zipWith (===) (elems $ conj x) (map conj $ elems x)

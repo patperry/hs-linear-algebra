@@ -32,19 +32,19 @@ prop_listMatrix_assocs (Nat2 (m,n)) es =
        zip [(i,j) | j <- range (0,n-1), i <- range (0,m-1)] es'
 
 prop_zero_shape (Nat2 mn) =
-    shape (zero mn :: M) == mn
+    shape (zeroMatrix mn :: M) == mn
 prop_zero_elems (Nat2 (m,n)) =
-    elems (zero (m,n) :: M) == replicate (m*n) 0
+    elems (zeroMatrix (m,n) :: M) == replicate (m*n) 0
 
 prop_constant_shape (Nat2 mn) (e :: E) =
-    shape (constant mn e :: M) == mn
+    shape (constantMatrix mn e :: M) == mn
 prop_constant_elems (Nat2 (m,n)) (e :: E) =
-    elems (constant (m,n) e :: M) == replicate (m*n) e
+    elems (constantMatrix (m,n) e :: M) == replicate (m*n) e
 
 prop_identityMatrix_shape (Nat2 mn) =
     shape (identityMatrix mn :: M) == mn
 prop_identityMatrix_diag (Nat2 (m,n)) =
-    diag (identityMatrix (m,n) :: M) 0 === (constant (min m n) 1)
+    diag (identityMatrix (m,n) :: M) 0 === (constantVector (min m n) 1)
 prop_identityMatrix_row (Index i m) (Index _ n) =
     if i < min m n 
         then row (identityMatrix (m,n) :: M) i === basisVector n i
@@ -79,8 +79,8 @@ prop_bounds (a :: M) =
     
 prop_at (MatrixAt (a :: M) (i,j)) =
     let ij = (i,j)
-        k  = if isHerm a then j + i * numCols a
-                         else i + j * numRows a
+        k  = if isHermMatrix a then j + i * numCols a
+                               else i + j * numRows a
     in (a!ij) === ((elems a) !! k)
     
 prop_row_dim (MatrixAt (a :: M) (i,_)) =
@@ -98,14 +98,14 @@ prop_cols_dims (a :: M) =
     map dim (cols a) == replicate (numCols a) (numRows a)
 
 prop_indices (a :: M)
-    | isHerm a =
+    | isHermMatrix a =
         indices a == [(i,j) | i <- range (0,m-1), j <- range(0,n-1)]
     | otherwise =
         indices a == [(i,j) | j <- range (0,n-1), i <- range(0,m-1)]
   where (m,n) = shape a
   
 prop_elems (a :: M) 
-    | isHerm a =
+    | isHermMatrix a =
         elems a === concatMap elems (rows a)        
     | otherwise =
         elems a === concatMap elems (cols a)
@@ -172,9 +172,9 @@ prop_applyMat_cols (MatrixMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
 
 prop_shift k (a :: M) =
-    shift k a ~== a + constant (shape a) k
+    shift k a ~== a + constantMatrix (shape a) k
 prop_scale k (a :: M) =
-    k *> a ~== a * constant (shape a) k
+    k *> a ~== a * constantMatrix (shape a) k
 
 prop_plus (MatrixPair (a :: M) b) =
     colElems (a + b) ~== zipWith (+) (colElems a) (colElems b)
