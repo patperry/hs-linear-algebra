@@ -43,18 +43,21 @@ import Control.Monad( when )
 import Control.Monad.ST( ST )
 import Unsafe.Coerce
 
-import BLAS.C( BLAS3 )
+import BLAS.C( BLAS2, BLAS3 )
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import BLAS.UnsafeIOToM
 import BLAS.UnsafeInterleaveM
 import BLAS.Matrix
---import BLAS.Tensor
 import BLAS.Types ( UpLo(..), Diag(..), Trans(..), flipTrans, flipUpLo )
 import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
     noTrans, conjTrans, leftSide, rightSide )
 import qualified BLAS.C as BLAS
 import qualified BLAS.C.Types as BLAS
 
+import Data.Matrix.Banded.Class
+import Data.Matrix.Banded( Banded )
+import Data.Matrix.Banded.IO( IOBanded )
+import Data.Matrix.Banded.ST( STBanded )
 import Data.Matrix.Dense.Class hiding ( BaseMatrix )
 import Data.Matrix.Dense( Matrix )
 import Data.Matrix.Dense.IO( IOMatrix )
@@ -491,3 +494,87 @@ trsm alpha t b =
            withMatrixPtr a $ \pA ->
            withMatrixPtr b $ \pB -> do
                BLAS.trsm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
+
+
+------------------------ Tri Banded Apply Functions -------------------------
+
+tbmv :: (ReadBanded a x e m, WriteVector y e m, BLAS2 e) => 
+    e -> Tri a (k,k) e -> y n e -> m ()
+tbmv alpha t x | isConj x = do
+    doConjVector x
+    tbmv alpha t (conj x)
+    doConjVector x
+
+tbmv alpha t x =
+    let (u,d,a) = toBase t
+        order     = colMajor
+        (transA,u') 
+                  = if isHermBanded a 
+                        then (conjTrans, flipUpLo u) else (noTrans, u)
+        uploA     = cblasUpLo u'
+        diagA     = cblasDiag d
+        n         = numCols a
+        k         = case u of Upper -> numUpper a 
+                              Lower -> numLower a
+        ldA       = ldaOfBanded a
+        incX      = stride x
+        withPtrA  = case u' of 
+                        Upper -> withBandedPtr a
+                        Lower -> withBandedElemPtr a (0,0)
+    in do
+        scaleBy alpha x
+        unsafeIOToM $
+            withPtrA $ \pA ->
+            withVectorPtr x $ \pX -> do
+                BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
+
+tbmm :: (ReadBanded a x e m, WriteMatrix b y e m, BLAS2 e) =>
+    e -> Tri a (k,k) e -> b (k,l) e -> m ()
+tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
+tbmm alpha t b = scaleBy alpha b >> tbmm 1 t b
+
+tbmv' :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
+    e -> Tri a (r,s) e -> x s e -> e -> y r e -> m ()
+tbmv' alpha a x beta y 
+    | beta /= 0 = do
+        x' <- newCopyVector x
+        tbmv alpha (coerceTri a) x'
+        scaleBy beta y
+        axpyVector 1 x' (coerceVector y)
+    | otherwise = do
+        unsafeCopyVector (coerceVector y) x
+        tbmv alpha (coerceTri a) (coerceVector y)
+
+tbmm' :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS3 e) => 
+    e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+tbmm' alpha a b beta c
+    | beta /= 0 = do
+        b' <- newCopyMatrix b
+        tbmm alpha (coerceTri a) b'
+        scaleBy beta c
+        axpyMatrix 1 b' (coerceMatrix c)
+    | otherwise = do
+        unsafeCopyMatrix (coerceMatrix c) b
+        tbmm alpha (coerceTri a) (coerceMatrix c)
+
+instance (BLAS3 e) => IMatrix (Tri Banded) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+
+instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'
+
+instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'
+
+instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Banded) e m where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'

@@ -67,34 +67,9 @@ instance (BLAS2 e) => RSolve (Tri (BMatrix s)) e where
 
 
 tbmv :: (BLAS2 e) => e -> Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()
-tbmv alpha t x | isConj x = do
-    V.doConj x
-    tbmv alpha t (conj x)
-    V.doConj x
-
-tbmv alpha t x =
-    let (u,d,a) = toBase t
-        order     = colMajor
-        (transA,u') = if isHerm a then (conjTrans, flipUpLo u) else (noTrans, u)
-        uploA     = cblasUpLo u'
-        diagA     = cblasDiag d
-        n         = numCols a
-        k         = case u of Upper -> numUpper a 
-                              Lower -> numLower a
-        ldA       = ldaOf a
-        incX      = strideOf x
-        withPtrA  = case u' of 
-                        Upper -> B.unsafeWithBasePtr a
-                        Lower -> B.unsafeWithElemPtr a (0,0)
-    in withPtrA $ \pA ->
-           V.unsafeWithElemPtr x 0 $ \pX -> do
-               V.scaleBy alpha x
-               BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
               
                
 tbmm :: (BLAS2 e) => e -> Tri (BMatrix t) (m,m) e -> IOMatrix (m,n) e -> IO ()
-tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (M.cols b)
-tbmm alpha t b = M.scaleBy alpha b >> tbmm 1 t b
 
 
 tbsv :: (BLAS2 e) => e -> Tri (BMatrix t) (n,n) e -> IOVector n e -> IO ()

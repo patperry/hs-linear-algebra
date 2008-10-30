@@ -10,6 +10,7 @@
 module Data.Vector.Dense.Class.Operations (
     -- * Vector operations
     getConjVector,
+    doConjVector,
     axpyVector,
     mulVector,
     divVector,
