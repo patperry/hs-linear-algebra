@@ -162,12 +162,12 @@ library
                         Data.Vector.Dense.Class.Operations
                         
                         Data.Matrix.Banded.Internal
-                        Data.Matrix.Banded.Class.Copying
+                        Data.Matrix.Banded.Class.Internal
                         Data.Matrix.Banded.Class.Creating
                         Data.Matrix.Banded.Class.Elements
                         Data.Matrix.Banded.Class.Special
-                        Data.Matrix.Banded.Class.Internal
                         Data.Matrix.Banded.Class.Views
+                        Data.Matrix.Banded.Class.Copying
                         
                         Data.Matrix.Dense.Internal
                         Data.Matrix.Dense.Class.Internal
