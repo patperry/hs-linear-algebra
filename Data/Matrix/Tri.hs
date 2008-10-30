@@ -375,8 +375,8 @@ instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Tri Matrix) e 
 
 
 
-unsafeDoSSolveTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
-    ReadVector y e m, WriteVector x e m) =>
+unsafeDoSSolveTriMatrix :: (ReadMatrix a z e m,
+    ReadVector y e m, WriteVector x e m, BLAS3 e) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriMatrix alpha t y x =
     case (u, toLower d a, toUpper d a) of
@@ -404,8 +404,8 @@ unsafeDoSSolveTriMatrix alpha t y x =
     (u,d,a) = toBase t
 
 
-unsafeDoSSolveMatTriMatrix :: (BLAS3 e, ReadMatrix a z e m, MMatrix a e m, 
-    ReadMatrix c y e m, WriteMatrix b x e m) =>
+unsafeDoSSolveMatTriMatrix :: (ReadMatrix a z e m,
+    ReadMatrix c y e m, WriteMatrix b x e m, BLAS3 e) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriMatrix alpha t c b =
     case (u, toLower d a, toUpper d a) of
@@ -545,7 +545,7 @@ tbmv' alpha a x beta y
         unsafeCopyVector (coerceVector y) x
         tbmv alpha (coerceTri a) (coerceVector y)
 
-tbmm' :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS3 e) => 
+tbmm' :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS2 e) => 
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 tbmm' alpha a b beta c
     | beta /= 0 = do
@@ -557,24 +557,97 @@ tbmm' alpha a b beta c
         unsafeCopyMatrix (coerceMatrix c) b
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
-instance (BLAS3 e) => IMatrix (Tri Banded) e where
+instance (BLAS2 e) => IMatrix (Tri Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
+instance (BLAS2 e) => MMatrix (Tri (STBanded s)) e (ST s) where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
 
-instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
+instance (BLAS2 e) => MMatrix (Tri IOBanded) e IO where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Banded) e m where
+instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Banded) e m where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
+
+
+------------------------ Tri Banded Solve Functions -------------------------
+
+tbsv :: (ReadBanded a x e m, WriteVector y e m, BLAS2 e) => 
+    e -> Tri a (k,k) e -> y n e -> m ()
+tbsv alpha t x | isConj x = do
+    doConjVector x
+    tbsv alpha t (conj x)
+    doConjVector x
+    
+tbsv alpha t x = 
+    let (u,d,a) = toBase t
+        order     = colMajor
+        (transA,u') = if isHermBanded a then (conjTrans, flipUpLo u) else (noTrans, u)
+        uploA     = cblasUpLo u'
+        diagA     = cblasDiag d
+        n         = numCols a
+        k         = case u of Upper -> numUpper a 
+                              Lower -> numLower a        
+        ldA       = ldaOfBanded a
+        incX      = stride x
+        withPtrA  = case u' of 
+                        Upper -> withBandedPtr a
+                        Lower -> withBandedElemPtr a (0,0)
+    in do
+        scaleBy alpha x
+        unsafeIOToM $
+            withPtrA $ \pA ->
+            withVectorPtr x $ \pX -> do
+                BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
+
+tbsm :: (ReadBanded a x e m, WriteMatrix b y e m, BLAS2 e) => 
+    e -> Tri a (k,k) e -> b (k,l) e -> m ()
+tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
+tbsm alpha t b = scaleBy alpha b >> tbsm 1 t b
+
+unsafeDoSSolveTriBanded :: (ReadBanded a z e m,
+    ReadVector y e m, WriteVector x e m, BLAS2 e) =>
+        e -> Tri a (k,l) e -> y k e -> x l e -> m ()
+unsafeDoSSolveTriBanded alpha a y x = do
+    unsafeCopyVector (coerceVector x) y
+    tbsv alpha (coerceTri a) (coerceVector x)
+
+unsafeDoSSolveMatTriBanded :: (ReadBanded a z e m,
+    ReadMatrix c y e m, WriteMatrix b x e m, BLAS2 e) =>
+        e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+unsafeDoSSolveMatTriBanded alpha a c b = do
+    unsafeCopyMatrix (coerceMatrix b) c
+    tbsm alpha (coerceTri a) b
+
+
+instance (BLAS2 e) => ISolve (Tri Banded) e where
+    unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
+    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
+
+instance (BLAS2 e) => MSolve (Tri IOBanded) e IO where
+    unsafeDoSSolve     = unsafeDoSSolveTriBanded
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm
+
+instance (BLAS2 e) => MSolve (Tri (STBanded s)) e (ST s) where
+    unsafeDoSSolve     = unsafeDoSSolveTriBanded
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm
+
+instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Tri Banded) e m where
+    unsafeDoSSolve     = unsafeDoSSolveTriBanded
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm

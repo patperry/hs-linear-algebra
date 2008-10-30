@@ -127,20 +127,16 @@ library
                             Data.Matrix.Banded.IO
                             Data.Matrix.Banded.ST
                             Data.Matrix.Banded.Class
-                         
-                        Data.Matrix.Diag 
                         
                         Data.Matrix.Dense
                             Data.Matrix.Dense.IO
                             Data.Matrix.Dense.ST
                             Data.Matrix.Dense.Class
 
+                        Data.Matrix.Diag 
                         Data.Matrix.Perm
-
                         Data.Matrix.Herm
-
                         Data.Matrix.Tri
-                        --     Data.Matrix.Tri.Banded
 
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
