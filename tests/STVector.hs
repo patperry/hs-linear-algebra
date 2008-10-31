@@ -162,21 +162,21 @@ prop_DivEquals = (//=) `implements2` divEquals_S
 axpyVector_S alpha x y = ( (), x, zipWith (\xi yi -> alpha * xi + yi) x y )
 prop_AxpyVector alpha = axpyVector alpha `implements2` axpyVector_S alpha
 
-getAdd_S x y = ( zipWith (+) x y, x, y )
-prop_GetAdd =
-    (\x y -> getAdd x y >>= abstract) `implements2` getAdd_S
+getAddVector_S x y = ( zipWith (+) x y, x, y )
+prop_GetAddVector =
+    (\x y -> getAddVector x y >>= abstract) `implements2` getAddVector_S
 
-getSub_S x y = ( zipWith (-) x y, x, y )
-prop_GetSub =
-    (\x y -> getSub x y >>= abstract) `implements2` getSub_S
+getSubVector_S x y = ( zipWith (-) x y, x, y )
+prop_GetSubVector =
+    (\x y -> getSubVector x y >>= abstract) `implements2` getSubVector_S
 
-getMul_S x y = ( zipWith (*) x y, x, y )
-prop_GetMul =
-    (\x y -> getMul x y >>= abstract) `implements2` getMul_S
+getMulVector_S x y = ( zipWith (*) x y, x, y )
+prop_GetMulVector =
+    (\x y -> getMulVector x y >>= abstract) `implements2` getMulVector_S
 
-getDiv_S x y = ( zipWith (/) x y, x, y )
-prop_GetDiv =
-    (\x y -> getDiv x y >>= abstract) `implements2` getDiv_S
+getDivVector_S x y = ( zipWith (/) x y, x, y )
+prop_GetDivVector =
+    (\x y -> getDivVector x y >>= abstract) `implements2` getDivVector_S
 
 
 -------------------------- Vector Properties ---------------------------------
@@ -362,10 +362,10 @@ tests_STVector =
     , ("(*=)", mytest prop_MulEquals)
     , ("(//=)", mytest prop_DivEquals)
     
-    , ("getAdd", mytest prop_GetAdd)
-    , ("getSub", mytest prop_GetSub)
-    , ("getMul", mytest prop_GetMul)
-    , ("getDiv", mytest prop_GetDiv)
+    , ("getAddVector", mytest prop_GetAddVector)
+    , ("getSubVector", mytest prop_GetSubVector)
+    , ("getMulVector", mytest prop_GetMulVector)
+    , ("getDivVector", mytest prop_GetDivVector)
 
     , ("getSumAbs", mytest prop_GetSumAbs)
     , ("getNorm2", mytest prop_GetNorm2)

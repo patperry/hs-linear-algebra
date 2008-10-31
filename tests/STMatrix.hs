@@ -156,21 +156,21 @@ prop_MulEquals = (*=) `implements2` mulEquals_S
 divEquals_S x y = ( (), x / y, y )
 prop_DivEquals = (//=) `implements2` divEquals_S
 
-getAdd_S x y = ( x + y, x, y )
-prop_GetAdd =
-    (\x y -> getAdd x y >>= abstract) `implements2` getAdd_S
+getAddMatrix_S x y = ( x + y, x, y )
+prop_GetAddMatrix =
+    (\x y -> getAddMatrix x y >>= abstract) `implements2` getAddMatrix_S
 
-getSub_S x y = ( x - y, x, y )
-prop_GetSub =
-    (\x y -> getSub x y >>= abstract) `implements2` getSub_S
+getSubMatrix_S x y = ( x - y, x, y )
+prop_GetSubMatrix =
+    (\x y -> getSubMatrix x y >>= abstract) `implements2` getSubMatrix_S
 
-getMul_S x y = ( x * y, x, y )
-prop_GetMul =
-    (\x y -> getMul x y >>= abstract) `implements2` getMul_S
+getMulMatrix_S x y = ( x * y, x, y )
+prop_GetMulMatrix =
+    (\x y -> getMulMatrix x y >>= abstract) `implements2` getMulMatrix_S
 
-getDiv_S x y = ( x / y, x, y )
-prop_GetDiv =
-    (\x y -> getDiv x y >>= abstract) `implements2` getDiv_S
+getDivMatrix_S x y = ( x / y, x, y )
+prop_GetDivMatrix =
+    (\x y -> getDivMatrix x y >>= abstract) `implements2` getDivMatrix_S
 
 
 ------------------------------------------------------------------------
@@ -339,9 +339,9 @@ tests_STMatrix =
     , ("(*=)", mytest prop_MulEquals)
     , ("(//=)", mytest prop_DivEquals)
     
-    , ("getAdd", mytest prop_GetAdd)
-    , ("getSub", mytest prop_GetSub)
-    , ("getMul", mytest prop_GetMul)
-    , ("getDiv", mytest prop_GetDiv)
+    , ("getAddMatrix", mytest prop_GetAddMatrix)
+    , ("getSubMatrix", mytest prop_GetSubMatrix)
+    , ("getMulMatrix", mytest prop_GetMulMatrix)
+    , ("getDivMatrix", mytest prop_GetDivMatrix)
 
     ]
