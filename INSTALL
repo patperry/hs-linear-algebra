@@ -75,8 +75,13 @@ V. BUILDING AND RUNNING THE TESTS
 If you have verified that blas is installed correctly, you can try building and
 running the tests.  These are in the "tests" directory, and are in the form of
 QuickCheck properties.  To build and run them, just run "make" in the tests
-directory.  You must have the "pqc" package installed (available on hackage)
-to build and run the tests.
+directory.  
+
+NOTE: there is a bug in the version of QuickCheck that comes with GHC 6.8 and
+older that will either cause some of the tests to fail or cause the test suite
+to hang. You need version 1.2.0.0 or later (the version that comes with GHC
+6.10). For older GHC versions, you can get a patched QuickCheck from the darcs
+repository at http://darcs.haskell.org/packages/QuickCheck/ .
 
 
 VI. CUSTOM CBLAS CONFIGURATIONS
