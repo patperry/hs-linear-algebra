@@ -107,10 +107,8 @@ library
 
                         BLAS.Tensor
                             BLAS.Tensor.Base
-                            BLAS.Tensor.Copy
                             BLAS.Tensor.Immutable
                             BLAS.Tensor.Read
-                            BLAS.Tensor.Swap
                             BLAS.Tensor.Write
 
                         BLAS.Types

@@ -707,13 +707,6 @@ instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     scaleBy         = scaleByMatrix
     shiftBy         = shiftByMatrix
 
-
-instance (BLAS1 e) => SwapTensor IOMatrix (Int,Int) e IO where    
-    unsafeSwapTensor = unsafeSwapMatrix
-
-instance (BLAS1 e) => SwapTensor (STMatrix s) (Int,Int) e (ST s) where    
-    unsafeSwapTensor = unsafeSwapMatrix
-
 instance (Elem e) => BLAS.BaseMatrix IOMatrix e where
     herm = hermMatrix
 
@@ -725,11 +718,3 @@ instance (BLAS1 e) => ReadMatrix (STMatrix s) (STVector s) e (ST s) where
     
 instance (BLAS1 e) => WriteMatrix IOMatrix IOVector e IO where
 instance (BLAS1 e) => WriteMatrix (STMatrix s) (STVector s) e (ST s) where
-
-instance (BLAS1 e, ReadMatrix a x e IO) => CopyTensor a IOMatrix (Int,Int) e IO where
-    newCopyTensor    = newCopyMatrix
-    unsafeCopyTensor = unsafeCopyMatrix
-
-instance (BLAS1 e, ReadMatrix a x e (ST s)) => CopyTensor a (STMatrix s) (Int,Int) e (ST s) where
-    newCopyTensor    = newCopyMatrix
-    unsafeCopyTensor = unsafeCopyMatrix

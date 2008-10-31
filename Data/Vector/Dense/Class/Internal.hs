@@ -474,17 +474,3 @@ instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
 
 instance (BLAS1 e) => WriteVector IOVector e IO where
 instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
-
-instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
-    newCopyTensor    = newCopyVector    
-    unsafeCopyTensor = unsafeCopyVector
-
-instance (BLAS1 e, ReadVector x e (ST s)) => CopyTensor x (STVector s) Int e (ST s) where
-    newCopyTensor    = newCopyVector    
-    unsafeCopyTensor = unsafeCopyVector
-
-instance (BLAS1 e) => SwapTensor IOVector Int e IO where
-    unsafeSwapTensor = unsafeSwapVector
-
-instance (BLAS1 e) => SwapTensor (STVector s) Int e (ST s) where
-    unsafeSwapTensor = unsafeSwapVector
