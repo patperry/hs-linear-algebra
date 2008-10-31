@@ -77,7 +77,6 @@ module Data.Vector.Dense.Class.Internal (
     indicesVector,
     vectorCall,
     vectorCall2,
-    unsafeDoVectorOp2,
 
     ) where
 
@@ -356,25 +355,6 @@ unsafeDivVector y x
         vectorCall2 BLAS.div x y
 
 
--------------------------- Numeric3 functions -------------------------------
-
-unsafeDoAddVector :: (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
-    x n e -> y n e -> z n e -> m ()
-unsafeDoAddVector = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector 1
-
-unsafeDoSubVector :: (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
-    x n e -> y n e -> z n e -> m ()
-unsafeDoSubVector = unsafeDoVectorOp2 $ flip $ unsafeAxpyVector (-1)
-
-unsafeDoMulVector :: (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
-    x n e -> y n e -> z n e -> m ()
-unsafeDoMulVector = unsafeDoVectorOp2 $ unsafeMulVector
-
-unsafeDoDivVector :: (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
-    x n e -> y n e -> z n e -> m ()
-unsafeDoDivVector = unsafeDoVectorOp2 $ unsafeDivVector
-
-
 --------------------------- Utility functions -------------------------------
 
 indexOfVector :: (BaseVector x e) => x n e -> Int -> Int
@@ -408,12 +388,6 @@ vectorCall2 f x y =
                withVectorPtr y $ \pY ->
                    f n pX incX pY incY
 {-# INLINE vectorCall2 #-}    
-
-unsafeDoVectorOp2 :: (BLAS1 e, ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
-    (z n e -> y n e -> m ()) -> x n e -> y n e -> z n e -> m ()
-unsafeDoVectorOp2 f x y z = do
-    unsafeCopyVector z x
-    f z y
 
 
 ------------------------------------ Instances ------------------------------
@@ -536,15 +510,3 @@ instance (BLAS1 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s
     unsafeAxpy = unsafeAxpyVector
     unsafeMul  = unsafeMulVector
     unsafeDiv  = unsafeDivVector
-
-instance (BLAS1 e, ReadVector x e IO, ReadVector y e IO) => Numeric3 x y IOVector Int e IO where
-    unsafeDoAdd = unsafeDoAddVector
-    unsafeDoSub = unsafeDoSubVector
-    unsafeDoMul = unsafeDoMulVector
-    unsafeDoDiv = unsafeDoDivVector
-
-instance (BLAS1 e, ReadVector x e (ST s), ReadVector y e (ST s)) => Numeric3 x y (STVector s) Int e (ST s) where
-    unsafeDoAdd = unsafeDoAddVector
-    unsafeDoSub = unsafeDoSubVector
-    unsafeDoMul = unsafeDoMulVector
-    unsafeDoDiv = unsafeDoDivVector

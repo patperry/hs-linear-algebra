@@ -220,16 +220,16 @@ instance (Elem e) => BaseVector Vector e where
 instance (BLAS1 e, UnsafeIOToM m) => ReadVector Vector e m where
     
 instance (BLAS1 e) => Num (Vector n e) where
-    (+) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getAdd x y
-    (-) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getSub x y
-    (*) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getMul x y
+    (+) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getAddVector x y
+    (-) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getSubVector x y
+    (*) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getMulVector x y
     negate      = ((-1) *>)
     abs         = tmap abs
     signum      = tmap signum
     fromInteger = (constantVector 1) . fromInteger
     
 instance (BLAS1 e) => Fractional (Vector n e) where
-    (/) x y      = unsafeFreezeIOVector $ unsafeLiftVector2 getDiv x y
+    (/) x y      = unsafeFreezeIOVector $ unsafeLiftVector2 getDivVector x y
     recip        = tmap recip
     fromRational = (constantVector 1) . fromRational 
     
