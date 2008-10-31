@@ -36,14 +36,11 @@ module Data.Matrix.Dense.Class.Operations (
     unsafeMulMatrix,
     unsafeDivMatrix,
     
-    module BLAS.Numeric,
-    
     ) where
 
 import BLAS.Elem( BLAS1 )
 import BLAS.Internal( checkBinaryOp )
 import BLAS.Tensor( BaseTensor(..) )
-import BLAS.Numeric
 
 import Data.Matrix.Dense.Class.Internal
 

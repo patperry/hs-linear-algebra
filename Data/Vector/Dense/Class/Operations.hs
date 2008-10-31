@@ -35,13 +35,10 @@ module Data.Vector.Dense.Class.Operations (
     unsafeAxpyVector,
     unsafeMulVector,
     unsafeDivVector,
-    
-    module BLAS.Numeric,
     ) where
 
 import BLAS.Elem( BLAS1 )
 import BLAS.Internal( checkBinaryOp )
-import BLAS.Numeric
 import BLAS.Tensor( BaseTensor(..) )
 import Data.Vector.Dense.Class.Internal
 

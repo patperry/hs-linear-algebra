@@ -105,9 +105,6 @@ library
                                 BLAS.Matrix.Solve.Immutable
                                 BLAS.Matrix.Solve.Mutable
 
-                        BLAS.Numeric
-                            BLAS.Numeric.Immutable
-
                         BLAS.Tensor
                             BLAS.Tensor.Base
                             BLAS.Tensor.Copy

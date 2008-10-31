@@ -44,9 +44,6 @@ module Data.Vector.Dense.Internal (
     whichMaxAbs,
     (<.>),
 
-    -- * Vector operations
-    module BLAS.Numeric.Immutable,
-    
     -- * Low-level vector properties
     stride,
     isConj,
@@ -58,7 +55,6 @@ import System.IO.Unsafe
 import BLAS.Conj
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
-import BLAS.Numeric.Immutable
 
 import BLAS.Elem ( Elem, BLAS1 )
 import BLAS.Internal ( inlinePerformIO )
@@ -183,6 +179,13 @@ instance (BLAS1 e) => ITensor Vector Int e where
 
     tmap f x      = listVector (dim x) (map f $ elems x)
 
+    (*>) k x = unsafeFreezeIOVector $ unsafeLiftVector (getScaledVector k) x
+    {-# NOINLINE (*>) #-}
+
+    shift k x = unsafeFreezeIOVector $ unsafeLiftVector (getShiftedVector k) x
+    {-# NOINLINE shift #-}
+
+
 replaceHelp :: (BLAS1 e) => 
     (IOVector n e -> Int -> e -> IO ()) ->
         Vector n e -> [(Int, e)] -> Vector n e
@@ -204,12 +207,6 @@ instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
     unsafeReadElem x i = return $ unsafeAt x i
     
 
-instance (BLAS1 e) => INumeric Vector Int e where
-    (*>) k x = unsafeFreezeIOVector $ unsafeLiftVector (getScaledVector k) x
-    {-# NOINLINE (*>) #-}
-
-    shift k x = unsafeFreezeIOVector $ unsafeLiftVector (getShiftedVector k) x
-    {-# NOINLINE shift #-}
 
 instance (Elem e) => BaseVector Vector e where
     vectorViewArray f o n s c = V $ vectorViewArray f o n s c

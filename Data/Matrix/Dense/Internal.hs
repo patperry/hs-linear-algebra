@@ -42,9 +42,6 @@ module Data.Matrix.Dense.Internal (
     diag,
     unsafeDiag,
 
-    -- * Matrix operations
-    module BLAS.Numeric.Immutable,
-
     -- * Low-level properties
     ldaOfMatrix,
     isHermMatrix,
@@ -58,15 +55,12 @@ import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 
-import BLAS.Numeric.Immutable
-
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
-import BLAS.Numeric.Immutable
 
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
@@ -221,6 +215,13 @@ instance (BLAS1 e) => ITensor Matrix (Int,Int) e where
       where
         (m,n) = shape a
 
+    (*>) k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getScaledMatrix k) x
+    {-# NOINLINE (*>) #-}
+
+    shift k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getShiftedMatrix k) x
+    {-# NOINLINE shift #-}
+
+
 
 replaceHelp :: (BLAS1 e) => 
     (IOMatrix mn e -> (Int,Int) -> e -> IO ()) ->
@@ -241,13 +242,6 @@ instance (BLAS1 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
     getIndices'    = getIndices
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
-
-instance (BLAS1 e) => INumeric Matrix (Int,Int) e where
-    (*>) k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getScaledMatrix k) x
-    {-# NOINLINE (*>) #-}
-
-    shift k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getShiftedMatrix k) x
-    {-# NOINLINE shift #-}
 
 instance (Elem e) => BLAS.BaseMatrix Matrix e where
     herm (M a) = M (herm a)

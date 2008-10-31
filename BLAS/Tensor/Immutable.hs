@@ -19,6 +19,9 @@ import Data.Ix
 
 
 infixl 9 !
+infixl 7 *>
+infixl 5 `shift`
+
 
 -- | A class for immutable tensors.
 class (Elem e, BaseTensor x i e) => ITensor x i e where
@@ -52,6 +55,14 @@ class (Elem e, BaseTensor x i e) => ITensor x i e where
     
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
+    
+    -- | Scale every element by the given value.
+    (*>) :: (BLAS1 e) => e -> x n e -> x n e
+    (*>) k = tmap (k*)
+    
+    -- | Add a constant to every element.
+    shift :: (BLAS1 e) => e -> x n e -> x n e
+    shift k = tmap (k+)    
     
 -- | Get the value at the given index.  Range-checks the argument.
 (!) :: (ITensor x i e, Show i) => x n e -> i -> e

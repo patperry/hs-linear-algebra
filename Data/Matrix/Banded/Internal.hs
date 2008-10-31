@@ -37,9 +37,6 @@ module Data.Matrix.Banded.Internal (
     diagBanded,
     unsafeDiagBanded,
 
-    -- * Banded operations
-    module BLAS.Numeric.Immutable,
-
     -- * Converting to lists
     listsFromBanded,
 
@@ -68,8 +65,6 @@ import BLAS.Matrix.Base hiding ( BaseMatrix )
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.Mutable
 import qualified BLAS.Matrix.Base as BLAS
-
-import BLAS.Numeric.Immutable
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded,
@@ -205,9 +200,6 @@ replaceHelp set x ies =
         return y
 {-# NOINLINE replaceHelp #-}
 
-instance (BLAS1 e) => INumeric Banded (Int,Int) e where
-    (*>) k  = tmap (k*)
-    shift k = tmap (k+)
 
 instance (BLAS1 e, Monad m) => ReadTensor Banded (Int,Int) e m where
     getSize        = return . size
