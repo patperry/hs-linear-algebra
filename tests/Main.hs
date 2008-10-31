@@ -9,6 +9,7 @@ import Matrix
 import STMatrix
 import Banded
 import HermMatrix
+import HermBanded
 import TriMatrix
 import Diag
 import Perm
@@ -41,6 +42,7 @@ main = do
             , ("STMatrix"    , tests_STMatrix)
             , ("Banded"      , tests_Banded)
             , ("Herm Matrix" , tests_HermMatrix)
+            , ("Herm Banded" , tests_HermBanded)
             , ("Tri Matrix"  , tests_TriMatrix)
             , ("Diag"        , tests_Diag)
             , ("Perm"        , tests_Perm)

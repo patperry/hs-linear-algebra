@@ -40,8 +40,8 @@ prop_banded_assocs a@(Assocs2 (m,n) ijes) =
 prop_listsBanded_shape (ListsBanded mn lu ds) =
     shape (listsBanded mn lu ds :: B) == mn
     
---prop_listsBanded_toLists (ListsBanded mn lu ds) =
---    toLists (listsBanded mn lu ds :: B) === (mn,lu,ds)
+prop_listsBanded_listsFromBanded (ListsBanded mn lu ds) =
+    listsFromBanded (listsBanded mn lu ds :: B) === (mn,lu,ds)
 
 prop_replace_elems (a :: B) (Assocs2 _ ijes) =
     let ijes' = filter (\((i,j),_) -> i < numRows a 
@@ -150,6 +150,8 @@ tests_Banded =
     [ ("shape of banded"       , mytest prop_banded_shape)
     , ("assocs of banded"      , mytest prop_banded_assocs)
     , ("shape of listsBanded"  , mytest prop_listsBanded_shape)
+    , ("listsFromBanded/listsBanded"
+                               , mytest prop_listsBanded_listsFromBanded)
 
     , ("elems of replace"      , mytest prop_replace_elems)
     

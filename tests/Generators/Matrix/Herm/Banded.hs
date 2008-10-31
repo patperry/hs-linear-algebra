@@ -1,22 +1,25 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Matrix.Herm.Banded
+-- Module     : Generators.Matrix.Herm.Banded
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Herm.Banded 
-    where
+module Generators.Matrix.Herm.Banded (
+    HermBanded(..),
+    HermBandedMV(..),
+    HermBandedMM(..),
+    ) where
 
 import Control.Monad ( replicateM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( dvector )
-import Test.QuickCheck.Matrix ( matrixSized )
-import Test.QuickCheck.Matrix.Dense ( dmatrix )
+import Generators.Vector.Dense ( vector )
+import Generators.Matrix ( matrixSized )
+import Generators.Matrix.Dense ( matrix )
 
 import BLAS.Elem ( Elem, BLAS2, toReal, fromReal, conj )
 import BLAS.Types ( flipUpLo )
@@ -43,7 +46,7 @@ hermBanded n k
         return $ listsBanded (n,n) (0,0) [d]
     | otherwise = do
         a <- hermBanded n (k-1)
-        let (_,_,ds) = toLists a
+        let (_,_,ds) = listsFromBanded a
         
         d <- QC.vector (n-k)
         let d'  = map conj d
@@ -70,7 +73,7 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBanded n e) where
         a <- hermBanded n k
             
         junk <- replicateM l $ QC.vector n
-        let (_,_,ds) = toLists a
+        let (_,_,ds) = listsFromBanded a
             (u ,b ) = (Upper, listsBanded (n,n) (l,k) $ junk ++ (drop k ds))
             (u',b') = (Lower, listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk)
         
@@ -93,7 +96,7 @@ data HermBandedMV n e =
 instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMV n e) where
     arbitrary = do
         (HermBanded h a) <- arbitrary
-        x <- dvector (numCols a)
+        x <- vector (numCols a)
         return $ HermBandedMV h a x
 
     coarbitrary = undefined
@@ -109,7 +112,7 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (HermBanded a h) <- arbitrary
         n <- choose (0,s)
-        b <- dmatrix (numCols h,n)
+        b <- matrix (numCols h,n)
 
         return $ HermBandedMM a h b
             

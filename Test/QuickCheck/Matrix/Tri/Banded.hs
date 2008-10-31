@@ -30,13 +30,13 @@ triBanded :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
     d <- QC.vector n
-    let (_,_,(_:ds)) = toLists a
+    let (_,_,(_:ds)) = listsFromBanded a
     return $ listsBanded (n,n) (0,k) (d:ds)
 
 triBanded Lower NonUnit n k = do
     a <- triBanded Lower Unit n k
     d <- QC.vector n
-    let (_,_,ds) = toLists a
+    let (_,_,ds) = listsFromBanded a
         ds' = (init ds) ++ [d]
     return $ listsBanded (n,n) (k,0) ds'
     
@@ -45,7 +45,7 @@ triBanded _ Unit n 0 = do
     
 triBanded Upper Unit n k = do
     a <- triBanded Upper Unit n (k-1)
-    let (_,_,ds) = toLists a
+    let (_,_,ds) = listsFromBanded a
     
     d <- QC.vector (n-k) >>= \xs -> return $ xs ++ replicate k 0
     
@@ -53,7 +53,7 @@ triBanded Upper Unit n k = do
     
 triBanded Lower Unit n k = do
     a <- triBanded Lower Unit n (k-1)
-    let (_,_,ds) = toLists a
+    let (_,_,ds) = listsFromBanded a
 
     d <- QC.vector (n-k) >>= \xs -> return $ replicate k 0 ++ xs
     
@@ -74,7 +74,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBanded n e) where
         l    <- if n == 0 then return 0 else choose (0,n-1)
         junk <- replicateM l $ QC.vector n
         diagJunk <- QC.vector n
-        let (_,_,ds) = toLists a
+        let (_,_,ds) = listsFromBanded a
             t = case (u,d) of 
                     (Upper,NonUnit) -> 
                         listsBanded (n,n) (l,k) $ junk ++ ds

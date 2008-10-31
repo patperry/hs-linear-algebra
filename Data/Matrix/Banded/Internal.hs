@@ -40,6 +40,9 @@ module Data.Matrix.Banded.Internal (
     -- * Banded operations
     module BLAS.Numeric.Immutable,
 
+    -- * Converting to lists
+    listsFromBanded,
+
     -- * Low-level properties
     ldaOfBanded,
     isHermBanded,
@@ -174,10 +177,10 @@ instance (BLAS1 e) => ITensor Banded (Int,Int) e where
     assocs        = inlineLiftBanded getAssocs
 
     tmap f a      = coerceBanded $ listsBanded mn bw (map (map f) es)
-      where (mn,bw,es) = toLists a
+      where (mn,bw,es) = listsFromBanded a
 
-toLists :: (BLAS1 e) => Banded mn e -> ((Int,Int), (Int,Int),[[e]])
-toLists a = ( (m,n)
+listsFromBanded :: (BLAS1 e) => Banded mn e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
             )
@@ -244,7 +247,7 @@ instance (BLAS1 e) => Show (Banded mn e) where
         | isHermBanded a = 
            "herm (" ++ show (herm $ coerceBanded a) ++ ")"
         | otherwise = 
-             let (mn,kl,es) = toLists a 
+             let (mn,kl,es) = listsFromBanded a 
              in "listsBanded " ++ show mn ++ " " ++ show kl ++ " " ++ show es
 
 compareHelp :: (BLAS1 e) => 
