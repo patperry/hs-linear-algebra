@@ -501,9 +501,9 @@ trsm alpha t b =
 tbmv :: (ReadBanded a x e m, WriteVector y e m, BLAS2 e) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbmv alpha t x | isConj x = do
-    doConjVector x
+    doConj x
     tbmv alpha t (conj x)
-    doConjVector x
+    doConj x
 
 tbmv alpha t x =
     let (u,d,a) = toBase t
@@ -585,9 +585,9 @@ instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Banded) e
 tbsv :: (ReadBanded a x e m, WriteVector y e m, BLAS2 e) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbsv alpha t x | isConj x = do
-    doConjVector x
+    doConj x
     tbsv alpha t (conj x)
-    doConjVector x
+    doConj x
     
 tbsv alpha t x = 
     let (u,d,a) = toBase t
