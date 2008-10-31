@@ -59,7 +59,6 @@ import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 
 import BLAS.Numeric.Immutable
-import BLAS.Numeric
 
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
@@ -76,6 +75,7 @@ import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
 import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix, 
     ldaOfMatrix, colViews, BaseMatrix(..), IOMatrix, maybeFromRow, 
     maybeFromCol, newCopyMatrix, ReadMatrix )
+import Data.Matrix.Dense.Class.Operations
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
 
@@ -262,16 +262,16 @@ instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) =>
     ReadMatrix Matrix Vector e m where
 
 instance (BLAS1 e) => Num (Matrix mn e) where
-    (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAdd x y
-    (-) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getSub x y
-    (*) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getMul x y
+    (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y
+    (-) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getSubMatrix x y
+    (*) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getMulMatrix x y
     negate      = ((-1) *>)
     abs         = tmap abs
     signum      = tmap signum
     fromInteger = coerceMatrix . (constantMatrix (1,1)) . fromInteger
     
 instance (BLAS1 e) => Fractional (Matrix mn e) where
-    (/) x y      = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getDiv x y
+    (/) x y      = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getDivMatrix x y
     recip        = tmap recip
     fromRational = coerceMatrix . (constantMatrix (1,1)) . fromRational 
 

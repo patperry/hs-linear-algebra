@@ -753,15 +753,3 @@ instance (BLAS1 e, ReadMatrix a x e (ST s)) => Numeric2 a (STMatrix s) (Int,Int)
     unsafeAxpy = unsafeAxpyMatrix
     unsafeMul  = unsafeMulMatrix
     unsafeDiv  = unsafeDivMatrix
-
-instance (BLAS1 e, ReadMatrix a x e IO, ReadMatrix b y e IO) => Numeric3 a b IOMatrix (Int,Int) e IO where
-    unsafeDoAdd = unsafeDoAddMatrix
-    unsafeDoSub = unsafeDoSubMatrix
-    unsafeDoMul = unsafeDoMulMatrix
-    unsafeDoDiv = unsafeDoDivMatrix
-
-instance (BLAS1 e, ReadMatrix a x e (ST s), ReadMatrix b y e (ST s)) => Numeric3 a b (STMatrix s) (Int,Int) e (ST s) where
-    unsafeDoAdd = unsafeDoAddMatrix
-    unsafeDoSub = unsafeDoSubMatrix
-    unsafeDoMul = unsafeDoMulMatrix
-    unsafeDoDiv = unsafeDoDivMatrix
