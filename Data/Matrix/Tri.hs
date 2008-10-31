@@ -82,57 +82,57 @@ toBase :: Tri a (m,n) e -> (UpLo, Diag, a (m,n) e)
 toBase (Tri u d a) = (u,d,a)
 
 
-lower :: (BaseMatrix a e) => a (n,n) e -> Tri a (n,n) e
+lower :: (BaseMatrix a) => a (n,n) e -> Tri a (n,n) e
 lower a = checkSquare (shape a) $ Tri Lower NonUnit a
 
-lowerFat :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,m) e
+lowerFat :: (BaseMatrix a) => a (m,n) e -> Tri a (m,m) e
 lowerFat a = checkFat (shape a) $ Tri Lower NonUnit (unsafeCoerce a)
 
-lowerTall :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,n) e
+lowerTall :: (BaseMatrix a) => a (m,n) e -> Tri a (m,n) e
 lowerTall a = checkTall (shape a) $ Tri Lower NonUnit a
 
 
-lowerU :: (BaseMatrix a e) => a (n,n) e -> Tri a (n,n) e
+lowerU :: (BaseMatrix a) => a (n,n) e -> Tri a (n,n) e
 lowerU a = checkSquare (shape a) $ Tri Lower Unit a
 
-lowerUFat :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,m) e
+lowerUFat :: (BaseMatrix a) => a (m,n) e -> Tri a (m,m) e
 lowerUFat a = checkFat (shape a) $ Tri Lower Unit (unsafeCoerce a)
 
-lowerUTall :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,n) e
+lowerUTall :: (BaseMatrix a) => a (m,n) e -> Tri a (m,n) e
 lowerUTall a = checkTall (shape a) $ Tri Lower Unit a
 
 
-upper :: (BaseMatrix a e) => a (n,n) e -> Tri a (n,n) e
+upper :: (BaseMatrix a) => a (n,n) e -> Tri a (n,n) e
 upper a = checkSquare (shape a) $ Tri Upper NonUnit a
 
-upperFat :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,n) e
+upperFat :: (BaseMatrix a) => a (m,n) e -> Tri a (m,n) e
 upperFat a = checkFat (shape a) $ Tri Upper NonUnit a
 
-upperTall :: (BaseMatrix a e) => a (m,n) e -> Tri a (n,n) e
+upperTall :: (BaseMatrix a) => a (m,n) e -> Tri a (n,n) e
 upperTall a = checkTall (shape a) $ Tri Upper NonUnit (unsafeCoerce a)
 
 
-upperU :: (BaseMatrix a e) => a (n,n) e -> Tri a (n,n) e
+upperU :: (BaseMatrix a) => a (n,n) e -> Tri a (n,n) e
 upperU a = checkSquare (shape a) $ Tri Upper Unit a
 
-upperUFat :: (BaseMatrix a e) => a (m,n) e -> Tri a (m,n) e
+upperUFat :: (BaseMatrix a) => a (m,n) e -> Tri a (m,n) e
 upperUFat a = checkFat (shape a) $ Tri Upper Unit a
 
-upperUTall :: (BaseMatrix a e) => a (m,n) e -> Tri a (n,n) e
+upperUTall :: (BaseMatrix a) => a (m,n) e -> Tri a (n,n) e
 upperUTall a = checkTall (shape a) $ Tri Upper Unit (unsafeCoerce a)
 
       
-instance BaseMatrix a e => BaseTensor (Tri a) (Int,Int) e where
+instance BaseMatrix a => BaseTensor (Tri a) (Int,Int) where
     shape (Tri Lower _ a) = (numRows a, min (numRows a) (numCols a))
     shape (Tri Upper _ a) = (min (numRows a) (numCols a), numCols a)
     
     bounds a = ((0,0),(m-1,n-1)) where (m,n) = shape a
     
-instance BaseMatrix a e => BaseMatrix (Tri a) e where
+instance BaseMatrix a => BaseMatrix (Tri a) where
     herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
 
 
-instance (Show (a (m,n) e), BaseMatrix a e) => Show (Tri a (m,n) e) where
+instance (Show (a (m,n) e), BaseMatrix a) => Show (Tri a (m,n) e) where
     show (Tri u d a) =
         constructor ++ suffix ++ " (" ++ show a ++ ")"
         where
@@ -258,7 +258,7 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
     (u,d,a) = toBase t
 
 
-toLower :: (Dense.BaseMatrix a x e, Storable e) => Diag -> a (m,n) e 
+toLower :: (Dense.BaseMatrix a x, Storable e) => Diag -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
                   (Tri a (n,n) e, a (d,n) e)
 toLower diag a =
@@ -271,7 +271,7 @@ toLower diag a =
     (m,n) = shape a
     d     = m - n
     
-toUpper :: (Dense.BaseMatrix a x e, Storable e) => Diag -> a (m,n) e
+toUpper :: (Dense.BaseMatrix a x, Storable e) => Diag -> a (m,n) e
         -> Either (Tri a (n,n) e)
                   (Tri a (m,m) e, a (m,d) e)
 toUpper diag a =

@@ -190,7 +190,7 @@ unsafeDiag :: (Elem e) => Matrix mn e -> Int -> Vector k e
 unsafeDiag = unsafeDiagView
 
 
-instance (Elem e) => BaseTensor Matrix (Int,Int) e where
+instance BaseTensor Matrix (Int,Int) where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
 
@@ -242,10 +242,10 @@ instance (BLAS1 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance (Elem e) => BLAS.BaseMatrix Matrix e where
+instance BLAS.BaseMatrix Matrix where
     herm (M a) = M (herm a)
     
-instance (Elem e) => BaseMatrix Matrix Vector e where
+instance BaseMatrix Matrix Vector where
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 

@@ -65,7 +65,7 @@ import Data.Matrix.Dense.Internal( Matrix )
 import Data.Matrix.Dense.Class.Internal hiding ( BaseMatrix )
 
 -- | Minimal complete definition: (unsafeDoSApplyAdd, unsafeDoSApplyAddMat)
-class (BaseMatrix a e, BLAS1 e, Monad m) => MMatrix a e m where
+class (BaseMatrix a, BLAS1 e, Monad m) => MMatrix a e m where
     unsafeGetSApply :: (ReadVector x e m, WriteVector y e m) =>
         e -> a (k,l) e -> x l e -> m (y k e)
     unsafeGetSApply alpha a x = do

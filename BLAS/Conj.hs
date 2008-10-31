@@ -28,6 +28,6 @@ instance Conj Double where
     conj = id
     {-# INLINE conj #-}
 
-instance (BaseVector x e) => Conj (x n e) where
+instance (BaseVector x) => Conj (x n e) where
     conj = conjVector
     {-# INLINE conj #-}

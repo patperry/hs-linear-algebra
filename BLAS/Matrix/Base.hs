@@ -20,27 +20,27 @@ module BLAS.Matrix.Base (
 import BLAS.Tensor
 
 -- | A base class for matrices.
-class (BaseTensor a (Int,Int) e) => BaseMatrix a e where
+class (BaseTensor a (Int,Int)) => BaseMatrix a where
     -- | Creates a new matrix view that conjugates and transposes the 
     -- given matrix.
     herm :: a (m,n) e -> a (n,m) e
 
 -- | Get the number of rows in the matrix.
-numRows :: (BaseMatrix a e) => a mn e -> Int
+numRows :: (BaseMatrix a) => a mn e -> Int
 numRows = fst . shape
 {-# INLINE numRows #-}
 
 -- | Get the number of rows in the matrix.
-numCols :: (BaseMatrix a e) => a mn e -> Int
+numCols :: (BaseMatrix a) => a mn e -> Int
 numCols = snd . shape
 {-# INLINE numCols #-}
 
-isSquare :: (BaseMatrix a e) => a mn e -> Bool
+isSquare :: (BaseMatrix a) => a mn e -> Bool
 isSquare a = numRows a == numCols a
 
-isFat :: (BaseMatrix a e) => a mn e -> Bool
+isFat :: (BaseMatrix a) => a mn e -> Bool
 isFat a = numRows a <= numCols a
 
-isTall :: (BaseMatrix a e) => a mn e -> Bool
+isTall :: (BaseMatrix a) => a mn e -> Bool
 isTall a = numRows a >= numCols a
 

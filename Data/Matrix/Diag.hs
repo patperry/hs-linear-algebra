@@ -50,17 +50,17 @@ data Diag x nn e = forall n. Diag (x n e)
 coerceDiag :: Diag x mn e -> Diag x mn' e
 coerceDiag = unsafeCoerce
 
-diagFromVector :: (BaseVector x e) => x n e -> Diag x (n,n) e
+diagFromVector :: (BaseVector x) => x n e -> Diag x (n,n) e
 diagFromVector = Diag . coerceVector
 
-vectorFromDiag :: (BaseVector x e) => Diag x (n,n) e -> x n e
+vectorFromDiag :: (BaseVector x) => Diag x (n,n) e -> x n e
 vectorFromDiag (Diag x) = coerceVector x
 
-instance (BaseVector x e) => BaseTensor (Diag x) (Int,Int) e where
+instance (BaseVector x) => BaseTensor (Diag x) (Int,Int) where
     shape  (Diag x) = (n,n) where n = dim x
     bounds (Diag x) = ((0,0),(n-1,n-1)) where n = dim x
 
-instance (BaseVector x e) => BLAS.BaseMatrix (Diag x) e where
+instance (BaseVector x) => BLAS.BaseMatrix (Diag x) where
     herm (Diag x) = Diag (conj x)
     
         

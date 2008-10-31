@@ -168,7 +168,7 @@ divMatrix b a =
 {-# INLINE divMatrix #-}
 
 
-checkTensorOp2 :: (BaseTensor x i e, BaseTensor y i e) => 
+checkTensorOp2 :: (BaseTensor x i, BaseTensor y i) => 
     (x n e -> y n e -> a) ->
         x n e -> y n e -> a
 checkTensorOp2 f x y = 

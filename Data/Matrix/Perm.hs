@@ -77,13 +77,13 @@ toPermutation (P sigma h) = if h then P.inverse sigma else sigma
 coercePerm :: Perm mn e -> Perm mn' e
 coercePerm = unsafeCoerce
 
-instance BaseTensor Perm (Int,Int) e where
+instance BaseTensor Perm (Int,Int) where
     shape (P sigma _) = (n,n) where n = P.size sigma
     shape (I n)       = (n,n)
     
     bounds p = ((0,0), (m-1,n-1)) where (m,n) = shape p
     
-instance BaseMatrix Perm e where
+instance BaseMatrix Perm where
     herm a@(P _ _) = a{ isHerm=(not . isHerm) a }
     herm a@(I _)   = coercePerm a
 

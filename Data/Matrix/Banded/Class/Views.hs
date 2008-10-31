@@ -25,19 +25,19 @@ import Data.Matrix.Banded.Class.Internal
 import Data.Vector.Dense.Class
 import Foreign
 
-diagViewBanded :: (BaseBanded a x e, Storable e) => 
+diagViewBanded :: (BaseBanded a x, Storable e) => 
     a mn e -> Int -> x k e
 diagViewBanded a = checkedDiag (shape a) (unsafeDiagViewBanded a) 
 
-rowViewBanded :: (BaseBanded a x e, Storable e) => 
+rowViewBanded :: (BaseBanded a x, Storable e) => 
     a mn e -> Int -> (Int, x k e, Int)
 rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
 
-colViewBanded :: (BaseBanded a x e, Storable e) => 
+colViewBanded :: (BaseBanded a x, Storable e) => 
     a mn e -> Int -> (Int, x k e, Int)
 colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 
-unsafeDiagViewBanded :: (BaseBanded a x e, Storable e) => 
+unsafeDiagViewBanded :: (BaseBanded a x, Storable e) => 
     a mn e -> Int -> x k e
 unsafeDiagViewBanded a d
     | isHermBanded a = conj $ unsafeDiagViewBanded a' (negate d)

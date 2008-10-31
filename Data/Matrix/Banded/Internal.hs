@@ -54,7 +54,7 @@ import System.IO.Unsafe
 
 
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
-import BLAS.Elem( Elem, BLAS1, BLAS2 )
+import BLAS.Elem( BLAS1, BLAS2 )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.Read
@@ -154,7 +154,7 @@ unsafeDiagBanded a i
     | otherwise               = zeroVector $ diagLen (shape a) i
 
 
-instance (Elem e) => BaseTensor Banded (Int,Int) e where
+instance BaseTensor Banded (Int,Int) where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 
@@ -210,10 +210,10 @@ instance (BLAS1 e, Monad m) => ReadTensor Banded (Int,Int) e m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance (Elem e) => BLAS.BaseMatrix Banded e where
+instance BLAS.BaseMatrix Banded where
     herm (B a) = B (herm a)
     
-instance (Elem e) => BaseBanded Banded Vector e where
+instance BaseBanded Banded Vector where
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 

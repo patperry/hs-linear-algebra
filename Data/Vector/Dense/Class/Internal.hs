@@ -93,23 +93,23 @@ import BLAS.UnsafeIOToM
 
 import Data.Vector.Dense.Class.Internal.Base
 
-class (Elem e, BaseVector x e, UnsafeIOToM m, ReadTensor x Int e m) => ReadVector x e m
+class (Elem e, BaseVector x, UnsafeIOToM m, ReadTensor x Int e m) => ReadVector x e m
 
 class (WriteTensor x Int e m, ReadVector x e m) => WriteVector x e m | x -> m, m -> x
 
 
 -- | Cast the shape type of the vector.
-coerceVector :: (BaseVector x e) => x n e -> x n' e
+coerceVector :: (BaseVector x) => x n e -> x n' e
 coerceVector = unsafeCoerce
 {-# INLINE coerceVector #-}
 
 -------------------------- BaseTensor functions -----------------------------
 
-shapeVector :: (BaseVector x e) => x n e -> Int
+shapeVector :: (BaseVector x) => x n e -> Int
 shapeVector = dim
 {-# INLINE shapeVector #-}
 
-boundsVector :: (BaseVector x e) => x n e -> (Int,Int)
+boundsVector :: (BaseVector x) => x n e -> (Int,Int)
 boundsVector x = (0, dim x - 1)
 {-# INLINE boundsVector #-}
 
@@ -356,11 +356,11 @@ unsafeDivVector y x
 
 --------------------------- Utility functions -------------------------------
 
-indexOfVector :: (BaseVector x e) => x n e -> Int -> Int
+indexOfVector :: (BaseVector x) => x n e -> Int -> Int
 indexOfVector x i = i * stride x
 {-# INLINE indexOfVector #-}
 
-indicesVector :: (BaseVector x e) => x n e -> [Int]
+indicesVector :: (BaseVector x) => x n e -> [Int]
 indicesVector x = [0..(n-1)] where n = dim x
 {-# INLINE indicesVector #-}
 
@@ -407,25 +407,25 @@ unsafeSTVectorToIOVector :: STVector s n e -> IOVector n e
 unsafeSTVectorToIOVector (ST x) = x
 
 
-instance (Elem e) => BaseVector IOVector e where
+instance BaseVector IOVector where
     vectorViewArray                = DV
     {-# INLINE vectorViewArray #-}
     
     arrayFromVector (DV f p n s c) = (f,p,n,s,c)
     {-# INLINE arrayFromVector #-}
 
-instance (Elem e) => BaseVector (STVector s) e where
+instance BaseVector (STVector s) where
     vectorViewArray f p n s c = ST $ DV f p n s c
     {-# INLINE vectorViewArray #-}    
     
     arrayFromVector (ST x)    = arrayFromVector x
     {-# INLINE arrayFromVector #-}
 
-instance (Elem e) => BaseTensor IOVector Int e where
+instance BaseTensor IOVector Int where
     bounds = boundsVector
     shape  = shapeVector
 
-instance (Elem e) => BaseTensor (STVector s) Int e where
+instance BaseTensor (STVector s) Int where
     bounds = boundsVector
     shape  = shapeVector
         

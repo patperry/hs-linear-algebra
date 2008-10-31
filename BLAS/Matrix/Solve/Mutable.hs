@@ -46,7 +46,7 @@ import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Class hiding ( BaseMatrix )
 
 
-class (BaseMatrix a e, BLAS1 e, Monad m) => MSolve a e m where
+class (BaseMatrix a, BLAS1 e, Monad m) => MSolve a e m where
     unsafeDoSolve :: (ReadVector y e m, WriteVector x e m) =>
         a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSolve = unsafeDoSSolve 1

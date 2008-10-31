@@ -41,12 +41,12 @@ import Foreign
 
 -- | @submatrixView a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
-submatrixView :: (BaseMatrix a x e, Storable e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
+submatrixView :: (BaseMatrix a x, Storable e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
 submatrixView a = checkedSubmatrix (shape a) (unsafeSubmatrixView a)
 {-# INLINE submatrixView #-}
 
 -- | Same as 'submatrixView' but indices are not range-checked.
-unsafeSubmatrixView :: (BaseMatrix a x e, Storable e) => 
+unsafeSubmatrixView :: (BaseMatrix a x, Storable e) => 
     a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
 unsafeSubmatrixView a (i,j) (m,n)
     | isHermMatrix a  = 
@@ -60,15 +60,15 @@ unsafeSubmatrixView a (i,j) (m,n)
 
 
 -- | Get a vector view of the given diagonal in a matrix.
-diagView :: (BaseMatrix a x e, Storable e) => a mn e -> Int -> x k e
+diagView :: (BaseMatrix a x, Storable e) => a mn e -> Int -> x k e
 diagView a = checkedDiag (shape a) (unsafeDiagView a)
 
 -- | Get a vector view of the given row in a matrix.
-rowView :: (BaseMatrix a x e, Storable e) => a (m,n) e -> Int -> x n e
+rowView :: (BaseMatrix a x, Storable e) => a (m,n) e -> Int -> x n e
 rowView a = checkedRow (shape a) (unsafeRowView a)
 
 -- | Get a vector view of the given column in a matrix.
-colView :: (BaseMatrix a x e, Storable e) => a (m,n) e -> Int -> x m e
+colView :: (BaseMatrix a x, Storable e) => a (m,n) e -> Int -> x m e
 colView a = checkedCol (shape a) (unsafeColView a)
 
 -- | Get the given diagonal in a matrix.  Negative indices correspond

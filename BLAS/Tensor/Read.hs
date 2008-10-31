@@ -17,7 +17,7 @@ import Data.Ix
 import BLAS.Tensor.Base
 
 -- | Class for mutable read-only tensors.
-class (BaseTensor x i e, Monad m) => ReadTensor x i e m | x -> i where
+class (BaseTensor x i, Monad m) => ReadTensor x i e m | x -> i where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     

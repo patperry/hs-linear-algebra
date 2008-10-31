@@ -56,7 +56,7 @@ import BLAS.Conj
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( BLAS1 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 
@@ -161,7 +161,7 @@ whichMaxAbs = unsafeLiftVector getWhichMaxAbs
 {-# NOINLINE (<.>) #-}
 
 
-instance (Elem e) => BaseTensor Vector Int e where
+instance BaseTensor Vector Int where
     shape  = liftVector shape
     bounds = liftVector bounds
 
@@ -208,7 +208,7 @@ instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
     
 
 
-instance (Elem e) => BaseVector Vector e where
+instance BaseVector Vector where
     vectorViewArray f o n s c = V $ vectorViewArray f o n s c
     arrayFromVector           = liftVector arrayFromVector
 
