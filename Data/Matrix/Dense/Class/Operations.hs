@@ -9,6 +9,11 @@
 
 module Data.Matrix.Dense.Class.Operations (
     -- * Matrix operations
+    -- ** Unsary
+    getConjMatrix,
+    getScaledMatrix,
+    getShiftedMatrix,
+    
     -- ** Binary
     getAddMatrix,
     getSubMatrix,
@@ -20,6 +25,7 @@ module Data.Matrix.Dense.Class.Operations (
     mulMatrix,
     divMatrix,
 
+    -- ** Unsafe
     unsafeGetAddMatrix,
     unsafeGetSubMatrix,
     unsafeGetMulMatrix,
@@ -40,6 +46,34 @@ import BLAS.Tensor( BaseTensor(..) )
 import BLAS.Numeric
 
 import Data.Matrix.Dense.Class.Internal
+
+
+---------------------------- Unary Operations -----------------------------
+
+-- | Get a new matrix with elements with the conjugates of the elements
+-- of the given matrix.
+getConjMatrix :: (ReadMatrix a x e m, WriteMatrix b y e m, BLAS1 e) =>
+    a mn e -> m (b mn e)
+getConjMatrix = getUnaryOp doConjMatrix
+{-# INLINE getConjMatrix #-}
+
+-- | Get a new matrix by scaling the elements of another matrix
+-- by a given value.
+getScaledMatrix :: (ReadMatrix a x e m, WriteMatrix b y e m, BLAS1 e) =>
+    e -> a mn e -> m (b mn e)
+getScaledMatrix e = getUnaryOp (scaleByMatrix e)
+{-# INLINE getScaledMatrix #-}
+
+-- | Get a new matrix by shifting the elements of another matrix
+-- by a given value.
+getShiftedMatrix :: (ReadMatrix a x e m, WriteMatrix b y e m, BLAS1 e) =>
+    e -> a mn e -> m (b mn e)
+getShiftedMatrix e = getUnaryOp (shiftByMatrix e)
+{-# INLINE getShiftedMatrix #-}
+
+
+---------------------------- Binary Operations -----------------------------
+
 
 -- | @getAddMatrix a b@ creates a new matrix equal to the sum @a+b@.  The 
 -- operands must have the same shape.
@@ -143,6 +177,14 @@ checkTensorOp2 :: (BaseTensor x i e, BaseTensor y i e) =>
 checkTensorOp2 f x y = 
     checkBinaryOp (shape x) (shape y) $ f x y
 {-# INLINE checkTensorOp2 #-}
+
+getUnaryOp :: (ReadMatrix a x e m, WriteMatrix b y e m, BLAS1 e) =>
+    (b mn e -> m ()) -> a mn e -> m (b mn e)
+getUnaryOp f a = do
+    b <- newCopyMatrix a
+    f b
+    return b
+{-# INLINE getUnaryOp #-}
 
 unsafeGetBinaryOp :: 
     (WriteMatrix c z e m, ReadMatrix a x e m, ReadMatrix b y e m, BLAS1 e) => 

@@ -8,13 +8,13 @@
 --
 
 module Data.Vector.Dense.Class.Operations (
-    -- * Vector Operations
-    -- ** Unary Operations
+    -- * Vector operations
+    -- ** Unary
     getConjVector,
     getScaledVector,
     getShiftedVector,
     
-    -- ** Binary Operations
+    -- ** Binary
     getAddVector,
     getSubVector,
     getMulVector,
@@ -25,7 +25,7 @@ module Data.Vector.Dense.Class.Operations (
     mulVector,
     divVector,
 
-    -- ** Unsafe Operations
+    -- ** Unsafe
     unsafeGetAddVector,
     unsafeGetSubVector,
     unsafeGetMulVector,
