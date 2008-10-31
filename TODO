@@ -50,11 +50,6 @@
 
 * Optimization: better "swapElem" for vector and matrix
 
-* Optimization: Cache the base pointer.  
-    (unsafeForeignPtrToPtr (fptrOf x) `advancePtr` offsetOf x).
-    Don't store the offset.  Be careful to use touchForeignPtr after using 
-    it.
-
 * Optimization: Put vector/matrix fields in the typeclass and inline them.  
 Implementation for IOVector:
 
