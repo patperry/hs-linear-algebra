@@ -112,7 +112,7 @@ prop_abs (x :: V) =
     elems (abs x) ~== map abs (elems x)
 
 prop_signum (x :: V) =
-    elems (signum x) === map signum (elems x)
+    elems (signum x) ~== map signum (elems x)
 
 prop_recip (x :: V) =
     elems (recip x) ~== (map recip $ elems x)
