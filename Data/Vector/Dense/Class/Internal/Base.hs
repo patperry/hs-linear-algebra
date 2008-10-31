@@ -10,8 +10,7 @@
 
 module Data.Vector.Dense.Class.Internal.Base (
     BaseVector(..),
-    fptrOfVector,
-    offsetOfVector,
+    withVectorPtr,
     dim,
     stride,
     isConj,
@@ -23,24 +22,26 @@ import BLAS.Tensor.Base
 
 class (BaseTensor x Int e) => BaseVector x e where
     
-    -- | Given a pointer, an offset, a length, a stride, and a conjugacy
+    -- | Give a storage region, a base pointer, a length, a stride, and a conjugacy
     -- flag, create a vector view of the underlying memory.
-    vectorViewArray :: ForeignPtr e -> Int -> Int -> Int -> Bool -> x n e
+    vectorViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Bool -> x n e
 
-    arrayFromVector :: x n e -> (ForeignPtr e, Int, Int, Int, Bool)
+    arrayFromVector :: x n e -> (ForeignPtr e, Ptr e, Int, Int, Bool)
 
 conjVector :: (BaseVector x e) => x n e -> x n e
 conjVector x = let (f,o,n,s,c) = arrayFromVector x
                in vectorViewArray f o n s (not c)
 {-# INLINE conjVector #-} 
 
-fptrOfVector :: (BaseVector x e) => x n e -> ForeignPtr e
-fptrOfVector x = let (f,_,_,_,_) = arrayFromVector x in f
-{-# INLINE fptrOfVector #-}
-
-offsetOfVector :: (BaseVector x e) => x n e -> Int
-offsetOfVector x = let (_,o,_,_,_) = arrayFromVector x in o
-{-# INLINE offsetOfVector #-}
+withVectorPtr :: (BaseVector x e, Storable e) => 
+    x n e -> (Ptr e -> IO a) -> IO a
+withVectorPtr x f = 
+    let (fp,p,_,_,_) = arrayFromVector x
+    in do
+        a <- f p
+        touchForeignPtr fp
+        return a
+{-# INLINE withVectorPtr #-}
 
 dim :: (BaseVector x e) => x n e -> Int
 dim x = let (_,_,n,_,_) = arrayFromVector x in n

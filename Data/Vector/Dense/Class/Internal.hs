@@ -145,9 +145,8 @@ getAssocsVector x
         getAssocsVector (conj x) 
             >>= return . map (\(i,e) -> (i,conj e))
     | otherwise =
-        let (f,o,n,incX,_) = arrayFromVector x
-            ptr = (unsafeForeignPtrToPtr f) `advancePtr` o
-        in return $ go n f incX ptr 0
+        let (f,p,n,incX,_) = arrayFromVector x
+        in return $ go n f incX p 0
   where
         go !n !f !incX !ptr !i 
             | i >= n = 
@@ -191,7 +190,7 @@ unsafeReadElemVector x i
         unsafeReadElemVector (conj x) i >>= return . conj
     | otherwise =
         unsafeIOToM $
-            withForeignPtr (fptrOfVector x) $ \ptr ->
+            withVectorPtr x $ \ptr ->
                 peekElemOff ptr (indexOfVector x i) 
 
 
@@ -205,7 +204,7 @@ newVector_ n
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
     | otherwise = unsafeIOToM $ do
         arr <- mallocForeignPtrArray n
-        return $ vectorViewArray arr 0 n 1 False
+        return $ vectorViewArray arr (unsafeForeignPtrToPtr arr) n 1 False
 
 -- | Create a zero vector of the specified length.
 newZeroVector :: (WriteVector y e m) => Int -> m (y n e)
@@ -248,7 +247,7 @@ canModifyElemVector _ _ = return True
 unsafeWriteElemVector :: (WriteVector y e m) => y n e -> Int -> e -> m ()
 unsafeWriteElemVector x i e =
     let e' = if isConj x then conj e else e
-    in unsafeIOToM $ withForeignPtr (fptrOfVector x) $ \ptr -> 
+    in unsafeIOToM $ withVectorPtr x $ \ptr -> 
            pokeElemOff ptr (indexOfVector x i) e'
                     
 modifyWithVector :: (WriteVector y e m) => (e -> e) -> y n e -> m ()
@@ -378,15 +377,8 @@ unsafeDoDivVector = unsafeDoVectorOp2 $ unsafeDivVector
 
 --------------------------- Utility functions -------------------------------
 
-withVectorPtr :: (BaseVector x e, Storable e) => 
-    x n e -> (Ptr e -> IO a) -> IO a
-withVectorPtr x f = 
-    withForeignPtr (fptrOfVector x) $ \ptr ->
-        f $ ptr `advancePtr` offsetOfVector x
-{-# INLINE withVectorPtr #-}
-
 indexOfVector :: (BaseVector x e) => x n e -> Int -> Int
-indexOfVector x i = offsetOfVector x + i * stride x
+indexOfVector x i = i * stride x
 {-# INLINE indexOfVector #-}
 
 indicesVector :: (BaseVector x e) => x n e -> [Int]
@@ -427,8 +419,8 @@ unsafeDoVectorOp2 f x y z = do
 ------------------------------------ Instances ------------------------------
 
 data IOVector n e = 
-      DV {-# UNPACK #-} !(ForeignPtr e) -- a pointer to the storage region
-         {-# UNPACK #-} !Int            -- an offset (in elements, not bytes) to the first element in the vector. 
+      DV {-# UNPACK #-} !(ForeignPtr e) -- memory owner
+         {-# UNPACK #-} !(Ptr e)        -- pointer to the first element
          {-# UNPACK #-} !Int            -- the length of the vector
          {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
          {-# UNPACK #-} !Bool           -- indicates whether or not the vector is conjugated
@@ -446,11 +438,11 @@ instance (Elem e) => BaseVector IOVector e where
     vectorViewArray                = DV
     {-# INLINE vectorViewArray #-}
     
-    arrayFromVector (DV f o n s c) = (f,o,n,s,c)
+    arrayFromVector (DV f p n s c) = (f,p,n,s,c)
     {-# INLINE arrayFromVector #-}
 
 instance (Elem e) => BaseVector (STVector s) e where
-    vectorViewArray f o n s c = ST $ DV f o n s c
+    vectorViewArray f p n s c = ST $ DV f p n s c
     {-# INLINE vectorViewArray #-}    
     
     arrayFromVector (ST x)    = arrayFromVector x

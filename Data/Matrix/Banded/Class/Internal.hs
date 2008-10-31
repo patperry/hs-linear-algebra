@@ -56,8 +56,6 @@ module Data.Matrix.Banded.Class.Internal (
     boundsBanded,
     withBandedPtr,
     withBandedElemPtr,
-    fptrOfBanded,
-    offsetOfBanded,
     indexOfBanded,
     indicesBanded,
     gbmv,
@@ -97,8 +95,8 @@ import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
 
 class (BLAS.BaseMatrix a e, BaseVector x e) => 
     BaseBanded a x e | a -> x where
-        bandedViewArray :: ForeignPtr e -> Int -> (Int,Int) -> (Int,Int) -> Int -> Bool -> a mn e
-        arrayFromBanded :: a mn e -> (ForeignPtr e, Int, (Int,Int), (Int,Int), Int, Bool)
+        bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
+        arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
 
 class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
            BaseBanded a x e, ReadVector x e m) => 
@@ -111,43 +109,44 @@ class (WriteTensor a (Int,Int) e m,
 
 ------------------------- Basic Banded Properties ---------------------------
 
-fptrOfBanded :: (BaseBanded a x e) => a mn e -> ForeignPtr e
-fptrOfBanded a = let (f,_,_,_,_,_) = arrayFromBanded a in f
-{-# INLINE fptrOfBanded #-}
-
-offsetOfBanded :: (BaseBanded a x e) => a mn e -> Int
-offsetOfBanded a = let (_,o,_,_,_,_) = arrayFromBanded a in o
-{-# INLINE offsetOfBanded #-}
+withBandedPtr :: (BaseBanded a x e, Storable e) => 
+    a mn e -> (Ptr e -> IO b) -> IO b
+withBandedPtr a f =
+    let (fp,p,_,_,_,_,_,_) = arrayFromBanded a
+    in do
+        b <- f p
+        touchForeignPtr fp
+        return b
 
 size1 :: (BaseBanded a x e) => a mn e -> Int
-size1 a = let (_,_,(m,_),_,_,_) = arrayFromBanded a in m
+size1 a = let (_,_,m,_,_,_,_,_) = arrayFromBanded a in m
 {-# INLINE size1  #-}
 
 size2 :: (BaseBanded a x e) => a mn e -> Int
-size2 a = let (_,_,(_,n),_,_,_) = arrayFromBanded a in n
+size2 a = let (_,_,_,n,_,_,_,_) = arrayFromBanded a in n
 {-# INLINE size2 #-}
 
 lowBW :: (BaseBanded a x e) => a mn e -> Int
-lowBW a = let (_,_,_,(kl,_),_,_) = arrayFromBanded a in kl
+lowBW a = let (_,_,_,_,kl,_,_,_) = arrayFromBanded a in kl
 {-# INLINE lowBW  #-}
 
 upBW :: (BaseBanded a x e) => a mn e -> Int
-upBW a = let (_,_,_,(_,ku),_,_) = arrayFromBanded a in ku
+upBW a = let (_,_,_,_,_,ku,_,_) = arrayFromBanded a in ku
 {-# INLINE upBW #-}
 
 ldaOfBanded :: (BaseBanded a x e) => a mn e -> Int
-ldaOfBanded a = let (_,_,_,_,l,_) = arrayFromBanded a in l
+ldaOfBanded a = let (_,_,_,_,_,_,l,_) = arrayFromBanded a in l
 {-# INLINE ldaOfBanded #-}
 
 isHermBanded :: (BaseBanded a x e) => a mn e -> Bool
-isHermBanded a = let (_,_,_,_,_,h) = arrayFromBanded a in h
+isHermBanded a = let (_,_,_,_,_,_,_,h) = arrayFromBanded a in h
 {-# INLINE isHermBanded #-}
 
 matrixFromBanded :: (BaseBanded b x e, BaseMatrix a x e) => 
     b mn e -> ((Int,Int), (Int,Int), a mn' e, Bool)
 matrixFromBanded b =
-    let (f,o,(m,n),(kl,ku),ld,h) = arrayFromBanded b
-        a = matrixViewArray f o (kl+1+ku,n) ld False
+    let (f,p,m,n,kl,ku,ld,h) = arrayFromBanded b
+        a = matrixViewArray f p (kl+1+ku) n ld False
     in ((m,n), (kl,ku), a, h)
 
 bandedViewMatrix :: (BaseMatrix a x e, BaseBanded b x e) => 
@@ -155,7 +154,7 @@ bandedViewMatrix :: (BaseMatrix a x e, BaseBanded b x e) =>
 bandedViewMatrix (m,n) (kl,ku) a h = 
     if isHermMatrix a 
         then Nothing
-        else let (f,o,(m',n'),ld,_) = arrayFromMatrix a
+        else let (f,p,m',n',ld,_) = arrayFromMatrix a
              in case undefined of
                  _ | m' /= kl+1+ku -> 
                      error $ "bandedViewMatrix:"
@@ -164,7 +163,7 @@ bandedViewMatrix (m,n) (kl,ku) a h =
                      error $ "bandedViewMatrix:"
                         ++ " numbers of columns must be equal"
                  _ ->
-                     Just $ bandedViewArray f o (m,n) (kl,ku) ld h
+                     Just $ bandedViewArray f p m n kl ku ld h
 
 bandwidth :: (BaseBanded a x e) => a mn e -> (Int,Int)
 bandwidth a =
@@ -204,8 +203,8 @@ boundsBanded a = ((0,0), (m-1,n-1)) where (m,n) = shapeBanded a
 -------------------------- BaseMatrix functions -----------------------------
 
 hermBanded :: (BaseBanded a x e) => a (m,n) e -> a (n,m) e
-hermBanded a = let (f,o,mn,kl,l,h) = arrayFromBanded a
-               in bandedViewArray f o mn kl l (not h)
+hermBanded a = let (f,p,m,n,kl,ku,l,h) = arrayFromBanded a
+               in bandedViewArray f p m n kl ku l (not h)
 {-# INLINE hermBanded #-}
 
 
@@ -246,8 +245,7 @@ unsafeReadElemBanded a (i,j)
         >>= return . conj
     | hasStorageBanded a (i,j) =
         unsafeIOToM $
-            withForeignPtr (fptrOfBanded a) $ \ptr ->
-                peekElemOff ptr (indexOfBanded a (i,j))
+            withBandedElemPtr a (i,j) peek
     | otherwise =
         return 0
 {-# INLINE unsafeReadElemBanded #-}
@@ -270,13 +268,13 @@ newBanded_ (m,n) (kl,ku)
     | n /= 0 && ku >= n =
         err "upper bandwidth must be less than n."
     | otherwise =
-        let off = 0
-            m'  = kl + 1 + ku
+        let m'  = kl + 1 + ku
             l   = m'
             h   = False
         in unsafeIOToM $ do    
-            ptr <- mallocForeignPtrArray (m' * n)
-            return $ bandedViewArray ptr off (m,n) (kl,ku) l h
+            fp <- mallocForeignPtrArray (m' * n)
+            let p = unsafeForeignPtrToPtr fp
+            return $ bandedViewArray fp p m n kl ku l h
     where
       err s = fail $ "newBanded_ " ++ show (m,n) ++ " " ++ show (kl,ku) ++ ": " ++ s
                   
@@ -311,8 +309,7 @@ unsafeWriteElemBanded :: (WriteBanded a x e m) =>
 unsafeWriteElemBanded a (i,j) e
     | isHermBanded a  = unsafeWriteElemBanded a' (j,i) $ conj e
     | otherwise = unsafeIOToM $
-                      withForeignPtr (fptrOfBanded a) $ \ptr ->
-                          pokeElemOff ptr (indexOfBanded a (i,j)) e
+                      withBandedElemPtr a (i,j) (`poke` e)
   where
     a' = (hermBanded . coerceBanded) a
 
@@ -328,42 +325,44 @@ canModifyElemBanded a ij = return $ hasStorageBanded a ij
 
 ------------------------------ Vector views ---------------------------------
 
-unsafeRowViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeRowViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> (Int, x k e, Int)
 unsafeRowViewBanded a i =
     if h then
         case unsafeColViewBanded a' i of (nb, v, na) -> (nb, conj v, na)        
     else
-        let nb   = max (i - kl)         0
-            na   = max (n - 1 - i - ku) 0
-            r    = min (ku + i)         (kl + ku)
-            c    = max (i - kl)         0 
-            off' = off + r + c * ld
-            inc  = ld - 1
-            len  = n - (nb + na)
+        let nb  = max (i - kl)         0
+            na  = max (n - 1 - i - ku) 0
+            r   = min (ku + i)         (kl + ku)
+            c   = max (i - kl)         0 
+            p'  = p `advancePtr` (r + c * ld)
+            inc = ld - 1
+            len = n - (nb + na)
         in if len >= 0 
-            then (nb, vectorViewArray f off' len inc False, na)
-            else (n , vectorViewArray f off' 0   inc False,  0)
+            then (nb, vectorViewArray f p' len inc False, na)
+            else (n , vectorViewArray f p' 0   inc False,  0)
   where
-    (f,off,(_,n),(kl,ku),ld,h) = arrayFromBanded a
+    (f,p,_,n,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
 
-unsafeColViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+unsafeColViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> (Int, x k e, Int)
 unsafeColViewBanded a j =
     if h then
         case unsafeRowViewBanded a' j of (nb, v, na) -> (nb, conj v, na)
     else
-        let nb    = max (j - ku)         0
-            na    = max (m - 1 - j - kl) 0
-            r     = max (ku - j) 0 
-            c     = j 
-            off'  = off + r + c * ld
-            inc   = 1
-            len   = m - (nb + na)
+        let nb  = max (j - ku)         0
+            na  = max (m - 1 - j - kl) 0
+            r   = max (ku - j) 0 
+            c   = j 
+            p'  = p `advancePtr` (r + c * ld)
+            inc = 1
+            len = m - (nb + na)
         in if len >= 0
-            then (nb, vectorViewArray f off' len inc False, na)
-            else (m , vectorViewArray f off' 0   inc False,  0)
+            then (nb, vectorViewArray f p' len inc False, na)
+            else (m , vectorViewArray f p' 0   inc False,  0)
   where
-    (f,off,(m,_),(kl,ku),ld,h) = arrayFromBanded a
+    (f,p,m,_,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
 
 unsafeGetRowBanded :: (ReadBanded a x e m, WriteVector y e m) => 
@@ -422,34 +421,28 @@ gbmm alpha a b beta c =
 
 --------------------------- Utility functions -------------------------------
 
-withBandedPtr :: (BaseBanded a x e, Storable e) => 
-    a mn e -> (Ptr e -> IO b) -> IO b
-withBandedPtr a f =
-    withForeignPtr (fptrOfBanded a) $ \ptr ->
-        f $ ptr `advancePtr` (offsetOfBanded a)
-
 withBandedElemPtr :: (BaseBanded a x e, Storable e) => 
     a mn e -> (Int,Int) -> (Ptr e -> IO b) -> IO b
 withBandedElemPtr a (i,j) f
     | isHermBanded a  = withBandedElemPtr (hermBanded $ coerceBanded a) (j,i) f
-    | otherwise = withForeignPtr (fptrOfBanded a) $ \ptr ->
+    | otherwise = withBandedPtr a $ \ptr ->
                       f $ ptr `advancePtr` (indexOfBanded a (i,j))
 
 indexOfBanded :: (BaseBanded a x e) => a mn e -> (Int,Int) -> Int
 indexOfBanded a (i,j) =
-    let (_,off,_,(_,ku),ld,h) = arrayFromBanded a
-        (i',j')               = if h then (j,i) else (i,j)
-    in off + ku + (i' - j') + j' * ld
+    let (_,_,_,_,_,ku,ld,h) = arrayFromBanded a
+        (i',j')           = if h then (j,i) else (i,j)
+    in ku + (i' - j') + j' * ld
 
 hasStorageBanded :: (BaseBanded a x e) => a mn e -> (Int,Int) -> Bool
 hasStorageBanded a (i,j) =
-    let (_,_,(m,_),(kl,ku),_,h) = arrayFromBanded a
-        (i',j')                 = if h then (j,i) else (i,j)
+    let (_,_,m,_,kl,ku,_,h) = arrayFromBanded a
+        (i',j')             = if h then (j,i) else (i,j)
     in inRange (max 0 (j'-ku), min (m-1) (j'+kl)) i'
 
 sizeBanded :: (BaseBanded a x e) => a mn e -> Int
 sizeBanded a =
-    let (_,_,(m,n),(kl,ku),_,_) = arrayFromBanded a
+    let (_,_,m,n,kl,ku,_,_) = arrayFromBanded a
     in foldl' (+) 0 $ map (diagLen (m,n)) [(-kl)..ku]
 
 indicesBanded :: (BaseBanded a x e) => a mn e -> [(Int,Int)]
@@ -474,8 +467,8 @@ flipShape (m,n) = (n,m)
 
 -- | The Banded matrix data type.
 data IOBanded mn e =
-    BM {-# UNPACK #-} !(ForeignPtr e) -- base storage
-       {-# UNPACK #-} !Int            -- offset into storage
+    BM {-# UNPACK #-} !(ForeignPtr e) -- storage
+       {-# UNPACK #-} !(Ptr e)        -- base pointer
        {-# UNPACK #-} !Int            -- numer of rows
        {-# UNPACK #-} !Int            -- number of columns
        {-# UNPACK #-} !Int            -- lower bandwidth
@@ -492,12 +485,12 @@ unsafeSTBandedToIOBanded :: STBanded s mn e -> IOBanded mn e
 unsafeSTBandedToIOBanded (ST x) = x
 
 instance (Elem e) => BaseBanded IOBanded IOVector e where
-    bandedViewArray f o (m,n) (kl,ku) ld h = BM f o m n kl ku ld h
-    arrayFromBanded (BM f o m n kl ku ld h) = (f,o,(m,n),(kl,ku),ld,h)
+    bandedViewArray f p m n kl ku ld h      = BM f p m n kl ku ld h
+    arrayFromBanded (BM f p m n kl ku ld h) = (f,p,m,n,kl,ku,ld,h)
 
 instance (Elem e) => BaseBanded (STBanded s) (STVector s) e where
-    bandedViewArray f o (m,n) (kl,ku) ld h       = ST (BM f o m n kl ku ld h)
-    arrayFromBanded (ST (BM f o m n kl ku ld h)) = (f,o,(m,n),(kl,ku),ld,h)
+    bandedViewArray f p m n kl ku ld h           = ST (BM f p m n kl ku ld h)
+    arrayFromBanded (ST (BM f p m n kl ku ld h)) = (f,p,m,n,kl,ku,ld,h)
 
 instance (Elem e) => BaseTensor IOBanded (Int,Int) e where
     shape  = shapeBanded

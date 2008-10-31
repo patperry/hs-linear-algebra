@@ -65,6 +65,7 @@ import Data.Matrix.Dense.ST( STMatrix, runSTMatrix )
 import qualified Data.Matrix.Dense.Class as Dense
 import Data.Vector.Dense.Class
 import Data.Vector.Dense.ST( runSTVector )
+import Foreign( Storable )
 
 data Tri a mn e = Tri UpLo Diag (a mn e)
 
@@ -258,7 +259,7 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
     (u,d,a) = toBase t
 
 
-toLower :: (Dense.BaseMatrix a x e) => Diag -> a (m,n) e 
+toLower :: (Dense.BaseMatrix a x e, Storable e) => Diag -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
                   (Tri a (n,n) e, a (d,n) e)
 toLower diag a =
@@ -271,7 +272,7 @@ toLower diag a =
     (m,n) = shape a
     d     = m - n
     
-toUpper :: (Dense.BaseMatrix a x e) => Diag -> a (m,n) e
+toUpper :: (Dense.BaseMatrix a x e, Storable e) => Diag -> a (m,n) e
         -> Either (Tri a (n,n) e)
                   (Tri a (m,m) e, a (m,d) e)
 toUpper diag a =

@@ -255,8 +255,8 @@ instance (Elem e) => BLAS.BaseMatrix Matrix e where
     herm (M a) = M (herm a)
     
 instance (Elem e) => BaseMatrix Matrix Vector e where
-    matrixViewArray f o mn l h  = M $ matrixViewArray f o mn l h
-    arrayFromMatrix (M a )      = arrayFromMatrix a
+    matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
+    arrayFromMatrix (M a )       = arrayFromMatrix a
 
 instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
     ReadMatrix Matrix Vector e m where

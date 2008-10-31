@@ -23,25 +23,31 @@ import BLAS.Internal( checkedRow, checkedCol, checkedDiag, diagStart, diagLen )
 
 import Data.Matrix.Banded.Class.Internal
 import Data.Vector.Dense.Class
+import Foreign
 
-diagViewBanded :: (BaseBanded a x e) => a mn e -> Int -> x k e
+diagViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> x k e
 diagViewBanded a = checkedDiag (shape a) (unsafeDiagViewBanded a) 
 
-rowViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+rowViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> (Int, x k e, Int)
 rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
 
-colViewBanded :: (BaseBanded a x e) => a mn e -> Int -> (Int, x k e, Int)
+colViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> (Int, x k e, Int)
 colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 
-unsafeDiagViewBanded :: (BaseBanded a x e) => a mn e -> Int -> x k e
+unsafeDiagViewBanded :: (BaseBanded a x e, Storable e) => 
+    a mn e -> Int -> x k e
 unsafeDiagViewBanded a d
     | isHermBanded a = conj $ unsafeDiagViewBanded a' (negate d)
     | otherwise =
-        let f   = fptrOfBanded a
+        let (fp,p,m,n,_,_,ld,_) = arrayFromBanded a
             off = indexOfBanded a (diagStart d)
-            len = diagLen (shape a) d
-            inc = ldaOfBanded a
+            p'  = p `advancePtr` off
+            len = diagLen (m,n) d
+            inc = ld
             c   = False
-        in vectorViewArray f off len inc c
+        in vectorViewArray fp p' len inc c
   where
     a' = (hermBanded . coerceBanded) a

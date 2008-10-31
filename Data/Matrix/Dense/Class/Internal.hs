@@ -101,8 +101,6 @@ module Data.Matrix.Dense.Class.Internal (
     gemm,
     
     -- * Utility functions
-    fptrOfMatrix,
-    offsetOfMatrix,
     withMatrixPtr,
     indexOfMatrix,
     indicesMatrix,
@@ -139,8 +137,8 @@ import qualified BLAS.Matrix.Base as BLAS
 
 class (BLAS.BaseMatrix a e, BaseVector x e) => 
     BaseMatrix a x e | a -> x where
-        matrixViewArray :: ForeignPtr e -> Int -> (Int,Int) -> Int -> Bool -> a mn e
-        arrayFromMatrix :: a mn e -> (ForeignPtr e, Int, (Int,Int), Int, Bool)
+        matrixViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Bool -> a mn e
+        arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
 
 class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
            ReadNumeric a (Int,Int) e m, BaseMatrix a x e, 
@@ -154,28 +152,20 @@ class (WriteTensor a (Int,Int) e m, WriteNumeric a (Int,Int) e m,
 
 ------------------------- Basic Matrix Properties ---------------------------
 
-fptrOfMatrix :: (BaseMatrix a x e) => a mn e -> ForeignPtr e
-fptrOfMatrix a = let (f,_,_,_,_) = arrayFromMatrix a in f
-{-# INLINE fptrOfMatrix #-}
-
-offsetOfMatrix :: (BaseMatrix a x e) => a mn e -> Int
-offsetOfMatrix a = let (_,o,_,_,_) = arrayFromMatrix a in o
-{-# INLINE offsetOfMatrix #-}
-
 size1 :: (BaseMatrix a x e) => a mn e -> Int
-size1 a = let (_,_,(m,_),_,_) = arrayFromMatrix a in m
+size1 a = let (_,_,m,_,_,_) = arrayFromMatrix a in m
 {-# INLINE size1  #-}
 
 size2 :: (BaseMatrix a x e) => a mn e -> Int
-size2 a = let (_,_,(_,n),_,_) = arrayFromMatrix a in n
+size2 a = let (_,_,_,n,_,_) = arrayFromMatrix a in n
 {-# INLINE size2 #-}
 
 ldaOfMatrix :: (BaseMatrix a x e) => a mn e -> Int
-ldaOfMatrix a = let (_,_,_,l,_) = arrayFromMatrix a in l
+ldaOfMatrix a = let (_,_,_,_,l,_) = arrayFromMatrix a in l
 {-# INLINE ldaOfMatrix #-}
 
 isHermMatrix :: (BaseMatrix a x e) => a mn e -> Bool
-isHermMatrix a = let (_,_,_,_,h) = arrayFromMatrix a in h
+isHermMatrix a = let (_,_,_,_,_,h) = arrayFromMatrix a in h
 {-# INLINE isHermMatrix #-}
 
 -- | Cast the shape type of the matrix.
@@ -191,13 +181,13 @@ maybeFromRow :: (BaseMatrix a x e, BaseVector x e) =>
     x m e -> Maybe (a (one,m) e)
 maybeFromRow x
     | c && s == 1 =
-        Just $ matrixViewArray f o (n,1) (max 1 n) True
+        Just $ matrixViewArray f p n 1 (max 1 n) True
     | not c =
-        Just $ matrixViewArray f o (1,n) s         False
+        Just $ matrixViewArray f p 1 n s         False
     | otherwise =
         Nothing
   where
-    (f,o,n,s,c) = arrayFromVector x
+    (f,p,n,s,c) = arrayFromVector x
 
 -- | Possibly create a matrix view of a column vector.  This will fail
 -- if the stride of the vector is not @1@ and the vector is not conjugated.
@@ -206,11 +196,11 @@ maybeFromCol :: (BaseMatrix a x e, BaseVector x e) =>
 maybeFromCol x
     | c = maybeFromRow (conj x) >>= return . herm
     | s == 1 =
-        Just $ matrixViewArray f o (n,1) (max 1 n) False
+        Just $ matrixViewArray f p n 1 (max 1 n) False
     | otherwise =
         Nothing
   where
-    (f,o,n,s,c) = arrayFromVector x
+    (f,p,n,s,c) = arrayFromVector x
 
 maybeToVector :: (BaseMatrix a x e) => 
     a mn e -> Maybe (x k e)
@@ -218,21 +208,21 @@ maybeToVector a
     | h = 
         maybeToVector a' >>= return . conj
     | ld == m =
-        Just $ vectorViewArray f o (m*n) 1  False
+        Just $ vectorViewArray f p (m*n) 1  False
     | m == 1 =
-        Just $ vectorViewArray f o n     ld False
+        Just $ vectorViewArray f p n     ld False
     | otherwise =
         Nothing
   where
     a' = (coerceMatrix . herm . coerceMatrix) a
-    (f,o,(m,n),ld,h) = arrayFromMatrix a
+    (f,p,m,n,ld,h) = arrayFromMatrix a
 
 
 ----------------------- Lifting vector operations ---------------------------
 
 -- | Take a unary elementwise vector operation and apply it to the elements
 -- of a matrix.
-liftMatrix :: (Monad m, BaseMatrix a x e) =>
+liftMatrix :: (Monad m, BaseMatrix a x e, Storable e) =>
     (x k e -> m ()) -> a mn e -> m ()
 liftMatrix f a =
     case maybeToVector a of
@@ -245,7 +235,7 @@ liftMatrix f a =
 
 -- | Take a binary elementwise vector operation and apply it to the elements
 -- of a pair of matrices.
-liftMatrix2 :: (Monad m, BaseMatrix a x e, BaseMatrix b y e) =>
+liftMatrix2 :: (Monad m, BaseMatrix a x e, BaseMatrix b y e, Storable e) =>
     (x k e -> y k e -> m ()) ->
         a mn e -> b mn e -> m ()
 liftMatrix2 f a b =
@@ -280,8 +270,8 @@ boundsMatrix a = ((0,0), (m-1,n-1)) where (m,n) = shapeMatrix a
 -------------------------- BaseMatrix functions -----------------------------
 
 hermMatrix :: (BaseMatrix a x e) => a (m,n) e -> a (n,m) e
-hermMatrix a = let (f,o,mn,l,h) = arrayFromMatrix a
-               in matrixViewArray f o mn l (not h)
+hermMatrix a = let (f,p,m,n,l,h) = arrayFromMatrix a
+               in matrixViewArray f p m n l (not h)
 {-# INLINE hermMatrix #-}
 
 
@@ -332,7 +322,7 @@ unsafeReadElemMatrix a (i,j)
     | isHermMatrix a = unsafeReadElem (herm $ coerceMatrix a) (j,i) >>= 
                            return . conj
     | otherwise = unsafeIOToM $
-                      withForeignPtr (fptrOfMatrix a) $ \ptr ->
+                      withMatrixPtr a $ \ptr ->
                           peekElemOff ptr (indexOfMatrix a (i,j))
 {-# INLINE unsafeReadElemMatrix #-}
 
@@ -347,7 +337,7 @@ newMatrix_ (m,n)
             "Tried to create a matrix with shape `" ++ show (m,n) ++ "'"
     | otherwise = unsafeIOToM $ do
         f <- mallocForeignPtrArray (m*n)
-        return $ matrixViewArray f 0 (m,n) (max 1 m) False
+        return $ matrixViewArray f (unsafeForeignPtrToPtr f) m n (max 1 m) False
 
 -- | Create a zero matrix of the specified shape.
 newZeroMatrix :: (WriteMatrix a x e m) => (Int,Int) -> m (a mn e)
@@ -374,7 +364,7 @@ unsafeWriteElemMatrix :: (WriteMatrix a x e m) =>
 unsafeWriteElemMatrix a (i,j) e
     | isHermMatrix a  = unsafeWriteElem a' (j,i) $ conj e
     | otherwise       = unsafeIOToM $
-                            withForeignPtr (fptrOfMatrix a) $ \ptr ->
+                            withMatrixPtr a $ \ptr ->
                                 pokeElemOff ptr (indexOfMatrix a (i,j)) e
   where
     a' = (herm . coerceMatrix) a
@@ -413,50 +403,51 @@ unsafeSwapMatrix = liftMatrix2 unsafeSwapVector
 
 ------------------------------ Vector views ---------------------------------
 
-unsafeRowView :: (BaseMatrix a x e) => 
+unsafeRowView :: (BaseMatrix a x e, Storable e) => 
     a (k,l) e -> Int -> x l e
 unsafeRowView a i
     | isHermMatrix a =
         conj $ unsafeColView (herm a) i
     | otherwise =
-        let f = fptrOfMatrix a
-            o = indexOfMatrix a (i,0)
-            n = numCols a
-            s = ldaOfMatrix a
-            c = False
-        in vectorViewArray f o n s c
+        let (fp,p,_,n,ld,_) = arrayFromMatrix a
+            o  = indexOfMatrix a (i,0)
+            p' = p `advancePtr` o
+            s  = ld
+            c  = False
+        in vectorViewArray fp p' n s c
 
-unsafeColView :: (BaseMatrix a x e) => 
+unsafeColView :: (BaseMatrix a x e, Storable e) => 
     a (k,l) e -> Int -> x k e
 unsafeColView a j 
     | isHermMatrix a =
         conj $ unsafeRowView (herm a) j
     | otherwise =
-        let f = fptrOfMatrix a
-            o = indexOfMatrix a (0,j)
-            m = numRows a
-            s = 1
-            c = False
-        in vectorViewArray f o m s c
+        let (fp,p,m,_,_,_) = arrayFromMatrix a
+            o  = indexOfMatrix a (0,j)
+            p' = p `advancePtr` o
+            s  = 1
+            c  = False
+        in vectorViewArray fp p' m s c
 
-unsafeDiagView :: (BaseMatrix a x e) => a mn e -> Int -> x k e
+unsafeDiagView :: (BaseMatrix a x e, Storable e) => a mn e -> Int -> x k e
 unsafeDiagView a i 
     | isHermMatrix a = 
         conj $ unsafeDiagView (herm $ coerceMatrix a) (negate i)
     | otherwise =            
-        let f = fptrOfMatrix a
-            o = indexOfMatrix a (diagStart i)
-            n = diagLen (shape a) i
-            s = ldaOfMatrix a + 1
-            c = False
-        in vectorViewArray f o n s c
+        let (fp,p,m,n,ld,_) = arrayFromMatrix a
+            o  = indexOfMatrix a (diagStart i)
+            p' = p `advancePtr` o
+            n' = diagLen (m,n) i
+            s  = ld + 1
+            c  = False
+        in vectorViewArray fp p' n' s c
 
 -- | Get a list of vector views of the rows of the matrix.
-rowViews :: (BaseMatrix a x e) => a (m,n) e -> [x n e]
+rowViews :: (BaseMatrix a x e, Storable e) => a (m,n) e -> [x n e]
 rowViews a = [ unsafeRowView a i | i <- [0..numRows a - 1] ]
 
 -- | Get a list of vector views of the columns of the matrix.
-colViews :: (BaseMatrix a x e) => a (m,n) e -> [x m e]
+colViews :: (BaseMatrix a x e, Storable e) => a (m,n) e -> [x m e]
 colViews a = [ unsafeColView a j | j <- [0..numCols a - 1] ]
 
 -- | Same as 'getRow' but not range-checked.
@@ -608,18 +599,19 @@ flipShape (m,n) = (n,m)
 withMatrixPtr :: (BaseMatrix a x e, Storable e) =>
     a mn e -> (Ptr e -> IO b) -> IO b
 withMatrixPtr a f =
-    withForeignPtr (fptrOfMatrix a) $ \ptr ->
-        let ptr' = ptr `advancePtr` (offsetOfMatrix a)
-        in f ptr'
+    let (fp,p,_,_,_,_) = arrayFromMatrix a
+    in do
+        b <- f p
+        touchForeignPtr fp
+        return b
 
 indexOfMatrix :: (BaseMatrix a x e) => a mn e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 
     let (i',j') = case isHermMatrix a of
                         True  -> (j,i)
                         False -> (i,j)
-        o = offsetOfMatrix a
         l = ldaOfMatrix a
-    in o + i' + j'*l
+    in i' + j'*l
 {-# INLINE indexOfMatrix #-}
 
 indicesMatrix :: (BaseMatrix a x e) => a mn e -> [(Int,Int)]
@@ -642,7 +634,7 @@ unsafeDoMatrixOp2 f a b c = do
 -- transposes and conjugates the underlying matrix.
 data IOMatrix mn e =
       DM {-# UNPACK #-} !(ForeignPtr e) -- a pointer to the storage region
-         {-# UNPACK #-} !Int            -- an offset (in elements, not bytes) to the first element in the matrix. 
+         {-# UNPACK #-} !(Ptr e)        -- a pointer to the first element
          {-# UNPACK #-} !Int            -- the number of rows in the matrix
          {-# UNPACK #-} !Int            -- the number of columns in the matrix
          {-# UNPACK #-} !Int            -- the leading dimension size of the matrix
@@ -652,18 +644,20 @@ newtype STMatrix s n e = ST (IOMatrix n e)
 
 unsafeIOMatrixToSTMatrix :: IOMatrix n e -> STMatrix s n e
 unsafeIOMatrixToSTMatrix = ST
+{-# INLINE unsafeIOMatrixToSTMatrix #-}
 
 unsafeSTMatrixToIOMatrix :: STMatrix s n e -> IOMatrix n e
 unsafeSTMatrixToIOMatrix (ST x) = x
+{-# INLINE unsafeSTMatrixToIOMatrix #-}
 
 
 instance (Elem e) => BaseMatrix IOMatrix IOVector e where
-    matrixViewArray f o (m,n) = DM f o m n
-    arrayFromMatrix (DM f o m n l h) = (f,o,(m,n),l,h)
+    matrixViewArray f p m n = DM f p m n
+    arrayFromMatrix (DM f p m n l h) = (f,p,m,n,l,h)
 
 instance (Elem e) => BaseMatrix (STMatrix s) (STVector s) e where
-    matrixViewArray f o (m,n) l h = ST $ DM f o m n l h
-    arrayFromMatrix (ST (DM f o m n l h)) = (f,o,(m,n),l,h)
+    matrixViewArray f p m n l h = ST $ DM f p m n l h
+    arrayFromMatrix (ST (DM f p m n l h)) = (f,p,m,n,l,h)
 
 instance (Elem e) => BaseTensor IOMatrix (Int,Int) e where
     shape  = shapeMatrix

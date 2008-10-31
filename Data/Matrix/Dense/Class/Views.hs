@@ -36,37 +36,39 @@ import BLAS.Matrix.Base( herm )
 import Data.Matrix.Dense.Class.Internal
 import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )
 
+import Foreign
+
 
 -- | @submatrixView a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
-submatrixView :: (BaseMatrix a x e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
+submatrixView :: (BaseMatrix a x e, Storable e) => a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
 submatrixView a = checkedSubmatrix (shape a) (unsafeSubmatrixView a)
 {-# INLINE submatrixView #-}
 
 -- | Same as 'submatrixView' but indices are not range-checked.
-unsafeSubmatrixView :: (BaseMatrix a x e) => 
+unsafeSubmatrixView :: (BaseMatrix a x e, Storable e) => 
     a mn e -> (Int,Int) -> (Int,Int) -> a mn' e
 unsafeSubmatrixView a (i,j) (m,n)
     | isHermMatrix a  = 
         coerceMatrix $ herm $ 
             unsafeSubmatrixView (herm $ coerceMatrix a) (j,i) (n,m)
     | otherwise =
-        let f = fptrOfMatrix a
-            o = indexOfMatrix a (i,j)
-            l = ldaOfMatrix a
-        in matrixViewArray f o (m,n) l False
+        let (fp,p,_,_,ld,_) = arrayFromMatrix a
+            o  = indexOfMatrix a (i,j)
+            p' = p `advancePtr` o
+        in matrixViewArray fp p' m n ld False
 
 
 -- | Get a vector view of the given diagonal in a matrix.
-diagView :: (BaseMatrix a x e) => a mn e -> Int -> x k e
+diagView :: (BaseMatrix a x e, Storable e) => a mn e -> Int -> x k e
 diagView a = checkedDiag (shape a) (unsafeDiagView a)
 
 -- | Get a vector view of the given row in a matrix.
-rowView :: (BaseMatrix a x e) => a (m,n) e -> Int -> x n e
+rowView :: (BaseMatrix a x e, Storable e) => a (m,n) e -> Int -> x n e
 rowView a = checkedRow (shape a) (unsafeRowView a)
 
 -- | Get a vector view of the given column in a matrix.
-colView :: (BaseMatrix a x e) => a (m,n) e -> Int -> x m e
+colView :: (BaseMatrix a x e, Storable e) => a (m,n) e -> Int -> x m e
 colView a = checkedCol (shape a) (unsafeColView a)
 
 -- | Get the given diagonal in a matrix.  Negative indices correspond

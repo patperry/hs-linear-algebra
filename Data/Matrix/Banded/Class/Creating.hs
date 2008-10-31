@@ -40,7 +40,7 @@ newBandedHelp :: (WriteBanded a x e m) =>
     -> (Int,Int) -> (Int,Int) -> [((Int,Int),e)] -> m (a mn e)
 newBandedHelp set (m,n) (kl,ku) ijes = do
     x <- newBanded_ (m,n) (kl,ku)
-    unsafeIOToM $ withForeignPtr (fptrOfBanded x) $ flip clearArray ((kl+1+ku)*n)
+    unsafeIOToM $ withBandedPtr x $ flip clearArray ((kl+1+ku)*n)
     mapM_ (uncurry $ set x) ijes
     return x
 

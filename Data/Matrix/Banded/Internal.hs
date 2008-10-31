@@ -223,8 +223,8 @@ instance (Elem e) => BLAS.BaseMatrix Banded e where
     herm (B a) = B (herm a)
     
 instance (Elem e) => BaseBanded Banded Vector e where
-    bandedViewArray f o mn bw l h = B $ bandedViewArray f o mn bw l h
-    arrayFromBanded (B a )        = arrayFromBanded a
+    bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
+    arrayFromBanded (B a )            = arrayFromBanded a
 
 instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
     ReadBanded Banded Vector e m where
