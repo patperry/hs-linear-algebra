@@ -52,7 +52,6 @@ import System.IO.Unsafe
 
 import BLAS.Elem ( Elem, BLAS1 )
 import BLAS.Internal ( inlinePerformIO )
-import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 
 import BLAS.Tensor.Base
@@ -250,8 +249,7 @@ instance (Elem e) => BaseMatrix Matrix Vector e where
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 
-instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
-    ReadMatrix Matrix Vector e m where
+instance (BLAS1 e, UnsafeIOToM m) => ReadMatrix Matrix Vector e m where
 
 instance (BLAS1 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y

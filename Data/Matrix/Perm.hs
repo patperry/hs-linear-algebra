@@ -32,7 +32,6 @@ import BLAS.Elem
 import BLAS.Matrix
 import BLAS.Tensor
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 
 import Data.Matrix.Dense.Class( ReadMatrix, WriteMatrix, unsafeRowView,
     unsafeAxpyMatrix, coerceMatrix )
@@ -99,7 +98,7 @@ instance (BLAS1 e) => IMatrix Perm e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
 
-instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MMatrix Perm e m where
+instance (BLAS1 e, UnsafeIOToM m) => MMatrix Perm e m where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddPerm
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatPerm
     unsafeDoSApply_      = unsafeDoSApplyPerm_
@@ -175,7 +174,7 @@ instance (BLAS1 e) => ISolve Perm e where
     unsafeSSolve alpha a y    = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
     
-instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MSolve Perm e m where    
+instance (BLAS1 e, UnsafeIOToM m) => MSolve Perm e m where    
     unsafeDoSSolve_ alpha p       = unsafeDoSApplyPerm_ alpha (herm p)
     unsafeDoSSolveMat_ alpha p    = unsafeDoSApplyMatPerm_ alpha (herm p)
     unsafeDoSSolve alpha p x y    = unsafeDoSApplyAddPerm alpha (coercePerm $ herm p) x 0 y

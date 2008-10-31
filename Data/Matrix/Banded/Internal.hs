@@ -59,7 +59,6 @@ import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import BLAS.Matrix.Immutable
@@ -218,7 +217,7 @@ instance (Elem e) => BaseBanded Banded Vector e where
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 
-instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => 
+instance (BLAS1 e, UnsafeIOToM m) => 
     ReadBanded Banded Vector e m where
 
 instance (BLAS2 e) => IMatrix Banded e where
@@ -227,7 +226,7 @@ instance (BLAS2 e) => IMatrix Banded e where
     unsafeRow a i             = runSTVector $ unsafeGetRow a i
     unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix Banded e m where
+instance (BLAS2 e, UnsafeIOToM m) => MMatrix Banded e m where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowBanded

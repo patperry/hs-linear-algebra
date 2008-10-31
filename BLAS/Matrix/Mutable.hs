@@ -56,7 +56,6 @@ import BLAS.Elem
 import BLAS.Internal( checkSquare, checkMatVecMult, checkMatVecMultAdd,
     checkMatMatMult, checkMatMatMultAdd, checkedRow, checkedCol )
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 
 import BLAS.Matrix.Base
 
@@ -129,12 +128,12 @@ getCol :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
 getCol a = checkedCol (shape a) (unsafeGetCol a)
 
 -- | Get a lazy list the row vectors in the matrix.  See also "getRows'".
-getRows :: (MMatrix a e m, WriteVector x e m, UnsafeInterleaveM m) => 
+getRows :: (MMatrix a e m, WriteVector x e m) => 
     a (k,l) e -> m [x l e]
 getRows = unsafeInterleaveM . getRows'
 
 -- | Get a lazy list of the column vectors in the matrix.  See also "getCols'".
-getCols :: (MMatrix a e m, WriteVector x e m, UnsafeInterleaveM m) => 
+getCols :: (MMatrix a e m, WriteVector x e m) => 
     a (k,l) e -> m [x k e]
 getCols = unsafeInterleaveM . getCols'
 
@@ -272,7 +271,7 @@ instance (BLAS3 e) => MMatrix (STMatrix s) e (ST s) where
     unsafeGetRow         = unsafeGetRowMatrix
     unsafeGetCol         = unsafeGetColMatrix
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix Matrix e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix Matrix e m where
     unsafeDoSApplyAdd    = gemv
     unsafeDoSApplyAddMat = gemm
     unsafeGetRow         = unsafeGetRowMatrix

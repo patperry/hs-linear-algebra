@@ -46,7 +46,6 @@ import Unsafe.Coerce
 import BLAS.C( BLAS2, BLAS3 )
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 import BLAS.Matrix
 import BLAS.Types ( UpLo(..), Diag(..), Trans(..), flipTrans, flipUpLo )
 import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
@@ -166,7 +165,7 @@ instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
     unsafeDoSApply_      = trmv
     unsafeDoSApplyMat_   = trmm
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Matrix) e m where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
     unsafeDoSApply_      = trmv
@@ -368,7 +367,7 @@ instance (BLAS3 e) => MSolve (Tri (STMatrix s)) e (ST s) where
     unsafeDoSSolve_    = trsv
     unsafeDoSSolveMat_ = trsm
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Tri Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Matrix) e m where
     unsafeDoSSolve     = unsafeDoSSolveTriMatrix
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
     unsafeDoSSolve_    = trsv
@@ -574,7 +573,7 @@ instance (BLAS2 e) => MMatrix (Tri IOBanded) e IO where
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
 
-instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Tri Banded) e m where
+instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
@@ -647,7 +646,7 @@ instance (BLAS2 e) => MSolve (Tri (STBanded s)) e (ST s) where
     unsafeDoSSolve_    = tbsv
     unsafeDoSSolveMat_ = tbsm
 
-instance (BLAS2 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Tri Banded) e m where
+instance (BLAS2 e, UnsafeIOToM m) => MSolve (Tri Banded) e m where
     unsafeDoSSolve     = unsafeDoSSolveTriBanded
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
     unsafeDoSSolve_    = tbsv

@@ -29,7 +29,6 @@ import Unsafe.Coerce
 
 import BLAS.C( BLAS2, BLAS3, colMajor, rightSide, leftSide, cblasUpLo )
 import qualified BLAS.C as BLAS
-import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 
 import BLAS.Matrix
@@ -161,7 +160,7 @@ instance (BLAS3 e) => MMatrix (Herm IOMatrix) e IO where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Herm Matrix) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Matrix) e m where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
 
@@ -231,7 +230,7 @@ instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 
-instance (BLAS3 e, UnsafeIOToM m, UnsafeInterleaveM m) => MMatrix (Herm Banded) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Banded) e m where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 

@@ -120,7 +120,6 @@ import qualified BLAS.C.Level2 as BLAS
 import qualified BLAS.C.Level3 as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 
 import BLAS.Tensor
 
@@ -139,7 +138,7 @@ class (BLAS.BaseMatrix a e, BaseVector x e) =>
         matrixViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Bool -> a mn e
         arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
 
-class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
+class (Elem e, UnsafeIOToM m, ReadTensor a (Int,Int) e m, 
            BaseMatrix a x e, 
            ReadVector x e m) => 
     ReadMatrix a x e m | a -> x where

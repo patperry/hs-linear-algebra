@@ -75,7 +75,6 @@ import BLAS.C.Types
 import qualified BLAS.C.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
-import BLAS.UnsafeInterleaveM
 
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import qualified BLAS.Matrix.Base as BLAS
@@ -98,7 +97,7 @@ class (BLAS.BaseMatrix a e, BaseVector x e) =>
         bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
         arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
 
-class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
+class (Elem e, UnsafeIOToM m, ReadTensor a (Int,Int) e m, 
            BaseBanded a x e, ReadVector x e m) => 
     ReadBanded a x e m | a -> x where
 

@@ -46,6 +46,8 @@
 
 * Add "Solv" class and get rid of <\\> ?
 
+* lazy getRows/getCols needs to be re-implemented
+
 * Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
 
 * Optimization: better "swapElem" for vector and matrix

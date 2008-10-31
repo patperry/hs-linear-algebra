@@ -113,7 +113,6 @@ library
 
                         BLAS.Types
 
-                        BLAS.UnsafeInterleaveM
                         BLAS.UnsafeIOToM
 
                         Data.Matrix.Banded

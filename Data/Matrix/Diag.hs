@@ -30,7 +30,6 @@ import BLAS.Elem( BLAS1 )
 import BLAS.Matrix hiding ( BaseMatrix )
 import qualified BLAS.Matrix as BLAS
 import BLAS.Tensor
-import BLAS.UnsafeInterleaveM
 import BLAS.UnsafeIOToM
 import Unsafe.Coerce
 
@@ -81,7 +80,7 @@ instance (BLAS1 e) => MMatrix (Diag (STVector s)) e (ST s) where
     unsafeDoSApply_      = unsafeDoSApplyDiagVector_
     unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
 
-instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MMatrix (Diag Vector) e m where
+instance (BLAS1 e, UnsafeIOToM m) => MMatrix (Diag Vector) e m where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddDiagVector
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatDiagVector
     unsafeDoSApply_      = unsafeDoSApplyDiagVector_
@@ -134,7 +133,7 @@ instance (BLAS1 e) => MSolve (Diag (STVector s)) e (ST s) where
     unsafeDoSSolve_    = unsafeDoSSolveDiagVector_
     unsafeDoSSolveMat_ = unsafeDoSSolveMatDiagVector_
 
-instance (BLAS1 e, UnsafeIOToM m, UnsafeInterleaveM m) => MSolve (Diag Vector) e m where
+instance (BLAS1 e, UnsafeIOToM m) => MSolve (Diag Vector) e m where
     unsafeDoSSolve     = unsafeDoSSolveDiagVector
     unsafeDoSSolveMat  = unsafeDoSSolveMatDiagVector
     unsafeDoSSolve_    = unsafeDoSSolveDiagVector_
