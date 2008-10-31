@@ -56,7 +56,7 @@ newListMatrix (m,n) es = do
 newColsMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
     (Int,Int) -> [x k e] -> m (a (k,l) e)
 newColsMatrix (m,n) cs = do
-    a <- newZero (m,n)
+    a <- newZeroMatrix (m,n)
     forM_ (zip [0..(n-1)] cs) $ \(j,c) ->
         copyVector (unsafeColView a j) c
     return a
@@ -65,7 +65,7 @@ newColsMatrix (m,n) cs = do
 newRowsMatrix :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) => 
     (Int,Int) -> [x l e] -> m (a (k,l) e)
 newRowsMatrix (m,n) rs = do
-    a <- newZero (m,n)
+    a <- newZeroMatrix (m,n)
     forM_ (zip [0..(m-1)] rs) $ \(i,r) ->
         copyVector (unsafeRowView a i) r
     return a

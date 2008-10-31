@@ -88,15 +88,14 @@ import Unsafe.Coerce
 import BLAS.Internal ( clearArray, inlinePerformIO )
 import BLAS.Elem
 import qualified BLAS.C as BLAS
-import BLAS.Numeric
 import BLAS.Tensor
 import BLAS.UnsafeIOToM
 
 import Data.Vector.Dense.Class.Internal.Base
 
-class (Elem e, BaseVector x e, UnsafeIOToM m, ReadNumeric x Int e m) => ReadVector x e m
+class (Elem e, BaseVector x e, UnsafeIOToM m, ReadTensor x Int e m) => ReadVector x e m
 
-class (WriteNumeric x Int e m, ReadVector x e m) => WriteVector x e m | x -> m, m -> x
+class (WriteTensor x Int e m, ReadVector x e m) => WriteVector x e m | x -> m, m -> x
 
 
 -- | Cast the shape type of the vector.
@@ -450,9 +449,6 @@ instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
     getElems'      = getElemsVector'
     unsafeReadElem = unsafeReadElemVector
 
-instance (Elem e) => ReadNumeric IOVector Int e IO where
-instance (Elem e) => ReadNumeric (STVector s) Int e (ST s) where
-
 instance (Elem e) => ReadVector IOVector e IO where
 instance (Elem e) => ReadVector (STVector s) e (ST s) where    
 
@@ -462,6 +458,9 @@ instance (BLAS1 e) => WriteTensor IOVector Int e IO where
     canModifyElem   = canModifyElemVector
     unsafeWriteElem = unsafeWriteElemVector
     modifyWith      = modifyWithVector
+    doConj          = doConjVector
+    scaleBy         = scaleByVector
+    shiftBy         = shiftByVector
     
 instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
     setConstant     = setConstantVector
@@ -469,23 +468,12 @@ instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
     canModifyElem   = canModifyElemVector
     unsafeWriteElem = unsafeWriteElemVector
     modifyWith      = modifyWithVector
-    
+    doConj          = doConjVector
+    scaleBy         = scaleByVector
+    shiftBy         = shiftByVector
+
 instance (BLAS1 e) => WriteVector IOVector e IO where
 instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
-
-instance (BLAS1 e) => WriteNumeric IOVector Int e IO where
-    newZero     = newZeroVector
-    newConstant = newConstantVector
-    doConj      = doConjVector
-    scaleBy     = scaleByVector
-    shiftBy     = shiftByVector
-
-instance (BLAS1 e) => WriteNumeric (STVector s) Int e (ST s) where
-    newZero     = newZeroVector
-    newConstant = newConstantVector
-    doConj      = doConjVector
-    scaleBy     = scaleByVector
-    shiftBy     = shiftByVector
 
 instance (BLAS1 e, ReadVector x e IO) => CopyTensor x IOVector Int e IO where
     newCopyTensor    = newCopyVector    

@@ -87,7 +87,7 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, doConjVector,
     withVectorPtr, stride, isConj )
 import Data.Vector.Dense.Class.Creating( newListVector )
-import Data.Vector.Dense.Class.Operations( getConjVector, scaleBy )
+import Data.Vector.Dense.Class.Operations( getConjVector )
 
 import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
     isHermMatrix, arrayFromMatrix, matrixViewArray, colViews )

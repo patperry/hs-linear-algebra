@@ -18,6 +18,7 @@ module BLAS.Tensor.Write (
 import Data.Ix( inRange )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Read
+import BLAS.Elem( BLAS1, conj )
 
 -- | Class for modifiable mutable tensors.
 class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
@@ -57,6 +58,20 @@ class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
         unsafeWriteElem x j e
         unsafeWriteElem x i f
     
+    -- | Replace every element with its complex conjugate.
+    doConj :: (BLAS1 e) => x n e -> m ()
+    doConj = modifyWith conj
+
+    -- | Scale every element in the vector by the given value.
+    scaleBy :: (BLAS1 e) => e -> x n e -> m ()
+    scaleBy 1 = const $ return ()
+    scaleBy k = modifyWith (k*)
+
+    -- | Add a value to every element in a vector.
+    shiftBy :: e -> x n e -> m ()
+    shiftBy 0 = const $ return ()
+    shiftBy k = modifyWith (k+)
+
 
 -- | Set the value of the element at the given index.
 writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()

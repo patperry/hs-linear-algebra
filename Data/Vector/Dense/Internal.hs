@@ -205,13 +205,11 @@ instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
     
 
 instance (BLAS1 e) => INumeric Vector Int e where
-    (*>) k x = unsafeFreezeIOVector $ unsafeLiftVector (getScaled k) x
+    (*>) k x = unsafeFreezeIOVector $ unsafeLiftVector (getScaledVector k) x
     {-# NOINLINE (*>) #-}
 
-    shift k x = unsafeFreezeIOVector $ unsafeLiftVector (getShifted k) x
+    shift k x = unsafeFreezeIOVector $ unsafeLiftVector (getShiftedVector k) x
     {-# NOINLINE shift #-}
-
-instance (BLAS1 e, UnsafeIOToM m) => ReadNumeric Vector Int e m where
 
 instance (Elem e) => BaseVector Vector e where
     vectorViewArray f o n s c = V $ vectorViewArray f o n s c

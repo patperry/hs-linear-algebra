@@ -126,17 +126,17 @@ prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 modifyWith_S f x = ( (), tmap f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
-getConj_S x = ( tmap conj x, x )
-prop_GetConj = 
-    (\x -> getConj x >>= abstract) `implements` getConj_S
+getConjMatrix_S x = ( tmap conj x, x )
+prop_GetConjMatrix = 
+    (\x -> getConjMatrix x >>= abstract) `implements` getConjMatrix_S
 
-getScaled_S k x = ( tmap (k*) x, x )
-prop_GetScaled k = 
-    (\x -> getScaled k x >>= abstract) `implements` (getScaled_S k)
+getScaledMatrix_S k x = ( tmap (k*) x, x )
+prop_GetScaledMatrix k = 
+    (\x -> getScaledMatrix k x >>= abstract) `implements` (getScaledMatrix_S k)
 
-getShifted_S k x = ( tmap (k+) x, x )
-prop_GetShifted k = 
-    (\x -> getShifted k x >>= abstract) `implements` (getShifted_S k)
+getShiftedMatrix_S k x = ( tmap (k+) x, x )
+prop_GetShiftedMatrix k = 
+    (\x -> getShiftedMatrix k x >>= abstract) `implements` (getShiftedMatrix_S k)
 
 
 ------------------------- Binary Matrix Operations ---------------------------
@@ -329,9 +329,9 @@ tests_STMatrix =
     , ("shiftBy", mytest prop_ShiftBy)
     , ("modifyWith", mytest prop_ModifyWith)
     
-    , ("getConj", mytest prop_GetConj)
-    , ("getScaled", mytest prop_GetScaled)
-    , ("getShifted", mytest prop_GetShifted)
+    , ("getConjMatrix", mytest prop_GetConjMatrix)
+    , ("getScaledMatrix", mytest prop_GetScaledMatrix)
+    , ("getShiftedMatrix", mytest prop_GetShiftedMatrix)
 
     , ("axpyMatrix", mytest prop_AxpyMatrix)
     , ("addMatrix", mytest prop_AddMatrix)

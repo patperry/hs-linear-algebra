@@ -9,10 +9,6 @@
 
 module BLAS.Numeric (
     module BLAS.Numeric.Immutable,
-    module BLAS.Numeric.Read,
-    module BLAS.Numeric.Write,
     ) where
 
 import BLAS.Numeric.Immutable
-import BLAS.Numeric.Read
-import BLAS.Numeric.Write

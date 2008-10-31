@@ -243,13 +243,11 @@ instance (BLAS1 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
     unsafeReadElem x i = return (unsafeAt x i)
 
 instance (BLAS1 e) => INumeric Matrix (Int,Int) e where
-    (*>) k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getScaled k) x
+    (*>) k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getScaledMatrix k) x
     {-# NOINLINE (*>) #-}
 
-    shift k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getShifted k) x
+    shift k x = unsafeFreezeIOMatrix $ unsafeLiftMatrix (getShiftedMatrix k) x
     {-# NOINLINE shift #-}
-
-instance (BLAS1 e, Monad m) => ReadNumeric Matrix (Int,Int) e m where
 
 instance (Elem e) => BLAS.BaseMatrix Matrix e where
     herm (M a) = M (herm a)

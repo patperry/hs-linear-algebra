@@ -122,7 +122,6 @@ import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
 import BLAS.UnsafeInterleaveM
 
-import BLAS.Numeric
 import BLAS.Tensor
 
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,
@@ -141,11 +140,11 @@ class (BLAS.BaseMatrix a e, BaseVector x e) =>
         arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
 
 class (Elem e, UnsafeInterleaveM m, ReadTensor a (Int,Int) e m, 
-           ReadNumeric a (Int,Int) e m, BaseMatrix a x e, 
+           BaseMatrix a x e, 
            ReadVector x e m) => 
     ReadMatrix a x e m | a -> x where
 
-class (WriteTensor a (Int,Int) e m, WriteNumeric a (Int,Int) e m,
+class (WriteTensor a (Int,Int) e m,
            WriteVector x e m, ReadMatrix a x e m) => 
     WriteMatrix a x e m | a -> m, m -> a, a -> x where
 
@@ -693,6 +692,10 @@ instance (BLAS1 e) => WriteTensor IOMatrix (Int,Int) e IO where
     modifyWith      = modifyWithMatrix
     unsafeWriteElem = unsafeWriteElemMatrix
     canModifyElem   = canModifyElemMatrix
+    doConj          = doConjMatrix
+    scaleBy         = scaleByMatrix
+    shiftBy         = shiftByMatrix
+
 
 instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     setConstant     = setConstantMatrix
@@ -700,6 +703,10 @@ instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     modifyWith      = modifyWithMatrix
     unsafeWriteElem = unsafeWriteElemMatrix
     canModifyElem   = canModifyElemMatrix
+    doConj          = doConjMatrix
+    scaleBy         = scaleByMatrix
+    shiftBy         = shiftByMatrix
+
 
 instance (BLAS1 e) => SwapTensor IOMatrix (Int,Int) e IO where    
     unsafeSwapTensor = unsafeSwapMatrix
@@ -718,23 +725,6 @@ instance (BLAS1 e) => ReadMatrix (STMatrix s) (STVector s) e (ST s) where
     
 instance (BLAS1 e) => WriteMatrix IOMatrix IOVector e IO where
 instance (BLAS1 e) => WriteMatrix (STMatrix s) (STVector s) e (ST s) where
-
-instance (BLAS1 e) => ReadNumeric IOMatrix (Int,Int) e IO where
-instance (BLAS1 e) => ReadNumeric (STMatrix s) (Int,Int) e (ST s) where
-
-instance (BLAS1 e) => WriteNumeric IOMatrix (Int,Int) e IO where
-    newZero     = newZeroMatrix
-    newConstant = newConstantMatrix
-    doConj      = doConjMatrix
-    scaleBy     = scaleByMatrix
-    shiftBy     = shiftByMatrix
-
-instance (BLAS1 e) => WriteNumeric (STMatrix s) (Int,Int) e (ST s) where
-    newZero     = newZeroMatrix
-    newConstant = newConstantMatrix
-    doConj      = doConjMatrix
-    scaleBy     = scaleByMatrix
-    shiftBy     = shiftByMatrix
 
 instance (BLAS1 e, ReadMatrix a x e IO) => CopyTensor a IOMatrix (Int,Int) e IO where
     newCopyTensor    = newCopyMatrix

@@ -107,8 +107,6 @@ library
 
                         BLAS.Numeric
                             BLAS.Numeric.Immutable
-                            BLAS.Numeric.Read
-                            BLAS.Numeric.Write
 
                         BLAS.Tensor
                             BLAS.Tensor.Base

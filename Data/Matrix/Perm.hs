@@ -106,7 +106,8 @@ instance (BLAS1 e, UnsafeInterleaveM m, UnsafeIOToM m) => MMatrix Perm e m where
     unsafeDoSApplyMat_   = unsafeDoSApplyMatPerm_
 
 
-unsafeDoSApplyPerm_ :: (WriteVector y e m) => e -> Perm (k,k) e -> y k e -> m ()
+unsafeDoSApplyPerm_ :: (WriteVector y e m, BLAS1 e) => 
+    e -> Perm (k,k) e -> y k e -> m ()
 unsafeDoSApplyPerm_ alpha   (I _)   x = scaleBy alpha x
 unsafeDoSApplyPerm_ alpha p@(P _ _) x
     | isHerm p  = P.invertWith swap sigma >> scaleBy alpha x

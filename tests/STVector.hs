@@ -132,17 +132,17 @@ prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 modifyWith_S f x = ( (), map f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
-getConj_S x = ( map conj x, x )
-prop_GetConj = 
-    (\x -> getConj x >>= abstract) `implements` getConj_S
+getConjVector_S x = ( map conj x, x )
+prop_GetConjVector = 
+    (\x -> getConjVector x >>= abstract) `implements` getConjVector_S
 
-getScaled_S k x = ( map (k*) x, x )
-prop_GetScaled k = 
-    (\x -> getScaled k x >>= abstract) `implements` (getScaled_S k)
+getScaledVector_S k x = ( map (k*) x, x )
+prop_GetScaledVector k = 
+    (\x -> getScaledVector k x >>= abstract) `implements` (getScaledVector_S k)
 
-getShifted_S k x = ( map (k+) x, x )
-prop_GetShifted k = 
-    (\x -> getShifted k x >>= abstract) `implements` (getShifted_S k)
+getShiftedVector_S k x = ( map (k+) x, x )
+prop_GetShiftedVector k = 
+    (\x -> getShiftedVector k x >>= abstract) `implements` (getShiftedVector_S k)
 
 
 ------------------------- Binary Vector Operations ---------------------------
@@ -352,9 +352,9 @@ tests_STVector =
     , ("shiftBy", mytest prop_ShiftBy)
     , ("modifyWith", mytest prop_ModifyWith)
     
-    , ("getConj", mytest prop_GetConj)
-    , ("getScaled", mytest prop_GetScaled)
-    , ("getShifted", mytest prop_GetShifted)
+    , ("getConjVector", mytest prop_GetConjVector)
+    , ("getScaledVector", mytest prop_GetScaledVector)
+    , ("getShiftedVector", mytest prop_GetShiftedVector)
 
     , ("addVector", mytest prop_AddVector)
     , ("subVector", mytest prop_SubVector)
