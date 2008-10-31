@@ -39,6 +39,7 @@ extra-source-files:     INSTALL
                         tests/Generators/Matrix/Perm.hs
                         tests/Generators/Matrix/Herm/Banded.hs
                         tests/Generators/Matrix/Herm/Dense.hs
+                        tests/Generators/Matrix/Tri/Banded.hs
                         tests/Generators/Matrix/Tri/Dense.hs
                         tests/Generators/Permutation.hs
                         
@@ -144,8 +145,7 @@ library
                             Data.Vector.Dense.ST
                             Data.Vector.Dense.Class
 
-                        -- Test.QuickCheck.Matrix.Tri.Banded
-                        
+
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex
                         

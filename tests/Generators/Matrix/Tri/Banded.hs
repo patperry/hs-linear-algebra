@@ -1,30 +1,37 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.Matrix.Tri.Banded
+-- Module     : Generators.Matrix.Tri.Banded
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Test.QuickCheck.Matrix.Tri.Banded
-    where
+module Generators.Matrix.Tri.Banded (
+    TriBanded(..),
+    TriBandedMV(..),
+    TriBandedMM(..),
+    TriBandedSV(..),
+    TriBandedSM(..),
+    ) where
 
 import Control.Monad ( replicateM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Test.QuickCheck.Vector.Dense ( TestVector(..), dvector )
-import Test.QuickCheck.Matrix.Dense ( dmatrix )
-import Test.QuickCheck.Matrix ( matrixSized )
+import Generators.Vector.Dense ( vector )
+import Generators.Matrix.Dense ( matrix )
+import Generators.Matrix ( matrixSized )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
 import BLAS.Elem ( BLAS1, BLAS2 )
 
-import Data.Matrix.Tri.Banded ( Tri, UpLo(..), Diag(..), fromBase )
+import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
+
+import Unsafe.Coerce
 
 triBanded :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
@@ -75,7 +82,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBanded n e) where
         junk <- replicateM l $ QC.vector n
         diagJunk <- QC.vector n
         let (_,_,ds) = listsFromBanded a
-            t = case (u,d) of 
+            t = fromBase u d $ case (u,d) of 
                     (Upper,NonUnit) -> 
                         listsBanded (n,n) (l,k) $ junk ++ ds
                     (Upper,Unit) ->
@@ -84,9 +91,9 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBanded n e) where
                         listsBanded (n,n) (k,l) $ ds ++ junk
                     (Lower,Unit) -> 
                         listsBanded (n,n) (k,l) $ init ds ++ [diagJunk] ++ junk
-            t' = fromBase u d t 
 
-        return $ TriBanded t' a
+        (t',a') <- elements [ (t,a), unsafeCoerce (herm t, herm a)]
+        return $ TriBanded t' a'
             
     coarbitrary = undefined
 
@@ -96,11 +103,11 @@ data TriBandedMV n e =
 instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
-        x <- dvector (numCols t)
+        x <- vector (numCols t)
         return $ TriBandedMV t a x
         
     coarbitrary (TriBandedMV t a x) =
-        coarbitrary (TriBanded t a, TestVector x)
+        coarbitrary (TriBanded t a, x)
         
 data TriBandedMM m n e = 
     TriBandedMM (Tri Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving Show
@@ -109,7 +116,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TriBanded t a) <- arbitrary
         n <- choose (0,s)
-        b <- dmatrix (numCols t, n)
+        b <- matrix (numCols t, n)
         return $ TriBandedMM t a b
             
     coarbitrary = undefined
@@ -119,13 +126,13 @@ data TriBandedSV n e =
     
 instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedSV n e) where
     arbitrary = do
-        (TriBanded t _) <- arbitrary
-        t' <- elements [ t
-                       , herm t
-                       ]
-        x <- dvector (numCols t')
-        let y = t' <*> x
-        return (TriBandedSV t' y)
+        (TriBanded t a) <- arbitrary
+        if any (== 0) (elems $ diagBanded a 0)
+            then arbitrary
+            else do
+                x <- vector (numCols t)
+                let y = t <*> x
+                return (TriBandedSV t y)
         
     coarbitrary = undefined
 
@@ -137,15 +144,12 @@ data TriBandedSM m n e =
 instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedSM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TriBandedSV t _) <- arbitrary
-        t' <- elements [ t
-                       , herm t
-                       ]
 
         n <- choose (0, s)
-        a <- dmatrix (numCols t, n)
+        a <- matrix (numCols t, n)
         
-        let b = t' <**> a
-        return (TriBandedSM t' b)
+        let b = t <**> a
+        return (TriBandedSM t b)
         
     coarbitrary = undefined
     

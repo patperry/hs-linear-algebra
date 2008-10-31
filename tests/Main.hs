@@ -11,6 +11,7 @@ import Banded
 import HermMatrix
 import HermBanded
 import TriMatrix
+import TriBanded
 import Diag
 import Perm
 
@@ -44,6 +45,7 @@ main = do
             , ("Herm Matrix" , tests_HermMatrix)
             , ("Herm Banded" , tests_HermBanded)
             , ("Tri Matrix"  , tests_TriMatrix)
+            , ("Tri Banded"  , tests_TriBanded)
             , ("Diag"        , tests_Diag)
             , ("Perm"        , tests_Perm)
             ]
