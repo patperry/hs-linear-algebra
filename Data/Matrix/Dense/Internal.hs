@@ -194,7 +194,7 @@ instance BaseTensor Matrix (Int,Int) where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
 
-instance (BLAS1 e) => ITensor Matrix (Int,Int) e where
+instance ITensor Matrix (Int,Int) where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -232,7 +232,7 @@ replaceHelp set x ies =
         return (unsafeFreezeIOMatrix y)
 {-# NOINLINE replaceHelp #-}
 
-instance (BLAS1 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
+instance (Monad m) => ReadTensor Matrix (Int,Int) m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -249,7 +249,7 @@ instance BaseMatrix Matrix Vector where
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 
-instance (BLAS1 e, UnsafeIOToM m) => ReadMatrix Matrix Vector e m where
+instance (UnsafeIOToM m) => ReadMatrix Matrix Vector m where
 
 instance (BLAS1 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y

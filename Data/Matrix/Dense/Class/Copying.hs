@@ -26,13 +26,13 @@ import Data.Matrix.Dense.Class.Internal
 
 -- | @copyMatrix dst src@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyMatrix :: (BLAS1 e, WriteMatrix b y e m,  ReadMatrix a x e m) => 
+copyMatrix :: (BLAS1 e, WriteMatrix b y m,  ReadMatrix a x m) => 
     b mn e -> a mn e -> m ()
 copyMatrix b a = checkBinaryOp (shape b) (shape a) $ unsafeCopyMatrix b a
 {-# INLINE copyMatrix #-}
 
 -- | @swapMatrix x y@ swaps the values stored in two matrices.
-swapMatrix :: (BLAS1 e, WriteMatrix a x e m) => 
+swapMatrix :: (BLAS1 e, WriteMatrix a x m) => 
     a mn e -> a mn e -> m ()
 swapMatrix a b = checkBinaryOp (shape b) (shape a) $ unsafeSwapMatrix a b
 {-# INLINE swapMatrix #-}

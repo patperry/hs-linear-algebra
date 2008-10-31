@@ -29,14 +29,14 @@ import Data.Vector.Dense.Class.Internal
 
 -- | @copyVector dst src@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
+copyVector :: (BLAS1 e, WriteVector y m, ReadVector x m) =>
     y n e -> x n e -> m ()
 copyVector y x = checkBinaryOp (shape x) (shape y) $ unsafeCopyVector y x
 {-# INLINE copyVector #-}
 
 
 -- | Swap the values stored in two vectors.
-swapVector :: (BLAS1 e, WriteVector y e m) => 
+swapVector :: (BLAS1 e, WriteVector y m) => 
     y n e -> y n e -> m ()
 swapVector x y = checkBinaryOp (shape x) (shape y) $ unsafeSwapVector x y
 {-# INLINE swapVector #-}

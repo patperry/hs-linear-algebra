@@ -39,12 +39,12 @@ instance UnsafeThawVector IOVector where
 instance UnsafeThawVector (STVector s) where
     unsafeThawVector = unsafeIOVectorToSTVector . unsafeThawVector
     
-freezeVector :: (ReadVector x e m, WriteVector y e m, UnsafeFreezeVector y, BLAS1 e) =>
+freezeVector :: (ReadVector x m, WriteVector y m, UnsafeFreezeVector y, BLAS1 e) =>
     x n e -> m (Vector n e)
 freezeVector x = do
     x' <- newCopyVector x
     return (unsafeFreezeVector x')
 
-thawVector :: (WriteVector y e m, BLAS1 e) =>
+thawVector :: (WriteVector y m, BLAS1 e) =>
     Vector n e -> m (y n e)
 thawVector = newCopyVector

@@ -14,43 +14,42 @@ module BLAS.Tensor.Read (
     ) where
 
 import Data.Ix
+import BLAS.Elem
 import BLAS.Tensor.Base
 
 -- | Class for mutable read-only tensors.
-class (BaseTensor x i, Monad m) => ReadTensor x i e m | x -> i where
+class (BaseTensor x i, Monad m) => ReadTensor x i m | x -> i where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     
     -- | Get the value at the specified index, without doing any 
     -- range-checking.
-    unsafeReadElem :: x n e -> i -> m e
+    unsafeReadElem :: (Elem e) => x n e -> i -> m e
 
     -- | Returns a lazy list of the indices in the tensor.  
     -- Because of the laziness, this function should be used with care.
     -- See also "getIndices'".
     getIndices :: x n e -> m [i]
-    getIndices x = getAssocs x >>= return . fst . unzip
 
     -- | Returns a list of the indices in the tensor.  See also
     -- 'getIndices'.
     getIndices' :: x n e -> m [i]
-    getIndices' x = getAssocs' x >>= return . fst . unzip
 
     -- | Returns a lazy list of the elements in the tensor.  
     -- Because of the laziness, this function should be used with care.
     -- See also "getElems'".    
-    getElems :: x n e -> m [e]
+    getElems :: (Elem e) => x n e -> m [e]
     getElems x = getAssocs x >>= return . snd . unzip
 
     -- | Returns a list of the elements in the tensor.  See also
     -- 'getElems'.
-    getElems' :: x n e -> m [e]
+    getElems' :: (Elem e) => x n e -> m [e]
     getElems' x = getAssocs' x >>= return . snd . unzip
     
     -- | Returns a lazy list of the elements-index pairs in the tensor.  
     -- Because of the laziness, this function should be used with care.
     -- See also "getAssocs'".        
-    getAssocs :: x n e -> m [(i,e)]
+    getAssocs :: (Elem e) => x n e -> m [(i,e)]
     getAssocs x = do
         is <- getIndices x
         es <- getElems x
@@ -58,7 +57,7 @@ class (BaseTensor x i, Monad m) => ReadTensor x i e m | x -> i where
 
     -- | Returns a list of the index-elements pairs in the tensor.  See also
     -- 'getAssocs'.
-    getAssocs' :: x n e -> m [(i,e)]
+    getAssocs' :: (Elem e) => x n e -> m [(i,e)]
     getAssocs' x = do
         is <- getIndices' x
         es <- getElems' x
@@ -67,7 +66,7 @@ class (BaseTensor x i, Monad m) => ReadTensor x i e m | x -> i where
 
 -- | Gets the value at the specified index after checking that the argument
 -- is in bounds.
-readElem :: (ReadTensor x i e m, Show i) => x n e -> i -> m e
+readElem :: (ReadTensor x i m, Elem e) => x n e -> i -> m e
 readElem x i =
     case (inRange b i) of
         False -> 

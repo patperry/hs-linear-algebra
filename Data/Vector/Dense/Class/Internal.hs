@@ -93,9 +93,8 @@ import BLAS.UnsafeIOToM
 
 import Data.Vector.Dense.Class.Internal.Base
 
-class (Elem e, BaseVector x, UnsafeIOToM m, ReadTensor x Int e m) => ReadVector x e m
-
-class (WriteTensor x Int e m, ReadVector x e m) => WriteVector x e m | x -> m, m -> x
+class (BaseVector x, UnsafeIOToM m, ReadTensor x Int m) => ReadVector x m
+class (ReadVector x m, WriteTensor x Int m) => WriteVector x m | x -> m, m -> x
 
 
 -- | Cast the shape type of the vector.
@@ -115,29 +114,29 @@ boundsVector x = (0, dim x - 1)
 
 -------------------------- ReadTensor functions -----------------------------
     
-getSizeVector :: (ReadVector x e m) => x n e -> m Int
+getSizeVector :: (ReadVector x m) => x n e -> m Int
 getSizeVector = return . dim
 {-# INLINE getSizeVector #-}
 
-getIndicesVector :: (ReadVector x e m) => x n e -> m [Int]
+getIndicesVector :: (ReadVector x m) => x n e -> m [Int]
 getIndicesVector = return . indicesVector
 {-# INLINE getIndicesVector #-}
 
-getIndicesVector' :: (ReadVector x e m) => x n e -> m [Int]
+getIndicesVector' :: (ReadVector x m) => x n e -> m [Int]
 getIndicesVector' = getIndicesVector
 {-# INLINE getIndicesVector' #-}
 
-getElemsVector :: (ReadVector x e m) => x n e -> m [e]
+getElemsVector :: (ReadVector x m, Elem e) => x n e -> m [e]
 getElemsVector x = do
     ies <- getAssocsVector x
     return $ (snd . unzip) ies
 
-getElemsVector' :: (ReadVector x e m) => x n e -> m [e]
+getElemsVector' :: (ReadVector x m, Elem e) => x n e -> m [e]
 getElemsVector' x = do
     ies <- getAssocsVector' x
     return $ (snd . unzip) ies
 
-getAssocsVector :: (ReadVector x e m) => x n e -> m [(Int,e)]
+getAssocsVector :: (ReadVector x m, Elem e) => x n e -> m [(Int,e)]
 getAssocsVector x
     | isConj x =
         getAssocsVector (conj x) 
@@ -162,7 +161,7 @@ getAssocsVector x
                 in e `seq` ((i,e):ies)
 {-# INLINE getAssocsVector #-}
 
-getAssocsVector' :: (ReadVector x e m) => x n e -> m [(Int,e)]
+getAssocsVector' :: (ReadVector x m, Elem e) => x n e -> m [(Int,e)]
 getAssocsVector' x
     | isConj x =
         getAssocsVector' (conj x) 
@@ -182,7 +181,7 @@ getAssocsVector' x
                 ies <- go n incX ptr' i'
                 return $ (i,e):ies
 
-unsafeReadElemVector :: (ReadVector x e m) => x n e -> Int -> m e
+unsafeReadElemVector :: (ReadVector x m, Elem e) => x n e -> Int -> m e
 unsafeReadElemVector x i
     | isConj x = 
         unsafeReadElemVector (conj x) i >>= return . conj
@@ -196,7 +195,7 @@ unsafeReadElemVector x i
 
 -- | Creates a new vector of the given length.  The elements will be 
 -- uninitialized.
-newVector_ :: (WriteVector x e m) => Int -> m (x n e)
+newVector_ :: (WriteVector x m, Elem e) => Int -> m (x n e)
 newVector_ n
     | n < 0 = 
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
@@ -205,14 +204,14 @@ newVector_ n
         return $ vectorViewArray arr (unsafeForeignPtrToPtr arr) n 1 False
 
 -- | Create a zero vector of the specified length.
-newZeroVector :: (WriteVector y e m) => Int -> m (y n e)
+newZeroVector :: (WriteVector y m, Elem e) => Int -> m (y n e)
 newZeroVector n = do
     x <- newVector_ n
     setZeroVector x
     return x
 
 -- | Set every element in the vector to zero.
-setZeroVector :: (WriteVector y e m) => y n e -> m ()
+setZeroVector :: (WriteVector y m, Elem e) => y n e -> m ()
 setZeroVector x 
     | stride x == 1 = unsafeIOToM $
                           withVectorPtr x $ 
@@ -220,14 +219,14 @@ setZeroVector x
     | otherwise     = setConstantVector 0 x
 
 -- | Create a constant vector of the specified length.
-newConstantVector :: (WriteVector y e m) => Int -> e -> m (y n e)
+newConstantVector :: (WriteVector y m, Elem e) => Int -> e -> m (y n e)
 newConstantVector n e = do
     x <- newVector_ n
     setConstantVector e x
     return x
         
 -- | Set every element in the vector to a constant.
-setConstantVector :: (WriteVector y e m) => e -> y n e -> m ()
+setConstantVector :: (WriteVector y m, Elem e) => e -> y n e -> m ()
 setConstantVector e x 
     | isConj x  = setConstantVector (conj e) (conj x)
     | otherwise = unsafeIOToM $ withVectorPtr x $ go (dim x)
@@ -238,17 +237,17 @@ setConstantVector e x
                              in poke ptr e >> 
                                 go n' ptr'
 
-canModifyElemVector :: (WriteVector y e m) => y n e -> Int -> m Bool
+canModifyElemVector :: (WriteVector y m) => y n e -> Int -> m Bool
 canModifyElemVector _ _ = return True
 {-# INLINE canModifyElemVector #-}
 
-unsafeWriteElemVector :: (WriteVector y e m) => y n e -> Int -> e -> m ()
+unsafeWriteElemVector :: (WriteVector y m, Elem e) => y n e -> Int -> e -> m ()
 unsafeWriteElemVector x i e =
     let e' = if isConj x then conj e else e
     in unsafeIOToM $ withVectorPtr x $ \ptr -> 
            pokeElemOff ptr (indexOfVector x i) e'
                     
-modifyWithVector :: (WriteVector y e m) => (e -> e) -> y n e -> m ()
+modifyWithVector :: (WriteVector y m, Elem e) => (e -> e) -> y n e -> m ()
 modifyWithVector f x
     | isConj x = modifyWithVector (conj . f . conj) (conj x)
     | otherwise = unsafeIOToM $
@@ -266,7 +265,7 @@ modifyWithVector f x
 ------------------------- CopyTensor functions ------------------------------
 
 -- | Creats a new vector by copying another one.
-newCopyVector :: (BLAS1 e, ReadVector x e m, WriteVector y e m) => 
+newCopyVector :: (BLAS1 e, ReadVector x m, WriteVector y m) => 
     x n e -> m (y n e)    
 newCopyVector x
     | isConj x = 
@@ -277,7 +276,7 @@ newCopyVector x
         return y
 
 -- | Same as 'copyVector' but the sizes of the arguments are not checked.
-unsafeCopyVector :: (BLAS1 e, WriteVector y e m, ReadVector x e m) =>
+unsafeCopyVector :: (BLAS1 e, WriteVector y m, ReadVector x m) =>
     y n e -> x n e -> m ()
 unsafeCopyVector y x
     | isConj x && isConj y =
@@ -292,7 +291,7 @@ unsafeCopyVector y x
 ------------------------- SwapTensor functions ------------------------------
 
 -- | Same as 'swapVector' but the sizes of the arguments are not checked.
-unsafeSwapVector :: (BLAS1 e, WriteVector y e m) => 
+unsafeSwapVector :: (BLAS1 e, WriteVector y m) => 
     y n e -> y n e -> m ()
 unsafeSwapVector x y
     | isConj x && isConj y =
@@ -308,22 +307,22 @@ unsafeSwapVector x y
 
 --------------------------- Numeric functions -------------------------------
 
-doConjVector :: (WriteVector y e m, BLAS1 e) => y n e -> m ()
+doConjVector :: (WriteVector y m, BLAS1 e) => y n e -> m ()
 doConjVector = vectorCall BLAS.conj
 
-scaleByVector :: (WriteVector y e m, BLAS1 e) => e -> y n e -> m ()
+scaleByVector :: (WriteVector y m, BLAS1 e) => e -> y n e -> m ()
 scaleByVector 1 _ = return ()
 scaleByVector k x | isConj x    = scaleByVector (conj k) (conj x)
                     | otherwise = vectorCall (flip BLAS.scal k) x
                     
-shiftByVector :: (WriteVector y e m) => e -> y n e -> m ()
+shiftByVector :: (WriteVector y m, Elem e) => e -> y n e -> m ()
 shiftByVector k x | isConj x  = shiftByVector (conj k) (conj x)
                   | otherwise = modifyWithVector (k+) x
 
 
 -------------------------- Numeric2 functions -------------------------------
 
-unsafeAxpyVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) => 
+unsafeAxpyVector :: (ReadVector x m, WriteVector y m, BLAS1 e) => 
     e -> x n e -> y n e -> m ()
 unsafeAxpyVector alpha x y
     | isConj y =
@@ -333,7 +332,7 @@ unsafeAxpyVector alpha x y
     | otherwise =
         vectorCall2 (flip BLAS.axpy alpha) x y
 
-unsafeMulVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
+unsafeMulVector :: (WriteVector y m, ReadVector x m, BLAS1 e) => 
     y n e -> x n e -> m ()
 unsafeMulVector y x
     | isConj y =
@@ -343,7 +342,7 @@ unsafeMulVector y x
     | otherwise =
         vectorCall2 BLAS.mul x y
 
-unsafeDivVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
+unsafeDivVector :: (WriteVector y m, ReadVector x m, BLAS1 e) => 
     y n e -> x n e -> m ()
 unsafeDivVector y x
     | isConj y =
@@ -364,7 +363,7 @@ indicesVector :: (BaseVector x) => x n e -> [Int]
 indicesVector x = [0..(n-1)] where n = dim x
 {-# INLINE indicesVector #-}
 
-vectorCall :: (ReadVector x e m) => 
+vectorCall :: (ReadVector x m) => 
     (Int -> Ptr e -> Int -> IO a) 
         ->  x n e -> m a
 vectorCall f x =
@@ -375,7 +374,7 @@ vectorCall f x =
                f n pX incX
 {-# INLINE vectorCall #-}
 
-vectorCall2 :: (ReadVector x e m, ReadVector y f m) => 
+vectorCall2 :: (ReadVector x m, ReadVector y m) => 
        (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
     -> x n e -> y n' f -> m a
 vectorCall2 f x y =
@@ -429,7 +428,7 @@ instance BaseTensor (STVector s) Int where
     bounds = boundsVector
     shape  = shapeVector
         
-instance (Elem e) => ReadTensor IOVector Int e IO where
+instance ReadTensor IOVector Int IO where
     getSize        = getSizeVector
     getAssocs      = getAssocsVector
     getIndices     = getIndicesVector
@@ -439,7 +438,7 @@ instance (Elem e) => ReadTensor IOVector Int e IO where
     getElems'      = getElemsVector'
     unsafeReadElem = unsafeReadElemVector
 
-instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
+instance ReadTensor (STVector s) Int (ST s) where
     getSize        = getSizeVector
     getAssocs      = getAssocsVector
     getIndices     = getIndicesVector
@@ -449,10 +448,10 @@ instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
     getElems'      = getElemsVector'
     unsafeReadElem = unsafeReadElemVector
 
-instance (Elem e) => ReadVector IOVector e IO where
-instance (Elem e) => ReadVector (STVector s) e (ST s) where    
+instance ReadVector IOVector IO where
+instance ReadVector (STVector s) (ST s) where    
 
-instance (BLAS1 e) => WriteTensor IOVector Int e IO where
+instance WriteTensor IOVector Int IO where
     setConstant     = setConstantVector
     setZero         = setZeroVector
     canModifyElem   = canModifyElemVector
@@ -462,7 +461,7 @@ instance (BLAS1 e) => WriteTensor IOVector Int e IO where
     scaleBy         = scaleByVector
     shiftBy         = shiftByVector
     
-instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
+instance WriteTensor (STVector s) Int (ST s) where
     setConstant     = setConstantVector
     setZero         = setZeroVector
     canModifyElem   = canModifyElemVector
@@ -472,5 +471,5 @@ instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
     scaleBy         = scaleByVector
     shiftBy         = shiftByVector
 
-instance (BLAS1 e) => WriteVector IOVector e IO where
-instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
+instance WriteVector IOVector IO where
+instance WriteVector (STVector s) (ST s) where

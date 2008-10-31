@@ -97,13 +97,13 @@ class (BLAS.BaseMatrix a, BaseVector x) =>
         bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
         arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
 
-class (Elem e, UnsafeIOToM m, ReadTensor a (Int,Int) e m, 
-           BaseBanded a x, ReadVector x e m) => 
-    ReadBanded a x e m | a -> x where
+class (UnsafeIOToM m, ReadTensor a (Int,Int) m, 
+           BaseBanded a x, ReadVector x m) => 
+    ReadBanded a x m | a -> x where
 
-class (WriteTensor a (Int,Int) e m,
-           WriteVector x e m, ReadBanded a x e m) => 
-    WriteBanded a x e m | a -> m, m -> a, a -> x where
+class (WriteTensor a (Int,Int) m,
+           WriteVector x m, ReadBanded a x m) => 
+    WriteBanded a x m | a -> m, m -> a, a -> x where
 
 
 ------------------------- Basic Banded Properties ---------------------------
@@ -209,35 +209,35 @@ hermBanded a = let (f,p,m,n,kl,ku,l,h) = arrayFromBanded a
 
 -------------------------- ReadTensor functions -----------------------------
 
-getSizeBanded :: (ReadBanded a x e m) => a mn e -> m Int
+getSizeBanded :: (ReadBanded a x m) => a mn e -> m Int
 getSizeBanded = return . sizeBanded
 {-# INLINE getSizeBanded #-}
 
-getIndicesBanded :: (ReadBanded a x e m) => a mn e -> m [(Int,Int)]
+getIndicesBanded :: (ReadBanded a x m) => a mn e -> m [(Int,Int)]
 getIndicesBanded = return . indicesBanded
 {-# INLINE getIndicesBanded #-}
 
-getElemsBanded :: (ReadBanded a x e m) => a mn e -> m [e]
+getElemsBanded :: (ReadBanded a x m, Elem e) => a mn e -> m [e]
 getElemsBanded a = getAssocsBanded a >>= return . (map snd)
 
-getAssocsBanded :: (ReadBanded a x e m) => a mn e -> m [((Int,Int),e)]
+getAssocsBanded :: (ReadBanded a x m, Elem e) => a mn e -> m [((Int,Int),e)]
 getAssocsBanded a = do
     is <- getIndicesBanded a
     unsafeInterleaveM $ mapM (\i -> unsafeReadElem a i >>= \e -> return (i,e)) is
     
-getIndicesBanded' :: (ReadBanded a x e m) => a mn e -> m [(Int,Int)]
+getIndicesBanded' :: (ReadBanded a x m) => a mn e -> m [(Int,Int)]
 getIndicesBanded' = getIndicesBanded
 {-# INLINE getIndicesBanded' #-}
 
-getElemsBanded' :: (ReadBanded a x e m) => a mn e -> m [e]
+getElemsBanded' :: (ReadBanded a x m, Elem e) => a mn e -> m [e]
 getElemsBanded' a = getAssocsBanded' a >>= return . (map snd)
 
-getAssocsBanded' :: (ReadBanded a x e m) => a mn e -> m [((Int,Int),e)]
+getAssocsBanded' :: (ReadBanded a x m, Elem e) => a mn e -> m [((Int,Int),e)]
 getAssocsBanded' a = do
     is <- getIndicesBanded a
     mapM (\i -> unsafeReadElem a i >>= \e -> return (i,e)) is
 
-unsafeReadElemBanded :: (ReadBanded a x e m) => a mn e -> (Int,Int) -> m e
+unsafeReadElemBanded :: (ReadBanded a x m, Elem e) => a mn e -> (Int,Int) -> m e
 unsafeReadElemBanded a (i,j)
     | isHermBanded a = 
         unsafeReadElemBanded (hermBanded $ coerceBanded a) (j,i) 
@@ -254,7 +254,7 @@ unsafeReadElemBanded a (i,j)
 
 -- | Create a new banded matrix of given shape and (lower,upper), bandwidths,
 -- but do not initialize the elements.
-newBanded_ :: (WriteBanded a x e m) => (Int,Int) -> (Int,Int) -> m (a mn e)
+newBanded_ :: (WriteBanded a x m, Elem e) => (Int,Int) -> (Int,Int) -> m (a mn e)
 newBanded_ (m,n) (kl,ku)
     | m < 0 || n < 0 =
         err "dimensions must be non-negative."
@@ -278,23 +278,23 @@ newBanded_ (m,n) (kl,ku)
       err s = fail $ "newBanded_ " ++ show (m,n) ++ " " ++ show (kl,ku) ++ ": " ++ s
                   
 -- | Create a zero banded matrix of the specified shape and bandwidths.
-newZeroBanded :: (WriteBanded a x e m) => (Int,Int) -> (Int,Int) -> m (a mn e)
+newZeroBanded :: (WriteBanded a x m, Elem e) => (Int,Int) -> (Int,Int) -> m (a mn e)
 newZeroBanded mn bw = do
     a <- newBanded_ mn bw
     setZeroBanded a
     return a
 
 -- | Create a constant banded matrix of the specified shape and bandwidths.
-newConstantBanded :: (WriteBanded a x e m) => (Int,Int) -> (Int,Int) -> e -> m (a mn e)
+newConstantBanded :: (WriteBanded a x m, Elem e) => (Int,Int) -> (Int,Int) -> e -> m (a mn e)
 newConstantBanded mn bw e = do
     a <- newBanded_ mn bw
     setConstantBanded e a
     return a
 
-setZeroBanded :: (WriteBanded a x e m) => a mn e -> m ()    
+setZeroBanded :: (WriteBanded a x m, Elem e) => a mn e -> m ()    
 setZeroBanded = setConstantBanded 0
 
-setConstantBanded :: (WriteBanded a x e m) => e -> a mn e -> m ()
+setConstantBanded :: (WriteBanded a x m, Elem e) => e -> a mn e -> m ()
 setConstantBanded e a
     | isHermBanded a = setConstantBanded (conj e) a'
     | otherwise = do
@@ -303,7 +303,7 @@ setConstantBanded e a
   where
     a' = (hermBanded . coerceBanded) a
 
-unsafeWriteElemBanded :: (WriteBanded a x e m) => 
+unsafeWriteElemBanded :: (WriteBanded a x m, Elem e) => 
     a mn e -> (Int,Int) -> e -> m ()
 unsafeWriteElemBanded a (i,j) e
     | isHermBanded a  = unsafeWriteElemBanded a' (j,i) $ conj e
@@ -312,12 +312,12 @@ unsafeWriteElemBanded a (i,j) e
   where
     a' = (hermBanded . coerceBanded) a
 
-modifyWithBanded :: (WriteBanded a x e m) => (e -> e) -> a mn e -> m ()
+modifyWithBanded :: (WriteBanded a x m, Elem e) => (e -> e) -> a mn e -> m ()
 modifyWithBanded f a = do
     ies <- getAssocsBanded a
     mapM_ (\(ij,e) -> unsafeWriteElemBanded a ij (f e)) ies
 
-canModifyElemBanded :: (WriteBanded a x e m) => a mn e -> (Int,Int) -> m Bool
+canModifyElemBanded :: (WriteBanded a x m) => a mn e -> (Int,Int) -> m Bool
 canModifyElemBanded a ij = return $ hasStorageBanded a ij
 {-# INLINE canModifyElemBanded #-}
 
@@ -364,7 +364,7 @@ unsafeColViewBanded a j =
     (f,p,m,_,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
 
-unsafeGetRowBanded :: (ReadBanded a x e m, WriteVector y e m) => 
+unsafeGetRowBanded :: (ReadBanded a x m, WriteVector y m, Elem e) => 
     a (k,l) e -> Int -> m (y l e)
 unsafeGetRowBanded a i = 
     let (nb,x,na) = unsafeRowViewBanded a i
@@ -373,7 +373,7 @@ unsafeGetRowBanded a i =
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColBanded :: (ReadBanded a x e m, WriteVector y e m) => 
+unsafeGetColBanded :: (ReadBanded a x m, WriteVector y m, Elem e) => 
     a (k,l) e -> Int -> m (y k e)
 unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
 
@@ -381,7 +381,7 @@ unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
 -------------------------- Matrix multiplication ----------------------------
 
 -- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
-gbmv :: (ReadBanded a z e m, ReadVector x e m, WriteVector y e m, BLAS2 e) => 
+gbmv :: (ReadBanded a z m, ReadVector x m, WriteVector y m, BLAS2 e) => 
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 gbmv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
@@ -412,7 +412,7 @@ gbmv alpha a x beta y
                    BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
-gbmm :: (ReadBanded a x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS2 e) => 
+gbmm :: (ReadBanded a x m, ReadMatrix b y m, WriteMatrix c z m, BLAS2 e) => 
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 gbmm alpha a b beta c =
     sequence_ $
@@ -505,10 +505,10 @@ instance BLAS.BaseMatrix IOBanded where
 instance BLAS.BaseMatrix (STBanded s) where
     herm = hermBanded
 
-instance (BLAS1 e) => ReadBanded IOBanded     IOVector     e IO
-instance (BLAS1 e) => ReadBanded (STBanded s) (STVector s) e (ST s)
+instance ReadBanded IOBanded     IOVector     IO
+instance ReadBanded (STBanded s) (STVector s) (ST s)
 
-instance (BLAS1 e) => ReadTensor IOBanded (Int,Int) e IO where
+instance ReadTensor IOBanded (Int,Int) IO where
     getSize        = getSizeBanded
     getAssocs      = getAssocsBanded
     getIndices     = getIndicesBanded
@@ -518,7 +518,7 @@ instance (BLAS1 e) => ReadTensor IOBanded (Int,Int) e IO where
     getElems'      = getElemsBanded'
     unsafeReadElem = unsafeReadElemBanded
     
-instance (BLAS1 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
+instance ReadTensor (STBanded s) (Int,Int) (ST s) where
     getSize        = getSizeBanded
     getAssocs      = getAssocsBanded
     getIndices     = getIndicesBanded
@@ -528,17 +528,17 @@ instance (BLAS1 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
     getElems'      = getElemsBanded'
     unsafeReadElem = unsafeReadElemBanded
 
-instance (BLAS1 e) => WriteBanded IOBanded IOVector e IO where
-instance (BLAS1 e) => WriteBanded (STBanded s) (STVector s) e (ST s) where
+instance WriteBanded IOBanded IOVector IO where
+instance WriteBanded (STBanded s) (STVector s) (ST s) where
 
-instance (BLAS1 e) => WriteTensor IOBanded (Int,Int) e IO where
+instance WriteTensor IOBanded (Int,Int) IO where
     setConstant     = setConstantBanded
     setZero         = setZeroBanded
     modifyWith      = modifyWithBanded
     unsafeWriteElem = unsafeWriteElemBanded
     canModifyElem   = canModifyElemBanded
 
-instance (BLAS1 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
+instance WriteTensor (STBanded s) (Int,Int) (ST s) where
     setConstant     = setConstantBanded
     setZero         = setZeroBanded
     modifyWith      = modifyWithBanded

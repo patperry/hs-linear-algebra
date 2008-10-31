@@ -165,7 +165,7 @@ instance BaseTensor Vector Int where
     shape  = liftVector shape
     bounds = liftVector bounds
 
-instance (BLAS1 e) => ITensor Vector Int e where
+instance ITensor Vector Int where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -196,7 +196,7 @@ replaceHelp set x ies =
         return (unsafeFreezeIOVector y)
 {-# NOINLINE replaceHelp #-}
 
-instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
+instance (Monad m) => ReadTensor Vector Int m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -212,7 +212,7 @@ instance BaseVector Vector where
     vectorViewArray f o n s c = V $ vectorViewArray f o n s c
     arrayFromVector           = liftVector arrayFromVector
 
-instance (BLAS1 e, UnsafeIOToM m) => ReadVector Vector e m where
+instance (UnsafeIOToM m) => ReadVector Vector m where
     
 instance (BLAS1 e) => Num (Vector n e) where
     (+) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getAddVector x y

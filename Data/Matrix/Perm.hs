@@ -105,7 +105,7 @@ instance (BLAS1 e, UnsafeIOToM m) => MMatrix Perm e m where
     unsafeDoSApplyMat_   = unsafeDoSApplyMatPerm_
 
 
-unsafeDoSApplyPerm_ :: (WriteVector y e m, BLAS1 e) => 
+unsafeDoSApplyPerm_ :: (WriteVector y m, BLAS1 e) => 
     e -> Perm (k,k) e -> y k e -> m ()
 unsafeDoSApplyPerm_ alpha   (I _)   x = scaleBy alpha x
 unsafeDoSApplyPerm_ alpha p@(P _ _) x
@@ -115,7 +115,7 @@ unsafeDoSApplyPerm_ alpha p@(P _ _) x
     sigma = baseOf p
     swap  = unsafeSwapElem x
 
-unsafeDoSApplyMatPerm_ :: (WriteMatrix c z e m, BLAS1 e) => 
+unsafeDoSApplyMatPerm_ :: (WriteMatrix c z m, BLAS1 e) => 
     e -> Perm (k,k) e -> c (k,l) e -> m ()
 unsafeDoSApplyMatPerm_ alpha   (I _)   a = scaleBy alpha a
 unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
@@ -126,7 +126,7 @@ unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
     swap i j = unsafeSwapVector (unsafeRowView a i) (unsafeRowView a j)
 
 
-unsafeDoSApplyAddPerm :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+unsafeDoSApplyAddPerm :: (ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> Perm (k,l) e -> x l e -> e -> y k e -> m ()
 unsafeDoSApplyAddPerm alpha (I _) x beta y = do
     scaleBy beta y
@@ -152,7 +152,7 @@ unsafeDoSApplyAddPerm alpha p x beta y
                            f <- unsafeReadElem y i
                            unsafeWriteElem y i (alpha*e + f)
 
-unsafeDoSApplyAddMatPerm :: (ReadMatrix b x e m, WriteMatrix c y e m, BLAS1 e) =>
+unsafeDoSApplyAddMatPerm :: (ReadMatrix b x m, WriteMatrix c y m, BLAS1 e) =>
     e -> Perm (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatPerm alpha (I _) b beta c = do
     scaleBy beta c

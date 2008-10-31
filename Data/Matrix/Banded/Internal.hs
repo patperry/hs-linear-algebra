@@ -158,7 +158,7 @@ instance BaseTensor Banded (Int,Int) where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 
-instance (BLAS1 e) => ITensor Banded (Int,Int) e where
+instance ITensor Banded (Int,Int) where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -200,7 +200,7 @@ replaceHelp set x ies =
 {-# NOINLINE replaceHelp #-}
 
 
-instance (BLAS1 e, Monad m) => ReadTensor Banded (Int,Int) e m where
+instance (Monad m) => ReadTensor Banded (Int,Int) m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -217,8 +217,7 @@ instance BaseBanded Banded Vector where
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 
-instance (BLAS1 e, UnsafeIOToM m) => 
-    ReadBanded Banded Vector e m where
+instance (UnsafeIOToM m) => ReadBanded Banded Vector m where
 
 instance (BLAS2 e) => IMatrix Banded e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x

@@ -18,40 +18,40 @@ module BLAS.Tensor.Write (
 import Data.Ix( inRange )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Read
-import BLAS.Elem( BLAS1, conj )
+import BLAS.Elem( Elem, BLAS1, conj )
 
 -- | Class for modifiable mutable tensors.
-class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
+class (ReadTensor x i m) => WriteTensor x i m | x -> m where
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize
     
     -- | Sets all stored elements to zero.
-    setZero :: x n e -> m ()
+    setZero :: (Elem e) => x n e -> m ()
     setZero = setConstant 0
     
     -- | Sets all stored elements to the given value.
-    setConstant :: e -> x n e -> m ()
+    setConstant :: (Elem e) => e -> x n e -> m ()
 
     -- | True if the value at a given index can be changed
     canModifyElem :: x n e -> i -> m Bool
     
     -- | Set the value of the element at the given index, without doing any
     -- range checking.
-    unsafeWriteElem :: x n e -> i -> e -> m ()
+    unsafeWriteElem :: (Elem e) => x n e -> i -> e -> m ()
     
     -- | Modify the value of the element at the given index, without doing
     -- any range checking.
-    unsafeModifyElem :: x n e -> i -> (e -> e) -> m ()
+    unsafeModifyElem :: (Elem e) => x n e -> i -> (e -> e) -> m ()
     unsafeModifyElem x i f = do
         e <- unsafeReadElem x i
         unsafeWriteElem x i (f e)
     
     -- | Replace each element by a function applied to it
-    modifyWith :: (e -> e) -> x n e -> m ()
+    modifyWith :: (Elem e) => (e -> e) -> x n e -> m ()
 
     -- | Same as 'swapElem' but arguments are not range-checked.
-    unsafeSwapElem :: x n e -> i -> i -> m ()
+    unsafeSwapElem :: (Elem e) => x n e -> i -> i -> m ()
     unsafeSwapElem x i j = do
         e <- unsafeReadElem x i
         f <- unsafeReadElem x j
@@ -68,13 +68,13 @@ class (Num e, ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     scaleBy k = modifyWith (k*)
 
     -- | Add a value to every element in a vector.
-    shiftBy :: e -> x n e -> m ()
+    shiftBy :: (BLAS1 e) => e -> x n e -> m ()
     shiftBy 0 = const $ return ()
     shiftBy k = modifyWith (k+)
 
 
 -- | Set the value of the element at the given index.
-writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()
+writeElem :: (WriteTensor x i m, Elem e) => x n e -> i -> e -> m ()
 writeElem x i e = do
     ok <- canModifyElem x i
     case ok && inRange (bounds x) i of
@@ -88,7 +88,7 @@ writeElem x i e = do
     s = shape x
 
 -- | Update the value of the element at the given index.
-modifyElem :: (WriteTensor x i e m) => x n e -> i -> (e -> e) -> m ()
+modifyElem :: (WriteTensor x i m, Elem e) => x n e -> i -> (e -> e) -> m ()
 modifyElem x i f = do
     ok <- canModifyElem x i
     case ok of
@@ -102,7 +102,7 @@ modifyElem x i f = do
     s = shape x
 
 -- | Swap the values stored at two positions in the tensor.
-swapElem :: (WriteTensor x i e m) => x n e -> i -> i -> m ()
+swapElem :: (WriteTensor x i m, Elem e) => x n e -> i -> i -> m ()
 swapElem x i j
     | not ((inRange (bounds x) i) && (inRange (bounds x) j)) = 
         fail $ "Tried to swap elements `" ++ show i ++ "' and `"

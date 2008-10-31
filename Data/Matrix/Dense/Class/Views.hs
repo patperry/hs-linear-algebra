@@ -73,11 +73,11 @@ colView a = checkedCol (shape a) (unsafeColView a)
 
 -- | Get the given diagonal in a matrix.  Negative indices correspond
 -- to sub-diagonals.
-getDiag :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+getDiag :: (ReadMatrix a x m, WriteVector y m, BLAS1 e) => 
     a mn e -> Int -> m (y k e)
 getDiag a = checkedDiag (shape a) (unsafeGetDiag a)
 
 -- | Same as 'getDiag' but not range-checked.
-unsafeGetDiag :: (ReadMatrix a x e m, WriteVector y e m, BLAS1 e) => 
+unsafeGetDiag :: (ReadMatrix a x m, WriteVector y m, BLAS1 e) => 
     a mn e -> Int -> m (y k e)
 unsafeGetDiag a i = newCopyVector (unsafeDiagView a i)

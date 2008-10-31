@@ -24,34 +24,33 @@ infixl 5 `shift`
 
 
 -- | A class for immutable tensors.
-class (Elem e, BaseTensor x i) => ITensor x i e where
+class (BaseTensor x i) => ITensor x i where
     -- | Get the numer of elements stored in the tensor.
     size :: x n e -> Int
     
     -- | Get a new tensor by replacing the elements at the given indices.
-    (//) :: x n e -> [(i,e)] -> x n e
+    (//) :: (BLAS1 e) => x n e -> [(i,e)] -> x n e
 
     -- | Get the value at the given index, without doing any bounds-checking.
-    unsafeAt :: x n e -> i -> e
+    unsafeAt :: (Elem e) => x n e -> i -> e
     
     -- | Same as '(//)' but doesn't do any bounds-checking.
-    unsafeReplace :: x n e -> [(i,e)] -> x n e
+    unsafeReplace :: (BLAS1 e) => x n e -> [(i,e)] -> x n e
     
     -- | Get the indices of the elements stored in the tensor.
     indices :: x n e -> [i]
-    indices = fst . unzip . assocs
     
     -- | Get the elements stored in the tensor.
-    elems :: x n e -> [e]
+    elems :: (Elem e) => x n e -> [e]
     elems = snd . unzip . assocs
 
     -- | Get the list of @(@index@,@ element@)@ pairs stored in the tensor.
-    assocs :: x n e -> [(i,e)]
+    assocs :: (Elem e) => x n e -> [(i,e)]
 
     -- accum :: (e -> e' -> e) -> x e -> [(i,e')] -> x e
     
     -- | Apply a function elementwise to a tensor.
-    tmap :: (e -> e) -> x n e -> x n e
+    tmap :: (BLAS1 e) => (e -> e) -> x n e -> x n e
     
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
@@ -65,7 +64,7 @@ class (Elem e, BaseTensor x i) => ITensor x i e where
     shift k = tmap (k+)    
     
 -- | Get the value at the given index.  Range-checks the argument.
-(!) :: (ITensor x i e, Show i) => x n e -> i -> e
+(!) :: (ITensor x i, Elem e) => x n e -> i -> e
 (!) x i =
     case (inRange b i) of
         False -> 

@@ -87,7 +87,7 @@ instance (BLAS1 e, UnsafeIOToM m) => MMatrix (Diag Vector) e m where
     unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
 
 
-unsafeDoSApplyAddDiagVector :: (ReadVector z e m, ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+unsafeDoSApplyAddDiagVector :: (ReadVector z m, ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> Diag z (r,s) e -> x s e -> e -> y r e -> m ()
 unsafeDoSApplyAddDiagVector alpha a x beta y = do
     x' <- newCopyVector x
@@ -95,7 +95,7 @@ unsafeDoSApplyAddDiagVector alpha a x beta y = do
     scaleBy beta y
     unsafeAxpyVector alpha x' (coerceVector y)
 
-unsafeDoSApplyAddMatDiagVector :: (ReadVector x e m, ReadMatrix b y e m, WriteMatrix c z e m, BLAS1 e) =>
+unsafeDoSApplyAddMatDiagVector :: (ReadVector x m, ReadMatrix b y m, WriteMatrix c z m, BLAS1 e) =>
     e -> Diag x (r,s) e -> b (s,t) e ->  e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatDiagVector alpha a b beta c = do
     scaleBy beta c
@@ -104,13 +104,13 @@ unsafeDoSApplyAddMatDiagVector alpha a b beta c = do
         ys    = rowViews c
     zipWithM_ (\(k,x) y -> unsafeAxpyVector (alpha*k) x y) kxs ys
 
-unsafeDoSApplyDiagVector_ :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+unsafeDoSApplyDiagVector_ :: (ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> Diag x (s,s) e -> y s e -> m ()
 unsafeDoSApplyDiagVector_ alpha a x = do
     unsafeMulVector x (vectorFromDiag a)
     scaleBy alpha x
 
-unsafeDoSApplyMatDiagVector_ :: (ReadVector x e m, WriteMatrix b y e m, BLAS1 e) =>
+unsafeDoSApplyMatDiagVector_ :: (ReadVector x m, WriteMatrix b y m, BLAS1 e) =>
     e -> Diag x (s,s) e -> b (s,t) e ->  m ()
 unsafeDoSApplyMatDiagVector_ alpha a b = do
     ks <- getElems (vectorFromDiag a)
@@ -141,25 +141,25 @@ instance (BLAS1 e, UnsafeIOToM m) => MSolve (Diag Vector) e m where
 
 
 
-unsafeDoSSolveDiagVector :: (ReadVector z e m, ReadVector y e m, WriteVector x e m, BLAS1 e) =>
+unsafeDoSSolveDiagVector :: (ReadVector z m, ReadVector y m, WriteVector x m, BLAS1 e) =>
     e -> Diag z (r,s) e -> y r e -> x s e -> m ()
 unsafeDoSSolveDiagVector alpha a y x = do
     unsafeCopyVector x (coerceVector y)
     unsafeDoSSolveDiagVector_ alpha (coerceDiag a) x
 
-unsafeDoSSolveMatDiagVector :: (ReadVector x e m, ReadMatrix c z e m, WriteMatrix b y e m, BLAS1 e) =>
+unsafeDoSSolveMatDiagVector :: (ReadVector x m, ReadMatrix c z m, WriteMatrix b y m, BLAS1 e) =>
     e -> Diag x (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatDiagVector alpha a c b = do
     unsafeCopyMatrix b (coerceMatrix c)
     unsafeDoSSolveMatDiagVector_ alpha (coerceDiag a) b
 
-unsafeDoSSolveDiagVector_ :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
+unsafeDoSSolveDiagVector_ :: (ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> Diag x (k,k) e -> y k e -> m ()
 unsafeDoSSolveDiagVector_ alpha a x = do
     scaleBy alpha x
     unsafeDivVector x (vectorFromDiag a)
 
-unsafeDoSSolveMatDiagVector_ :: (ReadVector x e m, WriteMatrix a y e m, BLAS1 e) =>
+unsafeDoSSolveMatDiagVector_ :: (ReadVector x m, WriteMatrix a y m, BLAS1 e) =>
     e -> Diag x (k,k) e -> a (k,l) e -> m ()
 unsafeDoSSolveMatDiagVector_ alpha a b = do
     scaleBy alpha b
