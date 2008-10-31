@@ -110,7 +110,6 @@ library
                             BLAS.Numeric.Read
                             BLAS.Numeric.Write
                             BLAS.Numeric.Binary
-                            BLAS.Numeric.Ternary
 
                         BLAS.Tensor
                             BLAS.Tensor.Base
