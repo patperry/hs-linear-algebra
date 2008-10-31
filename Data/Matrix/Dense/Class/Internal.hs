@@ -743,13 +743,3 @@ instance (BLAS1 e, ReadMatrix a x e IO) => CopyTensor a IOMatrix (Int,Int) e IO 
 instance (BLAS1 e, ReadMatrix a x e (ST s)) => CopyTensor a (STMatrix s) (Int,Int) e (ST s) where
     newCopyTensor    = newCopyMatrix
     unsafeCopyTensor = unsafeCopyMatrix
-
-instance (BLAS1 e, ReadMatrix a x e IO) => Numeric2 a IOMatrix (Int,Int) e IO where
-    unsafeAxpy = unsafeAxpyMatrix
-    unsafeMul  = unsafeMulMatrix
-    unsafeDiv  = unsafeDivMatrix
-
-instance (BLAS1 e, ReadMatrix a x e (ST s)) => Numeric2 a (STMatrix s) (Int,Int) e (ST s) where
-    unsafeAxpy = unsafeAxpyMatrix
-    unsafeMul  = unsafeMulMatrix
-    unsafeDiv  = unsafeDivMatrix

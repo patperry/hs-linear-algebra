@@ -147,20 +147,20 @@ prop_GetShifted k =
 
 ------------------------- Binary Vector Operations ---------------------------
 
-addEquals_S x y = ( (), zipWith (+) x y, y )
-prop_AddEquals = (+=) `implements2` addEquals_S
+addVector_S x y = ( (), zipWith (+) x y, y )
+prop_AddVector = addVector `implements2` addVector_S
 
-subEquals_S x y = ( (), zipWith (-) x y, y )
-prop_SubEquals = (-=) `implements2` subEquals_S
-
-mulEquals_S x y = ( (), zipWith (*) x y, y )
-prop_MulEquals = (*=) `implements2` mulEquals_S
-
-divEquals_S x y = ( (), zipWith (/) x y, y )
-prop_DivEquals = (//=) `implements2` divEquals_S
+subVector_S x y = ( (), zipWith (-) x y, y )
+prop_SubVector = subVector `implements2` subVector_S
 
 axpyVector_S alpha x y = ( (), x, zipWith (\xi yi -> alpha * xi + yi) x y )
 prop_AxpyVector alpha = axpyVector alpha `implements2` axpyVector_S alpha
+
+mulVector_S x y = ( (), zipWith (*) x y, y )
+prop_MulVector = mulVector `implements2` mulVector_S
+
+divVector_S x y = ( (), zipWith (/) x y, y )
+prop_DivVector = divVector `implements2` divVector_S
 
 getAddVector_S x y = ( zipWith (+) x y, x, y )
 prop_GetAddVector =
@@ -356,11 +356,11 @@ tests_STVector =
     , ("getScaled", mytest prop_GetScaled)
     , ("getShifted", mytest prop_GetShifted)
 
+    , ("addVector", mytest prop_AddVector)
+    , ("subVector", mytest prop_SubVector)
     , ("axpyVector", mytest prop_AxpyVector)
-    , ("(+=)", mytest prop_AddEquals)
-    , ("(-=)", mytest prop_SubEquals)
-    , ("(*=)", mytest prop_MulEquals)
-    , ("(//=)", mytest prop_DivEquals)
+    , ("mulVector", mytest prop_MulVector)
+    , ("divVector", mytest prop_DivVector)
     
     , ("getAddVector", mytest prop_GetAddVector)
     , ("getSubVector", mytest prop_GetSubVector)

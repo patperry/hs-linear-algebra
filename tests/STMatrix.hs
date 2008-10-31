@@ -141,20 +141,20 @@ prop_GetShifted k =
 
 ------------------------- Binary Matrix Operations ---------------------------
 
+addMatrix_S x y = ( (), x + y, y )
+prop_AddMatrix = addMatrix `implements2` addMatrix_S
+
+subMatrix_S x y = ( (), x - y, y )
+prop_SubMatrix = subMatrix `implements2` subMatrix_S
+
 axpyMatrix_S alpha x y = ( (), x, alpha *> x + y )
 prop_AxpyMatrix alpha = axpyMatrix alpha `implements2` axpyMatrix_S alpha
 
-addEquals_S x y = ( (), x + y, y )
-prop_AddEquals = (+=) `implements2` addEquals_S
+mulMatrix_S x y = ( (), x * y, y )
+prop_MulMatrix = mulMatrix `implements2` mulMatrix_S
 
-subEquals_S x y = ( (), x - y, y )
-prop_SubEquals = (-=) `implements2` subEquals_S
-
-mulEquals_S x y = ( (), x * y, y )
-prop_MulEquals = (*=) `implements2` mulEquals_S
-
-divEquals_S x y = ( (), x / y, y )
-prop_DivEquals = (//=) `implements2` divEquals_S
+divMatrix_S x y = ( (), x / y, y )
+prop_DivMatrix = divMatrix `implements2` divMatrix_S
 
 getAddMatrix_S x y = ( x + y, x, y )
 prop_GetAddMatrix =
@@ -334,10 +334,10 @@ tests_STMatrix =
     , ("getShifted", mytest prop_GetShifted)
 
     , ("axpyMatrix", mytest prop_AxpyMatrix)
-    , ("(+=)", mytest prop_AddEquals)
-    , ("(-=)", mytest prop_SubEquals)
-    , ("(*=)", mytest prop_MulEquals)
-    , ("(//=)", mytest prop_DivEquals)
+    , ("addMatrix", mytest prop_AddMatrix)
+    , ("subMatrix", mytest prop_SubMatrix)
+    , ("mulMatrix", mytest prop_MulMatrix)
+    , ("divMatrix", mytest prop_DivMatrix)
     
     , ("getAddMatrix", mytest prop_GetAddMatrix)
     , ("getSubMatrix", mytest prop_GetSubMatrix)

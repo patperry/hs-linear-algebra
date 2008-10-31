@@ -500,13 +500,3 @@ instance (BLAS1 e) => SwapTensor IOVector Int e IO where
 
 instance (BLAS1 e) => SwapTensor (STVector s) Int e (ST s) where
     unsafeSwapTensor = unsafeSwapVector
-
-instance (BLAS1 e, ReadVector x e IO) => Numeric2 x IOVector Int e IO where
-    unsafeAxpy = unsafeAxpyVector
-    unsafeMul  = unsafeMulVector
-    unsafeDiv  = unsafeDivVector
-
-instance (BLAS1 e, ReadVector x e (ST s)) => Numeric2 x (STVector s) Int e (ST s) where
-    unsafeAxpy = unsafeAxpyVector
-    unsafeMul  = unsafeMulVector
-    unsafeDiv  = unsafeDivVector
