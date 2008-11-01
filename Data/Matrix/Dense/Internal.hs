@@ -36,7 +36,11 @@ module Data.Matrix.Dense.Internal (
 
     -- * Matrix views
     submatrix,
+    splitRowsAt,
+    splitColsAt,
     unsafeSubmatrix,
+    unsafeSplitRowsAt,
+    unsafeSplitColsAt,
     
     -- * Vector views
     diag,
@@ -64,6 +68,7 @@ import qualified BLAS.Matrix.Base as BLAS
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
 import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
+    splitRowsAt, splitColsAt, unsafeSplitRowsAt, unsafeSplitColsAt,
     diagView, unsafeDiagView )
 import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix, 
     ldaOfMatrix, colViews, BaseMatrix(..), IOMatrix, maybeFromRow, 

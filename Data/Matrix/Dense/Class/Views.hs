@@ -10,7 +10,11 @@
 module Data.Matrix.Dense.Class.Views (
     -- * Matrix views
     submatrixView,
+    splitRowsAt,
+    splitColsAt,
     unsafeSubmatrixView,
+    unsafeSplitRowsAt,
+    unsafeSplitColsAt,
 
     -- * Row and Column views
     rowViews,
@@ -57,6 +61,42 @@ unsafeSubmatrixView a (i,j) (m,n)
             o  = indexOfMatrix a (i,j)
             p' = p `advancePtr` o
         in matrixViewArray fp p' m n ld False
+
+splitRowsAt :: (BaseMatrix a x, Storable e) =>
+    Int -> a (m,n) e -> (a (m1,n) e, a (m2,n) e)
+splitRowsAt m1 a = ( submatrixView a (0,0)  (m1,n)
+                   , submatrixView a (m1,0) (m2,n)
+                   )
+  where 
+    (m,n) = shape a
+    m2    = m - m1
+
+unsafeSplitRowsAt :: (BaseMatrix a x, Storable e) =>
+    Int -> a (m,n) e -> (a (m1,n) e, a (m2,n) e)
+unsafeSplitRowsAt m1 a = ( unsafeSubmatrixView a (0,0)  (m1,n)
+                         , unsafeSubmatrixView a (m1,0) (m2,n)
+                         )
+  where 
+    (m,n) = shape a
+    m2    = m - m1
+
+splitColsAt :: (BaseMatrix a x, Storable e) =>
+    Int -> a (m,n) e -> (a (m,n1) e, a (m,n2) e)
+splitColsAt n1 a = ( submatrixView a (0,0)  (m,n1)
+                   , submatrixView a (0,n1) (m,n2)
+                   )
+  where
+    (m,n) = shape a
+    n2    = n - n1
+
+unsafeSplitColsAt :: (BaseMatrix a x, Storable e) =>
+    Int -> a (m,n) e -> (a (m,n1) e, a (m,n2) e)
+unsafeSplitColsAt n1 a = ( unsafeSubmatrixView a (0,0)  (m,n1)
+                         , unsafeSubmatrixView a (0,n1) (m,n2)
+                         )
+  where
+    (m,n) = shape a
+    n2    = n - n1
 
 
 -- | Get a vector view of the given diagonal in a matrix.
