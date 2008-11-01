@@ -1,5 +1,5 @@
 name:            blas
-version:         0.6
+version:         0.6.5
 homepage:        http://stat.stanford.edu/~patperry/code/blas
 synopsis:        Bindings to the BLAS library
 description:
