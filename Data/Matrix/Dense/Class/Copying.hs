@@ -15,24 +15,49 @@ module Data.Matrix.Dense.Class.Copying (
     unsafeCopyMatrix,
     unsafeSwapMatrix,
     
+    -- * Swapping rows and columns
+    swapRows,
+    swapCols,
+    unsafeSwapRows,
+    unsafeSwapCols,
+    
     ) where
 
 import BLAS.Elem
 import BLAS.Internal( checkBinaryOp )
-import BLAS.Tensor( shape )
+
+import Control.Monad( when )
 
 import Data.Matrix.Dense.Class.Internal
+import Data.Matrix.Dense.Class.Views
+import Data.Vector.Dense.Class
 
 
 -- | @copyMatrix dst src@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyMatrix :: (BLAS1 e, WriteMatrix b y m,  ReadMatrix a x m) => 
+copyMatrix :: (WriteMatrix b y m,  ReadMatrix a x m, BLAS1 e) => 
     b mn e -> a mn e -> m ()
 copyMatrix b a = checkBinaryOp (shape b) (shape a) $ unsafeCopyMatrix b a
 {-# INLINE copyMatrix #-}
 
 -- | @swapMatrix x y@ swaps the values stored in two matrices.
-swapMatrix :: (BLAS1 e, WriteMatrix a x m) => 
+swapMatrix :: (WriteMatrix a x m, BLAS1 e) => 
     a mn e -> a mn e -> m ()
 swapMatrix a b = checkBinaryOp (shape b) (shape a) $ unsafeSwapMatrix a b
 {-# INLINE swapMatrix #-}
+
+swapRows :: (WriteMatrix a x m, BLAS1 e) => a (r,s) e -> Int -> Int -> m ()
+swapRows a i j = 
+    when (i /= j) $ unsafeSwapVector (rowView a i) (rowView a j)
+
+swapCols :: (WriteMatrix a x m, BLAS1 e) => a (r,s) e -> Int -> Int -> m ()
+swapCols a i j = 
+    when (i /= j) $ unsafeSwapVector (colView a i) (colView a j)
+
+unsafeSwapRows :: (WriteMatrix a x m, BLAS1 e) => a (r,s) e -> Int -> Int -> m ()
+unsafeSwapRows a i j = 
+    when (i /= j) $ unsafeSwapVector (unsafeRowView a i) (unsafeRowView a j)
+
+unsafeSwapCols :: (WriteMatrix a x m, BLAS1 e) => a (r,s) e -> Int -> Int -> m ()
+unsafeSwapCols a i j = 
+    when (i /= j) $ unsafeSwapVector (unsafeColView a i) (unsafeColView a j)
