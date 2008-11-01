@@ -1,4 +1,19 @@
 
+Changes in 0.6:
+
+* Massive overhaul of the types.  It is now possible to do mutable operations
+  in the ST monad.  Access control is done via type classes now instead of
+  phantom types.
+  
+* No more orphan instances.
+
+* Change some function names.  You should never have to "import qualified"
+  anything now.
+  
+* Put row/col operations in the Matrix type classes.  Generic matrix types
+  now provide access to rows and columns.
+  
+
 Changes in 0.5:
 
 * Add Banded matrix data type, as well as Tri Banded and Herm Banded.
