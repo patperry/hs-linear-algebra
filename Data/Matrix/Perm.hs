@@ -113,7 +113,7 @@ unsafeDoSApplyPerm_ alpha p@(P _ _) x
     | otherwise = P.applyWith swap sigma  >> scaleBy alpha x
   where
     sigma = baseOf p
-    swap  = unsafeSwapElem x
+    swap  = unsafeSwapElems x
 
 unsafeDoSApplyMatPerm_ :: (WriteMatrix c z m, BLAS1 e) => 
     e -> Perm (k,k) e -> c (k,l) e -> m ()

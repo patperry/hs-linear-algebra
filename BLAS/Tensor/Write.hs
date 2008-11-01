@@ -12,7 +12,7 @@ module BLAS.Tensor.Write (
     WriteTensor(..),
     writeElem,
     modifyElem,
-    swapElem,
+    swapElems,
     ) where
 
 import Data.Ix( inRange )
@@ -51,8 +51,8 @@ class (ReadTensor x i m) => WriteTensor x i m | x -> m where
     modifyWith :: (Elem e) => (e -> e) -> x n e -> m ()
 
     -- | Same as 'swapElem' but arguments are not range-checked.
-    unsafeSwapElem :: (Elem e) => x n e -> i -> i -> m ()
-    unsafeSwapElem x i j = do
+    unsafeSwapElems :: (Elem e) => x n e -> i -> i -> m ()
+    unsafeSwapElems x i j = do
         e <- unsafeReadElem x i
         f <- unsafeReadElem x j
         unsafeWriteElem x j e
@@ -102,11 +102,11 @@ modifyElem x i f = do
     s = shape x
 
 -- | Swap the values stored at two positions in the tensor.
-swapElem :: (WriteTensor x i m, Elem e) => x n e -> i -> i -> m ()
-swapElem x i j
+swapElems :: (WriteTensor x i m, Elem e) => x n e -> i -> i -> m ()
+swapElems x i j
     | not ((inRange (bounds x) i) && (inRange (bounds x) j)) = 
         fail $ "Tried to swap elements `" ++ show i ++ "' and `"
                ++ show j ++ "' in a tensor of shape `" ++ show (shape x) 
                ++ "'."
     | otherwise =
-        unsafeSwapElem x i j
+        unsafeSwapElems x i j
