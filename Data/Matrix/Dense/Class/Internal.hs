@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Class.Internal
