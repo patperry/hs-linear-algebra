@@ -13,7 +13,7 @@ hpc:
 	hpc markup test-complex
 	
 clean:
-	find .. -name '*.hi' | xargs rm -f
-	find .. -name '*.o'  | xargs rm -f
+	find ../BLAS ../Data . -name '*.hi' | xargs rm -f
+	find ../BLAS ../Data . -name '*.o'  | xargs rm -f
 	find . -name '*.html' | xargs rm -f
 	rm -f test-real test-complex test-complex.tix
