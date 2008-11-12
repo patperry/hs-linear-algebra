@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Internal
@@ -71,8 +71,8 @@ import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
     splitRowsAt, splitColsAt, unsafeSplitRowsAt, unsafeSplitColsAt,
     diagView, unsafeDiagView )
 import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix, 
-    ldaOfMatrix, colViews, BaseMatrix(..), IOMatrix, maybeFromRow, 
-    maybeFromCol, newCopyMatrix, ReadMatrix )
+    ldaOfMatrix, colViews, BaseMatrix_(..), IOMatrix, maybeFromRow, 
+    maybeFromCol, newCopyMatrix, BaseMatrix, ReadMatrix )
 import Data.Matrix.Dense.Class.Operations
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
@@ -250,11 +250,14 @@ instance (Monad m) => ReadTensor Matrix (Int,Int) m where
 instance BLAS.BaseMatrix Matrix where
     herm (M a) = M (herm a)
     
-instance BaseMatrix Matrix Vector where
+instance BaseMatrix_ Matrix where
+    type VectorView Matrix = Vector
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 
-instance (UnsafeIOToM m) => ReadMatrix Matrix Vector m where
+instance BaseMatrix Matrix
+
+instance (UnsafeIOToM m) => ReadMatrix Matrix m where
 
 instance (BLAS1 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y

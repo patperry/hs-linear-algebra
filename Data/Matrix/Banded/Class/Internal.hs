@@ -141,14 +141,14 @@ isHermBanded :: (BaseBanded a x) => a mn e -> Bool
 isHermBanded a = let (_,_,_,_,_,_,_,h) = arrayFromBanded a in h
 {-# INLINE isHermBanded #-}
 
-matrixFromBanded :: (BaseBanded b x, BaseMatrix a x) => 
+matrixFromBanded :: (BaseBanded b x, BaseMatrix a) => 
     b mn e -> ((Int,Int), (Int,Int), a mn' e, Bool)
 matrixFromBanded b =
     let (f,p,m,n,kl,ku,ld,h) = arrayFromBanded b
         a = matrixViewArray f p (kl+1+ku) n ld False
     in ((m,n), (kl,ku), a, h)
 
-bandedViewMatrix :: (BaseMatrix a x, BaseBanded b x) => 
+bandedViewMatrix :: (BaseMatrix a, BaseBanded b x) => 
     (Int,Int) -> (Int,Int) -> a mn e -> Bool -> Maybe (b mn' e)
 bandedViewMatrix (m,n) (kl,ku) a h = 
     if isHermMatrix a 
@@ -412,7 +412,7 @@ gbmv alpha a x beta y
                    BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
-gbmm :: (ReadBanded a x m, ReadMatrix b y m, WriteMatrix c z m, BLAS2 e) => 
+gbmm :: (ReadBanded a x m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 gbmm alpha a b beta c =
     sequence_ $

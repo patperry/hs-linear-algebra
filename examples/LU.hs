@@ -44,7 +44,7 @@ luFactorize a
                    luFactorize a22 >>=
                        either (return . Left . (nleft+)) (\pivots' -> do
                            zipWithM_ (swapRows a21) [0..] pivots'
-                           return (Right $ pivots ++ map (nleft+) pivots')
+                           return $ Right (pivots ++ map (nleft+) pivots')
                        )
                )
     | mn == 1 = 
@@ -59,7 +59,7 @@ luFactorize a
                 else
                     return $ Left 0
     | otherwise =
-        return (Right [])
+        return $ Right []
   where
     (m,n) = shape a
     mn    = min m n

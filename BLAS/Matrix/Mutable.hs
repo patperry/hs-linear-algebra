@@ -73,7 +73,7 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MMatrix a e m where
         unsafeDoSApplyAdd alpha a x 0 y
         return y
 
-    unsafeGetSApplyMat :: (ReadMatrix b x m, WriteMatrix c y m) =>
+    unsafeGetSApplyMat :: (ReadMatrix b m, WriteMatrix c m) =>
         e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
     unsafeGetSApplyMat alpha a b = do
         c <- newMatrix_ (numRows a, numCols b)
@@ -87,7 +87,7 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MMatrix a e m where
         scaleBy beta y
         unsafeAxpyVector 1 y' y
 
-    unsafeDoSApplyAddMat :: (ReadMatrix b x m, WriteMatrix c y m) =>
+    unsafeDoSApplyAddMat :: (ReadMatrix b m, WriteMatrix c m) =>
         e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
     unsafeDoSApplyAddMat alpha a b beta c = do
         c' <- unsafeGetSApplyMat alpha a b
@@ -101,7 +101,7 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MMatrix a e m where
         unsafeDoSApplyAdd alpha a x 0 y
         unsafeCopyVector x y
 
-    unsafeDoSApplyMat_ :: (WriteMatrix b y m) =>
+    unsafeDoSApplyMat_ :: (WriteMatrix b m) =>
         e -> a (k,k) e -> b (k,l) e -> m ()
     unsafeDoSApplyMat_ alpha a b = do
         c <- newMatrix_ (shape b)
@@ -153,7 +153,7 @@ getSApply k a x =
         unsafeGetSApply k a x
 
 -- | Scale and apply to a matrix
-getSApplyMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+getSApplyMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 getSApplyMat k a b =
     checkMatMatMult (shape a) (shape b) $
@@ -167,7 +167,7 @@ doSApplyAdd alpha a x beta y =
         unsafeDoSApplyAdd alpha a x beta y
 
 -- | @c := alpha a b + beta c@
-doSApplyAddMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+doSApplyAddMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 doSApplyAddMat alpha a b beta c =
     checkMatMatMultAdd (shape a) (shape b) (shape c)
@@ -181,7 +181,7 @@ getApply a x =
         unsafeGetApply a x
 
 -- | Apply to a matrix
-getApplyMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+getApplyMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 getApplyMat a b =
     checkMatMatMult (shape a) (shape b) $
@@ -196,7 +196,7 @@ doSApply_ alpha a x =
             unsafeDoSApply_ alpha a x
 
 -- | @ b := alpha a b@
-doSApplyMat_ :: (MMatrix a e m, WriteMatrix b y m) =>
+doSApplyMat_ :: (MMatrix a e m, WriteMatrix b m) =>
     e -> a (s,s) e -> b (s,t) e -> m ()
 doSApplyMat_ alpha a b =
     checkSquare (shape a) $
@@ -207,7 +207,7 @@ unsafeGetApply :: (MMatrix a e m, ReadVector x m, WriteVector y m) =>
     a (k,l) e -> x l e -> m (y k e)
 unsafeGetApply = unsafeGetSApply 1
 
-unsafeGetApplyMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+unsafeGetApplyMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 unsafeGetApplyMat = unsafeGetSApplyMat 1
 
@@ -219,7 +219,7 @@ doApply a x y =
         unsafeDoApply a x y
 
 -- | Apply to a matrix and store the result in another matrix
-doApplyMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+doApplyMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 doApplyMat a b c =
     checkMatMatMultAdd (shape a) (shape b) (shape c) $
@@ -229,7 +229,7 @@ unsafeDoApply :: (MMatrix a e m, ReadVector x m, WriteVector y m) =>
     a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoApply a x y = unsafeDoSApplyAdd 1 a x 0 y
 
-unsafeDoApplyMat :: (MMatrix a e m, ReadMatrix b x m, WriteMatrix c y m) =>
+unsafeDoApplyMat :: (MMatrix a e m, ReadMatrix b m, WriteMatrix c m) =>
     a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 unsafeDoApplyMat a b c = unsafeDoSApplyAddMat 1 a b 0 c
 
@@ -242,7 +242,7 @@ doApply_ a x =
             unsafeDoApply_ a x
 
 -- | @ b := a b@
-doApplyMat_ :: (MMatrix a e m, WriteMatrix b y m) =>
+doApplyMat_ :: (MMatrix a e m, WriteMatrix b m) =>
     a (s,s) e -> b (s,t) e -> m ()
 doApplyMat_ a b =
     checkSquare (shape a) $
@@ -254,7 +254,7 @@ unsafeDoApply_ :: (MMatrix a e m, WriteVector y m) =>
 unsafeDoApply_ a x =
     unsafeDoSApply_ 1 a x
 
-unsafeDoApplyMat_ :: (MMatrix a e m, WriteMatrix b y m) =>
+unsafeDoApplyMat_ :: (MMatrix a e m, WriteMatrix b m) =>
     a (s,s) e -> b (s,t) e -> m ()
 unsafeDoApplyMat_ a b = 
     unsafeDoSApplyMat_ 1 a b

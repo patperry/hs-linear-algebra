@@ -22,7 +22,7 @@ author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@stanford.edu>
 cabal-version:   >= 1.2.0
 build-type:      Simple
-tested-with:     GHC == 6.8.3
+tested-with:     GHC == 6.10.1
 
 extra-source-files:     INSTALL
                         NEWS
@@ -118,10 +118,10 @@ library
 
                         BLAS.UnsafeIOToM
 
-                        Data.Matrix.Banded
-                            Data.Matrix.Banded.IO
-                            Data.Matrix.Banded.ST
-                            Data.Matrix.Banded.Class
+                        --Data.Matrix.Banded
+                        --    Data.Matrix.Banded.IO
+                        --    Data.Matrix.Banded.ST
+                        --    Data.Matrix.Banded.Class
                         
                         Data.Matrix.Dense
                             Data.Matrix.Dense.IO
@@ -130,8 +130,8 @@ library
 
                         Data.Matrix.Diag 
                         Data.Matrix.Perm
-                        Data.Matrix.Herm
-                        Data.Matrix.Tri
+                        --Data.Matrix.Herm
+                        --Data.Matrix.Tri
 
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
@@ -153,13 +153,13 @@ library
                         Data.Vector.Dense.Class.Properties
                         Data.Vector.Dense.Class.Operations
                         
-                        Data.Matrix.Banded.Internal
-                        Data.Matrix.Banded.Class.Internal
-                        Data.Matrix.Banded.Class.Creating
-                        Data.Matrix.Banded.Class.Elements
-                        Data.Matrix.Banded.Class.Special
-                        Data.Matrix.Banded.Class.Views
-                        Data.Matrix.Banded.Class.Copying
+                        -- Data.Matrix.Banded.Internal
+                        -- Data.Matrix.Banded.Class.Internal
+                        -- Data.Matrix.Banded.Class.Creating
+                        -- Data.Matrix.Banded.Class.Elements
+                        -- Data.Matrix.Banded.Class.Special
+                        -- Data.Matrix.Banded.Class.Views
+                        -- Data.Matrix.Banded.Class.Copying
                         
                         Data.Matrix.Dense.Internal
                         Data.Matrix.Dense.Class.Internal
@@ -173,7 +173,8 @@ library
     ghc-options:        -Wall
     extensions:         BangPatterns, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
-                        FunctionalDependencies, MultiParamTypeClasses
+                        FunctionalDependencies, MultiParamTypeClasses,
+                        TypeFamilies
     build-depends:      base, ieee, permutation, storable-complex
 
     

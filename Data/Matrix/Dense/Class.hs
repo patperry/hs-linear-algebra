@@ -9,7 +9,8 @@
 
 module Data.Matrix.Dense.Class (
     -- * The dense matrix type classes
-    BaseMatrix(..),
+    BaseMatrix_(..),
+    BaseMatrix,
     ReadMatrix,
     WriteMatrix,
     
@@ -33,8 +34,8 @@ module Data.Matrix.Dense.Class (
     
     ) where
 
-import Data.Matrix.Dense.Class.Internal( BaseMatrix(..), ldaOfMatrix, 
-    isHermMatrix, ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
+import Data.Matrix.Dense.Class.Internal( BaseMatrix_(..), ldaOfMatrix, 
+    isHermMatrix, BaseMatrix, ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
 import BLAS.Tensor.Base
 import BLAS.Matrix.Base hiding ( BaseMatrix )
 import BLAS.Matrix.Mutable

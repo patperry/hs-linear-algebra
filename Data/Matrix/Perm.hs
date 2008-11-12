@@ -115,7 +115,7 @@ unsafeDoSApplyPerm_ alpha p@(P _ _) x
     sigma = baseOf p
     swap  = unsafeSwapElems x
 
-unsafeDoSApplyMatPerm_ :: (WriteMatrix c z m, BLAS1 e) => 
+unsafeDoSApplyMatPerm_ :: (WriteMatrix c m, BLAS1 e) => 
     e -> Perm (k,k) e -> c (k,l) e -> m ()
 unsafeDoSApplyMatPerm_ alpha   (I _)   a = scaleBy alpha a
 unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
@@ -152,7 +152,7 @@ unsafeDoSApplyAddPerm alpha p x beta y
                            f <- unsafeReadElem y i
                            unsafeWriteElem y i (alpha*e + f)
 
-unsafeDoSApplyAddMatPerm :: (ReadMatrix b x m, WriteMatrix c y m, BLAS1 e) =>
+unsafeDoSApplyAddMatPerm :: (ReadMatrix b m, WriteMatrix c m, BLAS1 e) =>
     e -> Perm (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatPerm alpha (I _) b beta c = do
     scaleBy beta c

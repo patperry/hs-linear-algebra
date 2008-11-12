@@ -41,12 +41,12 @@ instance UnsafeThawMatrix IOMatrix where
 instance UnsafeThawMatrix (STMatrix s) where
     unsafeThawMatrix = unsafeIOMatrixToSTMatrix . unsafeThawMatrix
     
-freezeMatrix :: (ReadMatrix a x m, WriteMatrix b y m, UnsafeFreezeMatrix b, BLAS1 e) =>
+freezeMatrix :: (ReadMatrix a m, WriteMatrix b m, UnsafeFreezeMatrix b, BLAS1 e) =>
     a mn e -> m (Matrix mn e)
 freezeMatrix x = do
     x' <- newCopyMatrix x
     return (unsafeFreezeMatrix x')
 
-thawMatrix :: (WriteMatrix a y m, BLAS1 e) =>
+thawMatrix :: (WriteMatrix a m, BLAS1 e) =>
     Matrix mn e -> m (a mn e)
 thawMatrix = newCopyMatrix

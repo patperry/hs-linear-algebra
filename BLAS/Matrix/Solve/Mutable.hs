@@ -51,7 +51,7 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MSolve a e m where
         a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSolve = unsafeDoSSolve 1
     
-    unsafeDoSolveMat :: (ReadMatrix c y m, WriteMatrix b x m) =>
+    unsafeDoSolveMat :: (ReadMatrix c m, WriteMatrix b m) =>
         a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
     unsafeDoSolveMat = unsafeDoSSolveMat 1
     
@@ -61,7 +61,7 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MSolve a e m where
         unsafeDoSolve a y x
         scaleBy alpha x
     
-    unsafeDoSSolveMat :: (ReadMatrix c y m, WriteMatrix b x m) =>
+    unsafeDoSSolveMat :: (ReadMatrix c m, WriteMatrix b m) =>
         e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
     unsafeDoSSolveMat alpha a c b = do
         unsafeDoSolveMat a c b
@@ -75,10 +75,10 @@ class (BaseMatrix a, BLAS1 e, Monad m) => MSolve a e m where
         scaleBy alpha x
         unsafeDoSolve_ a x
         
-    unsafeDoSolveMat_ :: (WriteMatrix b x m) => a (k,k) e -> b (k,l) e -> m ()
+    unsafeDoSolveMat_ :: (WriteMatrix b m) => a (k,k) e -> b (k,l) e -> m ()
     unsafeDoSolveMat_ = unsafeDoSSolveMat_ 1
         
-    unsafeDoSSolveMat_ :: (WriteMatrix b x m) => e -> a (k,k) e -> b (k,l) e -> m ()         
+    unsafeDoSSolveMat_ :: (WriteMatrix b m) => e -> a (k,k) e -> b (k,l) e -> m ()         
     unsafeDoSSolveMat_ alpha a b = do
         scaleBy alpha b
         unsafeDoSolveMat_ a b
@@ -98,14 +98,14 @@ unsafeGetSSolve alpha a y = do
     unsafeDoSSolve alpha a y x
     return x
     
-unsafeGetSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+unsafeGetSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     a (r,s) e -> c (r,t) e -> m (b (s,t) e)
 unsafeGetSolveMat a c = do
     b <- newMatrix_ (numCols a, numCols c)
     unsafeDoSolveMat a c b
     return b
 
-unsafeGetSSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+unsafeGetSSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     e -> a (r,s) e -> c (r,t) e -> m (b (s,t) e)                         
 unsafeGetSSolveMat alpha a c = do
     b <- newMatrix_ (numCols a, numCols c)
@@ -127,14 +127,14 @@ getSSolve alpha a y =
         unsafeGetSSolve alpha a y
 
 -- | Solve for a matrix
-getSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+getSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     a (r,s) e -> c (r,t) e -> m (b (s,t) e)                     
 getSolveMat a c =
     checkMatMatSolv (shape a) (shape c) $
             unsafeGetSolveMat a c
             
 -- | Solve for a matrix and scale
-getSSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+getSSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     e -> a (r,s) e -> c (r,t) e -> m (b (s,t) e)                 
 getSSolveMat alpha a b =
     checkMatMatSolv (shape a) (shape b) $
@@ -146,7 +146,7 @@ doSolve a y x =
     checkMatVecSolvTo (shape a) (dim y) (dim x) $
         unsafeDoSolve a y x
         
-doSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+doSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()                
 doSolveMat a c b =
     checkMatMatSolvTo (shape a) (shape c) (shape b) $
@@ -158,7 +158,7 @@ doSSolve alpha a y x =
     checkMatVecSolvTo (shape a) (dim y) (dim x) $
         unsafeDoSSolve alpha a y x
 
-doSSolveMat :: (MSolve a e m, ReadMatrix c y m, WriteMatrix b x m) => 
+doSSolveMat :: (MSolve a e m, ReadMatrix c m, WriteMatrix b m) => 
     e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()                  
 doSSolveMat alpha a c b =
     checkMatMatSolvTo (shape a) (shape c) (shape b) $
@@ -178,14 +178,14 @@ doSSolve_ alpha a x =
         checkMatVecSolv (shape a) (dim x) $
             unsafeDoSSolve_ alpha a x
 
-doSolveMat_ :: (MSolve a e m, WriteMatrix b x m) => 
+doSolveMat_ :: (MSolve a e m, WriteMatrix b m) => 
     a (k,k) e -> b (k,l) e -> m ()          
 doSolveMat_ a b =
     checkSquare (shape a) $
         checkMatMatSolv (shape a) (shape b) $
             unsafeDoSolveMat_ a b
 
-doSSolveMat_ :: (MSolve a e m, WriteMatrix b x m) =>
+doSSolveMat_ :: (MSolve a e m, WriteMatrix b m) =>
     e -> a (k,k) e -> b (k,l) e -> m ()          
 doSSolveMat_ alpha a b =
     checkSquare (shape a) $
