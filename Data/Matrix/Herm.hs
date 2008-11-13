@@ -167,7 +167,7 @@ instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Matrix) e m where
 
 ------------------------- Banded Matrix instances ----------------------------
 
-hbmv :: (ReadBanded a z m, ReadVector x m, WriteVector y m, BLAS2 e) => 
+hbmv :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) => 
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
 hbmv alpha h x beta y
     | numRows h == 0 =
@@ -203,17 +203,17 @@ hbmv alpha h x beta y
                withVectorPtr y $ \pY -> do
                    BLAS.hbmv order uploA n k alpha pA ldA pX incX beta pY incY
 
-hbmm :: (ReadBanded a x m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
+hbmm :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
 hbmm alpha h b beta c =
     zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
 
-hbmv' :: (ReadBanded a z m, ReadVector x m, WriteVector y m, BLAS2 e) => 
+hbmv' :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) => 
     e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
 hbmv' alpha a x beta y = 
     hbmv alpha (coerceHerm a) x beta (coerceVector y)
 
-hbmm' :: (ReadBanded a x m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) => 
+hbmm' :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) => 
     e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 hbmm' alpha a b beta c = 
     hbmm alpha (coerceHerm a) b beta (coerceMatrix c)

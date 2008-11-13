@@ -118,10 +118,10 @@ library
 
                         BLAS.UnsafeIOToM
 
-                        --Data.Matrix.Banded
-                        --    Data.Matrix.Banded.IO
-                        --    Data.Matrix.Banded.ST
-                        --    Data.Matrix.Banded.Class
+                        Data.Matrix.Banded
+                            Data.Matrix.Banded.IO
+                            Data.Matrix.Banded.ST
+                            Data.Matrix.Banded.Class
                         
                         Data.Matrix.Dense
                             Data.Matrix.Dense.IO
@@ -130,8 +130,8 @@ library
 
                         Data.Matrix.Diag 
                         Data.Matrix.Perm
-                        --Data.Matrix.Herm
-                        --Data.Matrix.Tri
+                        Data.Matrix.Herm
+                        Data.Matrix.Tri
 
                         Data.Vector.Dense
                             Data.Vector.Dense.IO
@@ -153,13 +153,13 @@ library
                         Data.Vector.Dense.Class.Properties
                         Data.Vector.Dense.Class.Operations
                         
-                        -- Data.Matrix.Banded.Internal
-                        -- Data.Matrix.Banded.Class.Internal
-                        -- Data.Matrix.Banded.Class.Creating
-                        -- Data.Matrix.Banded.Class.Elements
-                        -- Data.Matrix.Banded.Class.Special
-                        -- Data.Matrix.Banded.Class.Views
-                        -- Data.Matrix.Banded.Class.Copying
+                        Data.Matrix.Banded.Internal
+                        Data.Matrix.Banded.Class.Internal
+                        Data.Matrix.Banded.Class.Creating
+                        Data.Matrix.Banded.Class.Elements
+                        Data.Matrix.Banded.Class.Special
+                        Data.Matrix.Banded.Class.Views
+                        Data.Matrix.Banded.Class.Copying
                         
                         Data.Matrix.Dense.Internal
                         Data.Matrix.Dense.Class.Internal

@@ -27,7 +27,7 @@ import Data.Matrix.Banded.Class.Internal
 import Data.Matrix.Banded.Class.Views
 import Data.Vector.Dense.Class( unsafeCopyVector )
 
-newCopyBanded :: (BLAS1 e, ReadBanded a x m, WriteBanded b y m) => 
+newCopyBanded :: (BLAS1 e, ReadBanded a m, WriteBanded b m) => 
     a mn e -> m (b mn e)
 newCopyBanded a 
     | isHermBanded a =
@@ -38,7 +38,7 @@ newCopyBanded a
         unsafeCopyBanded a' a
         return a'
 
-copyBanded :: (BLAS1 e, WriteBanded b y m, ReadBanded a x m) =>
+copyBanded :: (BLAS1 e, WriteBanded b m, ReadBanded a m) =>
     b mn e -> a mn e -> m ()
 copyBanded dst src
     | shapeBanded dst /= shapeBanded src =
@@ -48,7 +48,7 @@ copyBanded dst src
     | otherwise =
         unsafeCopyBanded dst src
 
-unsafeCopyBanded :: (BLAS1 e, WriteBanded b y m, ReadBanded a x m) =>
+unsafeCopyBanded :: (BLAS1 e, WriteBanded b m, ReadBanded a m) =>
     b mn e -> a mn e -> m ()
 unsafeCopyBanded dst src
     | isHermBanded dst = 

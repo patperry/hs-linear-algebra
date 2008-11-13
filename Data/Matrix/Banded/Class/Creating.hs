@@ -28,15 +28,15 @@ import Data.Matrix.Banded.Class.Internal
 import Data.Matrix.Banded.Class.Views
 
 
-newBanded :: (WriteBanded a x m, Elem e) => 
+newBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a mn e)
 newBanded = newBandedHelp writeElem
 
-unsafeNewBanded :: (WriteBanded a x m, Elem e) => 
+unsafeNewBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a mn e)
 unsafeNewBanded = newBandedHelp unsafeWriteElem
 
-newBandedHelp :: (WriteBanded a x m, Elem e) => 
+newBandedHelp :: (WriteBanded a m, Elem e) => 
        (a mn e -> (Int,Int) -> e -> m ()) 
     -> (Int,Int) -> (Int,Int) -> [((Int,Int),e)] -> m (a mn e)
 newBandedHelp set (m,n) (kl,ku) ijes = do
@@ -45,13 +45,14 @@ newBandedHelp set (m,n) (kl,ku) ijes = do
     mapM_ (uncurry $ set x) ijes
     return x
 
-newListsBanded :: (WriteBanded a x m, Elem e) => 
+newListsBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [[e]] -> m (a mn e)
 newListsBanded (m,n) (kl,ku) xs = do
     a <- newBanded_ (m,n) (kl,ku)
     zipWithM_ (writeDiagElems a) [(negate kl)..ku] xs
     return a
   where
+    writeDiagElems :: (WriteBanded a m, Elem e) => a mn e -> Int -> [e] -> m ()
     writeDiagElems a i es =
         let d   = diagViewBanded a i
             nb  = max 0 (negate i)

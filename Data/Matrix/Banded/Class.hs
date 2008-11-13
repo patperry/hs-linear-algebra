@@ -9,7 +9,8 @@
 
 module Data.Matrix.Banded.Class (
     -- * The banded matrix type classes
-    BaseBanded(..),
+    BaseBanded_(..),
+    BaseBanded,
     ReadBanded,
     WriteBanded,
         
@@ -37,7 +38,8 @@ module Data.Matrix.Banded.Class (
     
     ) where
 
-import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded, 
+import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), 
+    BaseBanded, ReadBanded, 
     WriteBanded, numLower, numUpper, bandwidth, ldaOfBanded, isHermBanded,
     coerceBanded, withBandedPtr, withBandedElemPtr )
 import BLAS.Tensor.Base

@@ -498,7 +498,7 @@ trsm alpha t b =
 
 ------------------------ Tri Banded Apply Functions -------------------------
 
-tbmv :: (ReadBanded a x m, WriteVector y m, BLAS2 e) => 
+tbmv :: (ReadBanded a m, WriteVector y m, BLAS2 e) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbmv alpha t x | isConj x = do
     doConj x
@@ -528,12 +528,12 @@ tbmv alpha t x =
             withVectorPtr x $ \pX -> do
                 BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
 
-tbmm :: (ReadBanded a x m, WriteMatrix b m, BLAS2 e) =>
+tbmm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
 tbmm alpha t b = scaleBy alpha b >> tbmm 1 t b
 
-tbmv' :: (ReadBanded a z m, ReadVector x m, WriteVector y m, BLAS2 e) => 
+tbmv' :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) => 
     e -> Tri a (r,s) e -> x s e -> e -> y r e -> m ()
 tbmv' alpha a x beta y 
     | beta /= 0 = do
@@ -545,7 +545,7 @@ tbmv' alpha a x beta y
         unsafeCopyVector (coerceVector y) x
         tbmv alpha (coerceTri a) (coerceVector y)
 
-tbmm' :: (ReadBanded a x m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
+tbmm' :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 tbmm' alpha a b beta c
     | beta /= 0 = do
@@ -582,7 +582,7 @@ instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
 
 ------------------------ Tri Banded Solve Functions -------------------------
 
-tbsv :: (ReadBanded a x m, WriteVector y m, BLAS2 e) => 
+tbsv :: (ReadBanded a m, WriteVector y m, BLAS2 e) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbsv alpha t x | isConj x = do
     doConj x
@@ -610,19 +610,19 @@ tbsv alpha t x =
             withVectorPtr x $ \pX -> do
                 BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
 
-tbsm :: (ReadBanded a x m, WriteMatrix b m, BLAS2 e) => 
+tbsm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
 tbsm alpha t b = scaleBy alpha b >> tbsm 1 t b
 
-unsafeDoSSolveTriBanded :: (ReadBanded a z m,
+unsafeDoSSolveTriBanded :: (ReadBanded a m,
     ReadVector y m, WriteVector x m, BLAS2 e) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriBanded alpha a y x = do
     unsafeCopyVector (coerceVector x) y
     tbsv alpha (coerceTri a) (coerceVector x)
 
-unsafeDoSSolveMatTriBanded :: (ReadBanded a z m,
+unsafeDoSSolveMatTriBanded :: (ReadBanded a m,
     ReadMatrix c m, WriteMatrix b m, BLAS2 e) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriBanded alpha a c b = do

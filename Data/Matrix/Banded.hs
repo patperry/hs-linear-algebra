@@ -38,12 +38,12 @@ instance UnsafeThawBanded IOBanded where
 instance UnsafeThawBanded (STBanded s) where
     unsafeThawBanded = unsafeIOBandedToSTBanded . unsafeThawBanded
     
-freezeBanded :: (ReadBanded a x m, WriteBanded b y m, UnsafeFreezeBanded b, BLAS1 e) =>
+freezeBanded :: (ReadBanded a m, WriteBanded b m, UnsafeFreezeBanded b, BLAS1 e) =>
     a mn e -> m (Banded mn e)
 freezeBanded x = do
     x' <- newCopyBanded x
     return (unsafeFreezeBanded x')
 
-thawBanded :: (WriteBanded a y m, BLAS1 e) =>
+thawBanded :: (WriteBanded a m, BLAS1 e) =>
     Banded mn e -> m (a mn e)
 thawBanded = newCopyBanded

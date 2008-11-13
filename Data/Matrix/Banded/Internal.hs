@@ -66,7 +66,8 @@ import BLAS.Matrix.Mutable
 import qualified BLAS.Matrix.Base as BLAS
 
 import Data.Ix( inRange, range )
-import Data.Matrix.Banded.Class.Internal( BaseBanded(..), ReadBanded,
+import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), BaseBanded,
+    ReadBanded,
     IOBanded, coerceBanded, numLower, numUpper, bandwidth, isHermBanded,
     shapeBanded, boundsBanded, ldaOfBanded, gbmv, gbmm, unsafeGetRowBanded,
     unsafeGetColBanded )
@@ -213,11 +214,14 @@ instance (Monad m) => ReadTensor Banded (Int,Int) m where
 instance BLAS.BaseMatrix Banded where
     herm (B a) = B (herm a)
     
-instance BaseBanded Banded Vector where
+instance BaseBanded_ Banded where
+    type VectorViewB Banded = Vector
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 
-instance (UnsafeIOToM m) => ReadBanded Banded Vector m where
+instance BaseBanded Banded
+
+instance (UnsafeIOToM m) => ReadBanded Banded m where
 
 instance (BLAS2 e) => IMatrix Banded e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
