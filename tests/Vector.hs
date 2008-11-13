@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Vector( tests_Vector ) where
 
 import BLAS.Elem

@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, PatternSignatures #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables #-}
 module STMatrix ( tests_STMatrix ) where
 
 
