@@ -101,7 +101,7 @@ library
                         BLAS.Internal
 
                         BLAS.Matrix
-                            BLAS.Matrix.Base
+                            BLAS.Matrix.Shaped
                             BLAS.Matrix.Immutable
                             BLAS.Matrix.Mutable
                             BLAS.Matrix.Solve

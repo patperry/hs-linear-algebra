@@ -1,15 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Base
+-- Module     : BLAS.Matrix.Shaped
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Base (
-    BaseMatrix(..),
+module BLAS.Matrix.Shaped (
+    MatrixShaped(..),
     numRows,
     numCols,
     isSquare,
@@ -20,27 +20,27 @@ module BLAS.Matrix.Base (
 import BLAS.Tensor
 
 -- | A base class for matrices.
-class (BaseTensor a (Int,Int)) => BaseMatrix a where
+class (BaseTensor a (Int,Int)) => MatrixShaped a where
     -- | Creates a new matrix view that conjugates and transposes the 
     -- given matrix.
     herm :: a (m,n) e -> a (n,m) e
 
 -- | Get the number of rows in the matrix.
-numRows :: (BaseMatrix a) => a mn e -> Int
+numRows :: (MatrixShaped a) => a mn e -> Int
 numRows = fst . shape
 {-# INLINE numRows #-}
 
 -- | Get the number of rows in the matrix.
-numCols :: (BaseMatrix a) => a mn e -> Int
+numCols :: (MatrixShaped a) => a mn e -> Int
 numCols = snd . shape
 {-# INLINE numCols #-}
 
-isSquare :: (BaseMatrix a) => a mn e -> Bool
+isSquare :: (MatrixShaped a) => a mn e -> Bool
 isSquare a = numRows a == numCols a
 
-isFat :: (BaseMatrix a) => a mn e -> Bool
+isFat :: (MatrixShaped a) => a mn e -> Bool
 isFat a = numRows a <= numCols a
 
-isTall :: (BaseMatrix a) => a mn e -> Bool
+isTall :: (MatrixShaped a) => a mn e -> Bool
 isTall a = numRows a >= numCols a
 

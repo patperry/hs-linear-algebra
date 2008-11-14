@@ -14,7 +14,7 @@ module Data.Matrix.Dense.Internal (
 
     -- * Matrix shape
     module BLAS.Tensor.Base,
-    module BLAS.Matrix.Base,
+    module BLAS.Matrix.Shaped,
     coerceMatrix,
 
     -- * Creating matrices
@@ -62,8 +62,7 @@ import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
-import BLAS.Matrix.Base hiding ( BaseMatrix )
-import qualified BLAS.Matrix.Base as BLAS
+import BLAS.Matrix.Shaped
 
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
@@ -247,7 +246,7 @@ instance (Monad m) => ReadTensor Matrix (Int,Int) m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance BLAS.BaseMatrix Matrix where
+instance MatrixShaped Matrix where
     herm (M a) = M (herm a)
     
 instance BaseMatrix_ Matrix where

@@ -27,8 +27,7 @@ import Control.Monad( zipWithM_ )
 import Control.Monad.ST( ST )
 
 import BLAS.Elem( BLAS1 )
-import BLAS.Matrix hiding ( BaseMatrix )
-import qualified BLAS.Matrix as BLAS
+import BLAS.Matrix
 import BLAS.Tensor
 import BLAS.UnsafeIOToM
 import Unsafe.Coerce
@@ -60,10 +59,9 @@ instance (BaseVector x) => BaseTensor (Diag x) (Int,Int) where
     shape  (Diag x) = (n,n) where n = dim x
     bounds (Diag x) = ((0,0),(n-1,n-1)) where n = dim x
 
-instance (BaseVector x) => BLAS.BaseMatrix (Diag x) where
+instance (BaseVector x) => MatrixShaped (Diag x) where
     herm (Diag x) = Diag (conj x)
     
-        
 instance (BLAS1 e) => IMatrix (Diag Vector) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
@@ -85,7 +83,6 @@ instance (BLAS1 e, UnsafeIOToM m) => MMatrix (Diag Vector) e m where
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatDiagVector
     unsafeDoSApply_      = unsafeDoSApplyDiagVector_
     unsafeDoSApplyMat_   = unsafeDoSApplyMatDiagVector_
-
 
 unsafeDoSApplyAddDiagVector :: (ReadVector z m, ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> Diag z (r,s) e -> x s e -> e -> y r e -> m ()

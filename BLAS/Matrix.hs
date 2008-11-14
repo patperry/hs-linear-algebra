@@ -8,13 +8,13 @@
 --
 
 module BLAS.Matrix (
-    module BLAS.Matrix.Base,
+    module BLAS.Matrix.Shaped,
     module BLAS.Matrix.Immutable,
     module BLAS.Matrix.Mutable,
     module BLAS.Matrix.Solve,
     ) where
 
-import BLAS.Matrix.Base
+import BLAS.Matrix.Shaped
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.Mutable
 import BLAS.Matrix.Solve

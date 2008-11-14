@@ -15,7 +15,7 @@ module Data.Matrix.Banded.Internal (
 
     -- * Banded shape
     module BLAS.Tensor.Base,
-    module BLAS.Matrix.Base,
+    module BLAS.Matrix.Shaped,
     bandwidth,
     numLower,
     numUpper,
@@ -60,10 +60,9 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
 
-import BLAS.Matrix.Base hiding ( BaseMatrix )
+import BLAS.Matrix.Shaped
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.Mutable
-import qualified BLAS.Matrix.Base as BLAS
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), BaseBanded,
@@ -211,7 +210,7 @@ instance (Monad m) => ReadTensor Banded (Int,Int) m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance BLAS.BaseMatrix Banded where
+instance MatrixShaped Banded where
     herm (B a) = B (herm a)
     
 instance BaseBanded_ Banded where

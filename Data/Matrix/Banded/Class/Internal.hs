@@ -78,8 +78,7 @@ import qualified BLAS.C.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
-import BLAS.Matrix.Base hiding ( BaseMatrix )
-import qualified BLAS.Matrix.Base as BLAS
+import BLAS.Matrix.Shaped
 import BLAS.Matrix.Mutable
 
 import BLAS.Tensor
@@ -94,7 +93,7 @@ import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
     isHermMatrix, arrayFromMatrix, matrixViewArray, colViews )
 
 
-class (BLAS.BaseMatrix a) => BaseBanded_ a where
+class (MatrixShaped a) => BaseBanded_ a where
     type VectorViewB a :: * -> * -> *
     bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
     arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
@@ -508,10 +507,10 @@ instance BaseTensor (STBanded s) (Int,Int) where
     shape  = shapeBanded
     bounds = boundsBanded
 
-instance BLAS.BaseMatrix IOBanded where
+instance MatrixShaped IOBanded where
     herm = hermBanded
     
-instance BLAS.BaseMatrix (STBanded s) where
+instance MatrixShaped (STBanded s) where
     herm = hermBanded
 
 instance ReadBanded IOBanded     IO

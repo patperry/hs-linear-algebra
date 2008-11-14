@@ -40,13 +40,12 @@ module BLAS.Matrix.Solve.Mutable (
 import BLAS.Elem
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
-import BLAS.Matrix.Base
 
 import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Class hiding ( BaseMatrix )
 
 
-class (BaseMatrix a, BLAS1 e, Monad m) => MSolve a e m where
+class (MatrixShaped a, BLAS1 e, Monad m) => MSolve a e m where
     unsafeDoSolve :: (ReadVector y m, WriteVector x m) =>
         a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSolve = unsafeDoSSolve 1

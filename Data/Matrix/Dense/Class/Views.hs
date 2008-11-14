@@ -35,7 +35,7 @@ module Data.Matrix.Dense.Class.Views (
 import BLAS.Elem( BLAS1 )
 import BLAS.Internal( checkedSubmatrix, checkedRow, checkedCol, checkedDiag )
 import BLAS.Tensor( shape )
-import BLAS.Matrix.Base( herm )
+import BLAS.Matrix.Shaped( herm )
 
 import Data.Matrix.Dense.Class.Internal
 import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )

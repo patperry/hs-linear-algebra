@@ -66,11 +66,11 @@ hermL = Herm Lower
 hermU :: a (n,n) e -> Herm a (n,n) e
 hermU = Herm Upper
       
-instance BaseMatrix a => BaseTensor (Herm a) (Int,Int) where
+instance MatrixShaped a => BaseTensor (Herm a) (Int,Int) where
     shape  (Herm _ a) = (n,n)             where n = min (numRows a) (numCols a)
     bounds (Herm _ a) = ((0,0),(n-1,n-1)) where n = min (numRows a) (numCols a)
       
-instance BaseMatrix a => BaseMatrix (Herm a) where
+instance MatrixShaped a => MatrixShaped (Herm a) where
     herm = coerceHerm
     
 instance Show (a mn e) => Show (Herm a mn e) where

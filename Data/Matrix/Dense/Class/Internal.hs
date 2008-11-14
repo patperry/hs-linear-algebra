@@ -131,11 +131,10 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
     unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj )
 
-import BLAS.Matrix.Base hiding ( BaseMatrix )
-import qualified BLAS.Matrix.Base as BLAS
+import BLAS.Matrix.Shaped
 
 
-class (BLAS.BaseMatrix a) => BaseMatrix_ a where
+class (MatrixShaped a) => BaseMatrix_ a where
     type VectorView a :: * -> * -> *
     matrixViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Bool -> a mn e
     arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
@@ -707,10 +706,10 @@ instance WriteTensor (STMatrix s) (Int,Int) (ST s) where
     scaleBy         = scaleByMatrix
     shiftBy         = shiftByMatrix
 
-instance BLAS.BaseMatrix IOMatrix where
+instance MatrixShaped IOMatrix where
     herm = hermMatrix
 
-instance BLAS.BaseMatrix (STMatrix s) where
+instance MatrixShaped (STMatrix s) where
     herm = hermMatrix
     
 instance ReadMatrix IOMatrix IO where

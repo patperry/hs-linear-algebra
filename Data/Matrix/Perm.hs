@@ -83,7 +83,7 @@ instance BaseTensor Perm (Int,Int) where
     
     bounds p = ((0,0), (m-1,n-1)) where (m,n) = shape p
     
-instance BaseMatrix Perm where
+instance MatrixShaped Perm where
     herm a@(P _ _) = a{ isHerm=(not . isHerm) a }
     herm a@(I _)   = coercePerm a
 

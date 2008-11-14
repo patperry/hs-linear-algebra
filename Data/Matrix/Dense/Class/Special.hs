@@ -19,7 +19,7 @@ module Data.Matrix.Dense.Class.Special (
 
 import BLAS.Elem( Elem )
 import BLAS.Tensor( unsafeWriteElem )
-import BLAS.Matrix.Base( numRows, numCols )
+import BLAS.Matrix.Shaped( numRows, numCols )
 
 import Data.Matrix.Dense.Class.Internal
 

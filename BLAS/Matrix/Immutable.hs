@@ -31,7 +31,6 @@ import BLAS.Elem( BLAS1, BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
-import BLAS.Matrix.Base
 import BLAS.Matrix.Mutable( unsafeGetSApply, unsafeGetSApplyMat )
 
 import Data.Vector.Dense
@@ -42,7 +41,7 @@ import Data.Matrix.Dense.ST( runSTMatrix )
 
 infixr 7 <*>, <**>
 
-class (BLAS1 e, BaseMatrix a) => IMatrix a e where
+class (BLAS1 e, MatrixShaped a) => IMatrix a e where
     unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
