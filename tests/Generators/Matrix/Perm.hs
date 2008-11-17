@@ -18,7 +18,7 @@ import Generators.Vector.Dense ( vector )
 import Generators.Matrix.Dense ( matrix )
 import Generators.Matrix ( matrixSized )
 
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( Elem, BLAS1, BLAS3 )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix, shape )
@@ -83,7 +83,7 @@ instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMVPair n e) where
     
 data PermMM m n e = PermMM (Perm (m,m) e) (Matrix (m,n) e) deriving Show
 
-instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMM m n e) where
+instance (BLAS3 e, Arbitrary e) => Arbitrary (PermMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TestPerm p) <- arbitrary
         n <- choose (0,s)
@@ -95,7 +95,7 @@ instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMM m n e) where
 data PermMMPair m n e = 
     PermMMPair (Perm (m,m) e) (Matrix (m,n) e) (Matrix (m,n) e) deriving Show
     
-instance (BLAS1 e, Arbitrary e) => Arbitrary (PermMMPair m n e) where
+instance (BLAS3 e, Arbitrary e) => Arbitrary (PermMMPair m n e) where
     arbitrary = do
         (PermMM p a)<- arbitrary
         b <- matrix (shape a)

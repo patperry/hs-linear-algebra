@@ -27,13 +27,13 @@ import Generators.Matrix ( matrixSized )
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
-import BLAS.Elem ( BLAS1, BLAS2 )
+import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
 
 import Unsafe.Coerce
 
-triBanded :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
+triBanded :: (BLAS2 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
     d <- QC.vector n
@@ -70,7 +70,7 @@ triBanded Lower Unit n k = do
 data TriBanded n e = 
     TriBanded (Tri Banded (n,n) e) (Banded (n,n) e) deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBanded n e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBanded n e) where
     arbitrary = matrixSized $ \s -> do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -100,7 +100,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBanded n e) where
 data TriBandedMV n e = 
     TriBandedMV (Tri Banded (n,n) e) (Banded (n,n) e) (Vector n e) deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMV n e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedMV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         x <- vector (numCols t)
@@ -112,7 +112,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMV n e) where
 data TriBandedMM m n e = 
     TriBandedMM (Tri Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TriBanded t a) <- arbitrary
         n <- choose (0,s)
@@ -124,7 +124,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (TriBandedMM m n e) where
 data TriBandedSV n e = 
     TriBandedSV (Tri Banded (n,n) e) (Vector n e) deriving (Show)
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedSV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         if any (== 0) (elems $ diagBanded a 0)
@@ -141,7 +141,7 @@ data TriBandedSM m n e =
     TriBandedSM (Tri Banded (m,m) e) (Matrix (m,n) e) 
     deriving (Show)
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedSM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TriBandedSV t _) <- arbitrary
 

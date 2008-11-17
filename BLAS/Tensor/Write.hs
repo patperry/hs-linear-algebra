@@ -21,7 +21,7 @@ import BLAS.Tensor.Read
 import BLAS.Elem( Elem, BLAS1, conj )
 
 -- | Class for modifiable mutable tensors.
-class (ReadTensor x i m) => WriteTensor x i m | x -> m where
+class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize
@@ -74,7 +74,7 @@ class (ReadTensor x i m) => WriteTensor x i m | x -> m where
 
 
 -- | Set the value of the element at the given index.
-writeElem :: (WriteTensor x i m, Elem e) => x n e -> i -> e -> m ()
+writeElem :: (WriteTensor x i e m, Elem e) => x n e -> i -> e -> m ()
 writeElem x i e = do
     ok <- canModifyElem x i
     case ok && inRange (bounds x) i of
@@ -88,7 +88,7 @@ writeElem x i e = do
     s = shape x
 
 -- | Update the value of the element at the given index.
-modifyElem :: (WriteTensor x i m, Elem e) => x n e -> i -> (e -> e) -> m ()
+modifyElem :: (WriteTensor x i e m, Elem e) => x n e -> i -> (e -> e) -> m ()
 modifyElem x i f = do
     ok <- canModifyElem x i
     case ok of
@@ -102,7 +102,7 @@ modifyElem x i f = do
     s = shape x
 
 -- | Swap the values stored at two positions in the tensor.
-swapElems :: (WriteTensor x i m, Elem e) => x n e -> i -> i -> m ()
+swapElems :: (WriteTensor x i e m, Elem e) => x n e -> i -> i -> m ()
 swapElems x i j
     | not ((inRange (bounds x) i) && (inRange (bounds x) j)) = 
         fail $ "Tried to swap elements `" ++ show i ++ "' and `"

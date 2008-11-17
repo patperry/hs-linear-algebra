@@ -178,10 +178,10 @@ prop_GetDivMatrix =
 -- The specification language
 --
     
-abstract :: (BLAS1 e) => STMatrix s (m,n) e -> ST s (Matrix (m,n) e)
+abstract :: (BLAS3 e) => STMatrix s (m,n) e -> ST s (Matrix (m,n) e)
 abstract = freezeMatrix
 
-commutes :: (AEq a, Show a, AEq e, BLAS1 e) =>
+commutes :: (AEq a, Show a, AEq e, BLAS3 e) =>
     STMatrix s (m,n) e -> (STMatrix s (m,n) e -> ST s a) ->
         (Matrix (m,n) e -> (a,Matrix (m,n) e)) -> ST s Bool
 commutes x a f = do
@@ -198,7 +198,7 @@ commutes x a f = do
               
     return passed
 
-commutes2 :: (AEq a, Show a, AEq e, BLAS1 e) =>
+commutes2 :: (AEq a, Show a, AEq e, BLAS3 e) =>
     STMatrix s (m,n) e -> STMatrix s (m,n) e -> 
     (STMatrix s (m,n) e ->  STMatrix s (m,n) e -> ST s a) ->
         (Matrix (m,n) e -> Matrix (m,n) e -> (a,Matrix (m,n) e,Matrix (m,n) e)) -> ST s Bool

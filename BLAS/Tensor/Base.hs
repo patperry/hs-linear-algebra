@@ -15,7 +15,7 @@ module BLAS.Tensor.Base (
 import Data.Ix
 
 -- | The base class for tensors (i.e. Vector, Matrix, etc.).
-class (Ix i, Eq i, Show i) => BaseTensor x i | x -> i where
+class (Ix i, Eq i, Show i) => BaseTensor x i e | x -> i where
     -- | Get the shape of the tensor.  For vectors this is the dimension.
     -- For matrices, this will be a pair @(m,n)@ of the number of rows
     -- and columns.

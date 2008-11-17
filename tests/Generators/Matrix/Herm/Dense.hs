@@ -19,7 +19,7 @@ import Generators.Vector.Dense ( vector )
 import Generators.Matrix ( matrixSized )
 import Generators.Matrix.Dense ( matrix )
 
-import BLAS.Elem ( BLAS2 )
+import BLAS.Elem ( BLAS3 )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense hiding ( vector )
@@ -28,7 +28,7 @@ import Data.Matrix.Herm
 
 
 
-hermMatrix :: (BLAS2 e, Arbitrary e) => Int -> Gen (Matrix (n,n) e)
+hermMatrix :: (BLAS3 e, Arbitrary e) => Int -> Gen (Matrix (n,n) e)
 hermMatrix n  = do
     a <- matrix (n,n)
     let h = (a + herm a)
@@ -40,7 +40,7 @@ data HermMatrix n e =
                (Matrix (n,n) e)
     deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermMatrix n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrix n e) where
     arbitrary = matrixSized $ \k -> do
         n <- choose (0,k)
         a <- hermMatrix n
@@ -65,7 +65,7 @@ data HermMatrixMV n e =
                  (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermMatrixMV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMV n e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
         x <- vector (numCols a)
@@ -80,7 +80,7 @@ data HermMatrixMM m n e =
                  (Matrix (m,n) e) 
     deriving Show
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermMatrixMM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMM m n e) where
     arbitrary = matrixSized $ \k -> do
         (HermMatrix h a) <- arbitrary
         n <- choose (0,k)

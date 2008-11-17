@@ -26,7 +26,7 @@ import Data.Matrix.Dense ( Matrix, shape )
 
 infixr 7 <\>, <\\>
 
-class (MatrixShaped a, BLAS1 e) => ISolve a e where
+class (MatrixShaped a e, BLAS1 e) => ISolve a e where
     unsafeSolve :: a (m,n) e -> Vector m e -> Vector n e
     unsafeSolve = unsafeSSolve 1
     

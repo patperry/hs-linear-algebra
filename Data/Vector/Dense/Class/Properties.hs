@@ -28,17 +28,17 @@ import Data.Vector.Dense.Class.Internal
 
 
 -- | Gets the sum of the absolute values of the vector entries.
-getSumAbs :: (ReadVector x m, BLAS1 e) => x n e -> m Double
+getSumAbs :: (ReadVector x e m) => x n e -> m Double
 getSumAbs = vectorCall BLAS.asum
     
 -- | Gets the 2-norm of a vector.
-getNorm2 :: (ReadVector x m, BLAS1 e) => x n e -> m Double
+getNorm2 :: (ReadVector x e m) => x n e -> m Double
 getNorm2 = vectorCall BLAS.nrm2
 
 -- | Gets the index and norm of the element with maximum magnitude.  This is 
 -- undefined if any of the elements are @NaN@.  It will throw an exception if 
 -- the dimension of the vector is 0.
-getWhichMaxAbs :: (ReadVector x m, BLAS1 e) => x n e -> m (Int, e)
+getWhichMaxAbs :: (ReadVector x e m) => x n e -> m (Int, e)
 getWhichMaxAbs x =
     case (dim x) of
         0 -> fail $ "getWhichMaxAbs of an empty vector"
@@ -49,12 +49,12 @@ getWhichMaxAbs x =
 
 
 -- | Computes the dot product of two vectors.
-getDot :: (ReadVector x m, ReadVector y m, BLAS1 e) => 
+getDot :: (ReadVector x e m, ReadVector y e m) => 
     x n e -> y n e -> m e
 getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
 {-# INLINE getDot #-}
 
-unsafeGetDot :: (ReadVector x m, ReadVector y m, BLAS1 e) => 
+unsafeGetDot :: (ReadVector x e m, ReadVector y e m) => 
     x n e -> y n e -> m e
 unsafeGetDot x y =
     case (isConj x, isConj y) of

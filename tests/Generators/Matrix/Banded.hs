@@ -30,16 +30,16 @@ import Generators.Matrix.Dense ( matrix )
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded hiding ( banded )
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( Elem, BLAS2, BLAS3 )
 
 
-banded :: (BLAS1 e, Arbitrary e) => 
+banded :: (BLAS2 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 banded mn kl = frequency [ (3, rawBanded mn kl)  
                          , (2, hermedBanded mn kl)
                          ]
 
-rawBanded :: (BLAS1 e, Arbitrary e) => 
+rawBanded :: (BLAS2 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 rawBanded (m,n) (k,l) = do
     xs <- QC.vector ((k+1+l)*len)
@@ -51,13 +51,13 @@ rawBanded (m,n) (k,l) = do
     splitDiags xs = let (d,xs') = splitAt len xs
                     in d:(splitDiags xs')
 
-hermedBanded :: (BLAS1 e, Arbitrary e) => 
+hermedBanded :: (BLAS2 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 hermedBanded (m,n) (l,u) = do
     x <- rawBanded (n,m) (u,l)
     return $ (herm x)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (Banded (m,n) e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (Banded (m,n) e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -71,7 +71,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (Banded (m,n) e) where
         coarbitrary (assocs x)
 
 data BandedAt m n e = BandedAt (Banded (m,n) e) (Int,Int) deriving (Eq, Show)
-instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedAt m n e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (BandedAt m n e) where
     arbitrary = sized $ \k ->
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -129,7 +129,7 @@ instance (Arbitrary e, Elem e) => Arbitrary (MatrixPair m n e) where
   
 data BandedMV m n e = BandedMV (Banded (m,n) e) (Vector n e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMV m n e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (BandedMV m n e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -146,7 +146,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMV m n e) where
 data BandedMVPair m n e = BandedMVPair (Banded (m,n) e) (Vector n e) (Vector n e) 
     deriving (Eq, Show)
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMVPair m n e) where
+instance (Arbitrary e, BLAS2 e) => Arbitrary (BandedMVPair m n e) where
     arbitrary = do
         (BandedMV a x) <- arbitrary
         y <- vector (dim x)
@@ -157,7 +157,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMVPair m n e) where
         
 data BandedMM m n k e = BandedMM (Banded (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMM m n k e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMM m n k e) where
     arbitrary = sized $ \s ->
         let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
         in do
@@ -175,7 +175,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMM m n k e) where
 data BandedMMPair m n k e = BandedMMPair (Banded (m,k) e) (Matrix (k,n) e) (Matrix (k,n) e)
     deriving (Eq, Show)
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (BandedMMPair m n k e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMMPair m n k e) where
     arbitrary = do
         (BandedMM a b) <- arbitrary
         c <- matrix (shape b)

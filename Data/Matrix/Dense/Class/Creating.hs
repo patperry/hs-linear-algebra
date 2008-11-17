@@ -22,7 +22,6 @@ module Data.Matrix.Dense.Class.Creating (
 import Control.Monad( forM_ )
 import Foreign( pokeArray )
 
-import BLAS.Elem
 import BLAS.UnsafeIOToM
 
 import Data.Vector.Dense.Class
@@ -31,16 +30,16 @@ import Data.Matrix.Dense.Class.Internal
 
 -- | Creates a new matrix with the given association list.  Unspecified
 -- indices will get initialized to zero.
-newMatrix :: (WriteMatrix a m, Elem e) => 
+newMatrix :: (WriteMatrix a e m) => 
     (Int,Int) -> [((Int,Int), e)] -> m (a mn e)
 newMatrix = newMatrixHelp writeElem
 
 -- | Same as 'newMatrix' but indices are not range-checked.
-unsafeNewMatrix :: (WriteMatrix a m, Elem e) => 
+unsafeNewMatrix :: (WriteMatrix a e m) => 
     (Int,Int) -> [((Int,Int), e)] -> m (a mn e)
 unsafeNewMatrix = newMatrixHelp unsafeWriteElem
 
-newMatrixHelp :: (WriteMatrix a m, Elem e) => 
+newMatrixHelp :: (WriteMatrix a e m) => 
     (a mn e -> (Int,Int) -> e -> m ()) -> (Int,Int) -> [((Int,Int),e)] -> m (a mn e)
 newMatrixHelp set n ies = do
     a <- newZeroMatrix n
@@ -48,14 +47,14 @@ newMatrixHelp set n ies = do
     return a
 
 -- | Create a new matrix with the given elements in column-major order.
-newListMatrix :: (WriteMatrix a m, Elem e) => (Int,Int) -> [e] -> m (a mn e)
+newListMatrix :: (WriteMatrix a e m) => (Int,Int) -> [e] -> m (a mn e)
 newListMatrix (m,n) es = do
     a <- newZeroMatrix (m,n)
     unsafeIOToM $ withMatrixPtr a $ flip pokeArray (take (m*n) es)
     return a
 
 -- | Form a matrix from a list of column vectors.
-newColsMatrix :: (ReadVector x m, WriteMatrix a m, BLAS1 e) => 
+newColsMatrix :: (ReadVector x e m, WriteMatrix a e m) => 
     (Int,Int) -> [x k e] -> m (a (k,l) e)
 newColsMatrix (m,n) cs = do
     a <- newZeroMatrix (m,n)
@@ -64,7 +63,7 @@ newColsMatrix (m,n) cs = do
     return a
 
 -- | Form a matrix from a list of row vectors.
-newRowsMatrix :: (ReadVector x m, WriteMatrix a m, BLAS1 e) => 
+newRowsMatrix :: (ReadVector x e m, WriteMatrix a e m) => 
     (Int,Int) -> [x l e] -> m (a (k,l) e)
 newRowsMatrix (m,n) rs = do
     a <- newZeroMatrix (m,n)
@@ -73,12 +72,12 @@ newRowsMatrix (m,n) rs = do
     return a
 
 -- | Create a new matrix from a column vector.
-newColMatrix :: (ReadVector x m, WriteMatrix a m, BLAS1 e) => 
+newColMatrix :: (ReadVector x e m, WriteMatrix a e m) => 
     x k e -> m (a (k,one) e)
 newColMatrix x = newColsMatrix (dim x,1) [x]
 
 -- | Create a new matrix from a row vector.
-newRowMatrix :: (ReadVector x m, WriteMatrix a m, BLAS1 e) => 
+newRowMatrix :: (ReadVector x e m, WriteMatrix a e m) => 
     x l e -> m (a (one,l) e)
 newRowMatrix x = newRowsMatrix (1,dim x) [x]
 

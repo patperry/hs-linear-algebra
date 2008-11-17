@@ -77,13 +77,13 @@ toPermutation (P sigma h) = if h then P.inverse sigma else sigma
 coercePerm :: Perm mn e -> Perm mn' e
 coercePerm = unsafeCoerce
 
-instance BaseTensor Perm (Int,Int) where
+instance BaseTensor Perm (Int,Int) e where
     shape (P sigma _) = (n,n) where n = P.size sigma
     shape (I n)       = (n,n)
     
     bounds p = ((0,0), (m-1,n-1)) where (m,n) = shape p
     
-instance MatrixShaped Perm where
+instance MatrixShaped Perm e where
     herm a@(P _ _) = a{ isHerm=(not . isHerm) a }
     herm a@(I _)   = coercePerm a
 
@@ -94,7 +94,7 @@ instance (BLAS1 e) => RMatrix Perm e where
 
 -}
 
-instance (BLAS1 e) => IMatrix Perm e where
+instance (BLAS3 e) => IMatrix Perm e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
 
@@ -105,7 +105,7 @@ instance (BLAS1 e, UnsafeIOToM m) => MMatrix Perm e m where
     unsafeDoSApplyMat_   = unsafeDoSApplyMatPerm_
 
 
-unsafeDoSApplyPerm_ :: (WriteVector y m, BLAS1 e) => 
+unsafeDoSApplyPerm_ :: (WriteVector y e m) => 
     e -> Perm (k,k) e -> y k e -> m ()
 unsafeDoSApplyPerm_ alpha   (I _)   x = scaleBy alpha x
 unsafeDoSApplyPerm_ alpha p@(P _ _) x
@@ -115,7 +115,7 @@ unsafeDoSApplyPerm_ alpha p@(P _ _) x
     sigma = baseOf p
     swap  = unsafeSwapElems x
 
-unsafeDoSApplyMatPerm_ :: (WriteMatrix c m, BLAS1 e) => 
+unsafeDoSApplyMatPerm_ :: (WriteMatrix c e m) => 
     e -> Perm (k,k) e -> c (k,l) e -> m ()
 unsafeDoSApplyMatPerm_ alpha   (I _)   a = scaleBy alpha a
 unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
@@ -126,7 +126,7 @@ unsafeDoSApplyMatPerm_ alpha p@(P _ _) a
     swap i j = unsafeSwapVector (unsafeRowView a i) (unsafeRowView a j)
 
 
-unsafeDoSApplyAddPerm :: (ReadVector x m, WriteVector y m, BLAS1 e) =>
+unsafeDoSApplyAddPerm :: (ReadVector x e m, WriteVector y e m) =>
     e -> Perm (k,l) e -> x l e -> e -> y k e -> m ()
 unsafeDoSApplyAddPerm alpha (I _) x beta y = do
     scaleBy beta y
@@ -152,7 +152,7 @@ unsafeDoSApplyAddPerm alpha p x beta y
                            f <- unsafeReadElem y i
                            unsafeWriteElem y i (alpha*e + f)
 
-unsafeDoSApplyAddMatPerm :: (ReadMatrix b m, WriteMatrix c m, BLAS1 e) =>
+unsafeDoSApplyAddMatPerm :: (ReadMatrix b e m, WriteMatrix c e m) =>
     e -> Perm (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatPerm alpha (I _) b beta c = do
     scaleBy beta c
@@ -170,7 +170,7 @@ unsafeDoSApplyAddMatPerm alpha p b beta c =
                    True  -> unsafeAxpyVector alpha (unsafeRowView b i') 
                                 (unsafeRowView c i)
 
-instance (BLAS1 e) => ISolve Perm e where
+instance (BLAS3 e) => ISolve Perm e where
     unsafeSSolve alpha a y    = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
     

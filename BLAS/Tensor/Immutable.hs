@@ -24,7 +24,7 @@ infixl 5 `shift`
 
 
 -- | A class for immutable tensors.
-class (BaseTensor x i) => ITensor x i where
+class (BaseTensor x i e) => ITensor x i e where
     -- | Get the numer of elements stored in the tensor.
     size :: x n e -> Int
     
@@ -64,7 +64,7 @@ class (BaseTensor x i) => ITensor x i where
     shift k = tmap (k+)    
     
 -- | Get the value at the given index.  Range-checks the argument.
-(!) :: (ITensor x i, Elem e) => x n e -> i -> e
+(!) :: (ITensor x i e, Elem e) => x n e -> i -> e
 (!) x i =
     case (inRange b i) of
         False -> 

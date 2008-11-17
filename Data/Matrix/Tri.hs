@@ -63,7 +63,6 @@ import Data.Matrix.Dense.IO( IOMatrix )
 import Data.Matrix.Dense.ST( STMatrix, runSTMatrix )
 import Data.Vector.Dense.Class
 import Data.Vector.Dense.ST( runSTVector )
-import Foreign( Storable )
 
 data Tri a mn e = Tri UpLo Diag (a mn e)
 
@@ -81,57 +80,57 @@ toBase :: Tri a (m,n) e -> (UpLo, Diag, a (m,n) e)
 toBase (Tri u d a) = (u,d,a)
 
 
-lower :: (MatrixShaped a) => a (n,n) e -> Tri a (n,n) e
+lower :: (MatrixShaped a e) => a (n,n) e -> Tri a (n,n) e
 lower a = checkSquare (shape a) $ Tri Lower NonUnit a
 
-lowerFat :: (MatrixShaped a) => a (m,n) e -> Tri a (m,m) e
+lowerFat :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,m) e
 lowerFat a = checkFat (shape a) $ Tri Lower NonUnit (unsafeCoerce a)
 
-lowerTall :: (MatrixShaped a) => a (m,n) e -> Tri a (m,n) e
+lowerTall :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,n) e
 lowerTall a = checkTall (shape a) $ Tri Lower NonUnit a
 
 
-lowerU :: (MatrixShaped a) => a (n,n) e -> Tri a (n,n) e
+lowerU :: (MatrixShaped a e) => a (n,n) e -> Tri a (n,n) e
 lowerU a = checkSquare (shape a) $ Tri Lower Unit a
 
-lowerUFat :: (MatrixShaped a) => a (m,n) e -> Tri a (m,m) e
+lowerUFat :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,m) e
 lowerUFat a = checkFat (shape a) $ Tri Lower Unit (unsafeCoerce a)
 
-lowerUTall :: (MatrixShaped a) => a (m,n) e -> Tri a (m,n) e
+lowerUTall :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,n) e
 lowerUTall a = checkTall (shape a) $ Tri Lower Unit a
 
 
-upper :: (MatrixShaped a) => a (n,n) e -> Tri a (n,n) e
+upper :: (MatrixShaped a e) => a (n,n) e -> Tri a (n,n) e
 upper a = checkSquare (shape a) $ Tri Upper NonUnit a
 
-upperFat :: (MatrixShaped a) => a (m,n) e -> Tri a (m,n) e
+upperFat :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,n) e
 upperFat a = checkFat (shape a) $ Tri Upper NonUnit a
 
-upperTall :: (MatrixShaped a) => a (m,n) e -> Tri a (n,n) e
+upperTall :: (MatrixShaped a e) => a (m,n) e -> Tri a (n,n) e
 upperTall a = checkTall (shape a) $ Tri Upper NonUnit (unsafeCoerce a)
 
 
-upperU :: (MatrixShaped a) => a (n,n) e -> Tri a (n,n) e
+upperU :: (MatrixShaped a e) => a (n,n) e -> Tri a (n,n) e
 upperU a = checkSquare (shape a) $ Tri Upper Unit a
 
-upperUFat :: (MatrixShaped a) => a (m,n) e -> Tri a (m,n) e
+upperUFat :: (MatrixShaped a e) => a (m,n) e -> Tri a (m,n) e
 upperUFat a = checkFat (shape a) $ Tri Upper Unit a
 
-upperUTall :: (MatrixShaped a) => a (m,n) e -> Tri a (n,n) e
+upperUTall :: (MatrixShaped a e) => a (m,n) e -> Tri a (n,n) e
 upperUTall a = checkTall (shape a) $ Tri Upper Unit (unsafeCoerce a)
 
       
-instance MatrixShaped a => BaseTensor (Tri a) (Int,Int) where
+instance MatrixShaped a e => BaseTensor (Tri a) (Int,Int) e where
     shape (Tri Lower _ a) = (numRows a, min (numRows a) (numCols a))
     shape (Tri Upper _ a) = (min (numRows a) (numCols a), numCols a)
     
     bounds a = ((0,0),(m-1,n-1)) where (m,n) = shape a
     
-instance MatrixShaped a => MatrixShaped (Tri a) where
+instance MatrixShaped a e => MatrixShaped (Tri a) e where
     herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
 
 
-instance (Show (a (m,n) e), MatrixShaped a) => Show (Tri a (m,n) e) where
+instance (Show (a (m,n) e), MatrixShaped a e) => Show (Tri a (m,n) e) where
     show (Tri u d a) =
         constructor ++ suffix ++ " (" ++ show a ++ ")"
         where
@@ -172,8 +171,8 @@ instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Matrix) e m where
 
 
 
-unsafeDoSApplyAddTriMatrix :: (BLAS3 e, ReadMatrix a m, MMatrix a e m, 
-    ReadVector x m, WriteVector y m) =>
+unsafeDoSApplyAddTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadVector x e m, WriteVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
 unsafeDoSApplyAddTriMatrix alpha t x beta y =
     if beta == 0
@@ -184,8 +183,8 @@ unsafeDoSApplyAddTriMatrix alpha t x beta y =
             scaleBy beta y
             unsafeAxpyVector 1 y' y
 
-unsafeDoSApplyAddMatTriMatrix :: (BLAS3 e, ReadMatrix a m, MMatrix a e m, 
-    ReadMatrix b m, WriteMatrix c m) =>
+unsafeDoSApplyAddMatTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadMatrix b e m, WriteMatrix c e m) =>
         e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 unsafeDoSApplyAddMatTriMatrix alpha t b beta c =
     if beta == 0
@@ -196,8 +195,8 @@ unsafeDoSApplyAddMatTriMatrix alpha t b beta c =
             scaleBy beta c
             unsafeAxpyMatrix 1 c' c
 
-unsafeDoSApplyTriMatrix :: (BLAS3 e, ReadMatrix a m, MMatrix a e m, 
-    ReadVector x m, WriteVector y m) =>
+unsafeDoSApplyTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadVector x e m, WriteVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoSApplyTriMatrix alpha t x y =
     case (u, toLower d a, toUpper d a) of
@@ -226,8 +225,8 @@ unsafeDoSApplyTriMatrix alpha t x y =
   where
     (u,d,a) = toBase t
 
-unsafeDoSApplyMatTriMatrix :: (BLAS3 e, ReadMatrix a m, MMatrix a e m, 
-    ReadMatrix b m, WriteMatrix c m) =>
+unsafeDoSApplyMatTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadMatrix b e m, WriteMatrix c e m) =>
         e -> Tri a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 unsafeDoSApplyMatTriMatrix alpha t b c =
     case (u, toLower d a, toUpper d a) of
@@ -257,7 +256,7 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
     (u,d,a) = toBase t
 
 
-toLower :: (BaseMatrix a, Storable e) => Diag -> a (m,n) e 
+toLower :: (BaseMatrix a e) => Diag -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
                   (Tri a (n,n) e, a (d,n) e)
 toLower diag a =
@@ -270,7 +269,7 @@ toLower diag a =
     (m,n) = shape a
     d     = m - n
     
-toUpper :: (BaseMatrix a, Storable e) => Diag -> a (m,n) e
+toUpper :: (BaseMatrix a e) => Diag -> a (m,n) e
         -> Either (Tri a (n,n) e)
                   (Tri a (m,m) e, a (m,d) e)
 toUpper diag a =
@@ -283,7 +282,7 @@ toUpper diag a =
     (m,n) = shape a
     d     = n - m
 
-trmv :: (ReadMatrix a m, WriteVector y m, BLAS3 e) => 
+trmv :: (ReadMatrix a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 trmv alpha t x 
     | dim x == 0 = 
@@ -324,7 +323,7 @@ trmv alpha t x
                    BLAS.trmv order uploA transA diagA n pA ldA pX incX
 
 
-trmm :: (ReadMatrix a m, WriteMatrix b m, BLAS3 e) => 
+trmm :: (ReadMatrix a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 trmm _ _ b
     | numRows b == 0 || numCols b == 0 = return ()
@@ -374,8 +373,8 @@ instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Matrix) e m where
 
 
 
-unsafeDoSSolveTriMatrix :: (ReadMatrix a m,
-    ReadVector y m, WriteVector x m, BLAS3 e) =>
+unsafeDoSSolveTriMatrix :: (ReadMatrix a e m,
+    ReadVector y e m, WriteVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriMatrix alpha t y x =
     case (u, toLower d a, toUpper d a) of
@@ -403,8 +402,8 @@ unsafeDoSSolveTriMatrix alpha t y x =
     (u,d,a) = toBase t
 
 
-unsafeDoSSolveMatTriMatrix :: (ReadMatrix a m,
-    ReadMatrix c m, WriteMatrix b m, BLAS3 e) =>
+unsafeDoSSolveMatTriMatrix :: (ReadMatrix a e m,
+    ReadMatrix c e m, WriteMatrix b e m) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriMatrix alpha t c b =
     case (u, toLower d a, toUpper d a) of
@@ -432,7 +431,7 @@ unsafeDoSSolveMatTriMatrix alpha t c b =
     (u,d,a) = toBase t
 
 
-trsv :: (ReadMatrix a m, WriteVector y m, BLAS3 e) => 
+trsv :: (ReadMatrix a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 trsv alpha t x
     | dim x == 0 = return ()
@@ -471,7 +470,7 @@ trsv alpha t x
                 withVectorPtr x $ \pX ->
                     BLAS.trsv order uploA transA diagA n pA ldA pX incX
 
-trsm :: (ReadMatrix a m, WriteMatrix b m, BLAS3 e) => 
+trsm :: (ReadMatrix a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 trsm _ _ b
     | numRows b == 0 || numCols b == 0 = return ()
@@ -497,7 +496,7 @@ trsm alpha t b =
 
 ------------------------ Tri Banded Apply Functions -------------------------
 
-tbmv :: (ReadBanded a m, WriteVector y m, BLAS2 e) => 
+tbmv :: (ReadBanded a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbmv alpha t x | isConj x = do
     doConj x
@@ -527,12 +526,12 @@ tbmv alpha t x =
             withVectorPtr x $ \pX -> do
                 BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
 
-tbmm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) =>
+tbmm :: (ReadBanded a e m, WriteMatrix b e m) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
 tbmm alpha t b = scaleBy alpha b >> tbmm 1 t b
 
-tbmv' :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) => 
+tbmv' :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m) => 
     e -> Tri a (r,s) e -> x s e -> e -> y r e -> m ()
 tbmv' alpha a x beta y 
     | beta /= 0 = do
@@ -544,7 +543,7 @@ tbmv' alpha a x beta y
         unsafeCopyVector (coerceVector y) x
         tbmv alpha (coerceTri a) (coerceVector y)
 
-tbmm' :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) => 
+tbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 tbmm' alpha a b beta c
     | beta /= 0 = do
@@ -556,7 +555,7 @@ tbmm' alpha a b beta c
         unsafeCopyMatrix (coerceMatrix c) b
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
-instance (BLAS2 e) => IMatrix (Tri Banded) e where
+instance (BLAS3 e) => IMatrix (Tri Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
@@ -581,7 +580,7 @@ instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
 
 ------------------------ Tri Banded Solve Functions -------------------------
 
-tbsv :: (ReadBanded a m, WriteVector y m, BLAS2 e) => 
+tbsv :: (ReadBanded a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbsv alpha t x | isConj x = do
     doConj x
@@ -609,27 +608,27 @@ tbsv alpha t x =
             withVectorPtr x $ \pX -> do
                 BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
 
-tbsm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) => 
+tbsm :: (ReadBanded a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
 tbsm alpha t b = scaleBy alpha b >> tbsm 1 t b
 
-unsafeDoSSolveTriBanded :: (ReadBanded a m,
-    ReadVector y m, WriteVector x m, BLAS2 e) =>
+unsafeDoSSolveTriBanded :: (ReadBanded a e m,
+    ReadVector y e m, WriteVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriBanded alpha a y x = do
     unsafeCopyVector (coerceVector x) y
     tbsv alpha (coerceTri a) (coerceVector x)
 
-unsafeDoSSolveMatTriBanded :: (ReadBanded a m,
-    ReadMatrix c m, WriteMatrix b m, BLAS2 e) =>
+unsafeDoSSolveMatTriBanded :: (ReadBanded a e m,
+    ReadMatrix c e m, WriteMatrix b e m) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriBanded alpha a c b = do
     unsafeCopyMatrix (coerceMatrix b) c
     tbsm alpha (coerceTri a) b
 
 
-instance (BLAS2 e) => ISolve (Tri Banded) e where
+instance (BLAS3 e) => ISolve (Tri Banded) e where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
 

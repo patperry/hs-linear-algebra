@@ -24,13 +24,13 @@ import qualified Generators.Vector.Dense as Test
 import qualified Generators.Matrix.Dense as Test
 import Generators.Matrix ( matrixSized )
 
-import BLAS.Elem ( BLAS1, BLAS2 )
+import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
 
 import Data.Vector.Dense ( Vector, elems )
 import Data.Matrix.Dense ( Matrix, matrix, diag )
 import Data.Matrix.Diag 
 
-diagMatrix :: (Arbitrary e, BLAS1 e) => Int -> Gen (Matrix (n,n) e)
+diagMatrix :: (Arbitrary e, BLAS3 e) => Int -> Gen (Matrix (n,n) e)
 diagMatrix n = do
     es <- QC.vector n
     let a = matrix (n,n) [ ((i,i),e) | (i,e) <- zip [0..(n-1)] es ]
@@ -42,7 +42,7 @@ data TestDiag n e =
              (Matrix (n,n) e) 
     deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TestDiag n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TestDiag n e) where
     arbitrary = matrixSized $ \s -> do
         n <- choose (0,s)
         a <- diagMatrix n
@@ -57,7 +57,7 @@ data DiagMV n e =
            (Vector n e)
     deriving Show
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (DiagMV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (DiagMV n e) where
     arbitrary = do
         (TestDiag d a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -72,7 +72,7 @@ data DiagMM m n e =
            (Matrix (m,n) e)
     deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (DiagMM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (DiagMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (TestDiag d a) <- arbitrary
         n <- choose (0,s)
@@ -87,7 +87,7 @@ data DiagSV n e =
            (Vector n e)
     deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (DiagSV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (DiagSV n e) where
     arbitrary = do
         (DiagMV d _ x) <- arbitrary
         if any (==0) (elems $ vectorFromDiag d)
@@ -101,7 +101,7 @@ data DiagSM m n e =
            (Matrix (m,n) e)
     deriving Show
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (DiagSM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (DiagSM m n e) where
     arbitrary = do
         (DiagMM d _ b) <- arbitrary
         if any (==0) (elems $ vectorFromDiag d)

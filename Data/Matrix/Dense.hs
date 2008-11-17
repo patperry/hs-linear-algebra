@@ -20,7 +20,6 @@ module Data.Matrix.Dense (
     thawMatrix,
     ) where
 
-import BLAS.Elem
 import Data.Matrix.Dense.Internal hiding ( M )
 import qualified Data.Matrix.Dense.Internal as I
 import Data.Matrix.Dense.ST
@@ -41,12 +40,12 @@ instance UnsafeThawMatrix IOMatrix where
 instance UnsafeThawMatrix (STMatrix s) where
     unsafeThawMatrix = unsafeIOMatrixToSTMatrix . unsafeThawMatrix
     
-freezeMatrix :: (ReadMatrix a m, WriteMatrix b m, UnsafeFreezeMatrix b, BLAS1 e) =>
+freezeMatrix :: (ReadMatrix a e m, WriteMatrix b e m, UnsafeFreezeMatrix b) =>
     a mn e -> m (Matrix mn e)
 freezeMatrix x = do
     x' <- newCopyMatrix x
     return (unsafeFreezeMatrix x')
 
-thawMatrix :: (WriteMatrix a m, BLAS1 e) =>
+thawMatrix :: (WriteMatrix a e m) =>
     Matrix mn e -> m (a mn e)
 thawMatrix = newCopyMatrix

@@ -50,11 +50,12 @@ module Data.Matrix.Banded.Internal (
     ) where
 
 import Data.AEq
+import Foreign( Storable )
 import System.IO.Unsafe
 
 
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
-import BLAS.Elem( BLAS1, BLAS2 )
+import BLAS.Elem( BLAS1, BLAS2, BLAS3 )
 import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor.Read
@@ -117,27 +118,27 @@ inlineLiftBanded f = inlinePerformIO . liftBanded f
 {-# INLINE inlineLiftBanded #-}
 
 
-banded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+banded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
 banded mn kl ijes = 
     unsafeFreezeIOBanded $ unsafePerformIO $ newBanded mn kl ijes
 {-# NOINLINE banded #-}
 
-unsafeBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+unsafeBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
 unsafeBanded mn kl ijes = 
     unsafeFreezeIOBanded $ unsafePerformIO $ unsafeNewBanded mn kl ijes
 {-# NOINLINE unsafeBanded #-}
 
-listsBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
+listsBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
 listsBanded mn kl xs = 
     unsafeFreezeIOBanded $ unsafePerformIO $ newListsBanded mn kl xs
 {-# NOINLINE listsBanded #-}
 
-zeroBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> Banded (m,n) e
+zeroBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> Banded (m,n) e
 zeroBanded mn kl =
     unsafeFreezeIOBanded $ unsafePerformIO $ newZeroBanded mn kl
 {-# NOINLINE zeroBanded #-}
 
-constantBanded :: (BLAS1 e) => (Int,Int) -> (Int,Int) -> e -> Banded (m,n) e
+constantBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> e -> Banded (m,n) e
 constantBanded mn kl e =
     unsafeFreezeIOBanded $ unsafePerformIO $ newConstantBanded mn kl e
 {-# NOINLINE constantBanded #-}
@@ -154,11 +155,11 @@ unsafeDiagBanded a i
     | otherwise               = zeroVector $ diagLen (shape a) i
 
 
-instance BaseTensor Banded (Int,Int) where
+instance (Storable e) => BaseTensor Banded (Int,Int) e where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 
-instance ITensor Banded (Int,Int) where
+instance (BLAS2 e) => ITensor Banded (Int,Int) e where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -189,7 +190,7 @@ listsFromBanded a = ( (m,n)
                    ++ padEnd i 
                    )
 
-replaceHelp :: (BLAS1 e) => 
+replaceHelp :: (BLAS2 e) => 
        (IOBanded mn e -> (Int,Int) -> e -> IO ())
     -> Banded mn e -> [((Int,Int), e)] -> Banded mn e
 replaceHelp set x ies =
@@ -200,7 +201,7 @@ replaceHelp set x ies =
 {-# NOINLINE replaceHelp #-}
 
 
-instance (Monad m) => ReadTensor Banded (Int,Int) m where
+instance (BLAS2 e, Monad m) => ReadTensor Banded (Int,Int) e m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -210,19 +211,19 @@ instance (Monad m) => ReadTensor Banded (Int,Int) m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance MatrixShaped Banded where
+instance (Storable e) => MatrixShaped Banded e where
     herm (B a) = B (herm a)
     
-instance BaseBanded_ Banded where
+instance (Storable e) => BaseBanded_ Banded e where
     type VectorViewB Banded = Vector
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 
-instance BaseBanded Banded
+instance (Storable e) => BaseBanded Banded e
 
-instance (UnsafeIOToM m) => ReadBanded Banded m where
+instance (BLAS2 e, UnsafeIOToM m) => ReadBanded Banded e m where
 
-instance (BLAS2 e) => IMatrix Banded e where
+instance (BLAS3 e) => IMatrix Banded e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
     unsafeRow a i             = runSTVector $ unsafeGetRow a i
@@ -243,7 +244,7 @@ instance (BLAS1 e) => Show (Banded mn e) where
              let (mn,kl,es) = listsFromBanded a 
              in "listsBanded " ++ show mn ++ " " ++ show kl ++ " " ++ show es
 
-compareHelp :: (BLAS1 e) => 
+compareHelp :: (BLAS2 e) => 
     (e -> e -> Bool) -> Banded mn e -> Banded mn e -> Bool
 compareHelp cmp a b
     | shape a /= shape b =
@@ -261,9 +262,9 @@ compareHelp cmp a b
   where
     diagElems bw c = concatMap elems [ diagBanded c i | i <- range bw ]
 
-instance (BLAS1 e, Eq e) => Eq (Banded mn e) where
+instance (BLAS2 e, Eq e) => Eq (Banded mn e) where
     (==) = compareHelp (==)
 
-instance (BLAS1 e, AEq e) => AEq (Banded mn e) where
+instance (BLAS2 e, AEq e) => AEq (Banded mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)

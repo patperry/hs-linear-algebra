@@ -23,25 +23,25 @@ import Foreign
 
 -- | @subvector x o n@ creates a subvector view of @x@ starting at index @o@ 
 -- and having length @n@.
-subvector :: (BaseVector x, Storable e) => 
+subvector :: (BaseVector x e) => 
     x n e -> Int -> Int -> x n' e
 subvector x = checkedSubvector (dim x) (unsafeSubvector x)
 {-# INLINE subvector #-}
 
-unsafeSubvector :: (BaseVector x, Storable e) => 
+unsafeSubvector :: (BaseVector x e) => 
     x n e -> Int -> Int -> x n' e
 unsafeSubvector = unsafeSubvectorWithStride 1
 {-# INLINE unsafeSubvector #-}
 
 -- | @subvectorWithStride s x o n@ creates a subvector view of @x@ starting 
 -- at index @o@, having length @n@ and stride @s@.
-subvectorWithStride :: (BaseVector x, Storable e) => 
+subvectorWithStride :: (BaseVector x e) => 
     Int -> x n e -> Int -> Int -> x n' e
 subvectorWithStride s x = 
     checkedSubvectorWithStride s (dim x) (unsafeSubvectorWithStride s x)
 {-# INLINE subvectorWithStride #-}
 
-unsafeSubvectorWithStride :: (BaseVector x, Storable e) => 
+unsafeSubvectorWithStride :: (BaseVector x e) => 
     Int -> x n e -> Int -> Int -> x n' e
 unsafeSubvectorWithStride s' x o' n' =
     let (f,p,_,s,c) = arrayFromVector x

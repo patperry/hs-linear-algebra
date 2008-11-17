@@ -18,7 +18,6 @@ module Data.Matrix.Banded (
     thawBanded,
     ) where
 
-import BLAS.Elem
 import Data.Matrix.Banded.Internal hiding ( B )
 import qualified Data.Matrix.Banded.Internal as I
 import Data.Matrix.Banded.ST
@@ -38,12 +37,12 @@ instance UnsafeThawBanded IOBanded where
 instance UnsafeThawBanded (STBanded s) where
     unsafeThawBanded = unsafeIOBandedToSTBanded . unsafeThawBanded
     
-freezeBanded :: (ReadBanded a m, WriteBanded b m, UnsafeFreezeBanded b, BLAS1 e) =>
+freezeBanded :: (ReadBanded a e m, WriteBanded b e m, UnsafeFreezeBanded b) =>
     a mn e -> m (Banded mn e)
 freezeBanded x = do
     x' <- newCopyBanded x
     return (unsafeFreezeBanded x')
 
-thawBanded :: (WriteBanded a m, BLAS1 e) =>
+thawBanded :: (WriteBanded a e m) =>
     Banded mn e -> m (a mn e)
 thawBanded = newCopyBanded

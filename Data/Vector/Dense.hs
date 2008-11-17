@@ -19,7 +19,6 @@ module Data.Vector.Dense (
     
     ) where
 
-import BLAS.Elem
 import Data.Vector.Dense.Internal hiding ( V )
 import qualified Data.Vector.Dense.Internal as I
 import Data.Vector.Dense.IO
@@ -39,12 +38,12 @@ instance UnsafeThawVector IOVector where
 instance UnsafeThawVector (STVector s) where
     unsafeThawVector = unsafeIOVectorToSTVector . unsafeThawVector
     
-freezeVector :: (ReadVector x m, WriteVector y m, UnsafeFreezeVector y, BLAS1 e) =>
+freezeVector :: (ReadVector x e m, WriteVector y e m, UnsafeFreezeVector y) =>
     x n e -> m (Vector n e)
 freezeVector x = do
     x' <- newCopyVector x
     return (unsafeFreezeVector x')
 
-thawVector :: (WriteVector y m, BLAS1 e) =>
+thawVector :: (WriteVector y e m) =>
     Vector n e -> m (y n e)
 thawVector = newCopyVector

@@ -20,7 +20,6 @@ module Data.Vector.Dense.Class.Special (
 
 import Foreign
 
-import BLAS.Elem
 import BLAS.Tensor
 
 import Data.Vector.Dense.Class.Internal
@@ -29,7 +28,7 @@ import Data.Vector.Dense.Class.Creating
 
 -- | @newBasisVector n i@ creates a vector of length @n@ that is all zero 
 -- except for at position @i@, where it equal to one.
-newBasisVector :: (WriteVector x m, Elem e) => Int -> Int -> m (x n e)
+newBasisVector :: (WriteVector x e m) => Int -> Int -> m (x n e)
 newBasisVector n i = do
     x <- newVector_ n
     setBasisVector i x
@@ -39,7 +38,7 @@ newBasisVector n i = do
 -- | @setBasis x i@ sets the @i@th coordinate of @x@ to @1@, and all other
 -- coordinates to @0@.  If the vector has been scaled, it is possible that
 -- @readVector x i@ will not return exactly @1@.  See 'setElem'.
-setBasisVector :: (WriteVector x m, Elem e) => Int -> x n e -> m ()
+setBasisVector :: (WriteVector x e m) => Int -> x n e -> m ()
 setBasisVector i x
     | i < 0 || i >= dim x =
         fail $ "tried to set a vector of dimension `" ++ show (dim x) ++ "'"

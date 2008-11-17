@@ -31,7 +31,7 @@ import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
 
 import Unsafe.Coerce
 
-triMatrix :: (BLAS1 e, Arbitrary e) => UpLo -> Diag -> (Int,Int) -> Gen (Matrix (m,n) e)
+triMatrix :: (BLAS3 e, Arbitrary e) => UpLo -> Diag -> (Int,Int) -> Gen (Matrix (m,n) e)
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
@@ -56,7 +56,7 @@ data TriMatrix m n e =
               (Matrix (m,n) e) 
     deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrix m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrix m n e) where
     arbitrary = matrixSized $ \k -> do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -85,7 +85,7 @@ data TriMatrixMV m n e =
                 (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMV m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         x <- vector (numCols a)
@@ -101,7 +101,7 @@ data TriMatrixMM m k n e =
                 (Matrix (k,n) e) 
     deriving Show
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (TriMatrixMM m k n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMM m k n e) where
     arbitrary = matrixSized $ \s -> do
         (TriMatrix t a) <- arbitrary
         n <- choose (0,s)

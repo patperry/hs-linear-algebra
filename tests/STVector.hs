@@ -201,10 +201,10 @@ prop_GetDot = getDot `implements2` getDot_S
 -- The specification language
 --
     
-abstract :: (Elem e) => STVector s n e -> ST s [e]
+abstract :: (BLAS1 e) => STVector s n e -> ST s [e]
 abstract = getElems'
 
-commutes :: (AEq a, Show a, AEq e, Elem e) =>
+commutes :: (AEq a, Show a, AEq e, BLAS1 e) =>
     STVector s n e -> (STVector s n e -> ST s a) ->
         ([e] -> (a,[e])) -> ST s Bool
 commutes x a f = do
@@ -221,7 +221,7 @@ commutes x a f = do
               
     return passed
 
-commutes2 :: (AEq a, Show a, AEq e, Elem e) =>
+commutes2 :: (AEq a, Show a, AEq e, BLAS1 e) =>
     STVector s n e -> STVector s n e -> 
     (STVector s n e ->  STVector s n e -> ST s a) ->
         ([e] -> [e] -> (a,[e],[e])) -> ST s Bool

@@ -52,9 +52,10 @@ module Data.Matrix.Dense.Internal (
     ) where
 
 import Data.AEq
+import Foreign( Storable )
 import System.IO.Unsafe
 
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( Elem, BLAS3 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 
@@ -112,32 +113,32 @@ inlineLiftMatrix f = inlinePerformIO . liftMatrix f
 
 -- | Create a new matrix of the given size and initialize the given elements to
 -- the given values.  All other elements get set to zero.
-matrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
+matrix :: (BLAS3 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
 matrix mn ies = unsafeFreezeIOMatrix $ unsafePerformIO $ newMatrix mn ies
 {-# NOINLINE matrix #-}
 
 -- | Create a new matrix with the given elements in row-major order.
-listMatrix :: (BLAS1 e) => (Int,Int) -> [e] -> Matrix (m,n) e
+listMatrix :: (BLAS3 e) => (Int,Int) -> [e] -> Matrix (m,n) e
 listMatrix mn es = unsafeFreezeIOMatrix $ unsafePerformIO $ newListMatrix mn es
 {-# NOINLINE listMatrix #-}
 
 -- | Same as 'matrix' but does not do any bounds checking.
-unsafeMatrix :: (BLAS1 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
+unsafeMatrix :: (BLAS3 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (m,n) e
 unsafeMatrix mn ies = unsafeFreezeIOMatrix $ unsafePerformIO $ unsafeNewMatrix mn ies
 {-# NOINLINE unsafeMatrix #-}
 
 -- | Create a matrix of the given shape from a list of rows
-rowsMatrix :: (BLAS1 e) => (Int,Int) -> [Vector n e] -> Matrix (m,n) e
+rowsMatrix :: (BLAS3 e) => (Int,Int) -> [Vector n e] -> Matrix (m,n) e
 rowsMatrix mn rs = unsafeFreezeIOMatrix $ unsafePerformIO $ newRowsMatrix mn rs
 {-# NOINLINE rowsMatrix #-}
 
 -- | Create a matrix of the given shape from a list of columns
-colsMatrix :: (BLAS1 e) => (Int,Int) -> [Vector m e] -> Matrix (m,n) e
+colsMatrix :: (BLAS3 e) => (Int,Int) -> [Vector m e] -> Matrix (m,n) e
 colsMatrix mn cs = unsafeFreezeIOMatrix $ unsafePerformIO $ newColsMatrix mn cs
 {-# NOINLINE colsMatrix #-}
 
 -- | Get a matrix from a row vector.
-rowMatrix :: (BLAS1 e) => Vector n e -> Matrix (one,n) e
+rowMatrix :: (BLAS3 e) => Vector n e -> Matrix (one,n) e
 rowMatrix x = 
     case maybeFromRow $ unsafeThawIOVector x of
         Just x' -> unsafeFreezeIOMatrix x'
@@ -148,7 +149,7 @@ rowMatrix x =
 {-# NOINLINE rowMatrix #-}
 
 -- | Get a matrix from a column vector.
-colMatrix :: (BLAS1 e) => Vector m e -> Matrix (m,one) e
+colMatrix :: (BLAS3 e) => Vector m e -> Matrix (m,one) e
 colMatrix x = 
     case maybeFromCol $ unsafeThawIOVector x of
         Just x' -> unsafeFreezeIOMatrix x'
@@ -159,18 +160,18 @@ colMatrix x =
 {-# NOINLINE colMatrix #-}
 
 -- | Get a new zero of the given shape.
-zeroMatrix :: (BLAS1 e) => (Int,Int) -> Matrix (m,n) e
+zeroMatrix :: (BLAS3 e) => (Int,Int) -> Matrix (m,n) e
 zeroMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newZeroMatrix mn
 {-# NOINLINE zeroMatrix #-}
 
 -- | Get a new constant of the given shape.
-constantMatrix :: (BLAS1 e) => (Int,Int) -> e -> Matrix (m,n) e
+constantMatrix :: (BLAS3 e) => (Int,Int) -> e -> Matrix (m,n) e
 constantMatrix mn e = unsafeFreezeIOMatrix $ unsafePerformIO $ newConstantMatrix mn e
 {-# NOINLINE constantMatrix #-}
 
 -- | Get a new matrix of the given shape with ones along the diagonal and
 -- zeroes everywhere else.
-identityMatrix :: (BLAS1 e) => (Int,Int) -> Matrix (m,n) e
+identityMatrix :: (BLAS3 e) => (Int,Int) -> Matrix (m,n) e
 identityMatrix mn = unsafeFreezeIOMatrix $ unsafePerformIO $ newIdentityMatrix mn
 {-# NOINLINE identityMatrix #-}
 
@@ -194,11 +195,11 @@ unsafeDiag :: (Elem e) => Matrix mn e -> Int -> Vector k e
 unsafeDiag = unsafeDiagView
 
 
-instance BaseTensor Matrix (Int,Int) where
+instance (Storable e) => BaseTensor Matrix (Int,Int) e where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
 
-instance ITensor Matrix (Int,Int) where
+instance (BLAS3 e) => ITensor Matrix (Int,Int) e where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -226,7 +227,7 @@ instance ITensor Matrix (Int,Int) where
 
 
 
-replaceHelp :: (BLAS1 e) => 
+replaceHelp :: (BLAS3 e) => 
     (IOMatrix mn e -> (Int,Int) -> e -> IO ()) ->
         Matrix mn e -> [((Int,Int), e)] -> Matrix mn e
 replaceHelp set x ies =
@@ -236,7 +237,7 @@ replaceHelp set x ies =
         return (unsafeFreezeIOMatrix y)
 {-# NOINLINE replaceHelp #-}
 
-instance (Monad m) => ReadTensor Matrix (Int,Int) m where
+instance (BLAS3 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -246,19 +247,19 @@ instance (Monad m) => ReadTensor Matrix (Int,Int) m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance MatrixShaped Matrix where
+instance (Storable e) => MatrixShaped Matrix e where
     herm (M a) = M (herm a)
     
-instance BaseMatrix_ Matrix where
+instance (Storable e) => BaseMatrix_ Matrix e where
     type VectorView Matrix = Vector
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 
-instance BaseMatrix Matrix
+instance (Storable e) => BaseMatrix Matrix e
 
-instance (UnsafeIOToM m) => ReadMatrix Matrix m where
+instance (BLAS3 e, UnsafeIOToM m) => ReadMatrix Matrix e m where
 
-instance (BLAS1 e) => Num (Matrix mn e) where
+instance (BLAS3 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y
     (-) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getSubMatrix x y
     (*) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getMulMatrix x y
@@ -267,12 +268,12 @@ instance (BLAS1 e) => Num (Matrix mn e) where
     signum      = tmap signum
     fromInteger = coerceMatrix . (constantMatrix (1,1)) . fromInteger
     
-instance (BLAS1 e) => Fractional (Matrix mn e) where
+instance (BLAS3 e) => Fractional (Matrix mn e) where
     (/) x y      = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getDivMatrix x y
     recip        = tmap recip
     fromRational = coerceMatrix . (constantMatrix (1,1)) . fromRational 
 
-instance (BLAS1 e, Floating e) => Floating (Matrix (m,n) e) where
+instance (BLAS3 e, Floating e) => Floating (Matrix (m,n) e) where
     pi    = constantMatrix (1,1) pi
     exp   = tmap exp
     sqrt  = tmap sqrt
@@ -291,7 +292,7 @@ instance (BLAS1 e, Floating e) => Floating (Matrix (m,n) e) where
     acosh = tmap acosh
     atanh = tmap atanh
 
-tzipWith :: (BLAS1 e) =>
+tzipWith :: (BLAS3 e) =>
     (e -> e -> e) -> Matrix mn e -> Matrix mn e -> Matrix mn e
 tzipWith f a b
     | shape b /= mn =
@@ -305,13 +306,13 @@ tzipWith f a b
     mn = shape a
     colElems = (concatMap elems) . colViews . coerceMatrix
 
-instance (BLAS1 e, Show e) => Show (Matrix mn e) where
+instance (BLAS3 e, Show e) => Show (Matrix mn e) where
     show a | isHermMatrix a = 
                 "herm (" ++ show (herm $ coerceMatrix a) ++ ")"
            | otherwise =
                 "listMatrix " ++ show (shape a) ++ " " ++ show (elems a)
         
-compareHelp :: (BLAS1 e) => 
+compareHelp :: (BLAS3 e) => 
     (e -> e -> Bool) -> Matrix mn e -> Matrix mn e -> Bool
 compareHelp cmp a b
     | shape a /= shape b =
@@ -326,9 +327,9 @@ compareHelp cmp a b
   where
     colElems c = concatMap elems (colViews $ coerceMatrix c)
 
-instance (BLAS1 e, Eq e) => Eq (Matrix mn e) where
+instance (BLAS3 e, Eq e) => Eq (Matrix mn e) where
     (==) = compareHelp (==)
 
-instance (BLAS1 e, AEq e) => AEq (Matrix mn e) where
+instance (BLAS3 e, AEq e) => AEq (Matrix mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)

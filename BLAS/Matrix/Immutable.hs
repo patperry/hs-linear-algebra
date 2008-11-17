@@ -41,7 +41,7 @@ import Data.Matrix.Dense.ST( runSTMatrix )
 
 infixr 7 <*>, <**>
 
-class (BLAS1 e, MatrixShaped a) => IMatrix a e where
+class (MatrixShaped a e, BLAS1 e) => IMatrix a e where
     unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 

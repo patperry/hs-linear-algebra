@@ -50,6 +50,7 @@ module Data.Vector.Dense.Internal (
     ) where
 
 import Data.AEq
+import Foreign( Storable )
 import System.IO.Unsafe
 
 import BLAS.Conj
@@ -161,11 +162,11 @@ whichMaxAbs = unsafeLiftVector getWhichMaxAbs
 {-# NOINLINE (<.>) #-}
 
 
-instance BaseTensor Vector Int where
+instance (Storable e) => BaseTensor Vector Int e where
     shape  = liftVector shape
     bounds = liftVector bounds
 
-instance ITensor Vector Int where
+instance (BLAS1 e) => ITensor Vector Int e where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -196,7 +197,7 @@ replaceHelp set x ies =
         return (unsafeFreezeIOVector y)
 {-# NOINLINE replaceHelp #-}
 
-instance (Monad m) => ReadTensor Vector Int m where
+instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -205,14 +206,12 @@ instance (Monad m) => ReadTensor Vector Int m where
     getIndices'    = return . indices
     getElems'      = return . elems
     unsafeReadElem x i = return $ unsafeAt x i
-    
 
-
-instance BaseVector Vector where
+instance (Storable e) => BaseVector Vector e where
     vectorViewArray f o n s c = V $ vectorViewArray f o n s c
     arrayFromVector           = liftVector arrayFromVector
 
-instance (UnsafeIOToM m) => ReadVector Vector m where
+instance (BLAS1 e, UnsafeIOToM m) => ReadVector Vector e m where
     
 instance (BLAS1 e) => Num (Vector n e) where
     (+) x y     = unsafeFreezeIOVector $ unsafeLiftVector2 getAddVector x y

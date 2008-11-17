@@ -28,7 +28,7 @@ import Generators.Matrix
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense hiding ( matrix )
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( Elem, BLAS3 )
 
 data SubMatrix m n e = 
     SubMatrix (Matrix (m,n) e) 
@@ -36,24 +36,24 @@ data SubMatrix m n e =
               (Int,Int) 
     deriving (Show)
 
-matrix :: (BLAS1 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+matrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
 matrix mn = frequency [ (3, rawMatrix mn)  
                       , (2, hermedMatrix mn)
                       , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
                                  return $ submatrix a ij mn)
                       ]
 
-rawMatrix :: (BLAS1 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+rawMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
 rawMatrix (m,n) = do
     es <- QC.vector (m*n)
     return $ listMatrix (m,n) es
 
-hermedMatrix :: (BLAS1 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+hermedMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
 hermedMatrix (m,n) = do
     x <- matrix (n,m)
     return $ (herm x)
 
-subMatrix :: (BLAS1 e, Arbitrary e) => (Int,Int) -> Gen (SubMatrix m n e)
+subMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (SubMatrix m n e)
 subMatrix (m,n) = do
     i <- choose (0,5)
     j <- choose (0,5)
@@ -63,7 +63,7 @@ subMatrix (m,n) = do
 
     return $ SubMatrix x (i,j) (m,n)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (Matrix (m,n) e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (Matrix (m,n) e) where
     arbitrary = matrixSized $ \k -> do
         m <- choose (0,k)
         n <- choose (0,k)
@@ -75,7 +75,7 @@ data MatrixAt m n e =
     MatrixAt (Matrix (m,n) e)
              (Int,Int)
     deriving (Show)
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixAt m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixAt m n e) where
     arbitrary = matrixSized $ \k -> do
         m <- choose (0,k) >>= return . (+1)
         n <- choose (0,k) >>= return . (+1)
@@ -87,7 +87,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixAt m n e) where
     coarbitrary = undefined
 
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (SubMatrix m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (SubMatrix m n e) where
     arbitrary = matrixSized $ \k -> do
         m <- choose (0,k)
         n <- choose (0,k)
@@ -101,7 +101,7 @@ data MatrixPair m n e =
                (Matrix (m,n) e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixPair m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixPair m n e) where
     arbitrary = do
         a <- arbitrary
         b <- matrix (shape a)
@@ -114,7 +114,7 @@ data MatrixMV m n e =
              (Vector n e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixMV m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMV m n e) where
     arbitrary = do
         a <- arbitrary
         x <- vector (numCols a)
@@ -128,7 +128,7 @@ data MatrixMVPair m n e =
                  (Vector n e) 
     deriving (Show)
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixMVPair m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMVPair m n e) where
     arbitrary = do
         (MatrixMV a x) <- arbitrary
         y <- vector (dim x)
@@ -142,7 +142,7 @@ data MatrixMM m n k e =
              (Matrix (k,n) e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixMM m n k e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMM m n k e) where
     arbitrary = matrixSized $ \s -> do
         a <- arbitrary
         n <- choose (0,s)
@@ -157,7 +157,7 @@ data MatrixMMPair m n k e =
                  (Matrix (k,n) e)
     deriving (Show)
     
-instance (Arbitrary e, BLAS1 e) => Arbitrary (MatrixMMPair m n k e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMMPair m n k e) where
     arbitrary = do
         (MatrixMM a b) <- arbitrary
         c <- matrix (shape b)

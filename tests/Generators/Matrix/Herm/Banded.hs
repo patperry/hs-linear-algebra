@@ -21,7 +21,7 @@ import Generators.Vector.Dense ( vector )
 import Generators.Matrix ( matrixSized )
 import Generators.Matrix.Dense ( matrix )
 
-import BLAS.Elem ( Elem, BLAS2, toReal, fromReal, conj )
+import BLAS.Elem ( Elem, BLAS2, BLAS3, toReal, fromReal, conj )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
@@ -108,7 +108,7 @@ data HermBandedMM m n e =
                  (Matrix (m,n) e) 
     deriving Show
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMM m n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMM m n e) where
     arbitrary = matrixSized $ \s -> do
         (HermBanded a h) <- arbitrary
         n <- choose (0,s)
