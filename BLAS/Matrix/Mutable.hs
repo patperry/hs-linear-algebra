@@ -111,12 +111,12 @@ class (MatrixShaped a, BLAS1 e, Monad m) => MMatrix a e m where
     unsafeGetRow :: (WriteVector x m) => a (k,l) e -> Int -> m (x l e)
     unsafeGetRow a i = do
         e <- newBasisVector (numRows a) i
-        liftM conj $ unsafeGetApply (herm a) e
+        liftM conj $ unsafeGetSApply 1 (herm a) e
         
     unsafeGetCol :: (WriteVector x m) => a (k,l) e -> Int -> m (x k e)
     unsafeGetCol a j = do
         e <- newBasisVector (numCols a) j
-        unsafeGetApply a e
+        unsafeGetSApply 1 a e
 
 
 -- | Get the given row in a matrix.
