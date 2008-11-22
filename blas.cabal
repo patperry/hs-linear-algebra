@@ -1,5 +1,5 @@
 name:            blas
-version:         0.6.5
+version:         0.7
 homepage:        http://stat.stanford.edu/~patperry/code/blas
 synopsis:        Bindings to the BLAS library
 description:
@@ -16,18 +16,20 @@ description:
     .
 category:        Math
 license:         BSD3
-license-file:    LICENSE
+license-file:    COPYING
 copyright:       (c) 2008. Patrick Perry <patperry@stanford.edu>
 author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@stanford.edu>
 cabal-version:   >= 1.2.0
-build-type:      Simple
+build-type:      Configure
 tested-with:     GHC == 6.10.1
 
-extra-source-files:     INSTALL
-                        NEWS
-                        TODO
-                        
+extra-source-files:     
+    NEWS README TODO
+    configure.ac configure
+    aclocal.m4 m4/acx_blas.m4
+    blas.buildinfo.in include/config.h.in
+    
                         examples/LU.hs
                         
                         tests/Makefile
@@ -57,35 +59,13 @@ extra-source-files:     INSTALL
                         tests/HermBanded.hs
                         tests/TriBanded.hs
                         tests/TriMatrix.hs
-
-
--- Below are the flags for specifying which CBLAS to link with.  If no flag
--- is specified, the default is to use ATLAS.  To use the "custom" flag, you
--- must edit the section at the end of the file with the name and location
--- of the CBLAS library you want to use.
-
-flag atlas
-    description:    Link with ATLAS.
-    default:        False
-
-flag gsl
-    description:    Link with GSL unoptimized CBLAS.
-    default:        False
-
-flag mkl
-    description:    Link with Intel MKL.
-    default:        False
-
-flag veclib
-    description:    Link with Mac OS X vecLib.
-    default:        False
-    
-flag custom
-    description:    Link with a custom CBLAS.  
-    default:        False
-    -- You must edit this file below to use this option.  
+                        
+extra-tmp-files:
+    config.log config.status autom4te.cache
+    blas.buildinfo include/config.h
 
 library
+    hs-source-dirs:     lib
     exposed-modules:    
                         BLAS.C
                             BLAS.C.Level1
@@ -176,31 +156,3 @@ library
                         FunctionalDependencies, MultiParamTypeClasses,
                         TypeFamilies
     build-depends:      base, ieee, permutation, storable-complex
-
-    
-    if flag(atlas)
-        extra-libraries:    cblas atlas
-      
-    if flag(gsl)
-        extra-libraries:    gslcblas
-
-    if flag(mkl)
-      if arch(x86_64)
-        extra-libraries:    mkl_lapack mkl_intel_lp64 mkl_sequential mkl_core
-      else
-        extra-libraries:    mkl_lapack mkl_intel mkl_sequential mkl_core
-
-    if flag(veclib)
-        extra-libraries:    cblas
-
-    if flag(custom)
-        -- CUSTOM CBLAS LIBS GO HERE
-        extra-libraries:    
-        
-        -- PATH TO CUSTOM LIB DIR GOES HERE 
-        extra-lib-dirs:     
-    
-    -- fall back to ATLAS if no flag is specified
-    if !flag(atlas) && !flag(gsl) && !flag(mkl) && !flag(veclib) && !flag(custom)
-        extra-libraries:    cblas atlas
-    

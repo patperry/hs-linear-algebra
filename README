@@ -1,0 +1,17 @@
+
+To build the package, there is no need to run the configure script.  Just
+use the standard cabal commands:
+
+    runhaskell Setup.lhs configure
+    runhaskell Setup.lhs build
+    runhaskell Setup.lhs install
+    
+The package uses a script to find what BLAS library to link with.  To link
+with a custom BLAS, add the "--with-blas=<lib>" argument to --configure-option,
+e.g
+
+    runhaskell Setup.lhs configure --configure-option="--with-blas=<lib>"
+
+To build this package from the darcs repository, first run
+    aclocal -I m4
+    autoreconf
