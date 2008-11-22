@@ -20,12 +20,12 @@ AC_SUBST(BLAS_LIBS)
 if test x"$ax_blas_ok" = xyes; then
     ifelse([$1],, [
         AC_DEFINE(HAVE_BLAS,1, [Define if you have a BLAS library.])
-        AH_TEMPLATE([BLAS_FUNC], 
-                [Define to a macro mangling the given BLAS function name])
+        AH_TEMPLATE([F77_FUNC], 
+                [Define to a macro mangling the given Fortan function name])
         if test x"$ax_blas_underscore" = xyes; then
-            AC_DEFINE([BLAS_FUNC(name)], [name ## _])
+            AC_DEFINE([F77_FUNC(name)], [name ## _])
         else
-            AC_DEFINE([BLAS_FUNC(name)], [name])
+            AC_DEFINE([F77_FUNC(name)], [name])
         fi
         ],
         [$1])
