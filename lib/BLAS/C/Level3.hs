@@ -21,15 +21,15 @@ import BLAS.C.Zomplex
         
         
 class (BLAS2 a) => BLAS3 a where
-    gemm  :: CBLASOrder -> CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    symm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hemm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    syrk  :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    syr2k :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    herk  :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    her2k :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gemm  :: CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    symm  :: CBLASSide -> CBLASUpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hemm  :: CBLASSide -> CBLASUpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    trmm  :: CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsm  :: CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    syrk  :: CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    syr2k :: CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    herk  :: CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    her2k :: CBLASUpLo -> CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     
     
 instance BLAS3 Double where
@@ -45,38 +45,38 @@ instance BLAS3 Double where
     
     
 instance BLAS3 (Complex Double) where
-    gemm order transA transB m n k alpha pA ldA pB ldB beta pC ldC =
+    gemm transA transB m n k alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zgemm order transA transB m n k pAlpha pA ldA pB ldB pBeta pC ldC
+            zgemm transA transB m n k pAlpha pA ldA pB ldB pBeta pC ldC
     
-    symm order side uplo m n alpha pA ldA pB ldB beta pC ldC =
+    symm side uplo m n alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsymm order side uplo m n pAlpha pA ldA pB ldB pBeta pC ldC
+            zsymm side uplo m n pAlpha pA ldA pB ldB pBeta pC ldC
 
-    hemm order side uplo m n alpha pA ldA pB ldB beta pC ldC =
+    hemm side uplo m n alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zhemm order side uplo m n pAlpha pA ldA pB ldB pBeta pC ldC
+            zhemm side uplo m n pAlpha pA ldA pB ldB pBeta pC ldC
     
-    trmm order side uplo transA diag m n alpha pA ldA pB ldB =
+    trmm side uplo transA diag m n alpha pA ldA pB ldB =
         with alpha $ \pAlpha -> 
-            ztrmm order side uplo transA diag m n pAlpha pA ldA pB ldB
+            ztrmm side uplo transA diag m n pAlpha pA ldA pB ldB
             
-    trsm order side uplo transA diag m n alpha pA ldA pB ldB =
+    trsm side uplo transA diag m n alpha pA ldA pB ldB =
         with alpha $ \pAlpha -> 
-            ztrsm order side uplo transA diag m n pAlpha pA ldA pB ldB
+            ztrsm side uplo transA diag m n pAlpha pA ldA pB ldB
             
-    syrk order uplo transA n k alpha pA ldA beta pC ldC =
+    syrk uplo transA n k alpha pA ldA beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsyrk order uplo transA n k pAlpha pA ldA pBeta pC ldC
+            zsyrk uplo transA n k pAlpha pA ldA pBeta pC ldC
             
-    syr2k order uplo transA n k alpha pA ldA pB ldB beta pC ldC =
+    syr2k uplo transA n k alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsyr2k order uplo transA n k pAlpha pA ldA pB ldB pBeta pC ldC
+            zsyr2k uplo transA n k pAlpha pA ldA pB ldB pBeta pC ldC
 
-    herk order uplo transA n k alpha pA ldA beta pC ldC =
+    herk uplo transA n k alpha pA ldA beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zherk order uplo transA n k pAlpha pA ldA pBeta pC ldC
+            zherk uplo transA n k pAlpha pA ldA pBeta pC ldC
             
-    her2k order uplo transA n k alpha pA ldA pB ldB beta pC ldC =
+    her2k uplo transA n k alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zher2k order uplo transA n k pAlpha pA ldA pB ldB pBeta pC ldC
+            zher2k uplo transA n k pAlpha pA ldA pB ldB pBeta pC ldC

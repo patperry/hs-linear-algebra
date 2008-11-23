@@ -28,7 +28,7 @@ extra-source-files:
     NEWS README TODO
     configure.ac configure
     aclocal.m4 m4/acx_blas.m4
-    blas.buildinfo.in include/config.h.in
+    blas.buildinfo.in cbits/config.h.in
     
                         examples/LU.hs
                         
@@ -62,7 +62,7 @@ extra-source-files:
                         
 extra-tmp-files:
     config.log config.status autom4te.cache
-    blas.buildinfo include/config.h
+    blas.buildinfo cbits/config.h
 
 library
     hs-source-dirs:     lib
@@ -149,6 +149,12 @@ library
                         Data.Matrix.Dense.Class.Views
                         Data.Matrix.Dense.Class.Copying
                         Data.Matrix.Dense.Class.Operations
+    
+    includes:           cbits/config.h
+                        cbits/BLAS.h
+    include-dirs:       cbits
+    c-sources:          cbits/double.c
+                        cbits/zomplex.c
                         
     ghc-options:        -Wall
     extensions:         BangPatterns, FlexibleContexts, 

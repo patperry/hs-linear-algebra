@@ -397,8 +397,7 @@ gbmv alpha a x beta y
         gbmv alpha a x beta (conj y)
         doConjVector y
     | otherwise =
-        let order  = colMajor
-            transA = blasTransOf a
+        let transA = blasTransOf a
             (m,n)  = case (isHermBanded a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
@@ -412,7 +411,7 @@ gbmv alpha a x beta y
                withBandedPtr a $ \pA ->
                withVectorPtr x $ \pX ->
                withVectorPtr y $ \pY -> do
-                   BLAS.gbmv order transA m n kl ku alpha pA ldA pX incX beta pY incY
+                   BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 

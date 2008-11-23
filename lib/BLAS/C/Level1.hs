@@ -73,9 +73,9 @@ instance BLAS1 Double where
     rot   = drot
     conj _ _ _ = return ()
     acxpy = daxpy
-    mul n = dtbmv colMajor upper noTrans nonUnit n 0
+    mul n = dtbmv upper noTrans nonUnit n 0
     cmul  = mul
-    div n = dtbsv colMajor upper noTrans nonUnit n 0
+    div n = dtbsv upper noTrans nonUnit n 0
     cdiv = div
 
 instance BLAS1 (Complex Double) where
@@ -144,8 +144,8 @@ instance BLAS1 (Complex Double) where
                         
                     go n'' pX'' pY''
         
-    mul n  = ztbmv colMajor upper noTrans   nonUnit n 0
-    cmul n = ztbmv colMajor upper conjTrans nonUnit n 0
+    mul n  = ztbmv upper noTrans   nonUnit n 0
+    cmul n = ztbmv upper conjTrans nonUnit n 0
 
-    div n  = ztbsv colMajor upper noTrans   nonUnit n 0
-    cdiv n = ztbsv colMajor upper conjTrans nonUnit n 0
+    div n  = ztbsv upper noTrans   nonUnit n 0
+    cdiv n = ztbsv upper conjTrans nonUnit n 0

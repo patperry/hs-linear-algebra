@@ -27,7 +27,7 @@ import Control.Monad( zipWithM_ )
 import Control.Monad.ST( ST )
 import Unsafe.Coerce
 
-import BLAS.C( BLAS2, BLAS3, colMajor, rightSide, leftSide, cblasUpLo )
+import BLAS.C( BLAS2, BLAS3, rightSide, leftSide, cblasUpLo )
 import qualified BLAS.C as BLAS
 import BLAS.UnsafeIOToM
 
@@ -97,8 +97,7 @@ hemv alpha h x beta y
         doConj x'
         hemv alpha h (conj x') beta y
     | otherwise =
-        let order = colMajor
-            (u,a) = toBase h
+        let (u,a) = toBase h
             n     = numCols a
             u'    = case isHermMatrix a of
                         True  -> flipUpLo u
@@ -111,7 +110,7 @@ hemv alpha h x beta y
                withMatrixPtr a $ \pA ->
                withVectorPtr x $ \pX ->
                withVectorPtr y $ \pY ->
-                   BLAS.hemv order uploA n alpha pA ldA pX incX beta pY incY
+                   BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
 
 hemm :: (ReadMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
@@ -120,8 +119,7 @@ hemm alpha h b beta c
     | (isHermMatrix a) /= (isHermMatrix c) || (isHermMatrix a) /= (isHermMatrix b) =
         zipWithM_ (\x y -> hemv alpha h x beta y) (colViews b) (colViews c)
     | otherwise =
-        let order   = colMajor
-            (m,n)   = shape c
+        let (m,n)   = shape c
             (side,u',m',n')
                     = if isHermMatrix a
                           then (rightSide, flipUpLo u, n, m)
@@ -134,7 +132,7 @@ hemm alpha h b beta c
                withMatrixPtr a $ \pA ->
                withMatrixPtr b $ \pB ->
                withMatrixPtr c $ \pC ->
-                   BLAS.hemm order side uploA m' n' alpha pA ldA pB ldB beta pC ldC
+                   BLAS.hemm side uploA m' n' alpha pA ldA pB ldB beta pC ldC
     where
       (u,a) = toBase h
 
@@ -181,8 +179,7 @@ hbmv alpha h x beta y
         doConj x'
         hbmv alpha h (conj x') beta y
     | otherwise =
-        let order = colMajor
-            (u,a) = toBase h
+        let (u,a) = toBase h
             n     = numCols a
             k     = case u of 
                         Upper -> numUpper a
@@ -201,7 +198,7 @@ hbmv alpha h x beta y
                withPtrA $ \pA ->
                withVectorPtr x $ \pX ->
                withVectorPtr y $ \pY -> do
-                   BLAS.hbmv order uploA n k alpha pA ldA pX incX beta pY incY
+                   BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
 
 hbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()

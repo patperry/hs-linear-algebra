@@ -48,7 +48,7 @@ import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import BLAS.UnsafeIOToM
 import BLAS.Matrix
 import BLAS.Types ( UpLo(..), Diag(..), Trans(..), flipTrans, flipUpLo )
-import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, colMajor, 
+import BLAS.C.Types ( cblasDiag, cblasUpLo, cblasTrans, 
     noTrans, conjTrans, leftSide, rightSide )
 import qualified BLAS.C as BLAS
 import qualified BLAS.C.Types as BLAS
@@ -290,7 +290,6 @@ trmv alpha t x
         
     | isConj x =
         let (u,d,a) = toBase t
-            order   = colMajor
             side    = rightSide
             (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
             uploA   = cblasUpLo u'
@@ -304,11 +303,10 @@ trmv alpha t x
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
                withVectorPtr x $ \pB ->
-                   BLAS.trmm order side uploA transA diagA m n alpha' pA ldA pB ldB
+                   BLAS.trmm side uploA transA diagA m n alpha' pA ldA pB ldB
 
     | otherwise =
         let (u,d,a)   = toBase t
-            order     = colMajor
             (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
             uploA     = cblasUpLo u'
             diagA     = cblasDiag d
@@ -320,7 +318,7 @@ trmv alpha t x
             unsafeIOToM $
                 withMatrixPtr a $ \pA ->
                 withVectorPtr x $ \pX -> do
-                   BLAS.trmv order uploA transA diagA n pA ldA pX incX
+                   BLAS.trmv uploA transA diagA n pA ldA pX incX
 
 
 trmm :: (ReadMatrix a e m, WriteMatrix b e m) => 
@@ -329,7 +327,6 @@ trmm _ _ b
     | numRows b == 0 || numCols b == 0 = return ()
 trmm alpha t b =
     let (u,d,a)   = toBase t
-        order     = colMajor
         (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
@@ -344,7 +341,7 @@ trmm alpha t b =
     in unsafeIOToM $
            withMatrixPtr a $ \pA ->
            withMatrixPtr b $ \pB ->
-               BLAS.trmm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
+               BLAS.trmm side uploA transA diagA m' n' alpha' pA ldA pB ldB
 
 
 ------------------------ Tri Matrix Solve Functions -------------------------
@@ -438,7 +435,6 @@ trsv alpha t x
 
     | isConj x =
         let (u,d,a) = toBase t
-            order   = colMajor
             side    = rightSide
             (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
             uploA   = cblasUpLo u'
@@ -452,11 +448,10 @@ trsv alpha t x
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
                withVectorPtr x $ \pB ->
-                   BLAS.trsm order side uploA transA diagA m n alpha' pA ldA pB ldB
+                   BLAS.trsm side uploA transA diagA m n alpha' pA ldA pB ldB
 
     | otherwise =
         let (u,d,a) = toBase t
-            order     = colMajor
             (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
             uploA     = cblasUpLo u'
             diagA     = cblasDiag d
@@ -468,7 +463,7 @@ trsv alpha t x
             unsafeIOToM $
                 withMatrixPtr a $ \pA ->
                 withVectorPtr x $ \pX ->
-                    BLAS.trsv order uploA transA diagA n pA ldA pX incX
+                    BLAS.trsv uploA transA diagA n pA ldA pX incX
 
 trsm :: (ReadMatrix a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -476,7 +471,6 @@ trsm _ _ b
     | numRows b == 0 || numCols b == 0 = return ()
 trsm alpha t b =
     let (u,d,a)   = toBase t
-        order     = colMajor
         (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
         (m,n)     = shape b
         (side,h',m',n',alpha')
@@ -491,7 +485,7 @@ trsm alpha t b =
     in unsafeIOToM $     
            withMatrixPtr a $ \pA ->
            withMatrixPtr b $ \pB -> do
-               BLAS.trsm order side uploA transA diagA m' n' alpha' pA ldA pB ldB
+               BLAS.trsm side uploA transA diagA m' n' alpha' pA ldA pB ldB
 
 
 ------------------------ Tri Banded Apply Functions -------------------------
@@ -505,7 +499,6 @@ tbmv alpha t x | isConj x = do
 
 tbmv alpha t x =
     let (u,d,a) = toBase t
-        order     = colMajor
         (transA,u') 
                   = if isHermBanded a 
                         then (conjTrans, flipUpLo u) else (noTrans, u)
@@ -524,7 +517,7 @@ tbmv alpha t x =
         unsafeIOToM $
             withPtrA $ \pA ->
             withVectorPtr x $ \pX -> do
-                BLAS.tbmv order uploA transA diagA n k pA ldA pX incX
+                BLAS.tbmv uploA transA diagA n k pA ldA pX incX
 
 tbmm :: (ReadBanded a e m, WriteMatrix b e m) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -589,7 +582,6 @@ tbsv alpha t x | isConj x = do
     
 tbsv alpha t x = 
     let (u,d,a) = toBase t
-        order     = colMajor
         (transA,u') = if isHermBanded a then (conjTrans, flipUpLo u) else (noTrans, u)
         uploA     = cblasUpLo u'
         diagA     = cblasDiag d
@@ -606,7 +598,7 @@ tbsv alpha t x =
         unsafeIOToM $
             withPtrA $ \pA ->
             withVectorPtr x $ \pX -> do
-                BLAS.tbsv order uploA transA diagA n k pA ldA pX incX
+                BLAS.tbsv uploA transA diagA n k pA ldA pX incX
 
 tbsm :: (ReadBanded a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()

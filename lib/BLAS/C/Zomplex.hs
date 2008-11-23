@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# CFILES cbits/zomplex.c #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.C.Zomplex
@@ -17,106 +18,106 @@ import BLAS.C.Types
 
 ---------------------------- Level 1 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_zdotu_sub"
+foreign import ccall unsafe "BLAS.h blas_zdotu_sub"
     zdotu_sub   :: Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zdotc_sub"
+foreign import ccall unsafe "BLAS.h blas_zdotc_sub"
     zdotc_sub   :: Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> IO ()
 
 
-foreign import ccall unsafe "cblas.h cblas_dznrm2"
+foreign import ccall unsafe "BLAS.h blas_dznrm2"
     znrm2  :: Int -> Ptr (Complex Double) -> Int -> IO Double
 
-foreign import ccall unsafe "cblas.h cblas_dzasum"
+foreign import ccall unsafe "BLAS.h blas_dzasum"
     zasum  :: Int -> Ptr (Complex Double) -> Int -> IO Double
 
-foreign import ccall unsafe "cblas.h cblas_izamax"
+foreign import ccall unsafe "BLAS.h blas_izamax"
     izamax :: Int -> Ptr (Complex Double) -> Int -> IO Int
 
-foreign import ccall unsafe "cblas.h cblas_zscal"
+foreign import ccall unsafe "BLAS.h blas_zscal"
     zscal  :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zswap"
+foreign import ccall unsafe "BLAS.h blas_zswap"
     zswap  :: Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zcopy"
+foreign import ccall unsafe "BLAS.h blas_zcopy"
     zcopy  :: Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zaxpy"
+foreign import ccall unsafe "BLAS.h blas_zaxpy"
     zaxpy  :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zrotg"
+foreign import ccall unsafe "BLAS.h blas_zrotg"
     zrotg  :: Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zdrot"
+foreign import ccall unsafe "BLAS.h blas_zdrot"
     zdrot :: Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Double -> Double -> IO ()
 
 
 ---------------------------- Level 2 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_zgemv"
-    zgemv :: CBLASOrder -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zgemv"
+    zgemv :: CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zgbmv"
-    zgbmv :: CBLASOrder -> CBLASTrans -> Int -> Int -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zgbmv"
+    zgbmv ::  CBLASTrans -> Int -> Int -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_ztrmv"
-    ztrmv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztrmv"
+    ztrmv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_ztbmv"
-    ztbmv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztbmv"
+    ztbmv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
                  
-foreign import ccall unsafe "cblas.h cblas_ztrsv"
-    ztrsv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztrsv"
+    ztrsv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_ztbsv"
-    ztbsv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztbsv"
+    ztbsv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
     
-foreign import ccall unsafe "cblas.h cblas_zhemv"
-    zhemv :: CBLASOrder -> CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zhemv"
+    zhemv ::  CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zhbmv"
-    zhbmv :: CBLASOrder -> CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zhbmv"
+    zhbmv ::  CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
     
-foreign import ccall unsafe "cblas.h cblas_zgeru"
-    zgeru  :: CBLASOrder -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zgeru"
+    zgeru  ::  Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zgerc"
-    zgerc  :: CBLASOrder -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zgerc"
+    zgerc  ::  Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
         
-foreign import ccall unsafe "cblas.h cblas_zher"
-    zher  :: CBLASOrder -> CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zher"
+    zher  ::  CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zher2"
-    zher2 :: CBLASOrder -> CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zher2"
+    zher2 ::  CBLASUpLo -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
 
 ---------------------------- Level 3 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_zgemm"
-    zgemm  :: CBLASOrder -> CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zgemm"
+    zgemm  ::  CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zsymm"
-    zsymm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zsymm"
+    zsymm  ::  CBLASSide -> CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zhemm"
-    zhemm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zhemm"
+    zhemm  ::  CBLASSide -> CBLASUpLo -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_ztrmm"
-    ztrmm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztrmm"
+    ztrmm  ::  CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_ztrsm"
-    ztrsm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_ztrsm"
+    ztrsm  ::  CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zsyrk"
-    zsyrk  :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zsyrk"
+    zsyrk  ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
            
-foreign import ccall unsafe "cblas.h cblas_zsyr2k"           
-    zsyr2k :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zsyr2k"           
+    zsyr2k ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_zherk"
-    zherk  :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zherk"
+    zherk  ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
            
-foreign import ccall unsafe "cblas.h cblas_zher2k"           
-    zher2k :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_zher2k"           
+    zher2k ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Int -> IO ()
     

@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# CFILES cbits/double.c #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.C.Double
@@ -14,99 +15,98 @@ module BLAS.C.Double
 import Foreign.Ptr ( Ptr )
 import BLAS.C.Types
 
-
 ---------------------------- Level 1 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_ddot"
-    ddot   :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO Double
+foreign import ccall unsafe "BLAS.h blas_ddot"
+    ddot :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO Double
 
-foreign import ccall unsafe "cblas.h cblas_dnrm2"
+foreign import ccall unsafe "BLAS.h blas_dnrm2"
     dnrm2  :: Int -> Ptr Double -> Int -> IO Double
 
-foreign import ccall unsafe "cblas.h cblas_dasum"
+foreign import ccall unsafe "BLAS.h blas_dasum"
     dasum  :: Int -> Ptr Double -> Int -> IO Double
 
-foreign import ccall unsafe "cblas.h cblas_idamax"
+foreign import ccall unsafe "BLAS.h blas_idamax"
     idamax :: Int -> Ptr Double -> Int -> IO Int
 
-foreign import ccall unsafe "cblas.h cblas_dscal"
+foreign import ccall unsafe "BLAS.h blas_dscal"
     dscal  :: Int -> Double -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dswap"
+foreign import ccall unsafe "BLAS.h blas_dswap"
     dswap  :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dcopy"
+foreign import ccall unsafe "BLAS.h blas_dcopy"
     dcopy  :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_daxpy"
+foreign import ccall unsafe "BLAS.h blas_daxpy"
     daxpy  :: Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_drotg"
+foreign import ccall unsafe "BLAS.h blas_drotg"
     drotg  :: Ptr Double -> Ptr Double -> Ptr Double -> Ptr Double -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_drot"
+foreign import ccall unsafe "BLAS.h blas_drot"
     drot :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Double -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_drotmg"
+foreign import ccall unsafe "BLAS.h blas_drotmg"
     drotmg :: Ptr Double -> Ptr Double -> Ptr Double -> Double -> Ptr Double -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_drotm"
+foreign import ccall unsafe "BLAS.h blas_drotm"
     drotm :: Int -> Ptr Double -> Int -> Ptr Double -> Int -> Ptr Double -> IO ()
 
 
 ---------------------------- Level 2 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_dgemv"
-    dgemv :: CBLASOrder -> CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dgemv"
+    dgemv :: CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dgbmv"
-    dgbmv :: CBLASOrder -> CBLASTrans -> Int -> Int -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dgbmv"
+    dgbmv ::  CBLASTrans -> Int -> Int -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dtrmv"
-    dtrmv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtrmv"
+    dtrmv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dtbmv"
-    dtbmv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtbmv"
+    dtbmv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
                  
-foreign import ccall unsafe "cblas.h cblas_dtrsv"
-    dtrsv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtrsv"
+    dtrsv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dtbsv"
-    dtbsv :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtbsv"
+    dtbsv ::  CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
     
-foreign import ccall unsafe "cblas.h cblas_dsymv"
-    dsymv :: CBLASOrder -> CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsymv"
+    dsymv ::  CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
     
-foreign import ccall unsafe "cblas.h cblas_dsbmv"
-    dsbmv :: CBLASOrder -> CBLASUpLo -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsbmv"
+    dsbmv ::  CBLASUpLo -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
     
-foreign import ccall unsafe "cblas.h cblas_dger"
-    dger  :: CBLASOrder -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dger"
+    dger  ::  Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
         
-foreign import ccall unsafe "cblas.h cblas_dsyr"
-    dsyr  :: CBLASOrder -> CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsyr"
+    dsyr  ::  CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dsyr2"
-    dsyr2 :: CBLASOrder -> CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsyr2"
+    dsyr2 ::  CBLASUpLo -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
 
 ---------------------------- Level 3 Routines -------------------------------
 
-foreign import ccall unsafe "cblas.h cblas_dgemm"
-    dgemm  :: CBLASOrder -> CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dgemm"
+    dgemm  ::  CBLASTrans -> CBLASTrans -> Int -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dsymm"
-    dsymm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsymm"
+    dsymm  ::  CBLASSide -> CBLASUpLo -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dtrmm"
-    dtrmm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtrmm"
+    dtrmm  ::  CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dtrsm"
-    dtrsm  :: CBLASOrder -> CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dtrsm"
+    dtrsm  ::  CBLASSide -> CBLASUpLo -> CBLASTrans -> CBLASDiag -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> IO ()
 
-foreign import ccall unsafe "cblas.h cblas_dsyrk"
-    dsyrk  :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsyrk"
+    dsyrk  ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
            
-foreign import ccall unsafe "cblas.h cblas_dsyr2k"           
-    dsyr2k :: CBLASOrder -> CBLASUpLo -> CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
+foreign import ccall unsafe "BLAS.h blas_dsyr2k"           
+    dsyr2k ::  CBLASUpLo -> CBLASTrans -> Int -> Int -> Double -> Ptr Double -> Int -> Ptr Double -> Int -> Double -> Ptr Double -> Int -> IO ()
     

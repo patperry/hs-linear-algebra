@@ -518,8 +518,7 @@ gemv alpha a x beta y
         scaleBy beta y
         
     | isConj y && (isConj x || stride x == 1) =
-        let order  = colMajor
-            transA = if isConj x then noTrans else conjTrans
+        let transA = if isConj x then noTrans else conjTrans
             transB = blasTransOf (herm a)
             m      = 1
             n      = dim y
@@ -533,7 +532,7 @@ gemv alpha a x beta y
                withVectorPtr x $ \pA ->
                withMatrixPtr a $ \pB ->
                withVectorPtr y $ \pC ->
-                   BLAS.gemm order transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
+                   BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
     
     | (isConj y && otherwise) || isConj x = do
         doConj y
@@ -541,8 +540,7 @@ gemv alpha a x beta y
         doConj y
         
     | otherwise =
-        let order  = colMajor
-            transA = blasTransOf a
+        let transA = blasTransOf a
             (m,n)  = case (isHermMatrix a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
@@ -553,7 +551,7 @@ gemv alpha a x beta y
                withMatrixPtr a $ \pA ->
                withVectorPtr x $ \pX ->
                withVectorPtr y $ \pY -> do
-                   BLAS.gemv order transA m n alpha pA ldA pX incX beta pY incY
+                   BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gemm :: (ReadMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) => 
@@ -563,8 +561,7 @@ gemm alpha a b beta c
         scaleBy beta c
     | isHermMatrix c = gemm (conj alpha) (herm b) (herm a) (conj beta) (herm c)
     | otherwise =
-        let order  = colMajor
-            transA = blasTransOf a
+        let transA = blasTransOf a
             transB = blasTransOf b
             (m,n)  = shape c
             k      = numCols a
@@ -575,7 +572,7 @@ gemm alpha a b beta c
                withMatrixPtr a $ \pA ->
                withMatrixPtr b $ \pB ->
                withMatrixPtr c $ \pC ->
-                   BLAS.gemm order transA transB m n k alpha pA ldA pB ldB beta pC ldC
+                   BLAS.gemm transA transB m n k alpha pA ldA pB ldB beta pC ldC
 
 
 --------------------------- Utility functions -------------------------------
