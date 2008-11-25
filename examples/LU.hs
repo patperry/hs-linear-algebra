@@ -29,7 +29,7 @@ lu a = runST $ do
  - L and U are stored in A, and a list of the row swaps are returned.
  - On failure, the index of the failing column is returned.
  -}      
-luFactorize :: (BLAS3 e) => STMatrix s (m,n) e -> ST s (Either Int [Int])
+luFactorize :: (WriteMatrix a e m) => a (k,l) e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
         let nleft = mn `div` 2

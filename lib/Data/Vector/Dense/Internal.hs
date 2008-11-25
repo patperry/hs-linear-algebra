@@ -35,8 +35,6 @@ module Data.Vector.Dense.Internal (
     -- * Vector views
     subvector,
     subvectorWithStride,
-    unsafeSubvector,
-    unsafeSubvectorWithStride,
 
     -- * Vector properties
     sumAbs,
@@ -138,6 +136,19 @@ constantVector n e = unsafeFreezeIOVector $ unsafePerformIO $ newConstantVector 
 basisVector :: (BLAS1 e) => Int -> Int -> Vector n e
 basisVector n i = unsafeFreezeIOVector $ unsafePerformIO $ newBasisVector n i
 {-# NOINLINE basisVector #-}
+
+-- | @subvector x o n@ creates a subvector of @x@ starting at index @o@ 
+-- and having length @n@.
+subvector :: (BLAS1 e) => Vector n e -> Int -> Int -> Vector n' e
+subvector = subvectorView
+{-# INLINE subvector #-}
+
+-- | @subvectorWithStride s x o n@ creates a subvector of @x@ starting 
+-- at index @o@, having length @n@ and stride @s@.
+subvectorWithStride :: (BLAS1 e) =>
+    Int -> Vector n e -> Int -> Int -> Vector n' e
+subvectorWithStride = subvectorViewWithStride
+{-# INLINE subvectorWithStride #-}
 
 -- | Compute the sum of absolute values of entries in the vector.
 sumAbs :: (BLAS1 e) => Vector n e -> Double

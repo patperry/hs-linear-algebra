@@ -1,6 +1,4 @@
 
-* subvector -> subvectorView
-
 * Add getSum/sum.  Put in re-write rules from scale and add to axpy.  Here
  is the old code and re-write rules:
  
@@ -36,13 +34,9 @@
 
 * Add getDense/toDense to MMatrix/IMatrix
 
-* Add addVector, subVector, addMatrix, subMatrix, etc.
-
 * Put better checks in swapElem for WriteTensor
 
 * STDiag and IODiag instead of current type?
-
-* Merge UnsafeIOToM and UnsafeInterleaveM
 
 * Add "Mult" class and get rid of <**> ?
 

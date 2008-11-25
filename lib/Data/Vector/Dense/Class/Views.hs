@@ -9,10 +9,10 @@
 
 module Data.Vector.Dense.Class.Views (
     -- * Vector views
-    subvector,
-    subvectorWithStride,
-    unsafeSubvector,
-    unsafeSubvectorWithStride,
+    subvectorView,
+    subvectorViewWithStride,
+    unsafeSubvectorView,
+    unsafeSubvectorViewWithStride,
 
     ) where
 
@@ -21,28 +21,28 @@ import Data.Vector.Dense.Class.Internal
 import Foreign
 
 
--- | @subvector x o n@ creates a subvector view of @x@ starting at index @o@ 
+-- | @subvectorView x o n@ creates a subvector view of @x@ starting at index @o@ 
 -- and having length @n@.
-subvector :: (BaseVector x e) => 
+subvectorView :: (BaseVector x e) => 
     x n e -> Int -> Int -> x n' e
-subvector x = checkedSubvector (dim x) (unsafeSubvector x)
-{-# INLINE subvector #-}
+subvectorView x = checkedSubvector (dim x) (unsafeSubvectorView x)
+{-# INLINE subvectorView #-}
 
-unsafeSubvector :: (BaseVector x e) => 
+unsafeSubvectorView :: (BaseVector x e) => 
     x n e -> Int -> Int -> x n' e
-unsafeSubvector = unsafeSubvectorWithStride 1
-{-# INLINE unsafeSubvector #-}
+unsafeSubvectorView = unsafeSubvectorViewWithStride 1
+{-# INLINE unsafeSubvectorView #-}
 
--- | @subvectorWithStride s x o n@ creates a subvector view of @x@ starting 
+-- | @subvectorViewWithStride s x o n@ creates a subvector view of @x@ starting 
 -- at index @o@, having length @n@ and stride @s@.
-subvectorWithStride :: (BaseVector x e) => 
+subvectorViewWithStride :: (BaseVector x e) => 
     Int -> x n e -> Int -> Int -> x n' e
-subvectorWithStride s x = 
-    checkedSubvectorWithStride s (dim x) (unsafeSubvectorWithStride s x)
-{-# INLINE subvectorWithStride #-}
+subvectorViewWithStride s x = 
+    checkedSubvectorWithStride s (dim x) (unsafeSubvectorViewWithStride s x)
+{-# INLINE subvectorViewWithStride #-}
 
-unsafeSubvectorWithStride :: (BaseVector x e) => 
+unsafeSubvectorViewWithStride :: (BaseVector x e) => 
     Int -> x n e -> Int -> Int -> x n' e
-unsafeSubvectorWithStride s' x o' n' =
+unsafeSubvectorViewWithStride s' x o' n' =
     let (f,p,_,s,c) = arrayFromVector x
     in vectorViewArray f (p `advancePtr` (s*o')) n' (s*s') c

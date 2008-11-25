@@ -153,7 +153,7 @@ import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
     unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj,
     coerceVector )
-import Data.Vector.Dense.Class.Views( unsafeSubvector )
+import Data.Vector.Dense.Class.Views( unsafeSubvectorView )
 import Data.Vector.Dense.Class.Special( newBasisVector )
 
 import BLAS.Matrix.Shaped
@@ -809,8 +809,8 @@ unsafeDoSApplyTriMatrix alpha t x y =
             trmv alpha t' y
             
         (Lower,Right (t',r),_) -> do
-            let y1 = unsafeSubvector y 0            (numRows t')
-                y2 = unsafeSubvector y (numRows t') (numRows r)
+            let y1 = unsafeSubvectorView y 0            (numRows t')
+                y2 = unsafeSubvectorView y (numRows t') (numRows r)
             unsafeCopyVector y1 x
             trmv alpha t' y1
             unsafeDoSApplyAdd alpha r x 0 y2
@@ -820,8 +820,8 @@ unsafeDoSApplyTriMatrix alpha t x y =
             trmv alpha t' (coerceVector y)
 
         (Upper,_,Right (t',r)) ->
-            let x1 = unsafeSubvector x 0            (numCols t')
-                x2 = unsafeSubvector x (numCols t') (numCols r)
+            let x1 = unsafeSubvectorView x 0            (numCols t')
+                x2 = unsafeSubvectorView x (numCols t') (numCols r)
             in do
                 unsafeCopyVector y x1
                 trmv alpha t' y
@@ -957,7 +957,7 @@ unsafeDoSSolveTriMatrix alpha t y x =
             trsv alpha t' (coerceVector x)
             
         (Lower,Right (t',_),_) -> do
-            let y1 = unsafeSubvector y 0            (numRows t')
+            let y1 = unsafeSubvectorView y 0            (numRows t')
             unsafeCopyVector x y1
             trsv alpha t' x
             
@@ -966,8 +966,8 @@ unsafeDoSSolveTriMatrix alpha t y x =
             trsv alpha t' x
 
         (Upper,_,Right (t',r)) ->
-            let x1 = unsafeSubvector x 0            (numCols t')
-                x2 = unsafeSubvector x (numCols t') (numCols r)
+            let x1 = unsafeSubvectorView x 0            (numCols t')
+                x2 = unsafeSubvectorView x (numCols t') (numCols r)
             in do
                 unsafeCopyVector x1 y
                 trsv alpha t' x1
