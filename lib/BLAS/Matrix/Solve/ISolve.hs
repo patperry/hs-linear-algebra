@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Solve.Immutable
+-- Module     : BLAS.Matrix.Solve.ISolve
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Solve.Immutable (
+module BLAS.Matrix.Solve.ISolve (
     ISolve(..),
     (<\>),
     (<\\>),
@@ -20,7 +20,7 @@ module BLAS.Matrix.Solve.Immutable (
 import BLAS.Elem
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Solve.Mutable
+import BLAS.Matrix.Solve.MSolve
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Vector.Dense.ST ( runSTVector )

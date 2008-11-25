@@ -9,12 +9,12 @@
 
 module BLAS.Matrix (
     module BLAS.Matrix.Shaped,
-    module BLAS.Matrix.Immutable,
-    module BLAS.Matrix.Mutable,
+    module BLAS.Matrix.IMatrix,
+    module BLAS.Matrix.MMatrix,
     module BLAS.Matrix.Solve,
     ) where
 
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Immutable
-import BLAS.Matrix.Mutable
+import BLAS.Matrix.IMatrix
+import BLAS.Matrix.MMatrix
 import BLAS.Matrix.Solve

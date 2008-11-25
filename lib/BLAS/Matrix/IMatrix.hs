@@ -9,7 +9,7 @@
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Immutable (
+module BLAS.Matrix.IMatrix (
     -- * Rows and columns
     row,
     col,
@@ -31,7 +31,7 @@ import BLAS.Elem( BLAS1, BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
-import BLAS.Matrix.Mutable( unsafeGetSApply, unsafeGetSApplyMat )
+import BLAS.Matrix.MMatrix( unsafeGetSApply, unsafeGetSApplyMat )
 
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )

@@ -70,11 +70,11 @@ library
 
                         BLAS.Matrix
                             BLAS.Matrix.Shaped
-                            BLAS.Matrix.Immutable
-                            BLAS.Matrix.Mutable
+                            BLAS.Matrix.IMatrix
+                            BLAS.Matrix.MMatrix
                             BLAS.Matrix.Solve
-                                BLAS.Matrix.Solve.Immutable
-                                BLAS.Matrix.Solve.Mutable
+                                BLAS.Matrix.Solve.ISolve
+                                BLAS.Matrix.Solve.MSolve
 
                         BLAS.Tensor
                             BLAS.Tensor.Base

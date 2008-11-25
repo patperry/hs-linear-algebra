@@ -8,7 +8,7 @@
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Mutable (
+module BLAS.Matrix.MMatrix (
     -- * Getting rows and columns
     getRow,
     getCol,

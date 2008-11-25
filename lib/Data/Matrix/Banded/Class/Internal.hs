@@ -89,8 +89,8 @@ import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Mutable
-import BLAS.Matrix.Solve.Mutable
+import BLAS.Matrix.MMatrix
+import BLAS.Matrix.Solve.MSolve
 
 import BLAS.Tensor
 import BLAS.Types( flipUpLo )

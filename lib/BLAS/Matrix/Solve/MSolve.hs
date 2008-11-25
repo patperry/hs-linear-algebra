@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Solve.Mutable
+-- Module     : BLAS.Matrix.Solve.MSolve
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Solve.Mutable (
+module BLAS.Matrix.Solve.MSolve (
     
     -- * Matrix and vector solving
     getSolve,

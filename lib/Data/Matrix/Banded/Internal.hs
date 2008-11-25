@@ -45,7 +45,7 @@ module Data.Matrix.Banded.Internal (
     isHermBanded,
     
     -- * Matrix and vector multiplication
-    module BLAS.Matrix.Immutable,
+    module BLAS.Matrix.IMatrix,
 
     ) where
 
@@ -62,10 +62,10 @@ import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
 
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Immutable
-import BLAS.Matrix.Mutable
-import BLAS.Matrix.Solve.Immutable
-import BLAS.Matrix.Solve.Mutable
+import BLAS.Matrix.IMatrix
+import BLAS.Matrix.MMatrix
+import BLAS.Matrix.Solve.ISolve
+import BLAS.Matrix.Solve.MSolve
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Herm

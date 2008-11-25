@@ -8,9 +8,9 @@
 --
 
 module BLAS.Matrix.Solve (
-    module BLAS.Matrix.Solve.Immutable,
-    module BLAS.Matrix.Solve.Mutable,
+    module BLAS.Matrix.Solve.ISolve,
+    module BLAS.Matrix.Solve.MSolve,
     ) where
 
-import BLAS.Matrix.Solve.Immutable
-import BLAS.Matrix.Solve.Mutable
+import BLAS.Matrix.Solve.ISolve
+import BLAS.Matrix.Solve.MSolve
