@@ -25,7 +25,6 @@ module Data.Matrix.Dense.Class (
     module Data.Matrix.Dense.Class.Views,
     module Data.Matrix.Dense.Class.Copying,
     module Data.Matrix.Dense.Class.Operations,
-    module BLAS.Matrix.Mutable,
     
     -- * Low-level functions
     ldaOfMatrix,
@@ -38,7 +37,6 @@ import Data.Matrix.Dense.Class.Internal( BaseMatrix_(..), ldaOfMatrix,
     isHermMatrix, BaseMatrix, ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
 import BLAS.Tensor.Base
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Mutable
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Elements
 import Data.Matrix.Dense.Class.Special

@@ -64,12 +64,18 @@ import BLAS.UnsafeIOToM
 import BLAS.Matrix.Shaped
 import BLAS.Matrix.Immutable
 import BLAS.Matrix.Mutable
+import BLAS.Matrix.Solve.Immutable
+import BLAS.Matrix.Solve.Mutable
 
 import Data.Ix( inRange, range )
+import Data.Matrix.Herm
+import Data.Matrix.Tri
 import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), BaseBanded,
     ReadBanded,
     IOBanded, coerceBanded, numLower, numUpper, bandwidth, isHermBanded,
-    shapeBanded, boundsBanded, ldaOfBanded, gbmv, gbmm, unsafeGetRowBanded,
+    shapeBanded, boundsBanded, ldaOfBanded, gbmv, gbmm, hbmv', hbmm',
+    tbmv, tbmm, tbmv', tbmm', unsafeDoSSolveTriBanded, 
+    unsafeDoSSolveMatTriBanded, tbsv, tbsm, unsafeGetRowBanded, 
     unsafeGetColBanded )
 import Data.Matrix.Banded.Class.Creating( newListsBanded, unsafeNewBanded, 
     newBanded )
@@ -268,3 +274,31 @@ instance (BLAS2 e, Eq e) => Eq (Banded mn e) where
 instance (BLAS2 e, AEq e) => AEq (Banded mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)
+
+instance (BLAS3 e) => IMatrix (Herm Banded) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+
+instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Herm Banded) e m where
+    unsafeDoSApplyAdd    = hbmv'
+    unsafeDoSApplyAddMat = hbmm'
+
+instance (BLAS3 e) => IMatrix (Tri Banded) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+
+instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'
+
+instance (BLAS3 e) => ISolve (Tri Banded) e where
+    unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
+    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
+
+instance (BLAS2 e, UnsafeIOToM m) => MSolve (Tri Banded) e m where
+    unsafeDoSSolve     = unsafeDoSSolveTriBanded
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm

@@ -64,7 +64,11 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
 import BLAS.Matrix.Shaped
+import BLAS.Matrix.Mutable
+import BLAS.Matrix.Solve.Mutable
 
+import Data.Matrix.Herm
+import Data.Matrix.Tri
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
 import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
@@ -72,7 +76,10 @@ import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,
     diagView, unsafeDiagView )
 import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix, 
     ldaOfMatrix, colViews, BaseMatrix_(..), IOMatrix, maybeFromRow, 
-    maybeFromCol, newCopyMatrix, BaseMatrix, ReadMatrix )
+    maybeFromCol, newCopyMatrix, BaseMatrix, ReadMatrix, gemv, gemm,
+    hemv', hemm', unsafeGetRowMatrix, unsafeGetColMatrix, 
+    unsafeDoSApplyAddTriMatrix, unsafeDoSApplyAddMatTriMatrix, trmv, trmm,
+    unsafeDoSSolveTriMatrix, unsafeDoSSolveMatTriMatrix, trsv, trsm )
 import Data.Matrix.Dense.Class.Operations
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
@@ -333,3 +340,25 @@ instance (BLAS3 e, Eq e) => Eq (Matrix mn e) where
 instance (BLAS3 e, AEq e) => AEq (Matrix mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)
+
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix Matrix e m where
+    unsafeDoSApplyAdd    = gemv
+    unsafeDoSApplyAddMat = gemm
+    unsafeGetRow         = unsafeGetRowMatrix
+    unsafeGetCol         = unsafeGetColMatrix
+
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Matrix) e m where
+    unsafeDoSApplyAdd    = hemv'
+    unsafeDoSApplyAddMat = hemm'
+
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Matrix) e m where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
+    unsafeDoSApply_      = trmv
+    unsafeDoSApplyMat_   = trmm
+
+instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Matrix) e m where
+    unsafeDoSSolve     = unsafeDoSSolveTriMatrix
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
+    unsafeDoSSolve_    = trsv
+    unsafeDoSSolveMat_ = trsm

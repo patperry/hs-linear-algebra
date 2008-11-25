@@ -35,6 +35,8 @@ import BLAS.Matrix.Mutable( unsafeGetSApply, unsafeGetSApplyMat )
 
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )
+import Data.Matrix.Herm
+import Data.Matrix.Tri
 import Data.Matrix.Dense.Internal
 import Data.Matrix.Dense.Class( unsafeRowView, unsafeColView )
 import Data.Matrix.Dense.ST( runSTMatrix )
@@ -100,6 +102,14 @@ instance (BLAS3 e) => IMatrix Matrix e where
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
     unsafeRow                 = unsafeRowView
     unsafeCol                 = unsafeColView
+
+instance (BLAS3 e) => IMatrix (Herm Matrix) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+
+instance (BLAS3 e) => IMatrix (Tri Matrix) e where
+    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
 {-# RULES
 "scale.apply/sapply"       forall k a x. (<*>) (k *> a) x = sapply k a x

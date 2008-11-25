@@ -49,74 +49,14 @@ module BLAS.Matrix.Mutable (
 
     ) where
 
-import Control.Monad( liftM )
-import Control.Monad.ST( ST )
-
-import BLAS.Elem
 import BLAS.Internal( checkSquare, checkMatVecMult, checkMatVecMultAdd,
     checkMatMatMult, checkMatMatMultAdd, checkedRow, checkedCol )
 import BLAS.UnsafeIOToM
-
 import BLAS.Matrix.Shaped
 
 import Data.Vector.Dense.Class
+import Data.Matrix.Dense.Class.Internal
 
-import Data.Matrix.Dense.Internal( Matrix )
-import Data.Matrix.Dense.Class.Internal hiding ( BaseMatrix )
-
--- | Minimal complete definition: (unsafeDoSApplyAdd, unsafeDoSApplyAddMat)
-class (MatrixShaped a e, Monad m) => MMatrix a e m where
-    unsafeGetSApply :: (ReadVector x e m, WriteVector y e m) =>
-        e -> a (k,l) e -> x l e -> m (y k e)
-    unsafeGetSApply alpha a x = do
-        y <- newVector_ (numRows a)
-        unsafeDoSApplyAdd alpha a x 0 y
-        return y
-
-    unsafeGetSApplyMat :: (ReadMatrix b e m, WriteMatrix c e m) =>
-        e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
-    unsafeGetSApplyMat alpha a b = do
-        c <- newMatrix_ (numRows a, numCols b)
-        unsafeDoSApplyAddMat alpha a b 0 c
-        return c
-
-    unsafeDoSApplyAdd :: (ReadVector x e m, WriteVector y e m) =>
-        e -> a (k,l) e -> x l e -> e -> y k e -> m ()
-    unsafeDoSApplyAdd alpha a x beta y = do
-        y' <- unsafeGetSApply alpha a x
-        scaleBy beta y
-        unsafeAxpyVector 1 y' y
-
-    unsafeDoSApplyAddMat :: (ReadMatrix b e m, WriteMatrix c e m) =>
-        e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
-    unsafeDoSApplyAddMat alpha a b beta c = do
-        c' <- unsafeGetSApplyMat alpha a b
-        scaleBy beta c
-        unsafeAxpyMatrix 1 c' c
-
-    unsafeDoSApply_ :: (WriteVector y e m) =>
-        e -> a (n,n) e -> y n e -> m ()
-    unsafeDoSApply_ alpha a x = do
-        y <- newVector_ (dim x)
-        unsafeDoSApplyAdd alpha a x 0 y
-        unsafeCopyVector x y
-
-    unsafeDoSApplyMat_ :: (WriteMatrix b e m) =>
-        e -> a (k,k) e -> b (k,l) e -> m ()
-    unsafeDoSApplyMat_ alpha a b = do
-        c <- newMatrix_ (shape b)
-        unsafeDoSApplyAddMat alpha a b 0 c
-        unsafeCopyMatrix b c
-
-    unsafeGetRow :: (WriteVector x e m) => a (k,l) e -> Int -> m (x l e)
-    unsafeGetRow a i = do
-        e <- newBasisVector (numRows a) i
-        liftM conj $ unsafeGetSApply 1 (herm a) e
-        
-    unsafeGetCol :: (WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
-    unsafeGetCol a j = do
-        e <- newBasisVector (numCols a) j
-        unsafeGetSApply 1 a e
 
 
 -- | Get the given row in a matrix.
@@ -258,21 +198,3 @@ unsafeDoApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
     a (s,s) e -> b (s,t) e -> m ()
 unsafeDoApplyMat_ a b = 
     unsafeDoSApplyMat_ 1 a b
-
-instance (BLAS3 e) => MMatrix IOMatrix e IO where
-    unsafeDoSApplyAdd    = gemv
-    unsafeDoSApplyAddMat = gemm
-    unsafeGetRow         = unsafeGetRowMatrix
-    unsafeGetCol         = unsafeGetColMatrix
-
-instance (BLAS3 e) => MMatrix (STMatrix s) e (ST s) where
-    unsafeDoSApplyAdd    = gemv
-    unsafeDoSApplyAddMat = gemm
-    unsafeGetRow         = unsafeGetRowMatrix
-    unsafeGetCol         = unsafeGetColMatrix
-
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix Matrix e m where
-    unsafeDoSApplyAdd    = gemv
-    unsafeDoSApplyAddMat = gemm
-    unsafeGetRow         = unsafeGetRowMatrix
-    unsafeGetCol         = unsafeGetColMatrix
