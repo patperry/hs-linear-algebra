@@ -103,7 +103,7 @@ import Data.Vector.Dense.Class.Creating( newListVector )
 import Data.Vector.Dense.Class.Operations( getConjVector, axpyVector )
 
 import Data.Matrix.Herm
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
     isHermMatrix, arrayFromMatrix, matrixViewArray, colViews,
     coerceMatrix, newCopyMatrix, unsafeCopyMatrix, axpyMatrix )

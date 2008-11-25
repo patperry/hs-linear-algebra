@@ -26,7 +26,7 @@ import Data.Vector.Dense ( Vector, dim )
 import Data.Vector.Dense.ST ( runSTVector )
 import Data.Matrix.Dense ( Matrix, shape )
 import Data.Matrix.Dense.ST ( runSTMatrix )
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 
 infixr 7 <\>, <\\>
 
@@ -69,3 +69,4 @@ ssolveMat alpha a b =
 instance (BLAS3 e) => ISolve (Tri Matrix) e where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
+

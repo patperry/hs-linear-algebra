@@ -27,7 +27,7 @@ import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
 import BLAS.Elem ( BLAS1, BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
+import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 
 import Unsafe.Coerce
 
@@ -68,7 +68,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrix m n e) where
         let ijs = [ (i,j) | i <- [0..(m-1)]
                           , j <- [0..(n-1)]
                           , (not . (isTriIndex u d)) (i,j) ]
-            t   = fromBase u d $ a // zip ijs junk
+            t   = triFromBase u d $ a // zip ijs junk
             
         (t',a') <- elements [ (t,a), unsafeCoerce (herm t, herm a) ]
             

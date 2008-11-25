@@ -37,12 +37,12 @@ module BLAS.Matrix.Solve.Mutable (
 
     ) where
 
+import BLAS.Matrix.Shaped
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
 
 import Data.Vector.Dense.Class
-import Data.Matrix.Dense.Class
-import Data.Matrix.Dense.Class.Internal( MSolve(..) )
+import Data.Matrix.Dense.Class.Internal
 
 
 unsafeGetSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 

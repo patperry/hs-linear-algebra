@@ -9,7 +9,10 @@
 
 module Data.Matrix.Dense.Class.Operations (
     -- * Matrix operations
-    -- ** Unsary
+    -- ** Multiplication
+    module BLAS.Matrix.Mutable,
+    
+    -- ** Unary
     getConjMatrix,
     getScaledMatrix,
     getShiftedMatrix,
@@ -43,6 +46,7 @@ import BLAS.Tensor( BaseTensor(..) )
 
 import Data.Matrix.Dense.Class.Internal
 
+import BLAS.Matrix.Mutable
 
 ---------------------------- Unary Operations -----------------------------
 

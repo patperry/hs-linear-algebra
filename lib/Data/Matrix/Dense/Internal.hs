@@ -64,11 +64,10 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
 import BLAS.Matrix.Shaped
-import BLAS.Matrix.Mutable
 import BLAS.Matrix.Solve.Mutable
 
 import Data.Matrix.Herm
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Special
 import Data.Matrix.Dense.Class.Views( submatrixView, unsafeSubmatrixView,

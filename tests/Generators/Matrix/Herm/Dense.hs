@@ -49,10 +49,10 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrix n e) where
         let (u ,b ) = (Upper, a // zip (filter (uncurry (>)) $ indices a) junk)
             (u',b') = (Lower, a // zip (filter (uncurry (<)) $ indices a) junk)
 
-        h <- elements [ fromBase u             b
-                      , fromBase (flipUpLo u)  (herm b)
-                      , fromBase u'            b'
-                      , fromBase (flipUpLo u') (herm b')
+        h <- elements [ hermFromBase u             b
+                      , hermFromBase (flipUpLo u)  (herm b)
+                      , hermFromBase u'            b'
+                      , hermFromBase (flipUpLo u') (herm b')
                       ]
         return $ HermMatrix h a
         

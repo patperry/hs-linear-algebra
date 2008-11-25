@@ -69,7 +69,7 @@ import BLAS.Matrix.Solve.Mutable
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Herm
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), BaseBanded,
     ReadBanded,
     IOBanded, coerceBanded, numLower, numUpper, bandwidth, isHermBanded,

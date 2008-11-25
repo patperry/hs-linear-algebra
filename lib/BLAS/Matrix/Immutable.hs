@@ -36,7 +36,7 @@ import BLAS.Matrix.Mutable( unsafeGetSApply, unsafeGetSApplyMat )
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Matrix.Herm
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 import Data.Matrix.Dense.Internal
 import Data.Matrix.Dense.Class( unsafeRowView, unsafeColView )
 import Data.Matrix.Dense.ST( runSTMatrix )

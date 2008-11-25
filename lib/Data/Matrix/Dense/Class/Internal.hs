@@ -146,7 +146,7 @@ import BLAS.Tensor
 import BLAS.Types
 
 import Data.Matrix.Herm
-import Data.Matrix.Tri
+import Data.Matrix.Tri.Internal
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, newVector_,
     newCopyVector, unsafeCopyVector, unsafeSwapVector, 

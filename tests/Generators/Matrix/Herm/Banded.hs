@@ -77,10 +77,10 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBanded n e) where
             (u ,b ) = (Upper, listsBanded (n,n) (l,k) $ junk ++ (drop k ds))
             (u',b') = (Lower, listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk)
         
-        h <- elements [ fromBase u             b
-                      , fromBase (flipUpLo u)  (herm b)
-                      , fromBase u'            b'
-                      , fromBase (flipUpLo u') (herm b')
+        h <- elements [ hermFromBase u             b
+                      , hermFromBase (flipUpLo u)  (herm b)
+                      , hermFromBase u'            b'
+                      , hermFromBase (flipUpLo u') (herm b')
                       ]
             
         return $ HermBanded h a

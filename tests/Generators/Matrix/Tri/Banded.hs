@@ -29,7 +29,7 @@ import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
 import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), fromBase )
+import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 
 import Unsafe.Coerce
 
@@ -82,7 +82,7 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBanded n e) where
         junk <- replicateM l $ QC.vector n
         diagJunk <- QC.vector n
         let (_,_,ds) = listsFromBanded a
-            t = fromBase u d $ case (u,d) of 
+            t = triFromBase u d $ case (u,d) of 
                     (Upper,NonUnit) -> 
                         listsBanded (n,n) (l,k) $ junk ++ ds
                     (Upper,Unit) ->

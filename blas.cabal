@@ -149,6 +149,8 @@ library
                         Data.Matrix.Dense.Class.Views
                         Data.Matrix.Dense.Class.Copying
                         Data.Matrix.Dense.Class.Operations
+                        
+                        Data.Matrix.Tri.Internal                        
     
     includes:           cbits/config.h
                         cbits/BLAS.h
