@@ -157,10 +157,10 @@ import Data.Vector.Dense.Class.Views( unsafeSubvector )
 import Data.Vector.Dense.Class.Special( newBasisVector )
 
 import BLAS.Matrix.Shaped
+import BLAS.Matrix.HasVectorView
 
 
-class (Storable e, MatrixShaped a e) => BaseMatrix_ a e where
-    type VectorView a :: * -> * -> *
+class (Storable e, MatrixShaped a e, HasVectorView a) => BaseMatrix_ a e where
     matrixViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Bool -> a mn e
     arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
 
@@ -1128,14 +1128,17 @@ unsafeSTMatrixToIOMatrix :: STMatrix s mn e -> IOMatrix mn e
 unsafeSTMatrixToIOMatrix (ST x) = x
 {-# INLINE unsafeSTMatrixToIOMatrix #-}
 
+instance HasVectorView IOMatrix where
+    type VectorView IOMatrix = IOVector
+
+instance HasVectorView (STMatrix s) where
+    type VectorView (STMatrix s) = STVector s
 
 instance (Storable e) => BaseMatrix_ IOMatrix e where
-    type VectorView IOMatrix = IOVector
     matrixViewArray f p m n = DM f p m n
     arrayFromMatrix (DM f p m n l h) = (f,p,m,n,l,h)
 
 instance (Storable e) => BaseMatrix_ (STMatrix s) e where
-    type VectorView (STMatrix s) = STVector s
     matrixViewArray f p m n l h = ST $ DM f p m n l h
     arrayFromMatrix (ST (DM f p m n l h)) = (f,p,m,n,l,h)
 

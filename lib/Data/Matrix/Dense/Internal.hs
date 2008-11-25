@@ -64,6 +64,7 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
 import BLAS.Matrix.Shaped
+import BLAS.Matrix.HasVectorView
 import BLAS.Matrix.Solve.MSolve
 
 import Data.Matrix.Herm
@@ -256,8 +257,10 @@ instance (BLAS3 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
 instance (Storable e) => MatrixShaped Matrix e where
     herm (M a) = M (herm a)
     
-instance (Storable e) => BaseMatrix_ Matrix e where
+instance HasVectorView Matrix where
     type VectorView Matrix = Vector
+    
+instance (Storable e) => BaseMatrix_ Matrix e where
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 

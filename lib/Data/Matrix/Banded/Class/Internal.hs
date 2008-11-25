@@ -89,6 +89,7 @@ import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
 import BLAS.Matrix.Shaped
+import BLAS.Matrix.HasVectorView
 import BLAS.Matrix.MMatrix
 import BLAS.Matrix.Solve.MSolve
 
@@ -109,21 +110,20 @@ import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
     coerceMatrix, newCopyMatrix, unsafeCopyMatrix, axpyMatrix )
 
 
-class (MatrixShaped a e, Storable e) => BaseBanded_ a e where
-    type VectorViewB a :: * -> * -> *
+class (MatrixShaped a e, HasVectorView a, Storable e) => BaseBanded_ a e where
     bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
     arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
 
-class (BaseBanded_ a e, BaseVector (VectorViewB a) e) => BaseBanded a e
+class (BaseBanded_ a e, BaseVector (VectorView a) e) => BaseBanded a e
 
 class ( BaseBanded a e, BLAS2 e, UnsafeIOToM m, ReadTensor a (Int,Int) e m
       , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
       , MSolve (Tri a) e m
-      , ReadVector (VectorViewB a) e m) => 
+      , ReadVector (VectorView a) e m) => 
     ReadBanded a e m where
 
 class (ReadBanded a e m, WriteTensor a (Int,Int) e m,
-           WriteVector (VectorViewB a) e m) => 
+           WriteVector (VectorView a) e m) => 
     WriteBanded a e m | m -> a where
 
 
@@ -346,7 +346,7 @@ canModifyElemBanded a ij = return $ hasStorageBanded a ij
 ------------------------------ Vector views ---------------------------------
 
 unsafeRowViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> (Int, VectorViewB a k e, Int)
+    a mn e -> Int -> (Int, VectorView a k e, Int)
 unsafeRowViewBanded a i =
     if h then
         case unsafeColViewBanded a' i of (nb, v, na) -> (nb, conj v, na)        
@@ -366,7 +366,7 @@ unsafeRowViewBanded a i =
     a' = (hermBanded . coerceBanded) a
 
 unsafeColViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> (Int, VectorViewB a k e, Int)
+    a mn e -> Int -> (Int, VectorView a k e, Int)
 unsafeColViewBanded a j =
     if h then
         case unsafeRowViewBanded a' j of (nb, v, na) -> (nb, conj v, na)
@@ -658,13 +658,17 @@ unsafeIOBandedToSTBanded = ST
 unsafeSTBandedToIOBanded :: STBanded s mn e -> IOBanded mn e
 unsafeSTBandedToIOBanded (ST x) = x
 
+instance HasVectorView IOBanded where
+    type VectorView IOBanded = IOVector
+
+instance HasVectorView (STBanded s) where
+    type VectorView (STBanded s) = (STVector s)
+
 instance (Storable e) => BaseBanded_ IOBanded e where
-    type VectorViewB IOBanded = IOVector
     bandedViewArray f p m n kl ku ld h      = BM f p m n kl ku ld h
     arrayFromBanded (BM f p m n kl ku ld h) = (f,p,m,n,kl,ku,ld,h)
 
 instance (Storable e) => BaseBanded_ (STBanded s) e where
-    type VectorViewB (STBanded s) = (STVector s)
     bandedViewArray f p m n kl ku ld h           = ST (BM f p m n kl ku ld h)
     arrayFromBanded (ST (BM f p m n kl ku ld h)) = (f,p,m,n,kl,ku,ld,h)
 

@@ -62,6 +62,7 @@ import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
 
 import BLAS.Matrix.Shaped
+import BLAS.Matrix.HasVectorView
 import BLAS.Matrix.IMatrix
 import BLAS.Matrix.MMatrix
 import BLAS.Matrix.Solve.ISolve
@@ -220,8 +221,10 @@ instance (BLAS2 e, Monad m) => ReadTensor Banded (Int,Int) e m where
 instance (Storable e) => MatrixShaped Banded e where
     herm (B a) = B (herm a)
     
+instance HasVectorView Banded where
+    type VectorView Banded = Vector
+    
 instance (Storable e) => BaseBanded_ Banded e where
-    type VectorViewB Banded = Vector
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 

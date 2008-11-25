@@ -9,6 +9,7 @@
 
 module Data.Matrix.Banded.Class.Views (
     -- * Row and column views
+    module BLAS.Matrix.HasVectorView,
     diagViewBanded,
     rowViewBanded,
     colViewBanded,
@@ -20,25 +21,26 @@ module Data.Matrix.Banded.Class.Views (
     ) where
 
 import BLAS.Internal( checkedRow, checkedCol, checkedDiag, diagStart, diagLen )
+import BLAS.Matrix.HasVectorView
 
 import Data.Matrix.Banded.Class.Internal
 import Data.Vector.Dense.Class
 import Foreign
 
 diagViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> VectorViewB a k e
+    a mn e -> Int -> VectorView a k e
 diagViewBanded a = checkedDiag (shape a) (unsafeDiagViewBanded a) 
 
 rowViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> (Int, VectorViewB a k e, Int)
+    a mn e -> Int -> (Int, VectorView a k e, Int)
 rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
 
 colViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> (Int, VectorViewB a k e, Int)
+    a mn e -> Int -> (Int, VectorView a k e, Int)
 colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 
 unsafeDiagViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> VectorViewB a k e
+    a mn e -> Int -> VectorView a k e
 unsafeDiagViewBanded a d
     | isHermBanded a = conj $ unsafeDiagViewBanded a' (negate d)
     | otherwise =

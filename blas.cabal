@@ -69,6 +69,7 @@ library
                         BLAS.Internal
 
                         BLAS.Matrix
+                            BLAS.Matrix.HasVectorView
                             BLAS.Matrix.Shaped
                             BLAS.Matrix.IMatrix
                             BLAS.Matrix.MMatrix
