@@ -6,7 +6,7 @@ import BLAS.Elem
 import Data.Matrix.Dense
 import Data.Matrix.Dense.ST
 
-import qualified Generators.Matrix.Dense as Test
+import qualified Test.Matrix.Dense as Test
 
 import Driver
 

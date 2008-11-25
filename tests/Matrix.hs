@@ -9,7 +9,7 @@ import BLAS.Elem
 import Data.Matrix.Dense
 import Data.Vector.Dense
 
-import Generators.Matrix.Dense hiding ( matrix )
+import Test.Matrix.Dense hiding ( matrix )
         
 
 type V = Vector Int E

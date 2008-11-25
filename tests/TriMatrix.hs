@@ -10,7 +10,7 @@
 module TriMatrix ( tests_TriMatrix ) where
 
 import Driver
-import Generators.Matrix.Tri.Dense
+import Test.Matrix.Tri.Dense
 
 import Data.Vector.Dense
 import Data.Matrix.Dense

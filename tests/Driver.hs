@@ -56,7 +56,7 @@ import Test.QuickCheck hiding ( vector )
 import Text.Printf
 import Text.Show.Functions
 
-import Generators.Matrix
+import Test.Matrix
 
 #ifdef COMPLEX
 field = "Complex Double"

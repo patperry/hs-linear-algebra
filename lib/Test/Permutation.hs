@@ -1,13 +1,14 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Permutation
+-- Module     : Test.Permutation
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Permutation (
+module Test.Permutation (
     permutation
     ) where
 

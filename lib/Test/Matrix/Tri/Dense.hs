@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Tri.Dense
+-- Module     : Test.Matrix.Tri.Dense
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Tri.Dense (
+module Test.Matrix.Tri.Dense (
     TriMatrix(..),
     TriMatrixMV(..),
     TriMatrixMM(..),
@@ -19,13 +19,13 @@ import Data.Ix ( range )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Generators.Vector.Dense ( vector )
-import qualified Generators.Matrix.Dense as Test
-import Generators.Matrix ( matrixSized )
+import Test.Vector.Dense ( vector )
+import qualified Test.Matrix.Dense as Test
+import Test.Matrix ( matrixSized )
 
 import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
-import BLAS.Elem ( BLAS1, BLAS3 )
+import BLAS.Elem ( BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 

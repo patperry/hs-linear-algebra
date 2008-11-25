@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Diag
+-- Module     : Test.Matrix.Diag
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Diag (
+module Test.Matrix.Diag (
     diagMatrix,
     TestDiag(..),
     DiagMV(..),
@@ -20,11 +20,11 @@ module Generators.Matrix.Diag (
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import qualified Generators.Vector.Dense as Test
-import qualified Generators.Matrix.Dense as Test
-import Generators.Matrix ( matrixSized )
+import qualified Test.Vector.Dense as Test
+import qualified Test.Matrix.Dense as Test
+import Test.Matrix ( matrixSized )
 
-import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
+import BLAS.Elem ( BLAS3 )
 
 import Data.Vector.Dense ( Vector, elems )
 import Data.Matrix.Dense ( Matrix, matrix, diag )

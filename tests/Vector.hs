@@ -7,8 +7,8 @@ import Data.Vector.Dense
 
 import Driver
 import qualified Data.Array as Array
-import Generators.Vector.Dense hiding ( vector )
-import qualified Generators.Vector.Dense as Test
+import Test.Vector.Dense hiding ( vector )
+import qualified Test.Vector.Dense as Test
 
 
 type V = Vector Index E

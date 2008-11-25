@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Tri.Banded
+-- Module     : Test.Matrix.Tri.Banded
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Tri.Banded (
+module Test.Matrix.Tri.Banded (
     TriBanded(..),
     TriBandedMV(..),
     TriBandedMM(..),
@@ -20,14 +20,14 @@ import Control.Monad ( replicateM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix.Dense ( matrix )
-import Generators.Matrix ( matrixSized )
+import Test.Vector.Dense ( vector )
+import Test.Matrix.Dense ( matrix )
+import Test.Matrix ( matrixSized )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
-import BLAS.Elem ( BLAS1, BLAS2, BLAS3 )
+import BLAS.Elem ( BLAS2, BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 

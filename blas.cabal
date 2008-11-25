@@ -36,18 +36,6 @@ extra-source-files:
                         tests/Main.hs
                         tests/Driver.hs
                         
-                        tests/Generators/Vector/Dense.hs
-                        tests/Generators/Matrix.hs
-                        tests/Generators/Matrix/Banded.hs
-                        tests/Generators/Matrix/Dense.hs
-                        tests/Generators/Matrix/Diag.hs
-                        tests/Generators/Matrix/Perm.hs
-                        tests/Generators/Matrix/Herm/Banded.hs
-                        tests/Generators/Matrix/Herm/Dense.hs
-                        tests/Generators/Matrix/Tri/Banded.hs
-                        tests/Generators/Matrix/Tri/Dense.hs
-                        tests/Generators/Permutation.hs
-                        
                         tests/Vector.hs
                         tests/STVector.hs
                         tests/Matrix.hs
@@ -118,6 +106,17 @@ library
                             Data.Vector.Dense.ST
                             Data.Vector.Dense.Class
 
+                        Test.Vector.Dense
+                        Test.Matrix
+                        Test.Matrix.Banded
+                        Test.Matrix.Dense
+                        Test.Matrix.Diag
+                        Test.Matrix.Perm
+                        Test.Matrix.Herm.Banded
+                        Test.Matrix.Herm.Dense
+                        Test.Matrix.Tri.Banded
+                        Test.Matrix.Tri.Dense
+                        Test.Permutation
 
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex
@@ -163,4 +162,5 @@ library
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses,
                         TypeFamilies
-    build-depends:      base, ieee, permutation, storable-complex
+    build-depends:      base, ieee, permutation, storable-complex, 
+                        QuickCheck >= 1.2

@@ -16,8 +16,8 @@ import Data.Vector.Dense
 import Data.Matrix.Dense ( Matrix, identityMatrix )
 import Data.Matrix.Banded
 
-import Generators.Matrix
-import Generators.Matrix.Banded hiding ( banded )
+import Test.Matrix
+import Test.Matrix.Banded hiding ( banded )
         
 type V = Vector Int E
 type M = Matrix (Int,Int) E

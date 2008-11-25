@@ -7,7 +7,7 @@ import Data.Matrix.Herm
 import Data.Matrix.Banded
 import Data.Vector.Dense
 
-import Generators.Matrix.Herm.Banded
+import Test.Matrix.Herm.Banded
 
 type V = Vector Int E
 type B = Banded (Int,Int) E

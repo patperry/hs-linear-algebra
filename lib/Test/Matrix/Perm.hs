@@ -1,22 +1,22 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Perm
+-- Module     : Test.Matrix.Perm
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Perm
+module Test.Matrix.Perm
     where
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Generators.Permutation
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix.Dense ( matrix )
-import Generators.Matrix ( matrixSized )
+import Test.Permutation
+import Test.Vector.Dense ( vector )
+import Test.Matrix.Dense ( matrix )
+import Test.Matrix ( matrixSized )
 
 import BLAS.Elem ( Elem, BLAS1, BLAS3 )
 

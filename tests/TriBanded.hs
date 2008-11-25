@@ -9,7 +9,7 @@ import Data.Matrix.Banded
 import Data.Matrix.Tri  
 
 
-import Generators.Matrix.Tri.Banded
+import Test.Matrix.Tri.Banded
 
 
 type V = Vector Int E

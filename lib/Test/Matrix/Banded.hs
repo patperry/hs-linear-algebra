@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Test.QuickCheck.Matrix.Banded
@@ -8,7 +9,7 @@
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Banded (
+module Test.Matrix.Banded (
     banded,
     
     BandedAt(..),
@@ -24,8 +25,8 @@ import Control.Monad( forM )
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix.Dense ( matrix )
+import Test.Vector.Dense ( vector )
+import Test.Matrix.Dense ( matrix )
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix )

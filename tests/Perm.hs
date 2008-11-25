@@ -10,7 +10,7 @@ import Data.Matrix.Perm
 import Data.Permutation ( Permutation, permutation )
 import qualified Data.Permutation as P
 
-import Generators.Matrix.Perm
+import Test.Matrix.Perm
 
 type V = Vector Int E
 type M = Matrix (Int,Int) E

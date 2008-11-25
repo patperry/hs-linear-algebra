@@ -1,13 +1,14 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Vector.Dense
+-- Module     : Test.Vector.Dense
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Vector.Dense (
+module Test.Vector.Dense (
     SubVector(..),
     VectorPair(..),
     VectorTriple(..),
@@ -19,7 +20,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Data.Vector.Dense hiding ( vector )
-import BLAS.Elem ( Elem, BLAS1 )
+import BLAS.Elem ( BLAS1 )
 
 data SubVector n e = 
     SubVector Int 

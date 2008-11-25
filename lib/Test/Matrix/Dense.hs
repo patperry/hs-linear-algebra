@@ -1,14 +1,15 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Dense
+-- Module     : Test.Matrix.Dense
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Dense (
+module Test.Matrix.Dense (
     matrix,
     
     MatrixAt(..),
@@ -23,12 +24,12 @@ module Generators.Matrix.Dense (
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix
+import Test.Vector.Dense ( vector )
+import Test.Matrix
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense hiding ( matrix )
-import BLAS.Elem ( Elem, BLAS3 )
+import BLAS.Elem ( BLAS3 )
 
 data SubMatrix m n e = 
     SubMatrix (Matrix (m,n) e) 

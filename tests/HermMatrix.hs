@@ -7,7 +7,7 @@ import Data.Matrix.Herm
 import Data.Matrix.Dense
 import Data.Vector.Dense
 
-import Generators.Matrix.Herm.Dense
+import Test.Matrix.Herm.Dense
 
 type V  = Vector Int E
 type M  = Matrix (Int,Int) E

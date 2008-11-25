@@ -6,7 +6,7 @@ import BLAS.Elem
 import Data.Vector.Dense
 import Data.Vector.Dense.ST
 
-import qualified Generators.Vector.Dense as Test
+import qualified Test.Vector.Dense as Test
 
 import Driver
 

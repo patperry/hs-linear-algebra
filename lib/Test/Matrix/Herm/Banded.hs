@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Herm.Banded
+-- Module     : Test.Matrix.Herm.Banded
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Herm.Banded (
+module Test.Matrix.Herm.Banded (
     HermBanded(..),
     HermBandedMV(..),
     HermBandedMM(..),
@@ -17,9 +17,9 @@ import Control.Monad ( replicateM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix ( matrixSized )
-import Generators.Matrix.Dense ( matrix )
+import Test.Vector.Dense ( vector )
+import Test.Matrix ( matrixSized )
+import Test.Matrix.Dense ( matrix )
 
 import BLAS.Elem ( Elem, BLAS2, BLAS3, toReal, fromReal, conj )
 import BLAS.Types ( flipUpLo )

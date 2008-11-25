@@ -2,7 +2,7 @@ module Diag( tests_Diag ) where
     
 import Driver
 
-import Generators.Matrix.Diag
+import Test.Matrix.Diag
 
 import qualified BLAS.Elem as E
 import Data.Vector.Dense

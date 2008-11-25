@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Generators.Matrix.Herm.Dense
+-- Module     : Test.Matrix.Herm.Dense
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Generators.Matrix.Herm.Dense( 
+module Test.Matrix.Herm.Dense( 
     HermMatrix(..),
     HermMatrixMV(..),
     HermMatrixMM(..),
@@ -15,9 +15,9 @@ module Generators.Matrix.Herm.Dense(
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
-import Generators.Vector.Dense ( vector )
-import Generators.Matrix ( matrixSized )
-import Generators.Matrix.Dense ( matrix )
+import Test.Vector.Dense ( vector )
+import Test.Matrix ( matrixSized )
+import Test.Matrix.Dense ( matrix )
 
 import BLAS.Elem ( BLAS3 )
 import BLAS.Types ( flipUpLo )
