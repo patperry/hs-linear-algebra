@@ -24,18 +24,14 @@ cabal-version:   >= 1.2.0
 build-type:      Configure
 tested-with:     GHC == 6.10.1
 
-extra-source-files:     
-    NEWS README TODO
-    configure.ac configure
-    aclocal.m4 m4/acx_blas.m4
-    blas.buildinfo.in cbits/config.h.in
-    
+extra-source-files:     NEWS README TODO configure.ac configure
+                        aclocal.m4 m4/ax_blas.m4 m4/ax_blas_func.m4
+                        blas.buildinfo.in cbits/config.h.in tests/Makefile.in
+                        
                         examples/LU.hs
                         
-                        tests/Makefile
                         tests/Main.hs
                         tests/Driver.hs
-                        
                         tests/Vector.hs
                         tests/STVector.hs
                         tests/Matrix.hs
@@ -47,10 +43,9 @@ extra-source-files:
                         tests/HermBanded.hs
                         tests/TriBanded.hs
                         tests/TriMatrix.hs
-                        
-extra-tmp-files:
-    config.log config.status autom4te.cache
-    blas.buildinfo cbits/config.h
+                                            
+extra-tmp-files:        config.log config.status autom4te.cache
+                        blas.buildinfo cbits/config.h tests/Makefile
 
 library
     hs-source-dirs:     lib
