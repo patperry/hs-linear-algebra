@@ -8,12 +8,13 @@ all:
 	./test-complex
 	
 hpc:
-	ghc --make -fforce-recomp -i. -i.. -XScopedTypeVariables -lcblas -fhpc -DCOMPLEX Main.hs -o test-complex
+	ghc --make -fforce-recomp -i. -i../lib -XScopedTypeVariables ../cbits/double.c ../cbits/zomplex.c @BLAS_LIBS@ @LIBS@ -fhpc -DCOMPLEX Main.hs -o test-complex
 	./test-complex
 	hpc markup test-complex
 	
 clean:
 	find ../lib . -name '*.hi' | xargs rm -f
 	find ../lib . -name '*.o'  | xargs rm -f
+	find ../cbits . -name '*.o'  | xargs rm -f
 	find . -name '*.html' | xargs rm -f
 	rm -f test-real test-complex test-complex.tix
