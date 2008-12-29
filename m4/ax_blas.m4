@@ -80,8 +80,8 @@ case $with_blas in
 	*) BLAS_LIBS="-l$with_blas" ;;
 esac
 
-AX_BLAS_FUNC(gemm_, [ax_blas_ok=yes; ax_blas_underscore=yes],
-    [AX_BLAS_FUNC(gemm, [ax_blas_ok=yes; ax_blas_underscore=no])])
+_AX_BLAS(gemm_, [ax_blas_ok=yes; ax_blas_underscore=yes],
+    [_AX_BLAS(gemm, [ax_blas_ok=yes; ax_blas_underscore=no])])
 
 AC_SUBST(BLAS_LIBS)
 
