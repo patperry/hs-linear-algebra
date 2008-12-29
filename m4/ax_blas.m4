@@ -14,6 +14,8 @@
 #
 #   in that order. 
 #
+#   To call a BLAS function, use the F77_FUNC macro, defined in config.h
+#
 #   Many libraries are searched for, from ATLAS to CXML to ESSL. The user
 #   may also use --with-blas=<lib> in order to use some specific BLAS
 #   library <lib>. 
