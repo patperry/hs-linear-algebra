@@ -9,9 +9,7 @@
 
 module Data.Vector.Dense.Class.Elements (
     -- * Reading and writing vector elements
-    module Data.Tensor.Class.Read,
-    module Data.Tensor.Class.Write,
+    module Data.Tensor.Class.MTensor,
     ) where
 
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor

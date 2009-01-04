@@ -8,10 +8,8 @@
 --
 
 module Data.Matrix.Dense.Class.Elements (
-    -- * Reading and writing matrixelements
-    module Data.Tensor.Class.Read,
-    module Data.Tensor.Class.Write,
+    -- * Reading and writing matrix elements
+    module Data.Tensor.Class.MTensor,
     ) where
 
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor

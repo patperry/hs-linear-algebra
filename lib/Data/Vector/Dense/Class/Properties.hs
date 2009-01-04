@@ -22,7 +22,7 @@ import BLAS.Conj
 import BLAS.Internal (  checkVecVecOp )
 import qualified BLAS.C as BLAS
 
-import Data.Tensor.Class.Read
+import Data.Tensor.Class.MTensor( unsafeReadElem )
 import Data.Vector.Dense.Class.Internal
 
 

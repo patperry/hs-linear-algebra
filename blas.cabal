@@ -63,8 +63,7 @@ library
 
                         Data.Tensor.Class
                             Data.Tensor.Class.ITensor
-                            Data.Tensor.Class.Read
-                            Data.Tensor.Class.Write
+                            Data.Tensor.Class.MTensor
 
                         Data.Matrix.Class
                             Data.Matrix.Class.IMatrix

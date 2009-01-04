@@ -20,7 +20,7 @@ module Data.Vector.Dense.Class.Special (
 
 import Foreign
 
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor( unsafeWriteElem )
 import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense.Class.Creating
 

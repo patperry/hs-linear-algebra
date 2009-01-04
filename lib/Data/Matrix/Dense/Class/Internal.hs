@@ -145,8 +145,7 @@ import BLAS.UnsafeIOToM
 import BLAS.Types
 
 import Data.Tensor.Class
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal

@@ -89,8 +89,7 @@ import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrix

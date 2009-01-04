@@ -91,8 +91,7 @@ import qualified BLAS.C as BLAS
 import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor
 
 import Data.Vector.Dense.Class.Internal.Base
 

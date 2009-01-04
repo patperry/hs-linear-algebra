@@ -58,7 +58,7 @@ import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
 import BLAS.Elem( BLAS1, BLAS2, BLAS3 )
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
-import Data.Tensor.Class.Read
+import Data.Tensor.Class.MTensor
 import BLAS.UnsafeIOToM
 
 import Data.Matrix.Class

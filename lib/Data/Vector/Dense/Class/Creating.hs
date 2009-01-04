@@ -21,7 +21,7 @@ import Foreign
 
 import BLAS.UnsafeIOToM
 
-import Data.Tensor.Class.Write
+import Data.Tensor.Class.MTensor( writeElem, unsafeWriteElem )
 import Data.Vector.Dense.Class.Internal
 
 

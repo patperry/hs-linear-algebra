@@ -61,8 +61,7 @@ import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
-import Data.Tensor.Class.Read
-import Data.Tensor.Class.Write( writeElem, unsafeWriteElem )
+import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MSolve

@@ -18,7 +18,7 @@ import Control.Monad
 import Foreign
 
 import BLAS.Internal( clearArray )
-import Data.Tensor.Class.Write( writeElem, unsafeWriteElem )
+import Data.Tensor.Class.MTensor( writeElem, unsafeWriteElem )
 import BLAS.UnsafeIOToM
 
 import Data.Vector.Dense.Class( dim )
