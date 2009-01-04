@@ -37,8 +37,6 @@ extra-source-files:     NEWS README TODO configure.ac configure
                         tests/Matrix.hs
                         tests/STMatrix.hs
                         tests/Banded.hs
-                        tests/Diag.hs
-                        tests/Perm.hs
                         tests/HermMatrix.hs
                         tests/HermBanded.hs
                         tests/TriBanded.hs
@@ -92,8 +90,6 @@ library
                             Data.Matrix.Dense.ST
                             Data.Matrix.Dense.Class
 
-                        Data.Matrix.Diag 
-                        Data.Matrix.Perm
                         Data.Matrix.Herm
                         Data.Matrix.Tri
 
@@ -106,13 +102,10 @@ library
                         Test.Matrix
                         Test.Matrix.Banded
                         Test.Matrix.Dense
-                        Test.Matrix.Diag
-                        Test.Matrix.Perm
                         Test.Matrix.Herm.Banded
                         Test.Matrix.Herm.Dense
                         Test.Matrix.Tri.Banded
                         Test.Matrix.Tri.Dense
-                        Test.Permutation
 
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex
@@ -158,5 +151,4 @@ library
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses,
                         TypeFamilies
-    build-depends:      base, ieee, permutation ==0.1, storable-complex, 
-                        QuickCheck >= 1.2
+    build-depends:      base, ieee, storable-complex, QuickCheck >= 1.2
