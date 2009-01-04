@@ -38,7 +38,8 @@ import Data.Elem.BLAS( BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
-import Data.Matrix.Class.MMatrix( unsafeGetSApply, unsafeGetSApplyMat )
+import Data.Matrix.Class.MMatrix( unsafeGetSApply, unsafeGetSApplyMat,
+    unsafeGetRow, unsafeGetCol )
 
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )
@@ -61,12 +62,13 @@ class (MatrixShaped a e, BLAS3 e) => IMatrix a e where
     unsafeRow a i = let
         e = basisVector (numRows a) i
         in conj $ unsafeApply (herm a) e
+    {-# INLINE unsafeRow #-}
     
     unsafeCol :: a (m,n) e -> Int -> Vector m e
     unsafeCol a j = let
         e = basisVector (numCols a) j
         in unsafeApply a e
-
+    {-# INLINE unsafeCol #-}
 
 -- | Get the given row in a matrix.
 row :: (IMatrix a e) => a (m,n) e -> Int -> Vector n e
@@ -91,40 +93,62 @@ cols a = [ unsafeCol a j | j <- [0..numCols a - 1] ]
 -- | Matrix multiplication by a vector.
 (<*>) :: (IMatrix a e) => a (m,n) e -> Vector n e -> Vector m e
 (<*>) a x = checkMatVecMult (shape a) (dim x) $ unsafeApply a x
-    
+{-# INLINE (<*>) #-}
+
 -- | Matrix multiplication by a matrix.
 (<**>) :: (IMatrix a e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 (<**>) a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMat a b
+{-# INLINE (<**>) #-}
 
 -- | Scale and multiply by a vector.  
 -- @sapply k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
 sapply :: (IMatrix a e) => e -> a (m,n) e -> Vector n e -> Vector m e
 sapply k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApply k a x
+{-# INLINE sapply #-}
     
 -- | Scale and multiply by a matrix.
 -- @sapplyMat k a b@ is equal to @a \<**> (k *> b)@, and often it is faster.
 sapplyMat :: (IMatrix a e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
 sapplyMat k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMat k a b
+{-# INLINE sapplyMat #-}
 
 unsafeApply :: (IMatrix a e) => a (m,n) e -> Vector n e -> Vector m e
 unsafeApply = unsafeSApply 1
+{-# INLINE unsafeApply #-}
 
 unsafeApplyMat :: (IMatrix a e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 unsafeApplyMat = unsafeSApplyMat 1
+{-# INLINE unsafeApplyMat #-}
 
 instance (BLAS3 e) => IMatrix Matrix e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    {-# INLINE unsafeSApply #-}    
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
+    {-# INLINE unsafeSApplyMat #-}   
     unsafeRow                 = unsafeRowView
+    {-# INLINE unsafeRow #-}   
     unsafeCol                 = unsafeColView
+    {-# INLINE unsafeCol #-}
 
 instance (BLAS3 e) => IMatrix (Herm Matrix) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    {-# INLINE unsafeSApply #-}    
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+    {-# INLINE unsafeSApplyMat #-}   
+    unsafeRow a i = runSTVector $ unsafeGetRow a i
+    {-# INLINE unsafeRow #-}
+    unsafeCol a j = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeCol #-}
 
 instance (BLAS3 e) => IMatrix (Tri Matrix) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
-    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+    {-# INLINE unsafeSApply #-}
+    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
+    {-# INLINE unsafeSApplyMat #-}   
+    unsafeRow a i = runSTVector $ unsafeGetRow a i
+    {-# INLINE unsafeRow #-}
+    unsafeCol a j = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeCol #-}
 
 {-# RULES
 "scale.apply/sapply"       forall k a x. a <*>  (k *> x) = sapply k a x

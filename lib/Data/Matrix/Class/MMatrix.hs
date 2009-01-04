@@ -169,7 +169,7 @@ unsafeGetApply = unsafeGetSApply 1
 unsafeGetApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
     a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 unsafeGetApplyMat = unsafeGetSApplyMat 1
-{-# INLINE unsafeGetSApplyMat #-}
+{-# INLINE unsafeGetApplyMat #-}
 
 -- | Apply to a vector and store the result in another vector
 doApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
