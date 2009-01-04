@@ -2,14 +2,14 @@
 {-# CFILES cbits/zomplex.c #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Zomplex
+-- Module     : Data.Elem.BLAS.Zomplex
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Zomplex
+module Data.Elem.BLAS.Zomplex
     where
         
 import Data.Complex ( Complex )

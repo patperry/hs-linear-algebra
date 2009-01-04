@@ -86,7 +86,7 @@ import Foreign
 import Unsafe.Coerce
 
 import BLAS.Internal ( clearArray, inlinePerformIO )
-import BLAS.Elem
+import Data.Elem.BLAS
 import qualified BLAS.C as BLAS
 import BLAS.UnsafeIOToM
 

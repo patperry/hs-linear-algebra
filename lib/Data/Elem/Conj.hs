@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Conj
+-- Module     : Data.Elem.Conj
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Conj (
+module Data.Elem.Conj (
     Conj(..)
     ) where
 

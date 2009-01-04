@@ -29,7 +29,7 @@ import Test.Matrix
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense hiding ( matrix )
-import BLAS.Elem ( BLAS3 )
+import Data.Elem.BLAS ( BLAS3 )
 
 data SubMatrix m n e = 
     SubMatrix (Matrix (m,n) e) 

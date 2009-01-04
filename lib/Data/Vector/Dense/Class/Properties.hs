@@ -18,7 +18,7 @@ module Data.Vector.Dense.Class.Properties (
     ) where
 
 import BLAS.C( BLAS1 )
-import BLAS.Conj
+import Data.Elem.Conj
 import BLAS.Internal (  checkVecVecOp )
 import qualified BLAS.C as BLAS
 

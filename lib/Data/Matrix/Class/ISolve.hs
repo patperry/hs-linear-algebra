@@ -17,7 +17,7 @@ module Data.Matrix.Class.ISolve (
     
     ) where
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
 import Data.Matrix.Class
 import Data.Matrix.Class.MSolve

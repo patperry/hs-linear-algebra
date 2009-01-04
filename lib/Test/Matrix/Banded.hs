@@ -31,7 +31,7 @@ import Test.Matrix.Dense ( matrix )
 import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded hiding ( banded )
-import BLAS.Elem ( Elem, BLAS2, BLAS3 )
+import Data.Elem.BLAS ( Elem, BLAS2, BLAS3 )
 
 
 banded :: (BLAS2 e, Arbitrary e) => 

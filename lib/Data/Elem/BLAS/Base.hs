@@ -1,19 +1,19 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem.Base
+-- Module     : Data.Elem.BLAS.Base
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Elem.Base (
+module Data.Elem.BLAS.Base (
     Elem(..),
-    module BLAS.Conj,
+    module Data.Elem.Conj,
     ) where
 
-import BLAS.Conj
+import Data.Elem.Conj
 import Data.Complex             ( Complex(..), magnitude )
 import Foreign                  ( Storable )
 import Foreign.Storable.Complex ()

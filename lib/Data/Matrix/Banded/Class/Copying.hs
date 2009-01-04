@@ -14,8 +14,8 @@ module Data.Matrix.Banded.Class.Copying (
     unsafeCopyBanded,
     ) where
 
-import BLAS.C.Level1( BLAS1 )
-import qualified BLAS.C.Level1 as BLAS
+import Data.Elem.BLAS.Level1( BLAS1 )
+import qualified Data.Elem.BLAS.Level1 as BLAS
 import BLAS.UnsafeIOToM
 
 import Control.Monad( zipWithM_ )

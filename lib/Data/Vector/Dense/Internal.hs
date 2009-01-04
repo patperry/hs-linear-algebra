@@ -17,7 +17,7 @@ module Data.Vector.Dense.Internal (
     module Data.Tensor.Class,
 
     -- * Conjugating vectors
-    module BLAS.Conj,
+    module Data.Elem.Conj,
 
     -- * Creating new vectors
     vector, 
@@ -51,11 +51,11 @@ import Data.AEq
 import Foreign( Storable )
 import System.IO.Unsafe
 
-import BLAS.Conj
+import Data.Elem.Conj
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
 
-import BLAS.Elem ( BLAS1 )
+import Data.Elem.BLAS ( BLAS1 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 

@@ -82,9 +82,9 @@ import Data.List( foldl' )
 import Foreign
 import Unsafe.Coerce
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import BLAS.C.Types
-import qualified BLAS.C.Level2 as BLAS
+import qualified Data.Elem.BLAS.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 

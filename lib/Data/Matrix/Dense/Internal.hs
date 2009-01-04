@@ -55,7 +55,7 @@ import Data.AEq
 import Foreign( Storable )
 import System.IO.Unsafe
 
-import BLAS.Elem ( Elem, BLAS3 )
+import Data.Elem.BLAS ( Elem, BLAS3 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 

@@ -1,7 +1,7 @@
 
 module LU ( luFactorize ) where
 
-import BLAS.Elem( BLAS3 )
+import Data.Elem.BLAS( BLAS3 )
 
 import Control.Monad
 import Control.Monad.ST

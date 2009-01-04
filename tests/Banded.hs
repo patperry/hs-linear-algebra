@@ -11,7 +11,7 @@ module Banded( tests_Banded ) where
 
 import Driver
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Vector.Dense 
 import Data.Matrix.Dense ( Matrix, identityMatrix )
 import Data.Matrix.Banded

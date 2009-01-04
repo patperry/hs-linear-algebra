@@ -1,23 +1,23 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Level2
+-- Module     : Data.Elem.BLAS.Level2
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Level2
+module Data.Elem.BLAS.Level2
     where
      
 import Data.Complex 
 import Foreign ( Ptr, with )   
 
 import BLAS.C.Types
-import BLAS.C.Level1
-import BLAS.C.Double 
-import BLAS.C.Zomplex
+import Data.Elem.BLAS.Level1
+import Data.Elem.BLAS.Double 
+import Data.Elem.BLAS.Zomplex
         
 class (BLAS1 a) => BLAS2 a where
     gemv :: CBLASTrans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()

@@ -2,7 +2,7 @@
 module STVector ( tests_STVector ) where
 
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Vector.Dense
 import Data.Vector.Dense.ST
 

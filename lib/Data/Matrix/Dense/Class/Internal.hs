@@ -135,10 +135,10 @@ import Data.Ix
 import Foreign
 import Unsafe.Coerce
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import BLAS.C.Types
-import qualified BLAS.C.Level2 as BLAS
-import qualified BLAS.C.Level3 as BLAS
+import qualified Data.Elem.BLAS.Level2 as BLAS
+import qualified Data.Elem.BLAS.Level3 as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
 

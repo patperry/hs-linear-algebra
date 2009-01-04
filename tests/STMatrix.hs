@@ -2,7 +2,7 @@
 module STMatrix ( tests_STMatrix ) where
 
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Matrix.Dense
 import Data.Matrix.Dense.ST
 

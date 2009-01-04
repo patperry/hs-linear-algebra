@@ -49,16 +49,13 @@ library
     hs-source-dirs:     lib
     exposed-modules:    
                         BLAS.C
-                            BLAS.C.Level1
-                            BLAS.C.Level2
-                            BLAS.C.Level3
                             BLAS.C.Types
 
-                        BLAS.Conj
-                        BLAS.Elem
-                            BLAS.Elem.Base
                         BLAS.Internal
                         BLAS.Types
+
+                        Data.Elem.BLAS
+                        Data.Elem.Conj
 
                         Data.Tensor.Class
                             Data.Tensor.Class.ITensor
@@ -97,8 +94,12 @@ library
                         Test.Matrix.Tri.Banded
                         Test.Matrix.Tri.Dense
 
-    other-modules:      BLAS.C.Double
-                        BLAS.C.Zomplex
+    other-modules:      Data.Elem.BLAS.Base
+                        Data.Elem.BLAS.Level1
+                        Data.Elem.BLAS.Level2
+                        Data.Elem.BLAS.Level3
+                        Data.Elem.BLAS.Double
+                        Data.Elem.BLAS.Zomplex
                         BLAS.UnsafeIOToM
                         
                         Data.Vector.Dense.Internal

@@ -20,7 +20,7 @@ module Data.Tensor.Class.MTensor (
     swapElems,
     ) where
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Ix
 import Data.Tensor.Class
 

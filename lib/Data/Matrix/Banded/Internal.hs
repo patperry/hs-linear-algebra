@@ -55,7 +55,7 @@ import System.IO.Unsafe
 
 
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
-import BLAS.Elem( BLAS1, BLAS2, BLAS3 )
+import Data.Elem.BLAS( BLAS1, BLAS2, BLAS3 )
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.MTensor

@@ -2,14 +2,14 @@
 {-# OPTIONS_GHC -fno-excess-precision #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Level1
+-- Module     : Data.Elem.BLAS.Level1
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Level1
+module Data.Elem.BLAS.Level1
     where
      
 import Prelude hiding ( div )
@@ -18,10 +18,10 @@ import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with )
 import Foreign.Storable.Complex ()
 import Data.Complex
 
-import BLAS.Elem.Base
+import Data.Elem.BLAS.Base
 import BLAS.C.Types
-import BLAS.C.Double  
-import BLAS.C.Zomplex
+import Data.Elem.BLAS.Double  
+import Data.Elem.BLAS.Zomplex
         
 class (Elem a) => BLAS1 a where
     dotu  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a

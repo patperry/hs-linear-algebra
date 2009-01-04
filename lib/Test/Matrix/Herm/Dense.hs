@@ -19,7 +19,7 @@ import Test.Vector.Dense ( vector )
 import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
-import BLAS.Elem ( BLAS3 )
+import Data.Elem.BLAS ( BLAS3 )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense hiding ( vector )

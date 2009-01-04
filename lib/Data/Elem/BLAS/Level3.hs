@@ -1,23 +1,23 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Level3
+-- Module     : Data.Elem.BLAS.Level3
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Level3
+module Data.Elem.BLAS.Level3
     where
      
 import Data.Complex 
 import Foreign ( Ptr, with )   
 
 import BLAS.C.Types
-import BLAS.C.Level2
-import BLAS.C.Double  
-import BLAS.C.Zomplex 
+import Data.Elem.BLAS.Level2
+import Data.Elem.BLAS.Double  
+import Data.Elem.BLAS.Zomplex 
         
         
 class (BLAS2 a) => BLAS3 a where

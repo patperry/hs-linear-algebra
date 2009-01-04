@@ -20,7 +20,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Data.Vector.Dense hiding ( vector )
-import BLAS.Elem ( BLAS1 )
+import Data.Elem.BLAS ( BLAS1 )
 
 data SubVector n e = 
     SubVector Int 

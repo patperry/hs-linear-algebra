@@ -5,7 +5,7 @@ module Matrix( tests_Matrix ) where
 import Driver
 import qualified Data.Array as Array
 
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Matrix.Dense
 import Data.Vector.Dense
 

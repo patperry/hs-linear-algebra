@@ -2,14 +2,14 @@
 {-# CFILES cbits/double.c #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Double
+-- Module     : Data.Elem.BLAS.Double
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Double 
+module Data.Elem.BLAS.Double 
     where
         
 import Foreign.Ptr ( Ptr )

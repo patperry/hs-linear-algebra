@@ -25,7 +25,7 @@ import Test.Matrix ( matrixSized )
 
 import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
-import BLAS.Elem ( BLAS3 )
+import Data.Elem.BLAS ( BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 

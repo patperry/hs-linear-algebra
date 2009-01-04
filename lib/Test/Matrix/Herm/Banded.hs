@@ -21,7 +21,7 @@ import Test.Vector.Dense ( vector )
 import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
-import BLAS.Elem ( Elem, BLAS2, BLAS3, toReal, fromReal, conj )
+import Data.Elem.BLAS ( Elem, BLAS2, BLAS3, toReal, fromReal, conj )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )

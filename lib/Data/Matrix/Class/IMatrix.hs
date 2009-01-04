@@ -27,7 +27,7 @@ module Data.Matrix.Class.IMatrix (
     unsafeApplyMat,
     ) where
 
-import BLAS.Elem( BLAS1, BLAS3 )
+import Data.Elem.BLAS( BLAS1, BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 

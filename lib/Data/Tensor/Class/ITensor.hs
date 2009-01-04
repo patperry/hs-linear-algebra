@@ -14,7 +14,7 @@ module Data.Tensor.Class.ITensor (
     ) where
 
 import Data.Tensor.Class
-import BLAS.Elem
+import Data.Elem.BLAS
 import Data.Ix
 
 
