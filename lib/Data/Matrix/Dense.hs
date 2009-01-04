@@ -11,7 +11,7 @@ module Data.Matrix.Dense (
     module Data.Matrix.Dense.Internal,
     
     -- * Matrix and vector multiplication
-    module BLAS.Matrix.IMatrix,
+    module Data.Matrix.IMatrix,
     
     -- * Converting between mutable and immutable matrices
     UnsafeFreezeMatrix(..),
@@ -24,7 +24,7 @@ import Data.Matrix.Dense.Internal hiding ( M )
 import qualified Data.Matrix.Dense.Internal as I
 import Data.Matrix.Dense.ST
 import Data.Matrix.Dense.IO
-import BLAS.Matrix.IMatrix
+import Data.Matrix.IMatrix
 
 class UnsafeFreezeMatrix a where
     unsafeFreezeMatrix :: a mn e -> Matrix mn e

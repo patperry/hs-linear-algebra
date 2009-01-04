@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Apply.Read
+-- Module     : Data.Matrix.MMatrix
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.MMatrix (
+module Data.Matrix.MMatrix (
     -- * Getting rows and columns
     getRow,
     getCol,
@@ -52,7 +52,7 @@ module BLAS.Matrix.MMatrix (
 import BLAS.Internal( checkSquare, checkMatVecMult, checkMatVecMultAdd,
     checkMatMatMult, checkMatMatMultAdd, checkedRow, checkedCol )
 import BLAS.UnsafeIOToM
-import BLAS.Matrix.Shaped
+import Data.Matrix.Shaped
 
 import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Class.Internal

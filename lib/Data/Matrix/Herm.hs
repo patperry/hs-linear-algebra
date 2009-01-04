@@ -25,7 +25,7 @@ module Data.Matrix.Herm (
 
 import Unsafe.Coerce
 
-import BLAS.Matrix.Shaped
+import Data.Matrix.Shaped
 import BLAS.Tensor.Base
 import BLAS.Types ( UpLo(..) )
 

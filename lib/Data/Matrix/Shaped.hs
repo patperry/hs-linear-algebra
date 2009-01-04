@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Shaped
+-- Module     : Data.Matrix.Shaped
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Shaped (
+module Data.Matrix.Shaped (
     MatrixShaped(..),
     numRows,
     numCols,

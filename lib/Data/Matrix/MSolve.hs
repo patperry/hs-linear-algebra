@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Solve.MSolve
+-- Module     : Data.Matrix.MSolve
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Solve.MSolve (
+module Data.Matrix.MSolve (
     
     -- * Matrix and vector solving
     getSolve,
@@ -37,7 +37,7 @@ module BLAS.Matrix.Solve.MSolve (
 
     ) where
 
-import BLAS.Matrix.Shaped
+import Data.Matrix.Shaped
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
 

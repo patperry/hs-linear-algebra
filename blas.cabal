@@ -61,15 +61,6 @@ library
 
                         BLAS.Internal
 
-                        BLAS.Matrix
-                            BLAS.Matrix.HasVectorView
-                            BLAS.Matrix.Shaped
-                            BLAS.Matrix.IMatrix
-                            BLAS.Matrix.MMatrix
-                            BLAS.Matrix.Solve
-                                BLAS.Matrix.Solve.ISolve
-                                BLAS.Matrix.Solve.MSolve
-
                         BLAS.Tensor
                             BLAS.Tensor.Base
                             BLAS.Tensor.Immutable
@@ -79,6 +70,13 @@ library
                         BLAS.Types
 
                         BLAS.UnsafeIOToM
+
+                        Data.Matrix.HasVectorView
+                        Data.Matrix.Shaped
+                        Data.Matrix.IMatrix
+                        Data.Matrix.MMatrix
+                        Data.Matrix.ISolve
+                        Data.Matrix.MSolve
 
                         Data.Matrix.Banded
                             Data.Matrix.Banded.IO

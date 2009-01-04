@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.HasVectorView
+-- Module     : Data.Matrix.HasVectorView
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.HasVectorView (
+module Data.Matrix.HasVectorView (
     HasVectorView(..)
     ) where
 

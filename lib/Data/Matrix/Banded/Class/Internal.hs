@@ -88,10 +88,10 @@ import qualified BLAS.C.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
-import BLAS.Matrix.Shaped
-import BLAS.Matrix.HasVectorView
-import BLAS.Matrix.MMatrix
-import BLAS.Matrix.Solve.MSolve
+import Data.Matrix.Shaped
+import Data.Matrix.HasVectorView
+import Data.Matrix.MMatrix
+import Data.Matrix.MSolve
 
 import BLAS.Tensor
 import BLAS.Types( flipUpLo )

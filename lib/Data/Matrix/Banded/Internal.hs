@@ -15,7 +15,7 @@ module Data.Matrix.Banded.Internal (
 
     -- * Banded shape
     module BLAS.Tensor.Base,
-    module BLAS.Matrix.Shaped,
+    module Data.Matrix.Shaped,
     bandwidth,
     numLower,
     numUpper,
@@ -45,7 +45,7 @@ module Data.Matrix.Banded.Internal (
     isHermBanded,
     
     -- * Matrix and vector multiplication
-    module BLAS.Matrix.IMatrix,
+    module Data.Matrix.IMatrix,
 
     ) where
 
@@ -61,12 +61,12 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
 
-import BLAS.Matrix.Shaped
-import BLAS.Matrix.HasVectorView
-import BLAS.Matrix.IMatrix
-import BLAS.Matrix.MMatrix
-import BLAS.Matrix.Solve.ISolve
-import BLAS.Matrix.Solve.MSolve
+import Data.Matrix.Shaped
+import Data.Matrix.HasVectorView
+import Data.Matrix.IMatrix
+import Data.Matrix.MMatrix
+import Data.Matrix.ISolve
+import Data.Matrix.MSolve
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Herm

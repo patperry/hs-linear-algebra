@@ -9,8 +9,10 @@
 
 module Data.Matrix.Tri (
     module Data.Matrix.Tri.Internal,
-    module BLAS.Matrix.Solve,
+    module Data.Matrix.ISolve,
+    module Data.Matrix.MSolve,
     ) where
 
 import Data.Matrix.Tri.Internal
-import BLAS.Matrix.Solve
+import Data.Matrix.ISolve
+import Data.Matrix.MSolve

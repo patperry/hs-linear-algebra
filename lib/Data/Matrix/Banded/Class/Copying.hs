@@ -16,13 +16,13 @@ module Data.Matrix.Banded.Class.Copying (
 
 import BLAS.C.Level1( BLAS1 )
 import qualified BLAS.C.Level1 as BLAS
-import BLAS.Matrix
 import BLAS.UnsafeIOToM
 
 import Control.Monad( zipWithM_ )
 import Data.Ix( range )
 import Foreign( advancePtr )
 
+import Data.Matrix.Shaped
 import Data.Matrix.Banded.Class.Internal
 import Data.Matrix.Banded.Class.Views
 import Data.Vector.Dense.Class( unsafeCopyVector )

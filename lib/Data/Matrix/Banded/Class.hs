@@ -16,7 +16,7 @@ module Data.Matrix.Banded.Class (
         
     -- * Banded matrix shape
     module BLAS.Tensor.Base,
-    module BLAS.Matrix.Shaped,
+    module Data.Matrix.Shaped,
     coerceBanded,
     
     -- * Bandwidth
@@ -43,7 +43,7 @@ import Data.Matrix.Banded.Class.Internal( BaseBanded_(..),
     WriteBanded, numLower, numUpper, bandwidth, ldaOfBanded, isHermBanded,
     coerceBanded, withBandedPtr, withBandedElemPtr )
 import BLAS.Tensor.Base
-import BLAS.Matrix.Shaped
+import Data.Matrix.Shaped
 import Data.Matrix.Banded.Class.Creating
 import Data.Matrix.Banded.Class.Elements
 import Data.Matrix.Banded.Class.Special
