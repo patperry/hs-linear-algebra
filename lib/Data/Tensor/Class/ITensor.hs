@@ -7,6 +7,7 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Overloaded interface for immutable tensors.
 
 module Data.Tensor.Class.ITensor (
     ITensor(..),
@@ -14,7 +15,6 @@ module Data.Tensor.Class.ITensor (
     ) where
 
 import Data.Tensor.Class
-import Data.Elem.BLAS
 import Data.Ix
 
 
@@ -29,42 +29,42 @@ class (BaseTensor x i e) => ITensor x i e where
     size :: x n e -> Int
     
     -- | Get a new tensor by replacing the elements at the given indices.
-    (//) :: (BLAS1 e) => x n e -> [(i,e)] -> x n e
+    (//) :: x n e -> [(i,e)] -> x n e
 
     -- | Get the value at the given index, without doing any bounds-checking.
-    unsafeAt :: (Elem e) => x n e -> i -> e
+    unsafeAt :: x n e -> i -> e
     
     -- | Same as '(//)' but doesn't do any bounds-checking.
-    unsafeReplace :: (BLAS1 e) => x n e -> [(i,e)] -> x n e
+    unsafeReplace :: x n e -> [(i,e)] -> x n e
     
     -- | Get the indices of the elements stored in the tensor.
     indices :: x n e -> [i]
     
     -- | Get the elements stored in the tensor.
-    elems :: (Elem e) => x n e -> [e]
+    elems :: x n e -> [e]
     elems = snd . unzip . assocs
 
     -- | Get the list of @(@index@,@ element@)@ pairs stored in the tensor.
-    assocs :: (Elem e) => x n e -> [(i,e)]
+    assocs :: x n e -> [(i,e)]
 
     -- accum :: (e -> e' -> e) -> x e -> [(i,e')] -> x e
     
     -- | Apply a function elementwise to a tensor.
-    tmap :: (BLAS1 e) => (e -> e) -> x n e -> x n e
+    tmap :: (e -> e) -> x n e -> x n e
     
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
     
     -- | Scale every element by the given value.
-    (*>) :: (BLAS1 e) => e -> x n e -> x n e
+    (*>) :: (Num e) => e -> x n e -> x n e
     (*>) k = tmap (k*)
     
     -- | Add a constant to every element.
-    shift :: (BLAS1 e) => e -> x n e -> x n e
+    shift :: (Num e) => e -> x n e -> x n e
     shift k = tmap (k+)    
     
 -- | Get the value at the given index.  Range-checks the argument.
-(!) :: (ITensor x i e, Elem e) => x n e -> i -> e
+(!) :: (ITensor x i e) => x n e -> i -> e
 (!) x i =
     case (inRange b i) of
         False -> 
