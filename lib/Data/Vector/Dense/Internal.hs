@@ -14,7 +14,7 @@ module Data.Vector.Dense.Internal (
     -- * Vector shape
     dim,
     coerceVector,
-    module BLAS.Tensor.Base,
+    module Data.Tensor.Class,
 
     -- * Conjugating vectors
     module BLAS.Conj,
@@ -25,7 +25,7 @@ module Data.Vector.Dense.Internal (
     unsafeVector,
 
     -- * Reading vector elements
-    module BLAS.Tensor.Immutable,
+    module Data.Tensor.Class.Immutable,
 
     -- * Special vectors
     zeroVector,
@@ -52,8 +52,8 @@ import Foreign( Storable )
 import System.IO.Unsafe
 
 import BLAS.Conj
-import BLAS.Tensor.Base
-import BLAS.Tensor.Immutable
+import Data.Tensor.Class
+import Data.Tensor.Class.Immutable
 
 import BLAS.Elem ( BLAS1 )
 import BLAS.Internal ( inlinePerformIO )

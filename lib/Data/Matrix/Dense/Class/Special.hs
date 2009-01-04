@@ -17,7 +17,7 @@ module Data.Matrix.Dense.Class.Special (
     setIdentityMatrix,
     ) where
 
-import BLAS.Tensor( unsafeWriteElem )
+import Data.Tensor.Class.Write( unsafeWriteElem )
 import Data.Matrix.Class( numRows, numCols )
 
 import Data.Matrix.Dense.Class.Internal

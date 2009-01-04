@@ -88,8 +88,11 @@ import Unsafe.Coerce
 import BLAS.Internal ( clearArray, inlinePerformIO )
 import BLAS.Elem
 import qualified BLAS.C as BLAS
-import BLAS.Tensor
 import BLAS.UnsafeIOToM
+
+import Data.Tensor.Class
+import Data.Tensor.Class.Read
+import Data.Tensor.Class.Write
 
 import Data.Vector.Dense.Class.Internal.Base
 

@@ -88,11 +88,14 @@ import qualified BLAS.C.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
+import Data.Tensor.Class
+import Data.Tensor.Class.Read
+import Data.Tensor.Class.Write
+
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrix
 import Data.Matrix.Class.MSolve
 
-import BLAS.Tensor
 import BLAS.Types( flipUpLo )
 
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,

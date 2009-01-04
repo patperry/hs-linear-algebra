@@ -26,7 +26,7 @@ module Data.Matrix.Herm (
 import Unsafe.Coerce
 
 import Data.Matrix.Class
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 import BLAS.Types ( UpLo(..) )
 
 data Herm a nn e = Herm UpLo (a nn e)

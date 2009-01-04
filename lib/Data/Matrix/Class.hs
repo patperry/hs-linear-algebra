@@ -18,7 +18,7 @@ module Data.Matrix.Class (
     isTall,
     ) where
 
-import BLAS.Tensor
+import Data.Tensor.Class
 
 class HasVectorView (a :: * -> * -> *) where
     type VectorView a :: * -> * -> *

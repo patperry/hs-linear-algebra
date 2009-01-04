@@ -42,7 +42,7 @@ module Data.Matrix.Dense.Class.Operations (
     ) where
 
 import BLAS.Internal( checkBinaryOp )
-import BLAS.Tensor( BaseTensor(..) )
+import Data.Tensor.Class( BaseTensor(..) )
 
 import Data.Matrix.Dense.Class.Internal
 

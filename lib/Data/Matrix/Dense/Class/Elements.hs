@@ -9,9 +9,9 @@
 
 module Data.Matrix.Dense.Class.Elements (
     -- * Reading and writing matrixelements
-    module BLAS.Tensor.Read,
-    module BLAS.Tensor.Write,
+    module Data.Tensor.Class.Read,
+    module Data.Tensor.Class.Write,
     ) where
 
-import BLAS.Tensor.Read
-import BLAS.Tensor.Write
+import Data.Tensor.Class.Read
+import Data.Tensor.Class.Write

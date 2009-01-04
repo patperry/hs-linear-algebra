@@ -55,21 +55,16 @@ library
                             BLAS.C.Types
 
                         BLAS.Conj
-
                         BLAS.Elem
                             BLAS.Elem.Base
-
                         BLAS.Internal
-
-                        BLAS.Tensor
-                            BLAS.Tensor.Base
-                            BLAS.Tensor.Immutable
-                            BLAS.Tensor.Read
-                            BLAS.Tensor.Write
-
                         BLAS.Types
-
                         BLAS.UnsafeIOToM
+
+                        Data.Tensor.Class
+                            Data.Tensor.Class.Immutable
+                            Data.Tensor.Class.Read
+                            Data.Tensor.Class.Write
 
                         Data.Matrix.Class
                             Data.Matrix.Class.IMatrix

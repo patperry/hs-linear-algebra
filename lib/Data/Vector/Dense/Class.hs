@@ -16,7 +16,7 @@ module Data.Vector.Dense.Class (
     -- * Vector shape
     dim,
     coerceVector,
-    module BLAS.Tensor.Base,
+    module Data.Tensor.Class,
 
     -- * Conjugating vectors
     module BLAS.Conj,
@@ -38,7 +38,7 @@ module Data.Vector.Dense.Class (
 
 import Data.Vector.Dense.Class.Internal( BaseVector(..), dim, stride, isConj,
     ReadVector, WriteVector, coerceVector, withVectorPtr )
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 import BLAS.Conj
 import Data.Vector.Dense.Class.Creating
 import Data.Vector.Dense.Class.Elements

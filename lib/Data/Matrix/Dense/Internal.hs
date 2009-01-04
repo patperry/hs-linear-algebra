@@ -13,7 +13,7 @@ module Data.Matrix.Dense.Internal (
     Matrix(..),
 
     -- * Matrix shape
-    module BLAS.Tensor.Base,
+    module Data.Tensor.Class,
     module Data.Matrix.Class,
     coerceMatrix,
 
@@ -27,7 +27,7 @@ module Data.Matrix.Dense.Internal (
     unsafeMatrix,
     
     -- * Reading matrix elements
-    module BLAS.Tensor.Immutable,
+    module Data.Tensor.Class.Immutable,
     
     -- * Special matrices
     zeroMatrix,
@@ -59,9 +59,10 @@ import BLAS.Elem ( Elem, BLAS3 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 
-import BLAS.Tensor.Base
-import BLAS.Tensor.Immutable
-import BLAS.Tensor
+import Data.Tensor.Class
+import Data.Tensor.Class.Immutable
+import Data.Tensor.Class.Read
+import Data.Tensor.Class.Write( writeElem, unsafeWriteElem )
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MSolve

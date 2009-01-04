@@ -142,11 +142,15 @@ import qualified BLAS.C.Level3 as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
 
-import BLAS.Tensor
 import BLAS.Types
+
+import Data.Tensor.Class
+import Data.Tensor.Class.Read
+import Data.Tensor.Class.Write
 
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal
+
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, newVector_,
     newCopyVector, unsafeCopyVector, unsafeSwapVector, 

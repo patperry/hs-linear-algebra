@@ -20,8 +20,7 @@ module Data.Vector.Dense.Class.Copying (
 
 import BLAS.Internal( checkBinaryOp )
 
-import BLAS.Tensor
-
+import Data.Tensor.Class
 import Data.Vector.Dense.Class.Internal
 
 

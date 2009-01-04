@@ -39,7 +39,7 @@ import Unsafe.Coerce
 
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import Data.Matrix.Class
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
 
 data Tri a mn e = Tri UpLo Diag (a mn e)

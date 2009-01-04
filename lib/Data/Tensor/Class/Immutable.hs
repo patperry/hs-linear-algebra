@@ -1,19 +1,19 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Immutable
+-- Module     : Data.Tensor.Class.Immutable
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Immutable (
+module Data.Tensor.Class.Immutable (
     ITensor(..),
     (!),
     ) where
 
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 import BLAS.Elem
 import Data.Ix
 

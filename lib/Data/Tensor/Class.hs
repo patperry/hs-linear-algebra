@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Base
+-- Module     : Data.Tensor.Class
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Base (
+module Data.Tensor.Class (
     BaseTensor(..),
     ) where
 

@@ -19,11 +19,10 @@ module Data.Vector.Dense.Class.Creating (
 
 import Foreign
 
-import BLAS.Tensor
 import BLAS.UnsafeIOToM
 
+import Data.Tensor.Class.Write
 import Data.Vector.Dense.Class.Internal
-
 
 
 -- | Creates a new vector with the given association list.  Unspecified

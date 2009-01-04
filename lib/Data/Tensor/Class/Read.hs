@@ -1,21 +1,21 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Read
+-- Module     : Data.Tensor.Class.Read
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Read (
+module Data.Tensor.Class.Read (
     ReadTensor(..),
     readElem,
     ) where
 
 import Data.Ix
 import BLAS.Elem
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 
 -- | Class for mutable read-only tensors.
 class (BaseTensor x i e, Monad m) => ReadTensor x i e m | x -> i where

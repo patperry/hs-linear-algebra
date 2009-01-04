@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Tensor.Write
+-- Module     : Data.Tensor.Class.Write
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.Tensor.Write (
+module Data.Tensor.Class.Write (
     WriteTensor(..),
     writeElem,
     modifyElem,
@@ -16,8 +16,8 @@ module BLAS.Tensor.Write (
     ) where
 
 import Data.Ix( inRange )
-import BLAS.Tensor.Base
-import BLAS.Tensor.Read
+import Data.Tensor.Class
+import Data.Tensor.Class.Read
 import BLAS.Elem( Elem, BLAS1, conj )
 
 -- | Class for modifiable mutable tensors.

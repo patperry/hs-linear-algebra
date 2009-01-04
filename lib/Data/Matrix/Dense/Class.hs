@@ -15,7 +15,7 @@ module Data.Matrix.Dense.Class (
     WriteMatrix,
     
     -- * Matrix shape
-    module BLAS.Tensor.Base,
+    module Data.Tensor.Class,
     module Data.Matrix.Class,
     coerceMatrix,
 
@@ -35,7 +35,7 @@ module Data.Matrix.Dense.Class (
 
 import Data.Matrix.Dense.Class.Internal( BaseMatrix_(..), ldaOfMatrix, 
     isHermMatrix, BaseMatrix, ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 import Data.Matrix.Class
 import Data.Matrix.Dense.Class.Creating
 import Data.Matrix.Dense.Class.Elements

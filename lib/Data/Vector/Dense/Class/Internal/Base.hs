@@ -18,7 +18,7 @@ module Data.Vector.Dense.Class.Internal.Base (
     ) where
 
 import Foreign
-import BLAS.Tensor.Base
+import Data.Tensor.Class
 
 class (BaseTensor x Int e, Storable e) => BaseVector x e where
     

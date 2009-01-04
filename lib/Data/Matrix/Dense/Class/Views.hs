@@ -33,7 +33,7 @@ module Data.Matrix.Dense.Class.Views (
     ) where
 
 import BLAS.Internal( checkedSubmatrix, checkedRow, checkedCol, checkedDiag )
-import BLAS.Tensor( shape )
+import Data.Tensor.Class( shape )
 
 import Data.Matrix.Class( HasVectorView(..) )
 import Data.Matrix.Dense.Class.Internal
