@@ -30,7 +30,7 @@ module Data.Vector.Dense.Class.Internal (
     -- * Coercing the vector shape
     coerceVector,
 
-    -- * BaseTensor functions
+    -- * Shaped functions
     shapeVector,
     boundsVector,
 
@@ -106,7 +106,7 @@ coerceVector :: (BaseVector x e) => x n e -> x n' e
 coerceVector = unsafeCoerce
 {-# INLINE coerceVector #-}
 
--------------------------- BaseTensor functions -----------------------------
+-------------------------- Shaped functions -----------------------------
 
 shapeVector :: (BaseVector x e) => x n e -> Int
 shapeVector = dim
@@ -424,11 +424,11 @@ instance (Storable e) => BaseVector (STVector s) e where
     arrayFromVector (ST x)    = arrayFromVector x
     {-# INLINE arrayFromVector #-}
 
-instance (Storable e) => BaseTensor IOVector Int e where
+instance (Storable e) => Shaped IOVector Int e where
     bounds = boundsVector
     shape  = shapeVector
 
-instance (Storable e) => BaseTensor (STVector s) Int e where
+instance (Storable e) => Shaped (STVector s) Int e where
     bounds = boundsVector
     shape  = shapeVector
         

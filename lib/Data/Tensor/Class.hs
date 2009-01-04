@@ -13,13 +13,14 @@
 --
 
 module Data.Tensor.Class (
-    BaseTensor(..),
+    Shaped(..),
     ) where
 
 import Data.Ix
 
--- | The base class for tensors (i.e. Vector, Matrix, etc.).
-class (Ix i, Show i) => BaseTensor x i e | x -> i where
+-- | The base class for objects with shapes and indices 
+-- (i.e. Vector, Matrix, etc.).
+class (Ix i, Show i) => Shaped x i e | x -> i where
     -- | Get the shape of the tensor.  For vectors this is the dimension.
     -- For matrices, this will be a pair @(m,n)@ of the number of rows
     -- and columns.

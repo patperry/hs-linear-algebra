@@ -208,7 +208,7 @@ coerceBanded = unsafeCoerce
 {-# INLINE coerceBanded #-}
 
 
--------------------------- BaseTensor functions -----------------------------
+-------------------------- Shaped functions -----------------------------
 
 shapeBanded :: (BaseBanded a e) => a mn e -> (Int,Int)
 shapeBanded a | isHermBanded a = (size2 a, size1 a)
@@ -676,11 +676,11 @@ instance (Storable e) => BaseBanded_ (STBanded s) e where
 instance (Storable e) => BaseBanded IOBanded e
 instance (Storable e) => BaseBanded (STBanded s) e
 
-instance (Storable e) => BaseTensor IOBanded (Int,Int) e where
+instance (Storable e) => Shaped IOBanded (Int,Int) e where
     shape  = shapeBanded
     bounds = boundsBanded
     
-instance (Storable e) => BaseTensor (STBanded s) (Int,Int) e where
+instance (Storable e) => Shaped (STBanded s) (Int,Int) e where
     shape  = shapeBanded
     bounds = boundsBanded
 

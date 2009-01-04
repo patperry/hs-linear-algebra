@@ -201,7 +201,7 @@ unsafeDiag :: (Elem e) => Matrix mn e -> Int -> Vector k e
 unsafeDiag = unsafeDiagView
 
 
-instance (Storable e) => BaseTensor Matrix (Int,Int) e where
+instance (Storable e) => Shaped Matrix (Int,Int) e where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
 

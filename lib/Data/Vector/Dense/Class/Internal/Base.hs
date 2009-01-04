@@ -20,7 +20,7 @@ module Data.Vector.Dense.Class.Internal.Base (
 import Foreign
 import Data.Tensor.Class
 
-class (BaseTensor x Int e, Storable e) => BaseVector x e where
+class (Shaped x Int e, Storable e) => BaseVector x e where
     
     -- | Give a storage region, a base pointer, a length, a stride, and a conjugacy
     -- flag, create a vector view of the underlying memory.

@@ -39,7 +39,7 @@ module Data.Matrix.Dense.Class.Internal (
     liftMatrix,
     liftMatrix2,
 
-    -- * BaseTensor functions
+    -- * Shaped functions
     shapeMatrix,
     boundsMatrix,
     
@@ -282,7 +282,7 @@ liftMatrix2 f a b =
         in zipWithM_ f xs ys
 
 
--------------------------- BaseTensor functions -----------------------------
+-------------------------- Shaped functions -----------------------------
 
 shapeMatrix :: (BaseMatrix a e) => a mn e -> (Int,Int)
 shapeMatrix a | isHermMatrix a  = (size2 a, size1 a)
@@ -1148,11 +1148,11 @@ instance (Storable e) => BaseMatrix_ (STMatrix s) e where
 instance (Storable e) => BaseMatrix IOMatrix e
 instance (Storable e) => BaseMatrix (STMatrix s) e
 
-instance (Storable e) => BaseTensor IOMatrix (Int,Int) e where
+instance (Storable e) => Shaped IOMatrix (Int,Int) e where
     shape  = shapeMatrix
     bounds = boundsMatrix
 
-instance (Storable e) => BaseTensor (STMatrix s) (Int,Int) e where
+instance (Storable e) => Shaped (STMatrix s) (Int,Int) e where
     shape  = shapeMatrix
     bounds = boundsMatrix
 

@@ -161,7 +161,7 @@ unsafeDiagBanded a i
     | otherwise               = zeroVector $ diagLen (shape a) i
 
 
-instance (Storable e) => BaseTensor Banded (Int,Int) e where
+instance (Storable e) => Shaped Banded (Int,Int) e where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 

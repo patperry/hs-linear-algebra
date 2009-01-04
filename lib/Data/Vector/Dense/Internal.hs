@@ -173,7 +173,7 @@ whichMaxAbs = unsafeLiftVector getWhichMaxAbs
 {-# NOINLINE (<.>) #-}
 
 
-instance (Storable e) => BaseTensor Vector Int e where
+instance (Storable e) => Shaped Vector Int e where
     shape  = liftVector shape
     bounds = liftVector bounds
 

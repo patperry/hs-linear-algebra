@@ -24,7 +24,7 @@ class HasVectorView (a :: * -> * -> *) where
     type VectorView a :: * -> * -> *
 
 -- | A base class for matrices.
-class (BaseTensor a (Int,Int) e) => MatrixShaped a e where
+class (Shaped a (Int,Int) e) => MatrixShaped a e where
     -- | Creates a new matrix view that conjugates and transposes the 
     -- given matrix.
     herm :: a (m,n) e -> a (n,m) e

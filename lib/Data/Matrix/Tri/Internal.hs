@@ -98,7 +98,7 @@ upperUTall :: (MatrixShaped a e) => a (m,n) e -> Tri a (n,n) e
 upperUTall a = checkTall (shape a) $ Tri Upper Unit (unsafeCoerce a)
 
       
-instance MatrixShaped a e => BaseTensor (Tri a) (Int,Int) e where
+instance MatrixShaped a e => Shaped (Tri a) (Int,Int) e where
     shape (Tri Lower _ a) = (numRows a, min (numRows a) (numCols a))
     shape (Tri Upper _ a) = (min (numRows a) (numCols a), numCols a)
     

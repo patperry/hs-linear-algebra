@@ -38,7 +38,7 @@ module Data.Vector.Dense.Class.Operations (
     ) where
 
 import BLAS.Internal( checkBinaryOp )
-import Data.Tensor.Class( BaseTensor(..) )
+import Data.Tensor.Class( Shaped(..) )
 import Data.Vector.Dense.Class.Internal
 
 ---------------------------- Unary Operations -----------------------------
@@ -165,7 +165,7 @@ divVector y x =
 {-# INLINE divVector #-}
 
 
-checkTensorOp2 :: (BaseTensor x i e, BaseTensor y i e) => 
+checkTensorOp2 :: (Shaped x i e, Shaped y i e) => 
     (x n e -> y n e -> a) ->
         x n e -> y n e -> a
 checkTensorOp2 f x y = 
