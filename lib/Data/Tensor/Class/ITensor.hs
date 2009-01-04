@@ -39,10 +39,13 @@ class (Shaped x i e) => ITensor x i e where
     
     -- | Get the indices of the elements stored in the tensor.
     indices :: x n e -> [i]
+    indices = fst . unzip . assocs
+    {-# INLINE indices #-}
     
     -- | Get the elements stored in the tensor.
     elems :: x n e -> [e]
     elems = snd . unzip . assocs
+    {-# INLINE elems #-}
 
     -- | Get the list of @(@index@,@ element@)@ pairs stored in the tensor.
     assocs :: x n e -> [(i,e)]
@@ -58,10 +61,12 @@ class (Shaped x i e) => ITensor x i e where
     -- | Scale every element by the given value.
     (*>) :: (Num e) => e -> x n e -> x n e
     (*>) k = tmap (k*)
+    {-# INLINE (*>) #-}
     
     -- | Add a constant to every element.
     shift :: (Num e) => e -> x n e -> x n e
-    shift k = tmap (k+)    
+    shift k = tmap (k+)
+    {-# INLINE shift #-}
     
 -- | Get the value at the given index.  Range-checks the argument.
 (!) :: (ITensor x i e) => x n e -> i -> e
@@ -75,3 +80,4 @@ class (Shaped x i e) => ITensor x i e where
   where
     b = bounds x
     s = shape x
+{-# INLINE (!) #-}

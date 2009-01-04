@@ -51,11 +51,13 @@ class (Shaped x i e, Monad m) => ReadTensor x i e m | x -> i where
     -- See also "getElems'".    
     getElems :: x n e -> m [e]
     getElems x = getAssocs x >>= return . snd . unzip
+    {-# INLINE getElems #-}
 
     -- | Returns a list of the elements in the tensor.  See also
     -- 'getElems'.
     getElems' :: x n e -> m [e]
     getElems' x = getAssocs' x >>= return . snd . unzip
+    {-# INLINE getElems' #-}
     
     -- | Returns a lazy list of the elements-index pairs in the tensor.  
     -- Because of the laziness, this function should be used with care.
@@ -65,6 +67,7 @@ class (Shaped x i e, Monad m) => ReadTensor x i e m | x -> i where
         is <- getIndices x
         es <- getElems x
         return $ zip is es
+    {-# INLINE getAssocs #-}
 
     -- | Returns a list of the index-elements pairs in the tensor.  See also
     -- 'getAssocs'.
@@ -73,7 +76,7 @@ class (Shaped x i e, Monad m) => ReadTensor x i e m | x -> i where
         is <- getIndices' x
         es <- getElems' x
         return $ zip is es
-
+    {-# INLINE getAssocs' #-}
 
 -- | Gets the value at the specified index after checking that the argument
 -- is in bounds.
@@ -88,17 +91,19 @@ readElem x i =
   where
       b = bounds x
       s = shape x
-
+{-# INLINE readElem #-}
 
 -- | Class for modifiable mutable tensors.
 class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize
+    {-# INLINE getMaxSize #-}
     
     -- | Sets all stored elements to zero.
     setZero :: (Num e) => x n e -> m ()
     setZero = setConstant 0
+    {-# INLINE setZero #-}
     
     -- | Sets all stored elements to the given value.
     setConstant :: e -> x n e -> m ()
@@ -116,6 +121,7 @@ class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     unsafeModifyElem x i f = do
         e <- unsafeReadElem x i
         unsafeWriteElem x i (f e)
+    {-# INLINE unsafeModifyElem #-}
     
     -- | Replace each element by a function applied to it
     modifyWith :: (e -> e) -> x n e -> m ()
@@ -127,21 +133,24 @@ class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
         f <- unsafeReadElem x j
         unsafeWriteElem x j e
         unsafeWriteElem x i f
+    {-# INLINE unsafeSwapElems #-}
     
     -- | Replace every element with its complex conjugate.
     doConj :: (Conj e) => x n e -> m ()
     doConj = modifyWith conj
+    {-# INLINE doConj #-}
 
     -- | Scale every element in the vector by the given value.
     scaleBy :: (Num e) => e -> x n e -> m ()
     scaleBy 1 = const $ return ()
     scaleBy k = modifyWith (k*)
+    {-# INLINE scaleBy #-}
 
     -- | Add a value to every element in a vector.
     shiftBy :: (Num e) => e -> x n e -> m ()
     shiftBy 0 = const $ return ()
     shiftBy k = modifyWith (k+)
-
+    {-# INLINE shiftBy #-}
 
 -- | Set the value of the element at the given index.
 writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()
@@ -156,6 +165,7 @@ writeElem x i e = do
             unsafeWriteElem x i e
   where
     s = shape x
+{-# INLINE writeElem #-}
 
 -- | Update the value of the element at the given index.
 modifyElem :: (WriteTensor x i e m) => x n e -> i -> (e -> e) -> m ()
@@ -170,6 +180,7 @@ modifyElem x i f = do
             unsafeModifyElem x i f
   where
     s = shape x
+{-# INLINE modifyElem #-}
 
 -- | Swap the values stored at two positions in the tensor.
 swapElems :: (WriteTensor x i e m) => x n e -> i -> i -> m ()
@@ -180,3 +191,4 @@ swapElems x i j
                ++ "'."
     | otherwise =
         unsafeSwapElems x i j
+{-# INLINE swapElems #-}
