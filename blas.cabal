@@ -59,7 +59,6 @@ library
                             BLAS.Elem.Base
                         BLAS.Internal
                         BLAS.Types
-                        BLAS.UnsafeIOToM
 
                         Data.Tensor.Class
                             Data.Tensor.Class.ITensor
@@ -100,6 +99,7 @@ library
 
     other-modules:      BLAS.C.Double
                         BLAS.C.Zomplex
+                        BLAS.UnsafeIOToM
                         
                         Data.Vector.Dense.Internal
                         Data.Vector.Dense.Class.Internal

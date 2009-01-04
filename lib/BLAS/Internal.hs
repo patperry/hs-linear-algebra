@@ -11,6 +11,8 @@
 
 
 module BLAS.Internal (
+    module BLAS.UnsafeIOToM,
+    
     clearArray,
     bzero,
     inlinePerformIO,
@@ -39,6 +41,7 @@ module BLAS.Internal (
     diagLen,    
     ) where
 
+import BLAS.UnsafeIOToM
 
 import Data.Ix     ( inRange )
 import Foreign                  ( Ptr, Storable, castPtr, sizeOf )
