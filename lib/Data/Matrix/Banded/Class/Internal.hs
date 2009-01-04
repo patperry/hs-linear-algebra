@@ -82,7 +82,7 @@ import Data.List( foldl' )
 import Foreign
 import Unsafe.Coerce
 
-import Data.Elem.BLAS( BLAS2, conj )
+import Data.Elem.BLAS( BLAS2, BLAS3, conj )
 import qualified Data.Elem.BLAS as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
@@ -690,10 +690,10 @@ instance (Storable e) => MatrixShaped IOBanded e where
 instance (Storable e) => MatrixShaped (STBanded s) e where
     herm = hermBanded
 
-instance (BLAS2 e) => ReadBanded IOBanded     e IO
-instance (BLAS2 e) => ReadBanded (STBanded s) e (ST s)
+instance (BLAS3 e) => ReadBanded IOBanded     e IO
+instance (BLAS3 e) => ReadBanded (STBanded s) e (ST s)
 
-instance (BLAS2 e) => ReadTensor IOBanded (Int,Int) e IO where
+instance (BLAS3 e) => ReadTensor IOBanded (Int,Int) e IO where
     getSize        = getSizeBanded
     getAssocs      = getAssocsBanded
     getIndices     = getIndicesBanded
@@ -703,7 +703,7 @@ instance (BLAS2 e) => ReadTensor IOBanded (Int,Int) e IO where
     getElems'      = getElemsBanded'
     unsafeReadElem = unsafeReadElemBanded
     
-instance (BLAS2 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
+instance (BLAS3 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
     getSize        = getSizeBanded
     getAssocs      = getAssocsBanded
     getIndices     = getIndicesBanded
@@ -713,62 +713,62 @@ instance (BLAS2 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
     getElems'      = getElemsBanded'
     unsafeReadElem = unsafeReadElemBanded
 
-instance (BLAS2 e) => WriteBanded IOBanded     e IO where
-instance (BLAS2 e) => WriteBanded (STBanded s) e (ST s) where
+instance (BLAS3 e) => WriteBanded IOBanded     e IO where
+instance (BLAS3 e) => WriteBanded (STBanded s) e (ST s) where
 
-instance (BLAS2 e) => WriteTensor IOBanded (Int,Int) e IO where
+instance (BLAS3 e) => WriteTensor IOBanded (Int,Int) e IO where
     setConstant     = setConstantBanded
     setZero         = setZeroBanded
     modifyWith      = modifyWithBanded
     unsafeWriteElem = unsafeWriteElemBanded
     canModifyElem   = canModifyElemBanded
 
-instance (BLAS2 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
+instance (BLAS3 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
     setConstant     = setConstantBanded
     setZero         = setZeroBanded
     modifyWith      = modifyWithBanded
     unsafeWriteElem = unsafeWriteElemBanded
     canModifyElem   = canModifyElemBanded
 
-instance (BLAS2 e) => MMatrix IOBanded e IO where
+instance (BLAS3 e) => MMatrix IOBanded e IO where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowBanded
     unsafeGetCol         = unsafeGetColBanded
 
-instance (BLAS2 e) => MMatrix (STBanded s) e (ST s) where
+instance (BLAS3 e) => MMatrix (STBanded s) e (ST s) where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowBanded
     unsafeGetCol         = unsafeGetColBanded
 
-instance (BLAS2 e) => MMatrix (Herm (STBanded s)) e (ST s) where
+instance (BLAS3 e) => MMatrix (Herm (STBanded s)) e (ST s) where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 
-instance (BLAS2 e) => MMatrix (Herm IOBanded) e IO where
+instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 
-instance (BLAS2 e) => MMatrix (Tri (STBanded s)) e (ST s) where
+instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
 
-instance (BLAS2 e) => MMatrix (Tri IOBanded) e IO where
+instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
     unsafeDoSApplyAddMat = tbmm'
 
-instance (BLAS2 e) => MSolve (Tri IOBanded) e IO where
+instance (BLAS3 e) => MSolve (Tri IOBanded) e IO where
     unsafeDoSSolve     = unsafeDoSSolveTriBanded
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
     unsafeDoSSolve_    = tbsv
     unsafeDoSSolveMat_ = tbsm
 
-instance (BLAS2 e) => MSolve (Tri (STBanded s)) e (ST s) where
+instance (BLAS3 e) => MSolve (Tri (STBanded s)) e (ST s) where
     unsafeDoSSolve     = unsafeDoSSolveTriBanded
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
     unsafeDoSSolve_    = tbsv

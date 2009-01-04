@@ -22,7 +22,7 @@ import Test.Vector.Dense ( vector )
 import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
-import Data.Elem.BLAS ( Elem, BLAS2, BLAS3, toReal, fromReal, conj )
+import Data.Elem.BLAS ( Elem, BLAS3, toReal, fromReal, conj )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
@@ -32,7 +32,7 @@ import Data.Matrix.Herm
 
 
 
-hermBanded :: (BLAS2 e, Arbitrary e) => Int -> Int -> Gen (Banded (n,n) e)
+hermBanded :: (BLAS3 e, Arbitrary e) => Int -> Int -> Gen (Banded (n,n) e)
 hermBanded n k 
     | n < 0 = 
         error $ "hermBanded: n must be non-negative"
@@ -65,7 +65,7 @@ data HermBanded n e =
                (Banded (n,n) e)
     deriving Show
     
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBanded n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBanded n e) where
     arbitrary = matrixSized $ \s -> do
         n <- choose (0,s)
         k <- if n == 0 then return 0 else choose (0,n-1)
@@ -94,7 +94,7 @@ data HermBandedMV n e =
                  (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (HermBandedMV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMV n e) where
     arbitrary = do
         (HermBanded h a) <- arbitrary
         x <- vector (numCols a)

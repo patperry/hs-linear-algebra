@@ -8,8 +8,15 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- An overloaded interface for immutable matrices.  The matrices provide
+-- access to rows and columns, and can operate via multiplication on 
+-- immutable dense vectors and matrices.
+--
 
 module Data.Matrix.Class.IMatrix (
+    -- * The IMatrix type class
+    IMatrix(..),
+
     -- * Rows and columns
     row,
     col,
@@ -22,12 +29,12 @@ module Data.Matrix.Class.IMatrix (
     sapply,
     sapplyMat,
     
-    IMatrix(..),
+    -- * Unsafe operations
     unsafeApply,
     unsafeApplyMat,
     ) where
 
-import Data.Elem.BLAS( BLAS1, BLAS3 )
+import Data.Elem.BLAS( BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
@@ -43,17 +50,18 @@ import Data.Matrix.Dense.ST( runSTMatrix )
 
 infixr 7 <*>, <**>
 
-class (MatrixShaped a e, BLAS1 e) => IMatrix a e where
+-- | A type class for immutable matrices.  The member functions of the
+-- type class do not perform any checks on the validity of shapes or
+-- indices, so in general their safe counterparts should be preferred.
+class (MatrixShaped a e, BLAS3 e) => IMatrix a e where
     unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
-    -- | Same as 'row' but index is not range-checked.
     unsafeRow :: a (m,n) e -> Int -> Vector n e
     unsafeRow a i = let
         e = basisVector (numRows a) i
         in conj $ unsafeApply (herm a) e
     
-    -- | Same as 'col' but index is not range-checked.    
     unsafeCol :: a (m,n) e -> Int -> Vector m e
     unsafeCol a j = let
         e = basisVector (numCols a) j
@@ -63,31 +71,38 @@ class (MatrixShaped a e, BLAS1 e) => IMatrix a e where
 -- | Get the given row in a matrix.
 row :: (IMatrix a e) => a (m,n) e -> Int -> Vector n e
 row a = checkedRow (shape a) (unsafeRow a)
+{-# INLINE row #-}
 
 -- | Get the given column in a matrix.
 col :: (IMatrix a e) => a (m,n) e -> Int -> Vector m e
 col a = checkedCol (shape a) (unsafeCol a)
+{-# INLINE col #-}
 
 -- | Get a list the row vectors in the matrix.
 rows :: (IMatrix a e) => a (m,n) e -> [Vector n e]
 rows a = [ unsafeRow a i | i <- [0..numRows a - 1] ]
+{-# INLINE rows #-}
 
 -- | Get a list the column vectors in the matrix.
 cols :: (IMatrix a e) => a (m,n) e -> [Vector m e]
 cols a = [ unsafeCol a j | j <- [0..numCols a - 1] ]
+{-# INLINE cols #-}
 
-
--- | Apply to a vector
+-- | Matrix multiplication by a vector.
 (<*>) :: (IMatrix a e) => a (m,n) e -> Vector n e -> Vector m e
 (<*>) a x = checkMatVecMult (shape a) (dim x) $ unsafeApply a x
     
--- | Apply to a matrix
+-- | Matrix multiplication by a matrix.
 (<**>) :: (IMatrix a e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 (<**>) a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMat a b
 
+-- | Scale and multiply by a vector.  
+-- @sapply k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
 sapply :: (IMatrix a e) => e -> a (m,n) e -> Vector n e -> Vector m e
 sapply k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApply k a x
     
+-- | Scale and multiply by a matrix.
+-- @sapplyMat k a b@ is equal to @a \<**> (k *> b)@, and often it is faster.
 sapplyMat :: (IMatrix a e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
 sapplyMat k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMat k a b
 
@@ -112,6 +127,6 @@ instance (BLAS3 e) => IMatrix (Tri Matrix) e where
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
 {-# RULES
-"scale.apply/sapply"       forall k a x. (<*>) (k *> a) x = sapply k a x
-"scale.applyMat/sapplyMat" forall k a b. (<**>) (k *> a) b = sapplyMat k a b
+"scale.apply/sapply"       forall k a x. a <*>  (k *> x) = sapply k a x
+"scale.applyMat/sapplyMat" forall k a b. a <**> (k *> b) = sapplyMat k a b
   #-}

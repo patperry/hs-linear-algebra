@@ -28,13 +28,13 @@ import Test.Matrix ( matrixSized )
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
-import Data.Elem.BLAS ( BLAS2, BLAS3 )
+import Data.Elem.BLAS ( BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
 
 import Unsafe.Coerce
 
-triBanded :: (BLAS2 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
+triBanded :: (BLAS3 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
     d <- QC.vector n
@@ -71,7 +71,7 @@ triBanded Lower Unit n k = do
 data TriBanded n e = 
     TriBanded (Tri Banded (n,n) e) (Banded (n,n) e) deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBanded n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBanded n e) where
     arbitrary = matrixSized $ \s -> do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -101,7 +101,7 @@ instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBanded n e) where
 data TriBandedMV n e = 
     TriBandedMV (Tri Banded (n,n) e) (Banded (n,n) e) (Vector n e) deriving Show
 
-instance (Arbitrary e, BLAS2 e) => Arbitrary (TriBandedMV n e) where
+instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         x <- vector (numCols t)

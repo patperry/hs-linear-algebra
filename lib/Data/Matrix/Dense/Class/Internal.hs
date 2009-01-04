@@ -593,14 +593,18 @@ unsafeDoMatrixOp2 f a b c = do
 
 -------------------------------- MMatrix ----------------------------------
 
--- | Minimal complete definition: (unsafeDoSApplyAdd, unsafeDoSApplyAddMat)
-class (MatrixShaped a e, Monad m) => MMatrix a e m where
+-- | A type class for mutable matrices associated with a monad.  The member
+-- functions of the type class do not perform any checks on the validity of
+-- shapes or indices, so in general their safe counterparts should be
+-- preferred.
+class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
     unsafeGetSApply :: (ReadVector x e m, WriteVector y e m) =>
         e -> a (k,l) e -> x l e -> m (y k e)
     unsafeGetSApply alpha a x = do
         y <- newVector_ (numRows a)
         unsafeDoSApplyAdd alpha a x 0 y
         return y
+    {-# INLINE unsafeGetSApply #-}
 
     unsafeGetSApplyMat :: (ReadMatrix b e m, WriteMatrix c e m) =>
         e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
@@ -608,6 +612,7 @@ class (MatrixShaped a e, Monad m) => MMatrix a e m where
         c <- newMatrix_ (numRows a, numCols b)
         unsafeDoSApplyAddMat alpha a b 0 c
         return c
+    {-# INLINE unsafeGetSApplyMat #-}
 
     unsafeDoSApplyAdd :: (ReadVector x e m, WriteVector y e m) =>
         e -> a (k,l) e -> x l e -> e -> y k e -> m ()
@@ -615,6 +620,7 @@ class (MatrixShaped a e, Monad m) => MMatrix a e m where
         y' <- unsafeGetSApply alpha a x
         scaleBy beta y
         unsafeAxpyVector 1 y' y
+    {-# INLINE unsafeDoSApplyAdd #-}
 
     unsafeDoSApplyAddMat :: (ReadMatrix b e m, WriteMatrix c e m) =>
         e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
@@ -622,6 +628,7 @@ class (MatrixShaped a e, Monad m) => MMatrix a e m where
         c' <- unsafeGetSApplyMat alpha a b
         scaleBy beta c
         unsafeAxpyMatrix 1 c' c
+    {-# INLINE unsafeDoSApplyAddMat #-}
 
     unsafeDoSApply_ :: (WriteVector y e m) =>
         e -> a (n,n) e -> y n e -> m ()
@@ -629,6 +636,7 @@ class (MatrixShaped a e, Monad m) => MMatrix a e m where
         y <- newVector_ (dim x)
         unsafeDoSApplyAdd alpha a x 0 y
         unsafeCopyVector x y
+    {-# INLINE unsafeDoSApply_ #-}
 
     unsafeDoSApplyMat_ :: (WriteMatrix b e m) =>
         e -> a (k,k) e -> b (k,l) e -> m ()
@@ -636,16 +644,19 @@ class (MatrixShaped a e, Monad m) => MMatrix a e m where
         c <- newMatrix_ (shape b)
         unsafeDoSApplyAddMat alpha a b 0 c
         unsafeCopyMatrix b c
+    {-# INLINE unsafeDoSApplyMat_ #-}
 
     unsafeGetRow :: (WriteVector x e m) => a (k,l) e -> Int -> m (x l e)
     unsafeGetRow a i = do
         e <- newBasisVector (numRows a) i
         liftM conj $ unsafeGetSApply 1 (herm a) e
+    {-# INLINE unsafeGetRow #-}        
         
     unsafeGetCol :: (WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
     unsafeGetCol a j = do
         e <- newBasisVector (numCols a) j
         unsafeGetSApply 1 a e
+    {-# INLINE unsafeGetCol #-}
 
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.

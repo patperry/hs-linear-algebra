@@ -55,7 +55,7 @@ import System.IO.Unsafe
 
 
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
-import Data.Elem.BLAS( BLAS1, BLAS2, BLAS3 )
+import Data.Elem.BLAS( BLAS1, BLAS3 )
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.MTensor
@@ -124,27 +124,27 @@ inlineLiftBanded f = inlinePerformIO . liftBanded f
 {-# INLINE inlineLiftBanded #-}
 
 
-banded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+banded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
 banded mn kl ijes = 
     unsafeFreezeIOBanded $ unsafePerformIO $ newBanded mn kl ijes
 {-# NOINLINE banded #-}
 
-unsafeBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
+unsafeBanded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> Banded (m,n) e
 unsafeBanded mn kl ijes = 
     unsafeFreezeIOBanded $ unsafePerformIO $ unsafeNewBanded mn kl ijes
 {-# NOINLINE unsafeBanded #-}
 
-listsBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
+listsBanded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> [[e]] -> Banded (m,n) e
 listsBanded mn kl xs = 
     unsafeFreezeIOBanded $ unsafePerformIO $ newListsBanded mn kl xs
 {-# NOINLINE listsBanded #-}
 
-zeroBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> Banded (m,n) e
+zeroBanded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> Banded (m,n) e
 zeroBanded mn kl =
     unsafeFreezeIOBanded $ unsafePerformIO $ newZeroBanded mn kl
 {-# NOINLINE zeroBanded #-}
 
-constantBanded :: (BLAS2 e) => (Int,Int) -> (Int,Int) -> e -> Banded (m,n) e
+constantBanded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> e -> Banded (m,n) e
 constantBanded mn kl e =
     unsafeFreezeIOBanded $ unsafePerformIO $ newConstantBanded mn kl e
 {-# NOINLINE constantBanded #-}
@@ -165,7 +165,7 @@ instance (Storable e) => Shaped Banded (Int,Int) e where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 
-instance (BLAS2 e) => ITensor Banded (Int,Int) e where
+instance (BLAS3 e) => ITensor Banded (Int,Int) e where
     (//)          = replaceHelp writeElem
     unsafeReplace = replaceHelp unsafeWriteElem
     
@@ -196,7 +196,7 @@ listsFromBanded a = ( (m,n)
                    ++ padEnd i 
                    )
 
-replaceHelp :: (BLAS2 e) => 
+replaceHelp :: (BLAS3 e) => 
        (IOBanded mn e -> (Int,Int) -> e -> IO ())
     -> Banded mn e -> [((Int,Int), e)] -> Banded mn e
 replaceHelp set x ies =
@@ -207,7 +207,7 @@ replaceHelp set x ies =
 {-# NOINLINE replaceHelp #-}
 
 
-instance (BLAS2 e, Monad m) => ReadTensor Banded (Int,Int) e m where
+instance (BLAS3 e, Monad m) => ReadTensor Banded (Int,Int) e m where
     getSize        = return . size
     getAssocs      = return . assocs
     getIndices     = return . indices
@@ -229,7 +229,7 @@ instance (Storable e) => BaseBanded_ Banded e where
 
 instance (Storable e) => BaseBanded Banded e
 
-instance (BLAS2 e, UnsafeIOToM m) => ReadBanded Banded e m where
+instance (BLAS3 e, UnsafeIOToM m) => ReadBanded Banded e m where
 
 instance (BLAS3 e) => IMatrix Banded e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
@@ -237,14 +237,14 @@ instance (BLAS3 e) => IMatrix Banded e where
     unsafeRow a i             = runSTVector $ unsafeGetRow a i
     unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS2 e, UnsafeIOToM m) => MMatrix Banded e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix Banded e m where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowBanded
     unsafeGetCol         = unsafeGetColBanded
 
 
-instance (BLAS1 e) => Show (Banded mn e) where
+instance (BLAS3 e) => Show (Banded mn e) where
     show a 
         | isHermBanded a = 
            "herm (" ++ show (herm $ coerceBanded a) ++ ")"
@@ -252,7 +252,7 @@ instance (BLAS1 e) => Show (Banded mn e) where
              let (mn,kl,es) = listsFromBanded a 
              in "listsBanded " ++ show mn ++ " " ++ show kl ++ " " ++ show es
 
-compareHelp :: (BLAS2 e) => 
+compareHelp :: (BLAS3 e) => 
     (e -> e -> Bool) -> Banded mn e -> Banded mn e -> Bool
 compareHelp cmp a b
     | shape a /= shape b =
@@ -270,10 +270,10 @@ compareHelp cmp a b
   where
     diagElems bw c = concatMap elems [ diagBanded c i | i <- range bw ]
 
-instance (BLAS2 e, Eq e) => Eq (Banded mn e) where
+instance (BLAS3 e, Eq e) => Eq (Banded mn e) where
     (==) = compareHelp (==)
 
-instance (BLAS2 e, AEq e) => AEq (Banded mn e) where
+instance (BLAS3 e, AEq e) => AEq (Banded mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)
 
@@ -281,7 +281,7 @@ instance (BLAS3 e) => IMatrix (Herm Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Herm Banded) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Banded) e m where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 
@@ -289,7 +289,7 @@ instance (BLAS3 e) => IMatrix (Tri Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS2 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
@@ -299,7 +299,7 @@ instance (BLAS3 e) => ISolve (Tri Banded) e where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
 
-instance (BLAS2 e, UnsafeIOToM m) => MSolve (Tri Banded) e m where
+instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Banded) e m where
     unsafeDoSSolve     = unsafeDoSSolveTriBanded
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
     unsafeDoSSolve_    = tbsv
