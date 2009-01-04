@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface #-}
 {-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.Internal
