@@ -12,6 +12,7 @@
 
 
 module BLAS.Internal (
+    module BLAS.Types,
     module BLAS.UnsafeIOToM,
     
     clearArray,
@@ -42,6 +43,7 @@ module BLAS.Internal (
     diagLen,    
     ) where
 
+import BLAS.Types
 import BLAS.UnsafeIOToM
 
 import Data.Ix     ( inRange )

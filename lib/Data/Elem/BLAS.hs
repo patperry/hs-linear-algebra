@@ -8,13 +8,17 @@
 --
 
 module Data.Elem.BLAS (
+    module Data.Elem.Conj,
     module Data.Elem.BLAS.Base,
     module Data.Elem.BLAS.Level1,
     module Data.Elem.BLAS.Level2,
-    module Data.Elem.BLAS.Level3
+    module Data.Elem.BLAS.Level3,
+    module Data.Elem.BLAS.Types,
     ) where
 
+import Data.Elem.Conj
 import Data.Elem.BLAS.Base
-import Data.Elem.BLAS.Level1 ( BLAS1 )
-import Data.Elem.BLAS.Level2 ( BLAS2 )
-import Data.Elem.BLAS.Level3 ( BLAS3 )
+import Data.Elem.BLAS.Level1
+import Data.Elem.BLAS.Level2
+import Data.Elem.BLAS.Level3
+import Data.Elem.BLAS.Types

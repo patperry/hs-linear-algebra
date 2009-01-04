@@ -86,8 +86,8 @@ import Foreign
 import Unsafe.Coerce
 
 import BLAS.Internal ( clearArray, inlinePerformIO )
-import Data.Elem.BLAS
-import qualified BLAS.C as BLAS
+import Data.Elem.BLAS ( BLAS1, conj )
+import qualified Data.Elem.BLAS as BLAS
 import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
@@ -312,7 +312,7 @@ unsafeSwapVector x y
 --------------------------- Numeric functions -------------------------------
 
 doConjVector :: (WriteVector y e m) => y n e -> m ()
-doConjVector = vectorCall BLAS.conj
+doConjVector = vectorCall BLAS.vconj
 
 scaleByVector :: (WriteVector y e m) => e -> y n e -> m ()
 scaleByVector 1 _ = return ()

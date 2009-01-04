@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.C.Types
+-- Module     : Data.Elem.BLAS.Types
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module BLAS.C.Types (
+module Data.Elem.BLAS.Types (
     CBLASOrder,
     CBLASTrans,
     CBLASUpLo,

@@ -47,15 +47,9 @@ extra-tmp-files:        config.log config.status autom4te.cache
 
 library
     hs-source-dirs:     lib
-    exposed-modules:    
-                        BLAS.C
-                            BLAS.C.Types
-
-                        BLAS.Internal
-                        BLAS.Types
+    exposed-modules:    BLAS.Internal
 
                         Data.Elem.BLAS
-                        Data.Elem.Conj
 
                         Data.Tensor.Class
                             Data.Tensor.Class.ITensor
@@ -94,13 +88,17 @@ library
                         Test.Matrix.Tri.Banded
                         Test.Matrix.Tri.Dense
 
-    other-modules:      Data.Elem.BLAS.Base
+    other-modules:      BLAS.Types
+                        BLAS.UnsafeIOToM
+
+                        Data.Elem.BLAS.Base
                         Data.Elem.BLAS.Level1
                         Data.Elem.BLAS.Level2
                         Data.Elem.BLAS.Level3
+                        Data.Elem.BLAS.Types
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        BLAS.UnsafeIOToM
+                        Data.Elem.Conj
                         
                         Data.Vector.Dense.Internal
                         Data.Vector.Dense.Class.Internal

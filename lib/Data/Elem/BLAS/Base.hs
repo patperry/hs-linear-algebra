@@ -10,7 +10,6 @@
 
 module Data.Elem.BLAS.Base (
     Elem(..),
-    module Data.Elem.Conj,
     ) where
 
 import Data.Elem.Conj

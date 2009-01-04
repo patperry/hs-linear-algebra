@@ -135,10 +135,8 @@ import Data.Ix
 import Foreign
 import Unsafe.Coerce
 
-import Data.Elem.BLAS
-import BLAS.C.Types
-import qualified Data.Elem.BLAS.Level2 as BLAS
-import qualified Data.Elem.BLAS.Level3 as BLAS
+import Data.Elem.BLAS( BLAS2, BLAS3, conj )
+import qualified Data.Elem.BLAS as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
 
@@ -553,11 +551,11 @@ unsafeDoDivMatrix = unsafeDoMatrixOp2 $ unsafeDivMatrix
 
 --------------------------- Utility functions -------------------------------
 
-blasTransOf :: (BaseMatrix a e) => a mn e -> CBLASTrans
+blasTransOf :: (BaseMatrix a e) => a mn e -> BLAS.CBLASTrans
 blasTransOf a = 
     case (isHermMatrix a) of
-          False -> noTrans
-          True  -> conjTrans
+          False -> BLAS.noTrans
+          True  -> BLAS.conjTrans
 
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
@@ -658,7 +656,7 @@ gemv alpha a x beta y
         scaleBy beta y
         
     | isConj y && (isConj x || stride x == 1) =
-        let transA = if isConj x then noTrans else conjTrans
+        let transA = if isConj x then BLAS.noTrans else BLAS.conjTrans
             transB = blasTransOf (herm a)
             m      = 1
             n      = dim y
@@ -733,7 +731,7 @@ hemv alpha h x beta y
             u'    = case isHermMatrix a of
                         True  -> flipUpLo u
                         False -> u
-            uploA = cblasUpLo u'
+            uploA = BLAS.cblasUpLo u'
             ldA   = ldaOfMatrix a
             incX  = stride x
             incY  = stride y
@@ -753,9 +751,9 @@ hemm alpha h b beta c
         let (m,n)   = shape c
             (side,u',m',n')
                     = if isHermMatrix a
-                          then (rightSide, flipUpLo u, n, m)
-                          else (leftSide,  u,          m, n)
-            uploA   = cblasUpLo u'
+                          then (BLAS.rightSide, flipUpLo u, n, m)
+                          else (BLAS.leftSide,  u,          m, n)
+            uploA   = BLAS.cblasUpLo u'
             ldA     = ldaOfMatrix a
             ldB     = ldaOfMatrix b
             ldC     = ldaOfMatrix c
@@ -896,11 +894,12 @@ trmv alpha t x
         
     | isConj x =
         let (u,d,a) = triToBase t
-            side    = rightSide
-            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
-            uploA   = cblasUpLo u'
-            transA  = cblasTrans h
-            diagA   = cblasDiag d
+            side    = BLAS.rightSide
+            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) 
+                                        else (ConjTrans, u)
+            uploA   = BLAS.cblasUpLo u'
+            transA  = BLAS.cblasTrans h
+            diagA   = BLAS.cblasDiag d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
@@ -913,9 +912,10 @@ trmv alpha t x
 
     | otherwise =
         let (u,d,a)   = triToBase t
-            (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
-            uploA     = cblasUpLo u'
-            diagA     = cblasDiag d
+            (transA,u') = if isHermMatrix a then (BLAS.conjTrans, flipUpLo u) 
+                                            else (BLAS.noTrans, u)
+            uploA     = BLAS.cblasUpLo u'
+            diagA     = BLAS.cblasDiag d
             n         = dim x
             ldA       = ldaOfMatrix a
             incX      = stride x
@@ -937,11 +937,11 @@ trmm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (rightSide, flipTrans h, n, m, conj alpha)
-                        else (leftSide , h          , m, n, alpha       )
-        uploA     = cblasUpLo u'
-        transA    = cblasTrans h'
-        diagA     = cblasDiag d
+                        then (BLAS.rightSide, flipTrans h, n, m, conj alpha)
+                        else (BLAS.leftSide , h          , m, n, alpha       )
+        uploA     = BLAS.cblasUpLo u'
+        transA    = BLAS.cblasTrans h'
+        diagA     = BLAS.cblasDiag d
         ldA       = ldaOfMatrix a
         ldB       = ldaOfMatrix b
     in unsafeIOToM $
@@ -1014,11 +1014,11 @@ trsv alpha t x
 
     | isConj x =
         let (u,d,a) = triToBase t
-            side    = rightSide
+            side    = BLAS.rightSide
             (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
-            uploA   = cblasUpLo u'
-            transA  = cblasTrans h
-            diagA   = cblasDiag d
+            uploA   = BLAS.cblasUpLo u'
+            transA  = BLAS.cblasTrans h
+            diagA   = BLAS.cblasDiag d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
@@ -1031,9 +1031,10 @@ trsv alpha t x
 
     | otherwise =
         let (u,d,a) = triToBase t
-            (transA,u') = if isHermMatrix a then (conjTrans, flipUpLo u) else (noTrans, u)
-            uploA     = cblasUpLo u'
-            diagA     = cblasDiag d
+            (transA,u') = if isHermMatrix a then (BLAS.conjTrans, flipUpLo u) 
+                                            else (BLAS.noTrans  , u)
+            uploA     = BLAS.cblasUpLo u'
+            diagA     = BLAS.cblasDiag d
             n         = dim x
             ldA       = ldaOfMatrix a
             incX      = stride x
@@ -1054,11 +1055,11 @@ trsm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (rightSide, flipTrans h, n, m, conj alpha)
-                        else (leftSide , h          , m, n, alpha     )
-        uploA     = cblasUpLo u'
-        transA    = cblasTrans h'
-        diagA     = cblasDiag d
+                        then (BLAS.rightSide, flipTrans h, n, m, conj alpha)
+                        else (BLAS.leftSide , h          , m, n, alpha     )
+        uploA     = BLAS.cblasUpLo u'
+        transA    = BLAS.cblasTrans h'
+        diagA     = BLAS.cblasDiag d
         ldA       = ldaOfMatrix a
         ldB       = ldaOfMatrix b
     in unsafeIOToM $     

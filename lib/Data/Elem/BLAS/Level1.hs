@@ -19,7 +19,7 @@ import Foreign.Storable.Complex ()
 import Data.Complex
 
 import Data.Elem.BLAS.Base
-import BLAS.C.Types
+import Data.Elem.BLAS.Types
 import Data.Elem.BLAS.Double  
 import Data.Elem.BLAS.Zomplex
         
@@ -40,7 +40,7 @@ class (Elem a) => BLAS1 a where
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
     -- | conjugate all elements of a vector
-    conj  :: Int -> Ptr a -> Int -> IO ()
+    vconj  :: Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
@@ -71,7 +71,7 @@ instance BLAS1 Double where
     scal  = dscal
     rotg  = drotg
     rot   = drot
-    conj _ _ _ = return ()
+    vconj _ _ _ = return ()
     acxpy = daxpy
     mul n = dtbmv upper noTrans nonUnit n 0
     cmul  = mul
@@ -107,7 +107,7 @@ instance BLAS1 (Complex Double) where
 
     rot = zdrot
 
-    conj n pX incX =
+    vconj n pX incX =
         let pXI   = (castPtr pX) `advancePtr` 1
             alpha = -1
             incXI = 2 * incX

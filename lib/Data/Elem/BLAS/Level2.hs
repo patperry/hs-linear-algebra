@@ -14,7 +14,7 @@ module Data.Elem.BLAS.Level2
 import Data.Complex 
 import Foreign ( Ptr, with )   
 
-import BLAS.C.Types
+import Data.Elem.BLAS.Types
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Double 
 import Data.Elem.BLAS.Zomplex

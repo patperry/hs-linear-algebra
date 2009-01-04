@@ -13,7 +13,7 @@ module Data.Elem.BLAS.Double
     where
         
 import Foreign.Ptr ( Ptr )
-import BLAS.C.Types
+import Data.Elem.BLAS.Types
 
 ---------------------------- Level 1 Routines -------------------------------
 

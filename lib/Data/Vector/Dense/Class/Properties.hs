@@ -17,10 +17,9 @@ module Data.Vector.Dense.Class.Properties (
 
     ) where
 
-import BLAS.C( BLAS1 )
-import Data.Elem.Conj
 import BLAS.Internal (  checkVecVecOp )
-import qualified BLAS.C as BLAS
+import Data.Elem.BLAS( BLAS1, conj )
+import qualified Data.Elem.BLAS as BLAS
 
 import Data.Tensor.Class.MTensor( unsafeReadElem )
 import Data.Vector.Dense.Class.Internal
