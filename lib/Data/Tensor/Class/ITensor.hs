@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Tensor.Class.Immutable
+-- Module     : Data.Tensor.Class.ITensor
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Data.Tensor.Class.Immutable (
+module Data.Tensor.Class.ITensor (
     ITensor(..),
     (!),
     ) where

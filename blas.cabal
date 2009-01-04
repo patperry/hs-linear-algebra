@@ -62,7 +62,7 @@ library
                         BLAS.UnsafeIOToM
 
                         Data.Tensor.Class
-                            Data.Tensor.Class.Immutable
+                            Data.Tensor.Class.ITensor
                             Data.Tensor.Class.Read
                             Data.Tensor.Class.Write
 

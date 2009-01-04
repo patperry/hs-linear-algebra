@@ -27,7 +27,7 @@ module Data.Matrix.Dense.Internal (
     unsafeMatrix,
     
     -- * Reading matrix elements
-    module Data.Tensor.Class.Immutable,
+    module Data.Tensor.Class.ITensor,
     
     -- * Special matrices
     zeroMatrix,
@@ -60,7 +60,7 @@ import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
-import Data.Tensor.Class.Immutable
+import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.Read
 import Data.Tensor.Class.Write( writeElem, unsafeWriteElem )
 

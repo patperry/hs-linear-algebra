@@ -25,7 +25,7 @@ module Data.Vector.Dense.Internal (
     unsafeVector,
 
     -- * Reading vector elements
-    module Data.Tensor.Class.Immutable,
+    module Data.Tensor.Class.ITensor,
 
     -- * Special vectors
     zeroVector,
@@ -53,7 +53,7 @@ import System.IO.Unsafe
 
 import BLAS.Conj
 import Data.Tensor.Class
-import Data.Tensor.Class.Immutable
+import Data.Tensor.Class.ITensor
 
 import BLAS.Elem ( BLAS1 )
 import BLAS.Internal ( inlinePerformIO )

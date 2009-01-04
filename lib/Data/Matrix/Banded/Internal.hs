@@ -27,7 +27,7 @@ module Data.Matrix.Banded.Internal (
     unsafeBanded,
 
     -- * Reading banded matrix elements
-    module Data.Tensor.Class.Immutable,
+    module Data.Tensor.Class.ITensor,
     
     -- * Special banded matrices
     zeroBanded,
@@ -57,7 +57,7 @@ import System.IO.Unsafe
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
 import BLAS.Elem( BLAS1, BLAS2, BLAS3 )
 import Data.Tensor.Class
-import Data.Tensor.Class.Immutable
+import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.Read
 import BLAS.UnsafeIOToM
 
