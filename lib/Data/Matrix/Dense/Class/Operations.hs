@@ -10,7 +10,7 @@
 module Data.Matrix.Dense.Class.Operations (
     -- * Matrix operations
     -- ** Multiplication
-    module Data.Matrix.MMatrix,
+    module Data.Matrix.Class.MMatrix,
     
     -- ** Unary
     getConjMatrix,
@@ -46,7 +46,7 @@ import BLAS.Tensor( BaseTensor(..) )
 
 import Data.Matrix.Dense.Class.Internal
 
-import Data.Matrix.MMatrix
+import Data.Matrix.Class.MMatrix
 
 ---------------------------- Unary Operations -----------------------------
 

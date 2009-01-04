@@ -38,7 +38,7 @@ module Data.Matrix.Tri.Internal (
 import Unsafe.Coerce
 
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
-import Data.Matrix.Shaped
+import Data.Matrix.Class
 import BLAS.Tensor.Base
 import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
 

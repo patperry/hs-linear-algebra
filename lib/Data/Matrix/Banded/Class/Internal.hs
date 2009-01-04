@@ -88,9 +88,9 @@ import qualified BLAS.C.Level2 as BLAS
 import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
-import Data.Matrix.Shaped
-import Data.Matrix.MMatrix
-import Data.Matrix.MSolve
+import Data.Matrix.Class
+import Data.Matrix.Class.MMatrix
+import Data.Matrix.Class.MSolve
 
 import BLAS.Tensor
 import BLAS.Types( flipUpLo )

@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Matrix.ISolve
+-- Module     : Data.Matrix.Class.ISolve
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Data.Matrix.ISolve (
+module Data.Matrix.Class.ISolve (
     ISolve(..),
     (<\>),
     (<\\>),
@@ -19,8 +19,8 @@ module Data.Matrix.ISolve (
 
 import BLAS.Elem
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
-import Data.Matrix.Shaped
-import Data.Matrix.MSolve
+import Data.Matrix.Class
+import Data.Matrix.Class.MSolve
 
 import Data.Vector.Dense ( Vector, dim )
 import Data.Vector.Dense.ST ( runSTVector )

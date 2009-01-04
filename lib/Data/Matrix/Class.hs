@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Matrix.Shaped
+-- Module     : Data.Matrix.Class
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Data.Matrix.Shaped (
+module Data.Matrix.Class (
     HasVectorView(..),
     MatrixShaped(..),
     numRows,

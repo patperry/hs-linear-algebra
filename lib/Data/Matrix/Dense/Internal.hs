@@ -14,7 +14,7 @@ module Data.Matrix.Dense.Internal (
 
     -- * Matrix shape
     module BLAS.Tensor.Base,
-    module Data.Matrix.Shaped,
+    module Data.Matrix.Class,
     coerceMatrix,
 
     -- * Creating matrices
@@ -63,8 +63,8 @@ import BLAS.Tensor.Base
 import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
-import Data.Matrix.Shaped
-import Data.Matrix.MSolve
+import Data.Matrix.Class
+import Data.Matrix.Class.MSolve
 
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal

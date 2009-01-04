@@ -71,11 +71,11 @@ library
 
                         BLAS.UnsafeIOToM
 
-                        Data.Matrix.Shaped
-                        Data.Matrix.IMatrix
-                        Data.Matrix.MMatrix
-                        Data.Matrix.ISolve
-                        Data.Matrix.MSolve
+                        Data.Matrix.Class
+                            Data.Matrix.Class.IMatrix
+                            Data.Matrix.Class.MMatrix
+                            Data.Matrix.Class.ISolve
+                            Data.Matrix.Class.MSolve
 
                         Data.Matrix.Banded
                             Data.Matrix.Banded.IO

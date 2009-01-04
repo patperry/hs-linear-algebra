@@ -22,7 +22,7 @@ import Control.Monad( zipWithM_ )
 import Data.Ix( range )
 import Foreign( advancePtr )
 
-import Data.Matrix.Shaped
+import Data.Matrix.Class
 import Data.Matrix.Banded.Class.Internal
 import Data.Matrix.Banded.Class.Views
 import Data.Vector.Dense.Class( unsafeCopyVector )
