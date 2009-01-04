@@ -64,7 +64,6 @@ import BLAS.Tensor.Immutable
 import BLAS.Tensor
 
 import Data.Matrix.Shaped
-import Data.Matrix.HasVectorView
 import Data.Matrix.MSolve
 
 import Data.Matrix.Herm

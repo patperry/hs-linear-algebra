@@ -157,7 +157,6 @@ import Data.Vector.Dense.Class.Views( unsafeSubvectorView )
 import Data.Vector.Dense.Class.Special( newBasisVector )
 
 import Data.Matrix.Shaped
-import Data.Matrix.HasVectorView
 
 
 class (Storable e, MatrixShaped a e, HasVectorView a) => BaseMatrix_ a e where

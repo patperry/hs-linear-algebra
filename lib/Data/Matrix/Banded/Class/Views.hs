@@ -9,7 +9,6 @@
 
 module Data.Matrix.Banded.Class.Views (
     -- * Row and column views
-    module Data.Matrix.HasVectorView,
     diagViewBanded,
     rowViewBanded,
     colViewBanded,
@@ -21,7 +20,7 @@ module Data.Matrix.Banded.Class.Views (
     ) where
 
 import BLAS.Internal( checkedRow, checkedCol, checkedDiag, diagStart, diagLen )
-import Data.Matrix.HasVectorView
+import Data.Matrix.Shaped( HasVectorView(..) )
 
 import Data.Matrix.Banded.Class.Internal
 import Data.Vector.Dense.Class

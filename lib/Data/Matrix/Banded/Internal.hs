@@ -62,7 +62,6 @@ import BLAS.Tensor.Read
 import BLAS.UnsafeIOToM
 
 import Data.Matrix.Shaped
-import Data.Matrix.HasVectorView
 import Data.Matrix.IMatrix
 import Data.Matrix.MMatrix
 import Data.Matrix.ISolve

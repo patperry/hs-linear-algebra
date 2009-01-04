@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Shaped
@@ -9,6 +9,7 @@
 --
 
 module Data.Matrix.Shaped (
+    HasVectorView(..),
     MatrixShaped(..),
     numRows,
     numCols,
@@ -18,6 +19,9 @@ module Data.Matrix.Shaped (
     ) where
 
 import BLAS.Tensor
+
+class HasVectorView (a :: * -> * -> *) where
+    type VectorView a :: * -> * -> *
 
 -- | A base class for matrices.
 class (BaseTensor a (Int,Int) e) => MatrixShaped a e where

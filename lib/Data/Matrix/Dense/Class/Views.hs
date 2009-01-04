@@ -17,7 +17,6 @@ module Data.Matrix.Dense.Class.Views (
     unsafeSplitColsAt,
 
     -- * Row and Column views
-    module Data.Matrix.HasVectorView,
     rowViews,
     colViews,
     rowView,
@@ -35,8 +34,8 @@ module Data.Matrix.Dense.Class.Views (
 
 import BLAS.Internal( checkedSubmatrix, checkedRow, checkedCol, checkedDiag )
 import BLAS.Tensor( shape )
-import Data.Matrix.HasVectorView
 
+import Data.Matrix.Shaped( HasVectorView(..) )
 import Data.Matrix.Dense.Class.Internal
 import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )
 

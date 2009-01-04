@@ -89,7 +89,6 @@ import BLAS.Internal( diagLen )
 import BLAS.UnsafeIOToM
 
 import Data.Matrix.Shaped
-import Data.Matrix.HasVectorView
 import Data.Matrix.MMatrix
 import Data.Matrix.MSolve
 
