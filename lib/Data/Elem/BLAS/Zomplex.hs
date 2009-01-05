@@ -14,7 +14,7 @@ module Data.Elem.BLAS.Zomplex
         
 import Data.Complex ( Complex )
 import Foreign.Ptr  ( Ptr )
-import Data.Elem.BLAS.Types
+import BLAS.CTypes
 
 ---------------------------- Level 1 Routines -------------------------------
 

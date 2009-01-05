@@ -1,13 +1,14 @@
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Elem.BLAS.Types
+-- Module     : BLAS.CTypes
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 
-module Data.Elem.BLAS.Types (
+module BLAS.CTypes (
     CBLASOrder,
     CBLASTrans,
     CBLASUpLo,

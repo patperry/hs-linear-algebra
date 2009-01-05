@@ -85,6 +85,7 @@ import Unsafe.Coerce
 import Data.Elem.BLAS( BLAS2, BLAS3, conj )
 import qualified Data.Elem.BLAS as BLAS
 import BLAS.Internal( diagLen )
+import BLAS.Types
 import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
@@ -93,8 +94,6 @@ import Data.Tensor.Class.MTensor
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrix
 import Data.Matrix.Class.MSolve
-
-import BLAS.Types( flipUpLo )
 
 import Data.Vector.Dense.Class.Internal( IOVector, STVector,
     BaseVector(..), ReadVector, WriteVector, doConjVector,
@@ -460,7 +459,7 @@ hbmv alpha h x beta y
             u'    = case (isHermBanded a) of
                         True  -> flipUpLo u
                         False -> u
-            uploA = BLAS.cblasUpLo u'
+            uploA = u'
             ldA   = ldaOfBanded a
             incX  = stride x
             incY  = stride y
@@ -498,10 +497,10 @@ tbmv alpha t x | isConj x = do
 tbmv alpha t x =
     let (u,d,a) = triToBase t
         (transA,u') 
-                  = if isHermBanded a then (BLAS.conjTrans, flipUpLo u) 
-                                      else (BLAS.noTrans, u)
-        uploA     = BLAS.cblasUpLo u'
-        diagA     = BLAS.cblasDiag d
+                  = if isHermBanded a then (ConjTrans, flipUpLo u) 
+                                      else (NoTrans  , u)
+        uploA     = u'
+        diagA     = d
         n         = numCols a
         k         = case u of Upper -> numUpper a 
                               Lower -> numLower a
@@ -555,10 +554,10 @@ tbsv alpha t x | isConj x = do
     
 tbsv alpha t x = 
     let (u,d,a) = triToBase t
-        (transA,u') = if isHermBanded a then (BLAS.conjTrans, flipUpLo u)
-                                        else (BLAS.noTrans, u)
-        uploA     = BLAS.cblasUpLo u'
-        diagA     = BLAS.cblasDiag d
+        (transA,u') = if isHermBanded a then (ConjTrans, flipUpLo u)
+                                        else (NoTrans  , u)
+        uploA     = u'
+        diagA     = d
         n         = numCols a
         k         = case u of Upper -> numUpper a 
                               Lower -> numLower a        
@@ -628,11 +627,11 @@ indicesBanded a =
     in filter (hasStorageBanded a) is
   where (m,n) = shapeBanded a
 
-blasTransOf :: (BaseBanded a e) => a mn e -> BLAS.CBLASTrans
+blasTransOf :: (BaseBanded a e) => a mn e -> Trans
 blasTransOf a = 
     case (isHermBanded a) of
-          False -> BLAS.noTrans
-          True  -> BLAS.conjTrans
+          False -> NoTrans
+          True  -> ConjTrans
 
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)

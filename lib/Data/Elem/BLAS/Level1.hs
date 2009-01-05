@@ -19,7 +19,7 @@ import Foreign.Storable.Complex ()
 import Data.Complex
 
 import Data.Elem.BLAS.Base
-import Data.Elem.BLAS.Types
+import BLAS.CTypes
 import Data.Elem.BLAS.Double  
 import Data.Elem.BLAS.Zomplex
         

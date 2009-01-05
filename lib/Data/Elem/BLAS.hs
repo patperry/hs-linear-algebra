@@ -13,7 +13,7 @@ module Data.Elem.BLAS (
     module Data.Elem.BLAS.Level1,
     module Data.Elem.BLAS.Level2,
     module Data.Elem.BLAS.Level3,
-    module Data.Elem.BLAS.Types,
+    module BLAS.Types,
     ) where
 
 import Data.Elem.Conj
@@ -21,4 +21,4 @@ import Data.Elem.BLAS.Base
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Level2
 import Data.Elem.BLAS.Level3
-import Data.Elem.BLAS.Types
+import BLAS.Types

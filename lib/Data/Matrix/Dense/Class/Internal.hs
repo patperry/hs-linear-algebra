@@ -551,11 +551,11 @@ unsafeDoDivMatrix = unsafeDoMatrixOp2 $ unsafeDivMatrix
 
 --------------------------- Utility functions -------------------------------
 
-blasTransOf :: (BaseMatrix a e) => a mn e -> BLAS.CBLASTrans
+blasTransOf :: (BaseMatrix a e) => a mn e -> Trans
 blasTransOf a = 
     case (isHermMatrix a) of
-          False -> BLAS.noTrans
-          True  -> BLAS.conjTrans
+          False -> NoTrans
+          True  -> ConjTrans
 
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
@@ -667,7 +667,7 @@ gemv alpha a x beta y
         scaleBy beta y
         
     | isConj y && (isConj x || stride x == 1) =
-        let transA = if isConj x then BLAS.noTrans else BLAS.conjTrans
+        let transA = if isConj x then NoTrans else ConjTrans
             transB = blasTransOf (herm a)
             m      = 1
             n      = dim y
@@ -742,7 +742,7 @@ hemv alpha h x beta y
             u'    = case isHermMatrix a of
                         True  -> flipUpLo u
                         False -> u
-            uploA = BLAS.cblasUpLo u'
+            uploA = u'
             ldA   = ldaOfMatrix a
             incX  = stride x
             incY  = stride y
@@ -762,9 +762,9 @@ hemm alpha h b beta c
         let (m,n)   = shape c
             (side,u',m',n')
                     = if isHermMatrix a
-                          then (BLAS.rightSide, flipUpLo u, n, m)
-                          else (BLAS.leftSide,  u,          m, n)
-            uploA   = BLAS.cblasUpLo u'
+                          then (RightSide, flipUpLo u, n, m)
+                          else (LeftSide,  u,          m, n)
+            uploA   = u'
             ldA     = ldaOfMatrix a
             ldB     = ldaOfMatrix b
             ldC     = ldaOfMatrix c
@@ -905,12 +905,12 @@ trmv alpha t x
         
     | isConj x =
         let (u,d,a) = triToBase t
-            side    = BLAS.rightSide
-            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) 
+            side    = RightSide
+            (h,u')  = if isHermMatrix a then (NoTrans  , flipUpLo u) 
                                         else (ConjTrans, u)
-            uploA   = BLAS.cblasUpLo u'
-            transA  = BLAS.cblasTrans h
-            diagA   = BLAS.cblasDiag d
+            uploA   = u'
+            transA  = h
+            diagA   = d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
@@ -923,10 +923,10 @@ trmv alpha t x
 
     | otherwise =
         let (u,d,a)   = triToBase t
-            (transA,u') = if isHermMatrix a then (BLAS.conjTrans, flipUpLo u) 
-                                            else (BLAS.noTrans, u)
-            uploA     = BLAS.cblasUpLo u'
-            diagA     = BLAS.cblasDiag d
+            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                            else (NoTrans  , u)
+            uploA     = u'
+            diagA     = d
             n         = dim x
             ldA       = ldaOfMatrix a
             incX      = stride x
@@ -948,11 +948,11 @@ trmm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (BLAS.rightSide, flipTrans h, n, m, conj alpha)
-                        else (BLAS.leftSide , h          , m, n, alpha       )
-        uploA     = BLAS.cblasUpLo u'
-        transA    = BLAS.cblasTrans h'
-        diagA     = BLAS.cblasDiag d
+                        then (RightSide, flipTrans h, n, m, conj alpha)
+                        else (LeftSide , h          , m, n, alpha       )
+        uploA     = u'
+        transA    = h'
+        diagA     = d
         ldA       = ldaOfMatrix a
         ldB       = ldaOfMatrix b
     in unsafeIOToM $
@@ -1025,11 +1025,11 @@ trsv alpha t x
 
     | isConj x =
         let (u,d,a) = triToBase t
-            side    = BLAS.rightSide
+            side    = RightSide
             (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
-            uploA   = BLAS.cblasUpLo u'
-            transA  = BLAS.cblasTrans h
-            diagA   = BLAS.cblasDiag d
+            uploA   = u'
+            transA  = h
+            diagA   = d
             m       = 1
             n       = dim x
             alpha'  = conj alpha
@@ -1042,10 +1042,10 @@ trsv alpha t x
 
     | otherwise =
         let (u,d,a) = triToBase t
-            (transA,u') = if isHermMatrix a then (BLAS.conjTrans, flipUpLo u) 
-                                            else (BLAS.noTrans  , u)
-            uploA     = BLAS.cblasUpLo u'
-            diagA     = BLAS.cblasDiag d
+            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                            else (NoTrans  , u)
+            uploA     = u'
+            diagA     = d
             n         = dim x
             ldA       = ldaOfMatrix a
             incX      = stride x
@@ -1066,11 +1066,11 @@ trsm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (BLAS.rightSide, flipTrans h, n, m, conj alpha)
-                        else (BLAS.leftSide , h          , m, n, alpha     )
-        uploA     = BLAS.cblasUpLo u'
-        transA    = BLAS.cblasTrans h'
-        diagA     = BLAS.cblasDiag d
+                        then (RightSide, flipTrans h, n, m, conj alpha)
+                        else (LeftSide , h          , m, n, alpha     )
+        uploA     = u'
+        transA    = h'
+        diagA     = d
         ldA       = ldaOfMatrix a
         ldB       = ldaOfMatrix b
     in unsafeIOToM $     
