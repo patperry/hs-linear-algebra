@@ -15,9 +15,9 @@ module Data.Elem.Conj (
 import Data.Complex
 import Data.Vector.Dense.Class.Internal.Base( BaseVector, conjVector )
 
+-- | Values that have a complex conjugate.
 class Conj e where
-    -- | Take the complex conjugate of a value.  For real values
-    -- this is equal to @id@.
+    -- | Take the complex conjugate.  For real values this is equal to @id@.
     conj :: e -> e
 
 instance Conj (Complex Double) where
