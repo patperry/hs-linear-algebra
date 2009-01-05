@@ -80,8 +80,8 @@ import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix,
     unsafeDoSApplyAddTriMatrix, unsafeDoSApplyAddMatTriMatrix, trmv, trmm,
     unsafeDoSSolveTriMatrix, unsafeDoSSolveMatTriMatrix, trsv, trsm )
 import Data.Matrix.Dense.Class.Operations
-import Data.Vector.Dense.Class.Internal
 import Data.Vector.Dense
+import Data.Vector.Dense.IO( IOVector, unsafeThawVector )
 
 newtype Matrix mn e = M (IOMatrix mn e)
 

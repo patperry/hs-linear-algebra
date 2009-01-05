@@ -54,13 +54,18 @@ import System.IO.Unsafe
 import Data.Elem.Conj
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
+import Data.Tensor.Class.MTensor
 
 import Data.Elem.BLAS ( BLAS1 )
 import BLAS.Internal ( inlinePerformIO )
 import BLAS.UnsafeIOToM
 
-import Data.Vector.Dense.IO
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Class.Internal
+import Data.Vector.Dense.Class.Creating
+import Data.Vector.Dense.Class.Special
+import Data.Vector.Dense.Class.Views
+import Data.Vector.Dense.Class.Operations
+import Data.Vector.Dense.Class.Properties
 
 
 infixl 7 <.>

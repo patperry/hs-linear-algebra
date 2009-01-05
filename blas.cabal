@@ -102,6 +102,7 @@ library
                         Data.Elem.Conj
                         
                         Data.Vector.Dense.Internal
+                        Data.Vector.Dense.STBase
                         Data.Vector.Dense.Class.Internal
                         Data.Vector.Dense.Class.Internal.Base
                         Data.Vector.Dense.Class.Creating
