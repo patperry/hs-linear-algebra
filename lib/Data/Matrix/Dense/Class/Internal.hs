@@ -1081,43 +1081,54 @@ trsm alpha t b =
 
 ------------------------------------ MSolve ------------------------------
 
-class (MatrixShaped a e, Monad m) => MSolve a e m where
+-- | A type class for mutable matrices with inverses.  The member
+-- functions of the type class do not perform any checks on the validity
+-- of shapes or indices, so in general their safe counterparts should be
+-- preferred.
+class (MatrixShaped a e, BLAS3 e, Monad m) => MSolve a e m where
     unsafeDoSolve :: (ReadVector y e m, WriteVector x e m) =>
         a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSolve = unsafeDoSSolve 1
+    {-# INLINE unsafeDoSolve #-}
     
     unsafeDoSolveMat :: (ReadMatrix c e m, WriteMatrix b e m) =>
         a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
     unsafeDoSolveMat = unsafeDoSSolveMat 1
+    {-# INLINE unsafeDoSolveMat #-}    
     
     unsafeDoSSolve :: (ReadVector y e m, WriteVector x e m) =>
         e -> a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSSolve alpha a y x = do
         unsafeDoSolve a y x
         scaleBy alpha x
+    {-# INLINE unsafeDoSSolve #-}        
     
     unsafeDoSSolveMat :: (ReadMatrix c e m, WriteMatrix b e m) =>
         e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
     unsafeDoSSolveMat alpha a c b = do
         unsafeDoSolveMat a c b
         scaleBy alpha b
+    {-# INLINE unsafeDoSSolveMat #-}
 
     unsafeDoSolve_ :: (WriteVector x e m) => a (k,k) e -> x k e -> m ()
     unsafeDoSolve_ = unsafeDoSSolve_ 1
+    {-# INLINE unsafeDoSolve_ #-}
 
     unsafeDoSSolve_ :: (WriteVector x e m) => e -> a (k,k) e -> x k e -> m ()
     unsafeDoSSolve_ alpha a x = do
         scaleBy alpha x
         unsafeDoSolve_ a x
+    {-# INLINE unsafeDoSSolve_ #-}        
         
     unsafeDoSolveMat_ :: (WriteMatrix b e m) => a (k,k) e -> b (k,l) e -> m ()
     unsafeDoSolveMat_ = unsafeDoSSolveMat_ 1
+    {-# INLINE unsafeDoSolveMat_ #-}
         
     unsafeDoSSolveMat_ :: (WriteMatrix b e m) => e -> a (k,k) e -> b (k,l) e -> m ()         
     unsafeDoSSolveMat_ alpha a b = do
         scaleBy alpha b
         unsafeDoSolveMat_ a b
-
+    {-# INLINE unsafeDoSSolveMat_ #-}
 
 ------------------------------------ Instances ------------------------------
 
