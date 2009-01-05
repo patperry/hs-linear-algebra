@@ -20,7 +20,7 @@ import Data.Elem.BLAS.Level2
 import Data.Elem.BLAS.Double  
 import Data.Elem.BLAS.Zomplex 
         
-        
+-- | Types with matrix-matrix operations.        
 class (BLAS2 a) => BLAS3 a where
     gemm  :: Trans -> Trans -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     symm  :: Side -> UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()

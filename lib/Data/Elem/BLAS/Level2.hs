@@ -19,7 +19,8 @@ import BLAS.CTypes
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Double 
 import Data.Elem.BLAS.Zomplex
-        
+   
+-- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where
     gemv :: Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: Trans -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()

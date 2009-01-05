@@ -14,7 +14,7 @@ module Test.Matrix.Herm.Banded (
     HermBandedMM(..),
     ) where
 
-import Control.Monad ( replicateM )
+import Control.Monad ( liftM, replicateM )
 
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
@@ -22,7 +22,7 @@ import Test.Vector.Dense ( vector )
 import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
-import Data.Elem.BLAS ( Elem, BLAS3, toReal, fromReal, conj )
+import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conj )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
@@ -43,7 +43,7 @@ hermBanded n k
     | k < 0 = 
         error $ "hermBanded: k must be non-negative"
     | k == 0 = do
-        d <- QC.vector n >>= return . realPart
+        d <- liftM toElems (QC.vector n)
         return $ listsBanded (n,n) (0,0) [d]
     | otherwise = do
         a <- hermBanded n (k-1)
@@ -57,8 +57,8 @@ hermBanded n k
         return $ listsBanded (n,n) (k,k) ds'
         
   where
-    realPart :: Elem e => [e] -> [e]
-    realPart = map (fromReal . toReal)
+    toElems :: Elem e => [Double] -> [e]
+    toElems = map fromReal
 
 data HermBanded n e =
     HermBanded (Herm Banded (n,n) e)

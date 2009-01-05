@@ -342,9 +342,9 @@ unsafeMulVector y x
     | isConj y =
         unsafeMulVector (conj y) (conj x)
     | isConj x =
-        vectorCall2 BLAS.cmul x y
+        vectorCall2 BLAS.vcmul x y
     | otherwise =
-        vectorCall2 BLAS.mul x y
+        vectorCall2 BLAS.vmul x y
 
 unsafeDivVector :: (WriteVector y e m, ReadVector x e m) => 
     y n e -> x n e -> m ()
@@ -352,9 +352,9 @@ unsafeDivVector y x
     | isConj y =
         unsafeDivVector (conj y) (conj x)
     | isConj x =
-        vectorCall2 BLAS.cdiv x y
+        vectorCall2 BLAS.vcdiv x y
     | otherwise =
-        vectorCall2 BLAS.div x y
+        vectorCall2 BLAS.vdiv x y
 
 
 --------------------------- Utility functions -------------------------------

@@ -12,6 +12,7 @@ module Data.Elem.BLAS.Base (
     Elem(..),
     ) where
 
+import Data.AEq
 import Data.Elem.Conj
 import Data.Complex             ( Complex(..), magnitude )
 import Foreign                  ( Storable )
@@ -25,21 +26,30 @@ class (Storable e, Fractional e, Conj e) => Elem e where
     -- | Get the l1 norm of a value.
     norm1 :: e -> Double
     
-    -- | Convert a double to an element
+    -- | Convert a double to an element.
     fromReal :: Double -> e
 
-    -- | Coerce an element to a double
-    toReal :: e -> Double
+    -- | Try to coerce a value to a double.  This will fail unless the
+    -- complex part is zero (according to a comparison by @(~==)@).
+    maybeToReal :: e -> Maybe Double
     
 instance Elem Double where
-    norm     = abs
-    norm1    = abs
-    fromReal = id
-    toReal   = id
+    norm        = abs
+    {-# INLINE norm #-}
+    norm1       = abs
+    {-# INLINE norm1 #-}
+    fromReal    = id
+    {-# INLINE fromReal #-}
+    maybeToReal = Just
+    {-# INLINE maybeToReal #-}
     
 instance Elem (Complex Double) where
-    norm             = magnitude
-    norm1 (x :+ y)   = abs x + abs y
-    fromReal x       = x :+ 0
-    toReal  (x :+ _) = x
-    
+    norm           = magnitude
+    {-# INLINE norm #-}    
+    norm1 (x :+ y) = abs x + abs y
+    {-# INLINE norm1 #-}    
+    fromReal x     = x :+ 0
+    {-# INLINE fromReal #-}    
+    maybeToReal (x :+ y) | y ~== 0   = Just x
+                         | otherwise = Nothing
+    {-# INLINE maybeToReal #-}

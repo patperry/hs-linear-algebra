@@ -23,6 +23,7 @@ import BLAS.CTypes
 import Data.Elem.BLAS.Double  
 import Data.Elem.BLAS.Zomplex
         
+-- | Types with vector-vector operations.
 class (Elem a) => BLAS1 a where
     dotu  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
     dotc  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
@@ -39,23 +40,23 @@ class (Elem a) => BLAS1 a where
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
-    -- | conjugate all elements of a vector
+    -- | Replaces @y@ with @conj y@.
     vconj  :: Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @x*y@.
-    mul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    vmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @conj(x)*y@.
-    cmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    vcmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @y/x@.
-    div :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    vdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
     -- | Replaces @y@ with @y/conj(x)@.
-    cdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    vcdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 
 
@@ -73,10 +74,10 @@ instance BLAS1 Double where
     rot   = drot
     vconj _ _ _ = return ()
     acxpy = daxpy
-    mul n = dtbmv upper noTrans nonUnit n 0
-    cmul  = mul
-    div n = dtbsv upper noTrans nonUnit n 0
-    cdiv = div
+    vmul n = dtbmv upper noTrans nonUnit n 0
+    vcmul  = vmul
+    vdiv n = dtbsv upper noTrans nonUnit n 0
+    vcdiv  = vdiv
 
 instance BLAS1 (Complex Double) where
     dotu n pX incX pY incY =
@@ -144,8 +145,8 @@ instance BLAS1 (Complex Double) where
                         
                     go n'' pX'' pY''
         
-    mul n  = ztbmv upper noTrans   nonUnit n 0
-    cmul n = ztbmv upper conjTrans nonUnit n 0
+    vmul n  = ztbmv upper noTrans   nonUnit n 0
+    vcmul n = ztbmv upper conjTrans nonUnit n 0
 
-    div n  = ztbsv upper noTrans   nonUnit n 0
-    cdiv n = ztbsv upper conjTrans nonUnit n 0
+    vdiv n  = ztbsv upper noTrans   nonUnit n 0
+    vcdiv n = ztbsv upper conjTrans nonUnit n 0
