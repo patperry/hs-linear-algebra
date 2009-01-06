@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Vector.Dense.Base
@@ -31,7 +32,13 @@ import Data.Vector.Dense.IOBase
 
 infixl 7 <.>
 
--- | The immutable dense vector data type.
+-- | Immutable dense vectors. The type arguments are as follows:
+--
+--     * @n@: a phantom type for the dimension of the vector
+--
+--     * @e@: the element type of the vector.  Only certain element types
+--       are supported.
+--
 newtype Vector n e = Vector (IOVector n e)
 
 freezeIOVector :: (BLAS1 e) => IOVector n e -> IO (Vector n e)
@@ -64,6 +71,11 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Get a view into the complex conjugate of a vector.
     conj :: x n e -> x n e
 
+    -- | Cast the shape type of the vector.
+    coerceVector :: x n e -> x n' e
+    coerceVector = unsafeCoerce
+    {-# INLINE coerceVector #-}
+
     unsafeSubvectorViewWithStride :: Int -> x n e -> Int -> Int -> x n' e
 
     withVectorPtrIO :: x n e -> (Ptr e -> IO a) -> IO a
@@ -94,11 +106,6 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
 
 -- | An overloaded interface for vectors that can be modified in a monad.
 class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
-
--- | Cast the shape type of the vector.
-coerceVector :: (BaseVector x e) => x n e -> x n' e
-coerceVector = unsafeCoerce
-{-# INLINE coerceVector #-}
 
 -- | Creates a new vector with the given association list.  Unspecified
 -- indices will get initialized to zero.
@@ -786,10 +793,10 @@ instance (Elem e, Show e) => Show (Vector n e) where
         | isConj x  = "conj (" ++ show (conj x) ++ ")"
         | otherwise = "listVector " ++ show (dim x) ++ " " ++ show (elemsVector x)
 
-instance (BLAS1 e, Eq e) => Eq (Vector n e) where
+instance (BLAS1 e) => Eq (Vector n e) where
     (==) = compareVectorWith (==)
 
-instance (BLAS1 e, AEq e) => AEq (Vector n e) where
+instance (BLAS1 e) => AEq (Vector n e) where
     (===) = compareVectorWith (===)
     (~==) = compareVectorWith (~==)
 

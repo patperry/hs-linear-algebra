@@ -6,13 +6,14 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Immutable dense vectors.
 
 module Data.Vector.Dense (
     -- * The Vector type
     Vector,
 
     -- * Overloaded interface for vectors
-    BaseVector( dim ),
+    BaseVector( dim, conj, coerceVector ),
 
     -- * Creating new vectors
     vector, 
@@ -27,7 +28,6 @@ module Data.Vector.Dense (
     module Data.Tensor.Class.ITensor,
 
     -- * Vector views
-    conj,
     subvector,
     subvectorWithStride,
 
@@ -37,8 +37,6 @@ module Data.Vector.Dense (
     whichMaxAbs,
     (<.>),
 
-    -- * Coercing the phantom shape type
-    coerceVector,
     ) where
 
 import Data.Vector.Dense.Base

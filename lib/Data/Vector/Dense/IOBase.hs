@@ -23,7 +23,13 @@ import qualified Data.Elem.BLAS as BLAS
 import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
-
+-- | Dense vectors in the 'IO' monad.  The type arguments are as follows:
+--
+--     * @n@: a phantom type for the dimension of the vector
+--
+--     * @e@: the element type of the vector.  Only certain element types
+--       are supported.
+--
 data IOVector n e = 
       IOVector {-# UNPACK #-} !(ForeignPtr e) -- memory owner
                {-# UNPACK #-} !(Ptr e)        -- pointer to the first element

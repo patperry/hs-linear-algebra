@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types, FlexibleInstances, MultiParamTypeClasses #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Vector.Dense.STBase
@@ -22,9 +23,21 @@ import Data.Tensor.Class.MTensor
 import Data.Vector.Dense.Base
 import Data.Vector.Dense.IOBase
 
-
+-- | Dense vectors in the 'ST' monad.  The type arguments are as follows:
+--
+--     * @s@: the state variable argument for the 'ST' type
+--
+--     * @n@: a phantom type for the dimension of the vector
+--
+--     * @e@: the element type of the vector.  Only certain element types
+--       are supported.
+--
 newtype STVector s n e = STVector (IOVector n e)
 
+-- | A safe way to create and work with a mutable vector before returning 
+-- an immutable vector for later perusal. This function avoids copying
+-- the vector before returning it - it uses unsafeFreezeVector internally,
+-- but this wrapper is a safe interface to that function. 
 runSTVector :: (forall s . ST s (STVector s n e)) -> Vector n e
 runSTVector mx = 
     runST $ mx >>= \(STVector x) -> return (Vector x)

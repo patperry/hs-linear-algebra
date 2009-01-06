@@ -6,10 +6,13 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- An overloaded interface to mutable dense vectors.  For vector types
+-- than can be used with this interface, see "Data.Vector.Dense.IO" and
+-- "Data.Vector.Dense.ST".
 
 module Data.Vector.Dense.Class (
     -- * Overloaded dense vector type classes
-    BaseVector(dim, stride),
+    BaseVector( dim, conj, coerceVector ),
     ReadVector,
     WriteVector,
     
@@ -33,7 +36,6 @@ module Data.Vector.Dense.Class (
     swapVector,
 
     -- * Vector views
-    conj,
     subvectorView,
     subvectorViewWithStride,
 
@@ -41,7 +43,7 @@ module Data.Vector.Dense.Class (
     module Data.Tensor.Class.MTensor,
 
     -- * Vector operations
-    -- ** Unsary
+    -- ** Unary
     getConjVector,
     getScaledVector,
     getShiftedVector,
@@ -66,9 +68,6 @@ module Data.Vector.Dense.Class (
     getWhichMaxAbs,
     getDot,
 
-    -- * Coercing the phantom shape type
-    coerceVector,
-    
     -- * Conversions between mutable and immutable vectors
     freezeVector,
     thawVector,

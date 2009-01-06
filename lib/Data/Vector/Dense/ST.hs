@@ -6,13 +6,14 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Mutable vectors in the ST monad.
 
 module Data.Vector.Dense.ST (
     -- * The @STVector@ data type
-    STVector,
     runSTVector,
+    STVector,
     
-    -- * Overloaded interface for mutable dense vectors
+    -- * Overloaded mutable dense vector interface
     module Data.Vector.Dense.Class
     ) where
 
