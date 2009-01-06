@@ -32,6 +32,15 @@ import Data.Vector.Dense.IOBase
 -- | The immutable dense vector data type.
 newtype Vector n e = Vector (IOVector n e)
 
+freezeIOVector :: (BLAS1 e) => IOVector n e -> IO (Vector n e)
+freezeIOVector x = do
+    y <- newCopyIOVector x
+    return (Vector x)
+
+thawIOVector :: (BLAS1 e) => Vector n e -> IO (IOVector n e)
+thawIOVector (Vector x) =
+    newCopyIOVector x
+
 unsafeFreezeIOVector :: IOVector n e -> IO (Vector n e)
 unsafeFreezeIOVector = return . Vector
 
@@ -53,9 +62,9 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Get a view into the complex conjugate of a vector.
     conj :: x n e -> x n e
 
-    -- | Execute an @IO@ action with a pointer to the first element in the
-    -- vector.
     withVectorPtrIO :: x n e -> (Ptr e -> IO a) -> IO a
+    unsafeIOVectorToVector :: IOVector n e -> x n e
+    unsafeVectorToIOVector :: x n e -> IOVector n e
 
 -- | An overloaded interface for vectors that can be read or created in
 -- a monad.
@@ -64,6 +73,10 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
     -- convert the @IO@ action to an action in the monad @m@.
     withVectorPtr :: x n e -> (Ptr e -> IO a) -> m a
 
+    -- | Convert a mutable vector to an immutable one by taking a complete
+    -- copy of it.
+    freezeVector :: x n e -> m (Vector n e)
+
     unsafeFreezeVector :: x n e -> m (Vector n e)
 
 -- | An overloaded interface for vectors that can be modified in a monad.
@@ -71,6 +84,10 @@ class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
     -- | Creates a new vector of the given length.  The elements will be 
     -- uninitialized.
     newVector_ :: Int -> m (x n e)
+
+    -- | Convert an immutable vector to a mutable one by taking a complete
+    -- copy of it.
+    thawVector :: Vector n e -> m (x n e)
 
     unsafeThawVector :: Vector n e -> m (x n e)
 
@@ -351,18 +368,26 @@ instance (Elem e) => BaseVector IOVector e where
     {-# INLINE isConj #-}
     conj = conjIOVector
     {-# INLINE conj #-}
+    unsafeIOVectorToVector = id
+    {-# INLINE unsafeIOVectorToVector #-}
+    unsafeVectorToIOVector = id
+    {-# INLINE unsafeVectorToIOVector #-}
     withVectorPtrIO = withIOVectorPtr
     {-# INLINE withVectorPtrIO #-}
     
 instance (BLAS1 e) => ReadVector IOVector e IO where
     withVectorPtr = withIOVectorPtr
     {-# INLINE withVectorPtr #-}
+    freezeVector = freezeIOVector
+    {-# INLINE freezeVector #-}
     unsafeFreezeVector = unsafeFreezeIOVector
     {-# INLINE unsafeFreezeVector #-}
 
 instance (BLAS1 e) => WriteVector IOVector e IO where
     newVector_ = newIOVector_
     {-# INLINE newVector_ #-}
+    thawVector = thawIOVector
+    {-# INLINE thawVector #-}
     unsafeThawVector = unsafeThawIOVector
     {-# INLINE unsafeThawVector #-}
 
@@ -501,12 +526,26 @@ instance (Elem e) => BaseVector Vector e where
     {-# INLINE isConj #-}
     conj (Vector x) = (Vector (conjIOVector x))
     {-# INLINE conj #-}
+    unsafeIOVectorToVector = Vector
+    {-# INLINE unsafeIOVectorToVector #-}
+    unsafeVectorToIOVector (Vector x) = x
+    {-# INLINE unsafeVectorToIOVector #-}
     withVectorPtrIO (Vector x) = withIOVectorPtr x
     {-# INLINE withVectorPtrIO #-}
 
-instance (BLAS1 e, Monad m) => ReadVector Vector e m where
-    withVectorPtr (Vector x) f = (return . inlinePerformIO) $ withVectorPtr x f
+instance (BLAS1 e) => ReadVector Vector e IO where
+    withVectorPtr (Vector x) f = withVectorPtr x f
     {-# INLINE withVectorPtr #-}
+    freezeVector (Vector x) = freezeIOVector x
+    {-# INLINE freezeVector #-}
+    unsafeFreezeVector = return
+    {-# INLINE unsafeFreezeVector #-}
+
+instance (BLAS1 e) => ReadVector Vector e (ST s) where
+    withVectorPtr (Vector x) f = unsafeIOToST $ withVectorPtr x f
+    {-# INLINE withVectorPtr #-}
+    freezeVector (Vector x) = unsafeIOToST $ freezeIOVector x
+    {-# INLINE freezeVector #-}
     unsafeFreezeVector = return
     {-# INLINE unsafeFreezeVector #-}
 

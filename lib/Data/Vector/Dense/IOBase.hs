@@ -63,6 +63,14 @@ newIOVector_ n
         arr <- mallocForeignPtrArray n
         return $ IOVector arr (unsafeForeignPtrToPtr arr) n 1 False
 
+newCopyIOVector :: (BLAS1 e) => IOVector n e -> IO (IOVector n e)
+newCopyIOVector (IOVector f p n incX c) = do
+    (IOVector f' p' _ _ _) <- newIOVector_ n
+    BLAS.copy n p incX p' 1
+    touchForeignPtr f
+    touchForeignPtr f'
+    return (IOVector f' p' n 1 c)
+
 shapeIOVector :: IOVector n e -> Int
 shapeIOVector = dimIOVector
 {-# INLINE shapeIOVector #-}
