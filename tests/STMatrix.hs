@@ -114,7 +114,7 @@ prop_SwapMatrix = swapMatrix `implements2` swapMatrix_S
 
 -------------------------- Unsary Matrix Operations --------------------------
 
-doConj_S x = ( (), tmap conj x )
+doConj_S x = ( (), tmap conjugate x )
 prop_DoConj = doConj `implements` doConj_S
 
 scaleBy_S k x = ( (), tmap (k*) x )
@@ -126,7 +126,7 @@ prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 modifyWith_S f x = ( (), tmap f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
-getConjMatrix_S x = ( tmap conj x, x )
+getConjMatrix_S x = ( tmap conjugate x, x )
 prop_GetConjMatrix = 
     (\x -> getConjMatrix x >>= abstract) `implements` getConjMatrix_S
 

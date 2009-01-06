@@ -620,11 +620,13 @@ indicesVector (Vector x) = indicesIOVector x
 elemsVector :: (Elem e) => Vector n e -> [e]
 elemsVector x | isConj x  = (map conjugate . elemsVector . conj) x
               | otherwise = case x of { (Vector (IOVector f p n incX _)) ->
-    let end   = p `advancePtr` (n*incX)
-        go p' | p' == end = inlinePerformIO $ touchForeignPtr f >> return []
-              | otherwise = let e  = inlinePerformIO (peek p')
+    let end = p `advancePtr` (n*incX)
+        go p' | p' == end = inlinePerformIO $ do
+                                io <- touchForeignPtr f
+                                io `seq` return []
+              | otherwise = let e = inlinePerformIO (peek p')
                                 es = go (p' `advancePtr` incX)
-                            in e:es
+                            in e `seq` (e:es)
     in go p }
 {-# SPECIALIZE INLINE elemsVector :: Vector n Double -> [Double] #-}
 {-# SPECIALIZE INLINE elemsVector :: Vector n (Complex Double) -> [Complex Double] #-}

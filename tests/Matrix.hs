@@ -116,9 +116,9 @@ prop_assocs (a :: M) =
 prop_scale_elems (a :: M) k =
     and $ zipWith (~==) (elems (k *> a)) (map (k*) (elems a))
 prop_herm_elem (MatrixAt (a :: M) (i,j)) =
-    (herm a) ! (j,i) == conj (a!(i,j))
+    (herm a) ! (j,i) == conjugate (a!(i,j))
 prop_herm_scale (a :: M) k =
-    herm (k *> a) === (conj k) *> (herm a)
+    herm (k *> a) === (conjugate k) *> (herm a)
 
 prop_herm_shape (a :: M) =
     shape (herm a) == (numCols a, numRows a)

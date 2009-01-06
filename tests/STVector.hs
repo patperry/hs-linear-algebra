@@ -120,7 +120,7 @@ prop_SwapVector = swapVector `implements2` swapVector_S
 
 -------------------------- Unsary Vector Operations --------------------------
 
-doConj_S x = ( (), map conj x )
+doConj_S x = ( (), map conjugate x )
 prop_DoConj = doConj `implements` doConj_S
 
 scaleBy_S k x = ( (), map (k*) x )
@@ -132,7 +132,7 @@ prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 modifyWith_S f x = ( (), map f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
-getConjVector_S x = ( map conj x, x )
+getConjVector_S x = ( map conjugate x, x )
 prop_GetConjVector = 
     (\x -> getConjVector x >>= abstract) `implements` getConjVector_S
 
@@ -192,7 +192,7 @@ getWhichMaxAbs_S x = ( (i,x!!i), x)
 prop_GetWhichMaxAbs = 
     implementsIf (return . (>0) . dim) getWhichMaxAbs getWhichMaxAbs_S
 
-getDot_S x y = ( foldl' (+) 0 $ zipWith (*) (map conj x) y, x, y )
+getDot_S x y = ( foldl' (+) 0 $ zipWith (*) (map conjugate x) y, x, y )
 prop_GetDot = getDot `implements2` getDot_S
 
 
@@ -273,7 +273,8 @@ implementsFor :: (AEq a, Show a) =>
 implementsFor n a f =
     forAll (Test.vector n) $ \x ->
         runST $ do
-            commutes (unsafeThawVector x) a f
+            x' <- unsafeThawVector x
+            commutes x' a f
 
 implementsFor2 :: (AEq a, Show a) =>
     Int ->
@@ -284,7 +285,9 @@ implementsFor2 n a f =
     forAll (Test.vector n) $ \x ->
     forAll (Test.vector n) $ \y ->
         runST $ do
-            commutes2 (unsafeThawVector x) (unsafeThawVector y) a f
+            x' <- unsafeThawVector x
+            y' <- unsafeThawVector y
+            commutes2 x' y' a f
 
 implementsIf :: (AEq a, Show a) =>
     (forall s . STVector s n E -> ST s Bool) ->
@@ -298,7 +301,8 @@ implementsIf pre a f =
             x' <- thawVector x
             pre x') ==>
         runST ( do
-            commutes (unsafeThawVector x) a f )
+            x' <- unsafeThawVector x
+            commutes x' a f )
 
 implementsIf2 :: (AEq a, Show a) =>
     (forall s . STVector s n E -> STVector s n E -> ST s Bool) ->
@@ -314,7 +318,9 @@ implementsIf2 pre a f =
             y' <- thawVector y
             pre x' y') ==>
         runST ( do
-            commutes2 (unsafeThawVector x) (unsafeThawVector y) a f )
+            x' <- unsafeThawVector x
+            y' <- unsafeThawVector y
+            commutes2 x' y' a f )
 
             
 ------------------------------------------------------------------------

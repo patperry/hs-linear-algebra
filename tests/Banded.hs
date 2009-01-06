@@ -86,6 +86,10 @@ prop_rows_dims (a :: B) =
     map dim (rows a) == replicate (numRows a) (numCols a)
 prop_cols_dims (a :: B) =
     map dim (cols a) == replicate (numCols a) (numRows a)
+prop_row_at (BandedAt (a :: B) (i,j)) =
+    (row a i)!j === a!(i,j)
+prop_col_at (BandedAt (a :: B) (i,j)) =
+    (col a j)!i === a!(i,j)
 
 prop_indices_length (a :: B) =
     length (indices a) == size a
@@ -105,9 +109,9 @@ prop_assocs_at (a :: B) =
 prop_scale_elems (a :: B) k =
     (assocs (k *> a)) `assocsEq` (map (second (*k)) (assocs a))
 prop_herm_elem (BandedAt (a :: B) (i,j)) =
-    (herm a) ! (j,i) === conj (a!(i,j))
+    (herm a) ! (j,i) === conjugate (a!(i,j))
 prop_herm_scale (a :: B) k =
-    herm (k *> a) === (conj k) *> (herm a)
+    herm (k *> a) === (conjugate k) *> (herm a)
 
 prop_herm_shape (a :: B) =
     shape (herm a) == (numCols a, numRows a)
@@ -167,6 +171,8 @@ tests_Banded =
     , ("cols length"           , mytest prop_cols_len)
     , ("rows dims"             , mytest prop_rows_dims)
     , ("cols dims"             , mytest prop_cols_dims)
+    , ("row at"                , mytest prop_row_at)
+    , ("col at"                , mytest prop_col_at)
 
     , ("indices length"        , mytest prop_indices_length)
     , ("indices low bw"        , mytest prop_indices_lower)

@@ -19,7 +19,7 @@ import Foreign                  ( Storable )
 import Foreign.Storable.Complex ()
 
 -- | The base class for elements.
-class (Storable e, Fractional e) => Elem e where
+class (AEq e, Storable e, Fractional e) => Elem e where
     -- | Get the complex conjugate of a value.
     conjugate :: e -> e
     

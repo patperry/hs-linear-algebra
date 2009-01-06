@@ -3,13 +3,14 @@ module Vector( tests_Vector ) where
 
 import Data.Elem.BLAS
 import Data.Vector.Dense
+import Data.Tensor.Class
 
 
 import Driver
 import qualified Data.Array as Array
 import Test.Vector.Dense hiding ( vector )
 import qualified Test.Vector.Dense as Test
-
+import System.IO.Unsafe
 
 type V = Vector Index E
 
@@ -19,7 +20,9 @@ type V = Vector Index E
 prop_vector_dim (Assocs n ies) =
     dim (vector n ies :: V) == n
 prop_vector_assocs (Assocs n ies) =
-    assocs (vector n ies :: V) `assocsEq` (zip [0..(n-1)] (repeat 0) ++ ies)
+    (zip [0..(n-1)] (repeat 0) ++ ies) 
+    `assocsEq` 
+    (assocs (vector n ies :: V))
 
 prop_listVector_dim es =
     let n = length es
@@ -48,7 +51,7 @@ prop_replace_elems (Assocs n ies) =
     forAll (Test.vector n) $ \x ->
         let x'   = x // ies
             ies' = Array.assocs $ (Array.//) (Array.array (0,n-1) $ assocs x) ies
-        in assocs x' `assocsEq` ies'
+        in ies' `assocsEq` assocs x'
 
 ------------------------------ Vector Views-- --------------------------------
 
@@ -100,10 +103,10 @@ prop_scale k (x :: V) =
     k *> x ~== x * constantVector (dim x) k
 
 prop_conj_elems (x :: V) =
-    and $ zipWith (===) (elems $ conj x) (map conj $ elems x)
+    and $ zipWith (===) (elems $ conj x) (map conjugate $ elems x)
 
 prop_conj_scale k (x :: V) =
-    conj (k *> x) ===  (conj k *> (conj x))
+    conj (k *> x) ===  (conjugate k *> (conj x))
 
 prop_negate (x :: V) =
     negate x ~== (-1) *> x
@@ -155,13 +158,13 @@ prop_dot_self (x :: V) =
     (sqrt $ x <.> x) ~== (fromReal $ norm2 x)
     
 prop_dot_conj (VectorPair (x :: V) y) =
-    (x <.> y) ~== (conj $ y <.> x)
+    (x <.> y) ~== (conjugate $ y <.> x)
     
 prop_dot_scale1 k (VectorPair (x :: V) y) =
     (x <.> (k *> y)) ~== k * (x <.> y)
     
 prop_dot_scale2 k (VectorPair (x :: V) y) =
-    ((k *> x) <.> y) ~== (conj k) * (x <.> y)
+    ((k *> x) <.> y) ~== (conjugate k) * (x <.> y)
     
 prop_dot_linear1 (VectorTriple (x :: V) y z) =
     (x <.> (y + z)) ~== (x <.> y + x <.> z)
@@ -225,7 +228,18 @@ tests_Vector =
 
 
 assocsEq :: [(Int,E)] -> [(Int,E)] -> Bool
-assocsEq ies ies' = ordered ies ~== ordered ies'
+assocsEq ies ies' = 
+    if (ordered ies === ordered ies')
+        then True
+        else unsafePerformIO $ do
+            zipWithM_ (\(i1,e1) (i2,e2) -> do
+                putStr $ show i1 ++ ": " ++ show e1 ++ " " ++ show e2
+                unless (e1 ~== e2) $ putStr " **** "
+                putStrLn ""
+                )
+                (ordered ies)
+                (ordered ies')
+            return False
   where
     ordered = sortAssocs . nubAssocs
     nubAssocs = reverse . nubBy ((==) `on` fst) . reverse      

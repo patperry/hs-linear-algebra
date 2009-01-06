@@ -34,7 +34,6 @@ import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded hiding ( banded )
 import Data.Elem.BLAS ( Elem, BLAS3 )
 
-
 banded :: (BLAS3 e, Arbitrary e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 banded mn kl = frequency [ (3, rawBanded mn kl)  
@@ -88,7 +87,6 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedAt m n e) where
             return $ BandedAt a (i,j)
 
     coarbitrary = undefined
-
 
 data ListsBanded e = ListsBanded (Int,Int) (Int,Int) [[e]] deriving (Eq,Show)
 instance (Arbitrary e, Elem e) => Arbitrary (ListsBanded e) where

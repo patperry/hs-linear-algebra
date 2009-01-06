@@ -347,16 +347,14 @@ unsafeRowViewBanded a i =
     if h then
         case unsafeColViewBanded a' i of (nb, v, na) -> (nb, conj v, na)        
     else
-        let nb  = max (i - kl)         0
-            na  = max (n - 1 - i - ku) 0
+        let nb  = min n $ max (i - kl)         0
+            na  = min n $ max (n - 1 - i - ku) 0
             r   = min (ku + i)         (kl + ku)
             c   = max (i - kl)         0 
             p'  = p `advancePtr` (r + c * ld)
-            inc = ld - 1
+            inc = max (ld - 1) 1
             len = n - (nb + na)
-        in if len >= 0 
-            then (nb, unsafeIOVectorToVector (IOVector f p' len inc False), na)
-            else (n , unsafeIOVectorToVector (IOVector f p' 0   inc False),  0)
+        in (nb, unsafeIOVectorToVector (IOVector f p' len inc False), na)
   where
     (f,p,_,n,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
@@ -367,16 +365,14 @@ unsafeColViewBanded a j =
     if h then
         case unsafeRowViewBanded a' j of (nb, v, na) -> (nb, conj v, na)
     else
-        let nb  = max (j - ku)         0
-            na  = max (m - 1 - j - kl) 0
+        let nb  = min m $ max (j - ku)         0
+            na  = min m $ max (m - 1 - j - kl) 0
             r   = max (ku - j) 0 
             c   = j 
             p'  = p `advancePtr` (r + c * ld)
             inc = 1
             len = m - (nb + na)
-        in if len >= 0
-            then (nb, unsafeIOVectorToVector (IOVector f p' len inc False), na)
-            else (m , unsafeIOVectorToVector (IOVector f p' 0   inc False),  0)
+        in (nb, unsafeIOVectorToVector (IOVector f p' len inc False), na)
   where
     (f,p,m,_,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a

@@ -130,10 +130,10 @@ getElemsIOVector' (IOVector f p n incX True) = do
     es <- getElemsIOVector' (IOVector f p n incX False)
     return $ map conjugate es    
 getElemsIOVector' (IOVector f p n incX False) =
-    let go p' es | p' == p = do
-                      e <- peek p'
+    let end = p `advancePtr` (-incX)
+        go p' es | p' == end = do
                       touchForeignPtr f
-                      return $ reverse (e:es)
+                      return es
                  | otherwise = do
                       e <- peek p'
                       go (p' `advancePtr` (-incX)) (e:es)
