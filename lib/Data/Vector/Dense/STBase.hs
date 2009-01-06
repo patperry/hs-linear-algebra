@@ -8,64 +8,93 @@
 -- Stability  : experimental
 --
 
-module Data.Vector.Dense.STBase (
-    -- * The @STVector@ data type
-    STVector,
-    runSTVector,
+module Data.Vector.Dense.STBase
+    where
 
-    unsafeIOVectorToSTVector,
-    unsafeSTVectorToIOVector,
-    ) where
-
+import Control.Monad
 import Control.Monad.ST
-import Data.Vector.Dense.Class.Internal( STVector, unsafeIOVectorToSTVector,
-    unsafeSTVectorToIOVector )
-import Data.Vector.Dense.Internal ( Vector(..) )
 
-newtype STVector s n e = ST (IOVector n e)
+import Data.Elem.BLAS( Elem, BLAS1 )
 
-unsafeIOVectorToSTVector :: IOVector n e -> STVector s n e
-unsafeIOVectorToSTVector = ST
+import Data.Tensor.Class
+import Data.Tensor.Class.MTensor
 
-unsafeSTVectorToIOVector :: STVector s n e -> IOVector n e
-unsafeSTVectorToIOVector (ST x) = x
+import Data.Vector.Dense.Base
+import Data.Vector.Dense.IOBase
 
+
+newtype STVector s n e = STVector (IOVector n e)
 
 runSTVector :: (forall s . ST s (STVector s n e)) -> Vector n e
-runSTVector x = 
-    runST $ x >>= return . V . unsafeSTVectorToIOVector
+runSTVector mx = 
+    runST $ mx >>= \(STVector x) -> return (Vector x)
 
-instance (Storable e) => BaseVector (STVector s) e where
-    vectorViewArray f p n s c = ST $ DV f p n s c
-    {-# INLINE vectorViewArray #-}    
-    
-    arrayFromVector (ST x)    = arrayFromVector x
-    {-# INLINE arrayFromVector #-}
+instance Shaped (STVector s) Int e where
+    shape (STVector x) = shapeIOVector x
+    {-# INLINE shape #-}
+    bounds (STVector x) = boundsIOVector x
+    {-# INLINE bounds #-}
 
-instance (Storable e) => Shaped (STVector s) Int e where
-    bounds = boundsVector
-    shape  = shapeVector
-        
-instance (BLAS1 e) => ReadTensor (STVector s) Int e (ST s) where
-    getSize        = getSizeVector
-    getAssocs      = getAssocsVector
-    getIndices     = getIndicesVector
-    getElems       = getElemsVector
-    getAssocs'     = getAssocsVector'
-    getIndices'    = getIndicesVector'
-    getElems'      = getElemsVector'
-    unsafeReadElem = unsafeReadElemVector
-
-instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where    
+instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
+    getSize (STVector x) = unsafeIOToST $ getSizeIOVector x
+    {-# INLINE getSize #-}
+    unsafeReadElem (STVector x) i = unsafeIOToST $ unsafeReadElemIOVector x i
+    {-# INLINE unsafeReadElem #-}
+    getIndices (STVector x) = unsafeIOToST $ getIndicesIOVector x
+    {-# INLINE getIndices #-}
+    getIndices' (STVector x) = unsafeIOToST $ getIndicesIOVector' x
+    {-# INLINE getIndices' #-}
+    getElems (STVector x) = unsafeIOToST $ getElemsIOVector x
+    {-# INLINE getElems #-}
+    getElems' (STVector x) = unsafeIOToST $ getElemsIOVector' x
+    {-# INLINE getElems' #-}
+    getAssocs (STVector x) = unsafeIOToST $ getAssocsIOVector x
+    {-# INLINE getAssocs #-}
+    getAssocs' (STVector x) = unsafeIOToST $ getAssocsIOVector' x
+    {-# INLINE getAssocs' #-}
 
 instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
-    setConstant     = setConstantVector
-    setZero         = setZeroVector
-    canModifyElem   = canModifyElemVector
-    unsafeWriteElem = unsafeWriteElemVector
-    modifyWith      = modifyWithVector
-    doConj          = doConjVector
-    scaleBy         = scaleByVector
-    shiftBy         = shiftByVector
+    getMaxSize (STVector x) = unsafeIOToST $ getMaxSizeIOVector x
+    {-# INLINE getMaxSize #-}
+    setZero (STVector x) = unsafeIOToST $ setZeroIOVector x
+    {-# INLINE setZero #-}
+    setConstant e (STVector x) = unsafeIOToST $ setConstantIOVector e x
+    {-# INLINE setConstant #-}
+    canModifyElem (STVector x) i = unsafeIOToST $ canModifyElemIOVector x i
+    {-# INLINE canModifyElem #-}
+    unsafeWriteElem (STVector x) i e= unsafeIOToST $ unsafeWriteElemIOVector x i e
+    {-# INLINE unsafeWriteElem #-}
+    unsafeModifyElem (STVector x) i f = unsafeIOToST $ unsafeModifyElemIOVector x i f
+    {-# INLINE unsafeModifyElem #-}
+    modifyWith f (STVector x) = unsafeIOToST $ modifyWithIOVector f x
+    {-# INLINE modifyWith #-}
+    doConj (STVector x) = unsafeIOToST $ doConjIOVector x
+    {-# INLINE doConj #-}
+    scaleBy k (STVector x) = unsafeIOToST $ scaleByIOVector k x
+    {-# INLINE scaleBy #-}
+    shiftBy k (STVector x) = unsafeIOToST $ shiftByIOVector k x
+    {-# INLINE shiftBy #-}
+
+instance (Elem e) => BaseVector (STVector s) e where
+    dim (STVector x) = dimIOVector x
+    {-# INLINE dim #-}
+    stride (STVector x) = strideIOVector x
+    {-# INLINE stride #-}
+    isConj (STVector x) = isConjIOVector x
+    {-# INLINE isConj #-}
+    conj (STVector x) = STVector (conjIOVector x)
+    {-# INLINE conj #-}
+    withVectorPtrIO (STVector x) = withIOVectorPtr x
+    {-# INLINE withVectorPtrIO #-}
+
+instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
+    withVectorPtr (STVector x) f = unsafeIOToST $ withIOVectorPtr x f
+    {-# INLINE withVectorPtr #-}
+    unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
+    {-# INLINE unsafeFreezeVector #-}
 
 instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
+    newVector_ = liftM STVector . unsafeIOToST . newIOVector_
+    {-# INLINE newVector_ #-}
+    unsafeThawVector (Vector x) = return (STVector x)
+    {-# INLINE unsafeThawVector #-}

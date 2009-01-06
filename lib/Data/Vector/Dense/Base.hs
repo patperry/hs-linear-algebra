@@ -1,5 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
-        FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Vector.Dense.Base
@@ -39,8 +38,6 @@ unsafeFreezeIOVector = return . Vector
 unsafeThawIOVector :: Vector n e -> IO (IOVector n e)
 unsafeThawIOVector (Vector x) = return x
 
-newtype STVector s n e = STVector (IOVector n e)
-
 -- | Common functionality between all vector types.
 class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Get the dimension (length) of the vector.
@@ -70,7 +67,7 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
     unsafeFreezeVector :: x n e -> m (Vector n e)
 
 -- | An overloaded interface for vectors that can be modified in a monad.
-class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m | x -> m, m -> x where
+class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
     -- | Creates a new vector of the given length.  The elements will be 
     -- uninitialized.
     newVector_ :: Int -> m (x n e)
@@ -344,7 +341,6 @@ unsafeDivVector y x
     | otherwise =
         vectorCall2 BLAS.vdiv x y
 {-# INLINE unsafeDivVector #-}
-
 
 instance (Elem e) => BaseVector IOVector e where
     dim = dimIOVector
