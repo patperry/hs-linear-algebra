@@ -16,7 +16,7 @@ import Prelude hiding ( div )
 
 import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with )
 import Foreign.Storable.Complex ()
-import Data.Complex
+import Data.Complex ( Complex(..) )
 
 import Data.Elem.BLAS.Base
 import BLAS.CTypes

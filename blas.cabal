@@ -99,19 +99,18 @@ library
                         Data.Elem.BLAS.Level3
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        Data.Elem.Conj
                         
-                        Data.Vector.Dense.Internal
-                        Data.Vector.Dense.STBase
-                        Data.Vector.Dense.Class.Internal
-                        Data.Vector.Dense.Class.Internal.Base
-                        Data.Vector.Dense.Class.Creating
-                        Data.Vector.Dense.Class.Elements
-                        Data.Vector.Dense.Class.Special
-                        Data.Vector.Dense.Class.Views
-                        Data.Vector.Dense.Class.Copying
-                        Data.Vector.Dense.Class.Properties
-                        Data.Vector.Dense.Class.Operations
+                        Data.Vector.Dense.Base
+                        Data.Vector.Dense.IOBase
+                        
+                        -- Data.Vector.Dense.Class.Internal
+                        -- Data.Vector.Dense.Class.Creating
+                        -- Data.Vector.Dense.Class.Elements
+                        -- Data.Vector.Dense.Class.Special
+                        -- Data.Vector.Dense.Class.Views
+                        -- Data.Vector.Dense.Class.Copying
+                        -- Data.Vector.Dense.Class.Properties
+                        -- Data.Vector.Dense.Class.Operations
                         
                         Data.Matrix.Banded.Internal
                         Data.Matrix.Banded.Class.Internal

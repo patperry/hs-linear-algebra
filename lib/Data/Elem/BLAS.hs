@@ -11,18 +11,19 @@
 
 module Data.Elem.BLAS (
     -- * Basic element type classes
-    module Data.Elem.Conj,
     module Data.Elem.BLAS.Base,
     -- * Low-level BLAS functions
     module Data.Elem.BLAS.Level1,
     module Data.Elem.BLAS.Level2,
     module Data.Elem.BLAS.Level3,
     module BLAS.Types,
+    -- * Re-export of Complex from Data.Complex
+    module Data.Complex
     ) where
 
-import Data.Elem.Conj
 import Data.Elem.BLAS.Base
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Level2
 import Data.Elem.BLAS.Level3
 import BLAS.Types
+import Data.Complex( Complex(..) )

@@ -13,13 +13,16 @@ module Data.Elem.BLAS.Base (
     ) where
 
 import Data.AEq
-import Data.Elem.Conj
 import Data.Complex             ( Complex(..), magnitude )
+import qualified Data.Complex as Complex
 import Foreign                  ( Storable )
 import Foreign.Storable.Complex ()
 
 -- | The base class for elements.
-class (Storable e, Fractional e, Conj e) => Elem e where
+class (Storable e, Fractional e) => Elem e where
+    -- | Get the complex conjugate of a value.
+    conjugate :: e -> e
+    
     -- | Get the magnitude of a value.
     norm :: e -> Double
     
@@ -34,6 +37,8 @@ class (Storable e, Fractional e, Conj e) => Elem e where
     maybeToReal :: e -> Maybe Double
     
 instance Elem Double where
+    conjugate   = id
+    {-# INLINE conjugate #-}
     norm        = abs
     {-# INLINE norm #-}
     norm1       = abs
@@ -44,6 +49,8 @@ instance Elem Double where
     {-# INLINE maybeToReal #-}
     
 instance Elem (Complex Double) where
+    conjugate      = Complex.conjugate
+    {-# INLINE conjugate #-}
     norm           = magnitude
     {-# INLINE norm #-}    
     norm1 (x :+ y) = abs x + abs y

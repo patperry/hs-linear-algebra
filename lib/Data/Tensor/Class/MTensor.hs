@@ -24,7 +24,7 @@ module Data.Tensor.Class.MTensor (
     swapElems,
     ) where
 
-import Data.Elem.Conj
+import Data.Elem.BLAS ( Elem, conjugate )
 import Data.Ix
 import Data.Tensor.Class
 
@@ -136,8 +136,8 @@ class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     {-# INLINE unsafeSwapElems #-}
     
     -- | Replace every element with its complex conjugate.
-    doConj :: (Conj e) => x n e -> m ()
-    doConj = modifyWith conj
+    doConj :: (Elem e) => x n e -> m ()
+    doConj = modifyWith conjugate
     {-# INLINE doConj #-}
 
     -- | Scale every element in the vector by the given value.
