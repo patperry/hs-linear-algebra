@@ -27,9 +27,10 @@ import BLAS.Internal( checkBinaryOp )
 
 import Control.Monad( when )
 
+import Data.Tensor.Class( shape )
 import Data.Matrix.Dense.Class.Internal
 import Data.Matrix.Dense.Class.Views
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Base
 
 
 -- | @copyMatrix dst src@ replaces the values in @dst@ with those in

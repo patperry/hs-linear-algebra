@@ -49,17 +49,16 @@ module Data.Matrix.Banded.Internal (
 
     ) where
 
+import Control.Monad.ST
 import Data.AEq
-import Foreign( Storable )
 import System.IO.Unsafe
 
 
 import BLAS.Internal ( diagLen, checkedDiag, inlinePerformIO )
-import Data.Elem.BLAS( BLAS1, BLAS3 )
+import Data.Elem.BLAS( Elem, BLAS1, BLAS3 )
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.MTensor
-import BLAS.UnsafeIOToM
 
 import Data.Matrix.Class
 import Data.Matrix.Class.IMatrix
@@ -161,7 +160,7 @@ unsafeDiagBanded a i
     | otherwise               = zeroVector $ diagLen (shape a) i
 
 
-instance (Storable e) => Shaped Banded (Int,Int) e where
+instance (Elem e) => Shaped Banded (Int,Int) e where
     shape  = shapeBanded . unsafeThawIOBanded
     bounds = boundsBanded . unsafeThawIOBanded
 
@@ -217,19 +216,20 @@ instance (BLAS3 e, Monad m) => ReadTensor Banded (Int,Int) e m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance (Storable e) => MatrixShaped Banded e where
+instance (Elem e) => MatrixShaped Banded e where
     herm (B a) = B (herm a)
     
 instance HasVectorView Banded where
     type VectorView Banded = Vector
     
-instance (Storable e) => BaseBanded_ Banded e where
+instance (Elem e) => BaseBanded_ Banded e where
     bandedViewArray f p m n kl ku l h = B $ bandedViewArray f p m n kl ku l h
     arrayFromBanded (B a )            = arrayFromBanded a
 
-instance (Storable e) => BaseBanded Banded e
+instance (Elem e) => BaseBanded Banded e
 
-instance (BLAS3 e, UnsafeIOToM m) => ReadBanded Banded e m where
+instance (BLAS3 e) => ReadBanded Banded e IO where
+instance (BLAS3 e) => ReadBanded Banded e (ST s) where
 
 instance (BLAS3 e) => IMatrix Banded e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
@@ -237,7 +237,13 @@ instance (BLAS3 e) => IMatrix Banded e where
     unsafeRow a i             = runSTVector $ unsafeGetRow a i
     unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix Banded e m where
+instance (BLAS3 e) => MMatrix Banded e IO where
+    unsafeDoSApplyAdd    = gbmv
+    unsafeDoSApplyAddMat = gbmm
+    unsafeGetRow         = unsafeGetRowBanded
+    unsafeGetCol         = unsafeGetColBanded
+
+instance (BLAS3 e) => MMatrix Banded e (ST s) where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowBanded
@@ -281,7 +287,11 @@ instance (BLAS3 e) => IMatrix (Herm Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Banded) e m where
+instance (BLAS3 e) => MMatrix (Herm Banded) e IO where
+    unsafeDoSApplyAdd    = hbmv'
+    unsafeDoSApplyAddMat = hbmm'
+
+instance (BLAS3 e) => MMatrix (Herm Banded) e (ST s) where
     unsafeDoSApplyAdd    = hbmv'
     unsafeDoSApplyAddMat = hbmm'
 
@@ -289,7 +299,13 @@ instance (BLAS3 e) => IMatrix (Tri Banded) e where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Banded) e m where
+instance (BLAS3 e) => MMatrix (Tri Banded) e IO where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'
+
+instance (BLAS3 e) => MMatrix (Tri Banded) e (ST s) where
     unsafeDoSApply_      = tbmv
     unsafeDoSApplyMat_   = tbmm
     unsafeDoSApplyAdd    = tbmv'
@@ -299,7 +315,13 @@ instance (BLAS3 e) => ISolve (Tri Banded) e where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
 
-instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Banded) e m where
+instance (BLAS3 e) => MSolve (Tri Banded) e IO where
+    unsafeDoSSolve     = unsafeDoSSolveTriBanded
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm
+
+instance (BLAS3 e) => MSolve (Tri Banded) e (ST s) where
     unsafeDoSSolve     = unsafeDoSSolveTriBanded
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriBanded
     unsafeDoSSolve_    = tbsv

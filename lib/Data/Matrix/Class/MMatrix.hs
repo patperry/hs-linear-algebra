@@ -20,8 +20,8 @@ module Data.Matrix.Class.MMatrix (
     -- * Getting rows and columns
     getRow,
     getCol,
-    getRows,
-    getCols,
+    --getRows,
+    --getCols,
     getRows',
     getCols',
     
@@ -56,8 +56,8 @@ module Data.Matrix.Class.MMatrix (
 
 import BLAS.Internal( checkSquare, checkMatVecMult, checkMatVecMultAdd,
     checkMatMatMult, checkMatMatMultAdd, checkedRow, checkedCol )
-import BLAS.UnsafeIOToM
 import Data.Matrix.Class
+import Data.Tensor.Class
 
 import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Class.Internal
@@ -73,6 +73,7 @@ getCol :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
 getCol a = checkedCol (shape a) (unsafeGetCol a)
 {-# INLINE getCol #-}
 
+{-
 -- | Get a lazy list the row vectors in the matrix.  See also "getRows'".
 getRows :: (MMatrix a e m, WriteVector x e m) => 
     a (k,l) e -> m [x l e]
@@ -84,6 +85,7 @@ getCols :: (MMatrix a e m, WriteVector x e m) =>
     a (k,l) e -> m [x k e]
 getCols = unsafeInterleaveM . getCols'
 {-# INLINE getCols #-}
+-}
 
 -- | Get a strict list the row vectors in the matrix.  See also "getRows".
 getRows' :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> m [x l e]

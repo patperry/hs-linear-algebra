@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies
-    , FlexibleContexts #-}
+    , FlexibleContexts, ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Class.Internal
@@ -135,7 +135,7 @@ import Data.Ix
 import Foreign
 import Unsafe.Coerce
 
-import Data.Elem.BLAS( BLAS2, BLAS3, conj )
+import Data.Elem.BLAS( Elem, BLAS2, BLAS3, conjugate )
 import qualified Data.Elem.BLAS as BLAS
 import BLAS.Internal( diagStart, diagLen )
 import BLAS.UnsafeIOToM
@@ -148,19 +148,14 @@ import Data.Tensor.Class.MTensor
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal
 
-import Data.Vector.Dense.Class.Internal( IOVector, STVector,
-    BaseVector(..), ReadVector, WriteVector, newVector_,
-    newCopyVector, unsafeCopyVector, unsafeSwapVector, 
-    doConjVector, scaleByVector, shiftByVector, unsafeAxpyVector, 
-    unsafeMulVector, unsafeDivVector, withVectorPtr, dim, stride, isConj,
-    coerceVector )
-import Data.Vector.Dense.Class.Views( unsafeSubvectorView )
-import Data.Vector.Dense.Class.Special( newBasisVector )
+import Data.Vector.Dense.Base
+import Data.Vector.Dense.IOBase
+import Data.Vector.Dense.STBase
 
 import Data.Matrix.Class
 
 
-class (Storable e, MatrixShaped a e, HasVectorView a) => BaseMatrix_ a e where
+class (Elem e, MatrixShaped a e, HasVectorView a) => BaseMatrix_ a e where
     matrixViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Bool -> a mn e
     arrayFromMatrix :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Bool)
 
@@ -213,7 +208,7 @@ maybeFromRow x
     | otherwise =
         Nothing
   where
-    (f,p,n,s,c) = arrayFromVector x
+    (IOVector f p n s c) = unsafeVectorToIOVector x
 
 -- | Possibly create a matrix view of a column vector.  This will fail
 -- if the stride of the vector is not @1@ and the vector is not conjugated.
@@ -227,7 +222,7 @@ maybeFromCol x
     | otherwise =
         Nothing
   where
-    (f,p,n,s,c) = arrayFromVector x
+    (IOVector f p n s c) = unsafeVectorToIOVector x      
 
 maybeToVector :: (BaseMatrix a e) => 
     a mn e -> Maybe (VectorView a k e)
@@ -235,9 +230,9 @@ maybeToVector a
     | h = 
         maybeToVector a' >>= return . conj
     | ld == m =
-        Just $ vectorViewArray f p (m*n) 1  False
+        Just $ unsafeIOVectorToVector (IOVector f p (m*n) 1  False)
     | m == 1 =
-        Just $ vectorViewArray f p n     ld False
+        Just $ unsafeIOVectorToVector (IOVector f p n     ld False)
     | otherwise =
         Nothing
   where
@@ -314,7 +309,7 @@ getIndicesMatrix = return . indicesMatrix
 getElemsMatrix :: (ReadMatrix a e m) => a mn e -> m [e]
 getElemsMatrix a
     | isHermMatrix a = getElemsMatrix (herm $ coerceMatrix a) >>= 
-                           return . map conj
+                           return . map conjugate
     | otherwise = 
         liftM concat $
             unsafeInterleaveM $ 
@@ -333,7 +328,7 @@ getIndicesMatrix' = getIndicesMatrix
 getElemsMatrix' :: (ReadMatrix a e m) => a mn e -> m [e]
 getElemsMatrix' a
     | isHermMatrix a = getElemsMatrix' (herm $ coerceMatrix a) >>= 
-                           return . map conj
+                           return . map conjugate
     | otherwise = 
         liftM concat $
             mapM getElems' (colViews $ coerceMatrix a)
@@ -347,7 +342,7 @@ getAssocsMatrix' a = do
 unsafeReadElemMatrix :: (ReadMatrix a e m) => a mn e -> (Int,Int) -> m e
 unsafeReadElemMatrix a (i,j)
     | isHermMatrix a = unsafeReadElem (herm $ coerceMatrix a) (j,i) >>= 
-                           return . conj
+                           return . conjugate
     | otherwise = unsafeIOToM $
                       withMatrixPtr a $ \ptr ->
                           peekElemOff ptr (indexOfMatrix a (i,j))
@@ -389,7 +384,7 @@ setConstantMatrix e = liftMatrix (setConstant e)
 unsafeWriteElemMatrix :: (WriteMatrix a e m) => 
     a mn e -> (Int,Int) -> e -> m ()
 unsafeWriteElemMatrix a (i,j) e
-    | isHermMatrix a  = unsafeWriteElem a' (j,i) $ conj e
+    | isHermMatrix a  = unsafeWriteElem a' (j,i) $ conjugate e
     | otherwise       = unsafeIOToM $
                             withMatrixPtr a $ \ptr ->
                                 pokeElemOff ptr (indexOfMatrix a (i,j)) e
@@ -454,7 +449,7 @@ unsafeRowView a i
             p' = p `advancePtr` o
             s  = ld
             c  = False
-        in vectorViewArray fp p' n s c
+        in unsafeIOVectorToVector (IOVector fp p' n s c)
 
 unsafeColView :: (BaseMatrix a e) => 
     a (k,l) e -> Int -> VectorView a k e
@@ -467,7 +462,7 @@ unsafeColView a j
             p' = p `advancePtr` o
             s  = 1
             c  = False
-        in vectorViewArray fp p' m s c
+        in unsafeIOVectorToVector (IOVector fp p' m s c)
 
 unsafeDiagView :: (BaseMatrix a e) => 
     a mn e -> Int -> VectorView a k e
@@ -481,7 +476,7 @@ unsafeDiagView a i
             n' = diagLen (m,n) i
             s  = ld + 1
             c  = False
-        in vectorViewArray fp p' n' s c
+        in unsafeIOVectorToVector (IOVector fp p' n' s c)
 
 -- | Get a list of vector views of the rows of the matrix.
 rowViews :: (BaseMatrix a e) => a (m,n) e -> [VectorView a n e]
@@ -492,12 +487,12 @@ colViews :: (BaseMatrix a e) => a (m,n) e -> [VectorView a m e]
 colViews a = [ unsafeColView a j | j <- [0..numCols a - 1] ]
 
 -- | Same as 'getRow' but not range-checked.
-unsafeGetRowMatrix :: (ReadMatrix a e m, WriteVector y e m) => 
+unsafeGetRowMatrix :: (ReadMatrix a e m, ReadVector y e m) => 
     a (k,l) e -> Int -> m (y l e)    
 unsafeGetRowMatrix a i = newCopyVector (unsafeRowView a i)
 
 -- | Same as 'getCol' but not range-checked.
-unsafeGetColMatrix :: (ReadMatrix a e m, WriteVector y e m) => 
+unsafeGetColMatrix :: (ReadMatrix a e m, ReadVector y e m) => 
     a (k,l) e -> Int -> m (y k e)
 unsafeGetColMatrix a j = newCopyVector (unsafeColView a j)
 
@@ -598,7 +593,7 @@ unsafeDoMatrixOp2 f a b c = do
 -- shapes or indices, so in general their safe counterparts should be
 -- preferred.
 class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
-    unsafeGetSApply :: (ReadVector x e m, WriteVector y e m) =>
+    unsafeGetSApply :: (ReadVector x e m, ReadVector y e m) =>
         e -> a (k,l) e -> x l e -> m (y k e)
     unsafeGetSApply alpha a x = do
         y <- newVector_ (numRows a)
@@ -614,11 +609,11 @@ class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
         return c
     {-# INLINE unsafeGetSApplyMat #-}
 
-    unsafeDoSApplyAdd :: (ReadVector x e m, WriteVector y e m) =>
+    unsafeDoSApplyAdd :: (ReadVector x e m, ReadVector y e m) =>
         e -> a (k,l) e -> x l e -> e -> y k e -> m ()
-    unsafeDoSApplyAdd alpha a x beta y = do
-        y' <- unsafeGetSApply alpha a x
-        scaleBy beta y
+    unsafeDoSApplyAdd alpha a x beta (y :: y k e) = do
+        (y' :: y k e) <- unsafeGetSApply alpha a x
+        unsafeScaleByVector beta y
         unsafeAxpyVector 1 y' y
     {-# INLINE unsafeDoSApplyAdd #-}
 
@@ -630,10 +625,10 @@ class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
         unsafeAxpyMatrix 1 c' c
     {-# INLINE unsafeDoSApplyAddMat #-}
 
-    unsafeDoSApply_ :: (WriteVector y e m) =>
+    unsafeDoSApply_ :: (ReadVector y e m) =>
         e -> a (n,n) e -> y n e -> m ()
-    unsafeDoSApply_ alpha a x = do
-        y <- newVector_ (dim x)
+    unsafeDoSApply_ alpha a (x :: y n e) = do
+        (y :: y n e) <- newVector_ (dim x)
         unsafeDoSApplyAdd alpha a x 0 y
         unsafeCopyVector x y
     {-# INLINE unsafeDoSApply_ #-}
@@ -646,25 +641,31 @@ class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
         unsafeCopyMatrix b c
     {-# INLINE unsafeDoSApplyMat_ #-}
 
-    unsafeGetRow :: (WriteVector x e m) => a (k,l) e -> Int -> m (x l e)
-    unsafeGetRow a i = do
-        e <- newBasisVector (numRows a) i
-        liftM conj $ unsafeGetSApply 1 (herm a) e
+    unsafeGetRow :: (ReadVector x e m) => a (k,l) e -> Int -> m (x l e)
+    unsafeGetRow (a :: a (k,l) e) i =
+        let unsafeGetRowHelp :: (ReadVector x e m) => x l e -> m (x l e)
+            unsafeGetRowHelp (_ :: x l e) = do
+                (e :: x k e) <- newBasisVector (numRows a) i
+                liftM conj $ unsafeGetSApply 1 (herm a) e
+        in unsafeGetRowHelp undefined
     {-# INLINE unsafeGetRow #-}        
         
-    unsafeGetCol :: (WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
-    unsafeGetCol a j = do
-        e <- newBasisVector (numCols a) j
-        unsafeGetSApply 1 a e
+    unsafeGetCol :: (ReadVector x e m) => a (k,l) e -> Int -> m (x k e)
+    unsafeGetCol (a :: a (k,l) e) j =
+        let unsafeGetColHelp :: (ReadVector x e m) => x k e -> m (x k e)
+            unsafeGetColHelp (_ :: x k e) = do
+                (e :: x l e) <- newBasisVector (numCols a) j
+                unsafeGetSApply 1 a e
+        in unsafeGetColHelp undefined
     {-# INLINE unsafeGetCol #-}
 
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
-gemv :: (ReadMatrix a e m, ReadVector x e m, WriteVector y e m) => 
+gemv :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 gemv alpha a x beta y
     | numRows a == 0 || numCols a == 0 =
-        scaleBy beta y
+        unsafeScaleByVector beta y
         
     | isConj y && (isConj x || stride x == 1) =
         let transA = if isConj x then NoTrans else ConjTrans
@@ -675,18 +676,18 @@ gemv alpha a x beta y
             ldA    = stride x
             ldB    = ldaOfMatrix a
             ldC    = stride y
-            alpha' = conj alpha
-            beta'  = conj beta
+            alpha' = conjugate alpha
+            beta'  = conjugate beta
         in unsafeIOToM $
-               withVectorPtr x $ \pA ->
-               withMatrixPtr a $ \pB ->
-               withVectorPtr y $ \pC ->
+               withVectorPtrIO x $ \pA ->
+               withMatrixPtr a   $ \pB ->
+               withVectorPtrIO y $ \pC ->
                    BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
     
     | (isConj y && otherwise) || isConj x = do
-        doConj y
+        unsafeDoConjVector y
         gemv alpha a x beta (conj y)
-        doConj y
+        unsafeDoConjVector y
         
     | otherwise =
         let transA = blasTransOf a
@@ -697,9 +698,9 @@ gemv alpha a x beta y
             incX   = stride x
             incY   = stride y
         in unsafeIOToM $
-               withMatrixPtr a $ \pA ->
-               withVectorPtr x $ \pX ->
-               withVectorPtr y $ \pY -> do
+               withMatrixPtr a   $ \pA ->
+               withVectorPtrIO x $ \pX ->
+               withVectorPtrIO y $ \pY -> do
                    BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
@@ -708,7 +709,7 @@ gemm :: (ReadMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
 gemm alpha a b beta c
     | numRows a == 0 || numCols a == 0 || numCols b == 0 = 
         scaleBy beta c
-    | isHermMatrix c = gemm (conj alpha) (herm b) (herm a) (conj beta) (herm c)
+    | isHermMatrix c = gemm (conjugate alpha) (herm b) (herm a) (conjugate beta) (herm c)
     | otherwise =
         let transA = blasTransOf a
             transB = blasTransOf b
@@ -723,19 +724,18 @@ gemm alpha a b beta c
                withMatrixPtr c $ \pC ->
                    BLAS.gemm transA transB m n k alpha pA ldA pB ldB beta pC ldC
 
-hemv :: (ReadMatrix a e m, ReadVector x e m, WriteVector y e m) => 
+hemv :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
-hemv alpha h x beta y
+hemv alpha h (x :: x k e) beta y
     | numRows h == 0 =
         return ()
     | isConj y = do
-        doConj y
+        unsafeDoConjVector y
         hemv alpha h x beta (conj y)
-        doConj y
+        unsafeDoConjVector y
     | isConj x = do
-        x' <- newCopyVector x
-        doConj x'
-        hemv alpha h (conj x') beta y
+        (x' :: x k e) <- newCopyVector' x
+        hemv alpha h x' beta y
     | otherwise =
         let (u,a) = hermToBase h
             n     = numCols a
@@ -747,9 +747,9 @@ hemv alpha h x beta y
             incX  = stride x
             incY  = stride y
         in unsafeIOToM $
-               withMatrixPtr a $ \pA ->
-               withVectorPtr x $ \pX ->
-               withVectorPtr y $ \pY ->
+               withMatrixPtr a   $ \pA ->
+               withVectorPtrIO x $ \pX ->
+               withVectorPtrIO y $ \pY ->
                    BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
 
 hemm :: (ReadMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) => 
@@ -776,7 +776,7 @@ hemm alpha h b beta c
     where
       (u,a) = hermToBase h
 
-hemv' :: (ReadMatrix a e m, ReadVector x e m, WriteVector y e m) => 
+hemv' :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
     e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
 hemv' alpha a x beta y = 
     hemv alpha (coerceHerm a) x beta (coerceVector y)
@@ -787,15 +787,15 @@ hemm' alpha a b beta c =
     hemm alpha (coerceHerm a) b beta (coerceMatrix c)
 
 unsafeDoSApplyAddTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
-    ReadVector x e m, WriteVector y e m) =>
+    ReadVector x e m, ReadVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
-unsafeDoSApplyAddTriMatrix alpha t x beta y =
+unsafeDoSApplyAddTriMatrix alpha t x beta (y :: y k e) =
     if beta == 0
         then unsafeDoSApplyTriMatrix alpha t x y
         else do
-            y' <- newCopyVector y
+            (y' :: y k e) <- newCopyVector y
             unsafeDoSApplyTriMatrix alpha t x y'
-            scaleBy beta y
+            unsafeScaleByVector beta y
             unsafeAxpyVector 1 y' y
 
 unsafeDoSApplyAddMatTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
@@ -811,7 +811,7 @@ unsafeDoSApplyAddMatTriMatrix alpha t b beta c =
             unsafeAxpyMatrix 1 c' c
 
 unsafeDoSApplyTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
-    ReadVector x e m, WriteVector y e m) =>
+    ReadVector x e m, ReadVector y e m) =>
         e -> Tri a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoSApplyTriMatrix alpha t x y =
     case (u, toLower d a, toUpper d a) of
@@ -897,7 +897,7 @@ toUpper diag a =
     (m,n) = shape a
     d     = n - m
 
-trmv :: (ReadMatrix a e m, WriteVector y e m) => 
+trmv :: (ReadMatrix a e m, ReadVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 trmv alpha t x 
     | dim x == 0 = 
@@ -913,12 +913,12 @@ trmv alpha t x
             diagA   = d
             m       = 1
             n       = dim x
-            alpha'  = conj alpha
+            alpha'  = conjugate alpha
             ldA     = ldaOfMatrix a
             ldB     = stride x
         in unsafeIOToM $
-               withMatrixPtr a $ \pA ->
-               withVectorPtr x $ \pB ->
+               withMatrixPtr a   $ \pA ->
+               withVectorPtrIO x $ \pB ->
                    BLAS.trmm side uploA transA diagA m n alpha' pA ldA pB ldB
 
     | otherwise =
@@ -931,10 +931,10 @@ trmv alpha t x
             ldA       = ldaOfMatrix a
             incX      = stride x
         in do
-            when (alpha /= 1) $ scaleBy alpha x
+            when (alpha /= 1) $ unsafeScaleByVector alpha x
             unsafeIOToM $
-                withMatrixPtr a $ \pA ->
-                withVectorPtr x $ \pX -> do
+                withMatrixPtr a   $ \pA ->
+                withVectorPtrIO x $ \pX -> do
                    BLAS.trmv uploA transA diagA n pA ldA pX incX
 
 
@@ -948,7 +948,7 @@ trmm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (RightSide, flipTrans h, n, m, conj alpha)
+                        then (RightSide, flipTrans h, n, m, conjugate alpha)
                         else (LeftSide , h          , m, n, alpha       )
         uploA     = u'
         transA    = h'
@@ -1032,12 +1032,12 @@ trsv alpha t x
             diagA   = d
             m       = 1
             n       = dim x
-            alpha'  = conj alpha
+            alpha'  = conjugate alpha
             ldA     = ldaOfMatrix a
             ldB     = stride x
         in unsafeIOToM $
                withMatrixPtr a $ \pA ->
-               withVectorPtr x $ \pB ->
+               withVectorPtrIO x $ \pB ->
                    BLAS.trsm side uploA transA diagA m n alpha' pA ldA pB ldB
 
     | otherwise =
@@ -1053,7 +1053,7 @@ trsv alpha t x
             when (alpha /= 1) $ scaleBy alpha x
             unsafeIOToM $
                 withMatrixPtr a $ \pA ->
-                withVectorPtr x $ \pX ->
+                withVectorPtrIO x $ \pX ->
                     BLAS.trsv uploA transA diagA n pA ldA pX incX
 
 trsm :: (ReadMatrix a e m, WriteMatrix b e m) => 
@@ -1066,7 +1066,7 @@ trsm alpha t b =
         (m,n)     = shape b
         (side,h',m',n',alpha')
                   = if isHermMatrix b
-                        then (RightSide, flipTrans h, n, m, conj alpha)
+                        then (RightSide, flipTrans h, n, m, conjugate alpha)
                         else (LeftSide , h          , m, n, alpha     )
         uploA     = u'
         transA    = h'
@@ -1159,22 +1159,22 @@ instance HasVectorView IOMatrix where
 instance HasVectorView (STMatrix s) where
     type VectorView (STMatrix s) = STVector s
 
-instance (Storable e) => BaseMatrix_ IOMatrix e where
+instance (Elem e) => BaseMatrix_ IOMatrix e where
     matrixViewArray f p m n = DM f p m n
     arrayFromMatrix (DM f p m n l h) = (f,p,m,n,l,h)
 
-instance (Storable e) => BaseMatrix_ (STMatrix s) e where
+instance (Elem e) => BaseMatrix_ (STMatrix s) e where
     matrixViewArray f p m n l h = ST $ DM f p m n l h
     arrayFromMatrix (ST (DM f p m n l h)) = (f,p,m,n,l,h)
 
-instance (Storable e) => BaseMatrix IOMatrix e
-instance (Storable e) => BaseMatrix (STMatrix s) e
+instance (Elem e) => BaseMatrix IOMatrix e
+instance (Elem e) => BaseMatrix (STMatrix s) e
 
-instance (Storable e) => Shaped IOMatrix (Int,Int) e where
+instance (Elem e) => Shaped IOMatrix (Int,Int) e where
     shape  = shapeMatrix
     bounds = boundsMatrix
 
-instance (Storable e) => Shaped (STMatrix s) (Int,Int) e where
+instance (Elem e) => Shaped (STMatrix s) (Int,Int) e where
     shape  = shapeMatrix
     bounds = boundsMatrix
 
@@ -1218,10 +1218,10 @@ instance (BLAS3 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     scaleBy         = scaleByMatrix
     shiftBy         = shiftByMatrix
 
-instance (Storable e) => MatrixShaped IOMatrix e where
+instance (Elem e) => MatrixShaped IOMatrix e where
     herm = hermMatrix
 
-instance (Storable e) => MatrixShaped (STMatrix s) e where
+instance (Elem e) => MatrixShaped (STMatrix s) e where
     herm = hermMatrix
     
 instance (BLAS3 e) => ReadMatrix IOMatrix     e IO where

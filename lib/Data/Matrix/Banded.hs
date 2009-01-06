@@ -43,6 +43,6 @@ freezeBanded x = do
     x' <- newCopyBanded x
     return (unsafeFreezeBanded x')
 
-thawBanded :: (WriteBanded a e m) =>
+thawBanded :: (ReadBanded Banded e m, WriteBanded a e m) =>
     Banded mn e -> m (a mn e)
 thawBanded = newCopyBanded

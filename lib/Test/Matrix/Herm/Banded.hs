@@ -22,7 +22,7 @@ import Test.Vector.Dense ( vector )
 import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
-import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conj )
+import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conjugate )
 import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
@@ -50,7 +50,7 @@ hermBanded n k
         let (_,_,ds) = listsFromBanded a
         
         d <- QC.vector (n-k)
-        let d'  = map conj d
+        let d'  = map conjugate d
             pad = replicate k 0
             ds' = [pad ++ d] ++ ds ++ [d' ++ pad]
 

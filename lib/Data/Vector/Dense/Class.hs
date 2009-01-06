@@ -8,77 +8,74 @@
 --
 
 module Data.Vector.Dense.Class (
-    -- * The dense vector type classes
-    BaseVector(..),
+    -- * Overloaded dense vector type classes
+    BaseVector(dim, stride),
     ReadVector,
     WriteVector,
     
-    -- * Vector shape
-    dim,
+    -- * Creating new vectors
+    newVector_,
+    newVector,
+    newListVector,
+    
+    -- * Special vectors
+    newZeroVector,
+    newConstantVector,
+    newBasisVector,
+    setZeroVector,
+    setConstantVector,
+    setBasisVector,
+
+    -- * Copying vectors
+    newCopyVector,
+    newCopyVector',
+    copyVector,
+    swapVector,
+
+    -- * Vector views
+    conj,
+    subvectorView,
+    subvectorViewWithStride,
+
+    -- * Overloaded interface for reading and writing vector elements
+    module Data.Tensor.Class.MTensor,
+
+    -- * Vector operations
+    -- ** Unsary
+    getConjVector,
+    getScaledVector,
+    getShiftedVector,
+    doConjVector,
+    scaleByVector,
+    shiftByVector,
+    
+    -- ** Binary
+    getAddVector,
+    getSubVector,
+    getMulVector,
+    getDivVector,
+    addVector,
+    subVector,
+    axpyVector,
+    mulVector,
+    divVector,
+
+    -- * Vector Properties
+    getSumAbs,
+    getNorm2,
+    getWhichMaxAbs,
+    getDot,
+
+    -- * Coercing the phantom shape type
     coerceVector,
-    module Data.Tensor.Class,
-
-    -- * Conjugating vectors
-    module Data.Elem.Conj,
     
-    module Data.Vector.Dense.Class.Creating,
-    module Data.Vector.Dense.Class.Elements,
-    module Data.Vector.Dense.Class.Special,
-    module Data.Vector.Dense.Class.Views,
-    module Data.Vector.Dense.Class.Copying,
-    module Data.Vector.Dense.Class.Properties,
-    module Data.Vector.Dense.Class.Operations,
-    
-    -- * Low-level functions
-    stride,
-    isConj,
-    withVectorPtr,
-
     -- * Conversions between mutable and immutable vectors
-    UnsafeFreezeVector(..),
-    UnsafeThawVector(..),
     freezeVector,
     thawVector,
+    unsafeFreezeVector,
+    unsafeThawVector,
     
     ) where
 
-import Data.Vector.Dense.Class.Internal( IOVector, BaseVector(..), ReadVector, 
-    WriteVector, dim, stride, isConj, coerceVector, withVectorPtr )
-import Data.Tensor.Class
-import Data.Elem.Conj
-import Data.Vector.Dense.Class.Creating
-import Data.Vector.Dense.Class.Elements
-import Data.Vector.Dense.Class.Special
-import Data.Vector.Dense.Class.Views
-import Data.Vector.Dense.Class.Copying
-import Data.Vector.Dense.Class.Properties
-import Data.Vector.Dense.Class.Operations
-
-import Data.Vector.Dense.Internal hiding ( V )
-import qualified Data.Vector.Dense.Internal as I
-import Data.Vector.Dense.Internal (  )
-import Data.Vector.Dense.STBase
-
-class UnsafeFreezeVector x where
-    unsafeFreezeVector :: x n e -> Vector n e
-instance UnsafeFreezeVector IOVector where
-    unsafeFreezeVector = I.V
-instance UnsafeFreezeVector (STVector s) where
-    unsafeFreezeVector = unsafeFreezeVector . unsafeSTVectorToIOVector
-
-class UnsafeThawVector x where
-    unsafeThawVector :: Vector n e -> x n e
-instance UnsafeThawVector IOVector where
-    unsafeThawVector (I.V x) = x
-instance UnsafeThawVector (STVector s) where
-    unsafeThawVector = unsafeIOVectorToSTVector . unsafeThawVector
-    
-freezeVector :: (ReadVector x e m, WriteVector y e m, UnsafeFreezeVector y) =>
-    x n e -> m (Vector n e)
-freezeVector x = do
-    x' <- newCopyVector x
-    return (unsafeFreezeVector x')
-
-thawVector :: (WriteVector y e m) =>
-    Vector n e -> m (y n e)
-thawVector = newCopyVector
+import Data.Vector.Dense.Base
+import Data.Tensor.Class.MTensor

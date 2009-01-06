@@ -8,7 +8,38 @@
 --
 
 module Data.Vector.Dense (
-    module Data.Vector.Dense.Internal,
+    -- * The Vector type
+    Vector,
+
+    -- * Overloaded interface for vectors
+    BaseVector( dim ),
+
+    -- * Creating new vectors
+    vector, 
+    listVector,
+
+    -- * Special vectors
+    zeroVector,
+    constantVector,
+    basisVector,
+
+    -- * Overloaded interface for reading vector elements
+    module Data.Tensor.Class.ITensor,
+
+    -- * Vector views
+    conj,
+    subvector,
+    subvectorWithStride,
+
+    -- * Vector properties
+    sumAbs,
+    norm2,
+    whichMaxAbs,
+    (<.>),
+
+    -- * Coercing the phantom shape type
+    coerceVector,
     ) where
 
-import Data.Vector.Dense.Internal
+import Data.Vector.Dense.Base
+import Data.Tensor.Class.ITensor

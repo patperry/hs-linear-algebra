@@ -52,12 +52,11 @@ module Data.Matrix.Dense.Internal (
     ) where
 
 import Data.AEq
-import Foreign( Storable )
+import Control.Monad.ST
 import System.IO.Unsafe
 
-import Data.Elem.BLAS ( Elem, BLAS3 )
+import Data.Elem.BLAS ( Elem, BLAS3, conjugate )
 import BLAS.Internal ( inlinePerformIO )
-import BLAS.UnsafeIOToM
 
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
@@ -81,7 +80,7 @@ import Data.Matrix.Dense.Class.Internal( coerceMatrix, isHermMatrix,
     unsafeDoSSolveTriMatrix, unsafeDoSSolveMatTriMatrix, trsv, trsm )
 import Data.Matrix.Dense.Class.Operations
 import Data.Vector.Dense
-import Data.Vector.Dense.IO( IOVector, unsafeThawVector )
+import Data.Vector.Dense.Base( unsafeVectorToIOVector )
 
 newtype Matrix mn e = M (IOMatrix mn e)
 
@@ -146,23 +145,17 @@ colsMatrix mn cs = unsafeFreezeIOMatrix $ unsafePerformIO $ newColsMatrix mn cs
 -- | Get a matrix from a row vector.
 rowMatrix :: (BLAS3 e) => Vector n e -> Matrix (one,n) e
 rowMatrix x = 
-    case maybeFromRow $ unsafeThawIOVector x of
+    case maybeFromRow $ unsafeVectorToIOVector x of
         Just x' -> unsafeFreezeIOMatrix x'
         Nothing -> unsafeFreezeIOMatrix $ unsafePerformIO $ newRowMatrix x
-  where
-    unsafeThawIOVector :: Vector n e -> IOVector n e
-    unsafeThawIOVector = unsafeThawVector
 {-# NOINLINE rowMatrix #-}
 
 -- | Get a matrix from a column vector.
 colMatrix :: (BLAS3 e) => Vector m e -> Matrix (m,one) e
 colMatrix x = 
-    case maybeFromCol $ unsafeThawIOVector x of
+    case maybeFromCol $ unsafeVectorToIOVector x of
         Just x' -> unsafeFreezeIOMatrix x'
         Nothing -> unsafeFreezeIOMatrix $ unsafePerformIO $ newColMatrix x
-  where
-    unsafeThawIOVector :: Vector n e -> IOVector n e
-    unsafeThawIOVector = unsafeThawVector
 {-# NOINLINE colMatrix #-}
 
 -- | Get a new zero of the given shape.
@@ -201,7 +194,7 @@ unsafeDiag :: (Elem e) => Matrix mn e -> Int -> Vector k e
 unsafeDiag = unsafeDiagView
 
 
-instance (Storable e) => Shaped Matrix (Int,Int) e where
+instance (Elem e) => Shaped Matrix (Int,Int) e where
     shape  = liftMatrix shape
     bounds = liftMatrix bounds
 
@@ -219,7 +212,7 @@ instance (BLAS3 e) => ITensor Matrix (Int,Int) e where
 
     tmap f a 
         | isHermMatrix a = coerceMatrix $ herm $ 
-                               listMatrix (n,m) $ map (conj . f) (elems a)
+                               listMatrix (n,m) $ map (conjugate . f) (elems a)
         | otherwise      = coerceMatrix $
                                listMatrix (m,n) $ map f (elems a)
       where
@@ -253,19 +246,20 @@ instance (BLAS3 e, Monad m) => ReadTensor Matrix (Int,Int) e m where
     getElems'      = getElems
     unsafeReadElem x i = return (unsafeAt x i)
 
-instance (Storable e) => MatrixShaped Matrix e where
+instance (Elem e) => MatrixShaped Matrix e where
     herm (M a) = M (herm a)
     
 instance HasVectorView Matrix where
     type VectorView Matrix = Vector
     
-instance (Storable e) => BaseMatrix_ Matrix e where
+instance (Elem e) => BaseMatrix_ Matrix e where
     matrixViewArray f p m n l h  = M $ matrixViewArray f p m n l h
     arrayFromMatrix (M a )       = arrayFromMatrix a
 
-instance (Storable e) => BaseMatrix Matrix e
+instance (Elem e) => BaseMatrix Matrix e
 
-instance (BLAS3 e, UnsafeIOToM m) => ReadMatrix Matrix e m where
+instance (BLAS3 e) => ReadMatrix Matrix e IO where
+instance (BLAS3 e) => ReadMatrix Matrix e (ST s) where
 
 instance (BLAS3 e) => Num (Matrix mn e) where
     (+) x y     = unsafeFreezeIOMatrix $ unsafeLiftMatrix2 getAddMatrix x y
@@ -342,23 +336,45 @@ instance (BLAS3 e, AEq e) => AEq (Matrix mn e) where
     (===) = compareHelp (===)
     (~==) = compareHelp (~==)
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix Matrix e m where
+instance (BLAS3 e) => MMatrix Matrix e IO where
     unsafeDoSApplyAdd    = gemv
     unsafeDoSApplyAddMat = gemm
     unsafeGetRow         = unsafeGetRowMatrix
     unsafeGetCol         = unsafeGetColMatrix
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Herm Matrix) e m where
+instance (BLAS3 e) => MMatrix Matrix e (ST s) where
+    unsafeDoSApplyAdd    = gemv
+    unsafeDoSApplyAddMat = gemm
+    unsafeGetRow         = unsafeGetRowMatrix
+    unsafeGetCol         = unsafeGetColMatrix
+
+instance (BLAS3 e) => MMatrix (Herm Matrix) e IO where
     unsafeDoSApplyAdd    = hemv'
     unsafeDoSApplyAddMat = hemm'
 
-instance (BLAS3 e, UnsafeIOToM m) => MMatrix (Tri Matrix) e m where
+instance (BLAS3 e) => MMatrix (Herm Matrix) e (ST s) where
+    unsafeDoSApplyAdd    = hemv'
+    unsafeDoSApplyAddMat = hemm'
+
+instance (BLAS3 e) => MMatrix (Tri Matrix) e IO where
     unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
     unsafeDoSApply_      = trmv
     unsafeDoSApplyMat_   = trmm
 
-instance (BLAS3 e, UnsafeIOToM m) => MSolve (Tri Matrix) e m where
+instance (BLAS3 e) => MMatrix (Tri Matrix) e (ST s) where
+    unsafeDoSApplyAdd    = unsafeDoSApplyAddTriMatrix
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
+    unsafeDoSApply_      = trmv
+    unsafeDoSApplyMat_   = trmm
+
+instance (BLAS3 e) => MSolve (Tri Matrix) e IO where
+    unsafeDoSSolve     = unsafeDoSSolveTriMatrix
+    unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
+    unsafeDoSSolve_    = trsv
+    unsafeDoSSolveMat_ = trsm
+
+instance (BLAS3 e) => MSolve (Tri Matrix) e (ST s) where
     unsafeDoSSolve     = unsafeDoSSolveTriMatrix
     unsafeDoSSolveMat  = unsafeDoSSolveMatTriMatrix
     unsafeDoSSolve_    = trsv

@@ -25,7 +25,7 @@ import Foreign( advancePtr )
 import Data.Matrix.Class
 import Data.Matrix.Banded.Class.Internal
 import Data.Matrix.Banded.Class.Views
-import Data.Vector.Dense.Class( unsafeCopyVector )
+import Data.Vector.Dense.Base( unsafeCopyVector )
 
 newCopyBanded :: (ReadBanded a e m, WriteBanded b e m) => 
     a mn e -> m (b mn e)

@@ -37,7 +37,7 @@ import Data.Tensor.Class( shape )
 
 import Data.Matrix.Class( HasVectorView(..) )
 import Data.Matrix.Dense.Class.Internal
-import Data.Vector.Dense.Class.Internal( WriteVector, newCopyVector )
+import Data.Vector.Dense.Class( WriteVector, newCopyVector )
 
 import Foreign
 

@@ -21,9 +21,11 @@ module Data.Matrix.Banded.Class.Views (
 
 import BLAS.Internal( checkedRow, checkedCol, checkedDiag, diagStart, diagLen )
 import Data.Matrix.Class( HasVectorView(..) )
+import Data.Tensor.Class( shape )
 
 import Data.Matrix.Banded.Class.Internal
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Base
+import Data.Vector.Dense.IOBase
 import Foreign
 
 diagViewBanded :: (BaseBanded a e) => 
@@ -49,6 +51,6 @@ unsafeDiagViewBanded a d
             len = diagLen (m,n) d
             inc = ld
             c   = False
-        in vectorViewArray fp p' len inc c
+        in unsafeIOVectorToVector (IOVector fp p' len inc c)
   where
     a' = (hermBanded . coerceBanded) a

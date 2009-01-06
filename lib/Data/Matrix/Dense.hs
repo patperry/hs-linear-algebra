@@ -46,6 +46,7 @@ freezeMatrix x = do
     x' <- newCopyMatrix x
     return (unsafeFreezeMatrix x')
 
-thawMatrix :: (WriteMatrix a e m) =>
+thawMatrix :: (ReadMatrix Matrix e m, WriteMatrix a e m) => 
     Matrix mn e -> m (a mn e)
-thawMatrix = newCopyMatrix
+thawMatrix a = newCopyMatrix a
+

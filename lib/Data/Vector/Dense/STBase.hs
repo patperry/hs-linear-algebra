@@ -84,6 +84,9 @@ instance (Elem e) => BaseVector (STVector s) e where
     {-# INLINE isConj #-}
     conj (STVector x) = STVector (conjIOVector x)
     {-# INLINE conj #-}
+    unsafeSubvectorViewWithStride s (STVector x) o n = 
+        STVector (unsafeSubvectorViewWithStrideIOVector s x o n)
+    {-# INLINE unsafeSubvectorViewWithStride #-}    
     unsafeIOVectorToVector = STVector
     {-# INLINE unsafeIOVectorToVector #-}
     unsafeVectorToIOVector (STVector x) = x
@@ -92,17 +95,17 @@ instance (Elem e) => BaseVector (STVector s) e where
     {-# INLINE withVectorPtrIO #-}
 
 instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
+    newVector_ = liftM STVector . unsafeIOToST . newIOVector_
+    {-# INLINE newVector_ #-}
     withVectorPtr (STVector x) f = unsafeIOToST $ withIOVectorPtr x f
     {-# INLINE withVectorPtr #-}
     freezeVector (STVector x) = unsafeIOToST $ freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
     {-# INLINE unsafeFreezeVector #-}
-
-instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
-    newVector_ = liftM STVector . unsafeIOToST . newIOVector_
-    {-# INLINE newVector_ #-}
     thawVector = liftM STVector . unsafeIOToST . thawIOVector
     {-# INLINE thawVector #-}
     unsafeThawVector = liftM STVector . unsafeIOToST . unsafeThawIOVector
     {-# INLINE unsafeThawVector #-}
+
+instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where

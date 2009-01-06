@@ -12,6 +12,7 @@ module Data.Vector.Dense.ST (
     STVector,
     runSTVector,
     
+    -- * Overloaded interface for mutable dense vectors
     module Data.Vector.Dense.Class
     ) where
 

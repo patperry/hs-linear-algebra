@@ -42,6 +42,7 @@ module Data.Matrix.Class.MSolve (
     ) where
 
 import Data.Matrix.Class
+import Data.Tensor.Class
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
 

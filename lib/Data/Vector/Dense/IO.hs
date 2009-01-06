@@ -11,8 +11,9 @@ module Data.Vector.Dense.IO (
     -- * The IOVector data type
     IOVector,
     
+    -- * Overloaded interface for mutable dense vectors
     module Data.Vector.Dense.Class,
     ) where
 
-import Data.Vector.Dense.Class.Internal( IOVector )
+import Data.Vector.Dense.IOBase( IOVector )
 import Data.Vector.Dense.Class

@@ -13,12 +13,11 @@ module Data.Vector.Dense.IOBase
     where
 
 import Control.Monad
-import Data.Complex ( Complex )
 import Foreign
 import System.IO.Unsafe
 
 import BLAS.Internal ( clearArray )
-import Data.Elem.BLAS ( Elem, BLAS1, conjugate )
+import Data.Elem.BLAS ( Complex, Elem, BLAS1, conjugate )
 import qualified Data.Elem.BLAS as BLAS
 
 import Data.Tensor.Class
@@ -47,6 +46,12 @@ isConjIOVector (IOVector _ _ _ _ c) = c
 conjIOVector :: IOVector n e -> IOVector n e
 conjIOVector (IOVector f p n incX c) = (IOVector f p n incX (not c))
 {-# INLINE conjIOVector #-}
+
+unsafeSubvectorViewWithStrideIOVector :: (Elem e) =>
+    Int -> IOVector n e -> Int -> Int -> IOVector n' e
+unsafeSubvectorViewWithStrideIOVector s' (IOVector f p _ inc c) o' n' =
+    IOVector f (p `advancePtr` (inc*o')) n' (inc*s') c
+{-# INLINE unsafeSubvectorViewWithStrideIOVector #-}
 
 withIOVectorPtr :: IOVector n e -> (Ptr e -> IO a) -> IO a
 withIOVectorPtr (IOVector f p _ _ _) g = do
@@ -159,7 +164,7 @@ canModifyElemIOVector _ _ = return True
 {-# INLINE canModifyElemIOVector #-}
 
 unsafeWriteElemIOVector :: (Elem e) => IOVector n e -> Int -> e -> IO ()
-unsafeWriteElemIOVector (IOVector f p n incX c) i e =
+unsafeWriteElemIOVector (IOVector f p _ incX c) i e =
     let e' = if c then conjugate e else e
     in do
         pokeElemOff p (i*incX) e'
@@ -168,7 +173,7 @@ unsafeWriteElemIOVector (IOVector f p n incX c) i e =
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n (Complex Double) -> Int -> Complex Double -> IO () #-}
 
 unsafeModifyElemIOVector :: (Elem e) => IOVector n e -> Int -> (e -> e) -> IO ()
-unsafeModifyElemIOVector (IOVector f p n incX c) i g =
+unsafeModifyElemIOVector (IOVector f p _ incX c) i g =
     let g' = if c then conjugate . g . conjugate else g
         p' = p `advancePtr` (i*incX)
     in do

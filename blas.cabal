@@ -76,9 +76,12 @@ library
                         Data.Matrix.Tri
 
                         Data.Vector.Dense
-                            Data.Vector.Dense.IO
-                            Data.Vector.Dense.ST
+                            Data.Vector.Dense.Base
                             Data.Vector.Dense.Class
+                            Data.Vector.Dense.IO
+                            Data.Vector.Dense.IOBase
+                            Data.Vector.Dense.ST
+                            Data.Vector.Dense.STBase
 
                         Test.Vector.Dense
                         Test.Matrix
@@ -99,18 +102,6 @@ library
                         Data.Elem.BLAS.Level3
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        
-                        Data.Vector.Dense.Base
-                        Data.Vector.Dense.IOBase
-                        
-                        -- Data.Vector.Dense.Class.Internal
-                        -- Data.Vector.Dense.Class.Creating
-                        -- Data.Vector.Dense.Class.Elements
-                        -- Data.Vector.Dense.Class.Special
-                        -- Data.Vector.Dense.Class.Views
-                        -- Data.Vector.Dense.Class.Copying
-                        -- Data.Vector.Dense.Class.Properties
-                        -- Data.Vector.Dense.Class.Operations
                         
                         Data.Matrix.Banded.Internal
                         Data.Matrix.Banded.Class.Internal
@@ -141,5 +132,6 @@ library
     extensions:         BangPatterns, FlexibleContexts, 
                         FlexibleInstances, ForeignFunctionInterface, 
                         FunctionalDependencies, MultiParamTypeClasses,
+                        ScopedTypeVariables,
                         TypeFamilies
     build-depends:      base, ieee, storable-complex, QuickCheck >= 1.2
