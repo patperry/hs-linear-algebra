@@ -153,8 +153,14 @@ newZeroVector n = do
 
 -- | Set every element in the vector to zero.
 setZeroVector :: (WriteVector x e m) => x n e -> m ()
-setZeroVector = setZero
+setZeroVector = unsafeSetZeroVector
 {-# INLINE setZeroVector #-}
+
+unsafeSetZeroVector :: (ReadVector x e m) => x n e -> m ()
+unsafeSetZeroVector x =
+    withVectorPtr x $ \_ ->
+        setZeroIOVector (unsafeVectorToIOVector x)
+{-# INLINE unsafeSetZeroVector #-}
 
 -- | Create a vector with every element initialized to the same value.
 newConstantVector :: (ReadVector x e m) => Int -> e -> m (x n e)

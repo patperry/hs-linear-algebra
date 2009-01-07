@@ -8,38 +8,94 @@
 --
 
 module Data.Matrix.Dense.Class (
-    -- * The dense matrix type classes
-    BaseMatrix_(..),
-    BaseMatrix,
+    -- * Overloaded dense matrix types
+    BaseMatrix( ldaMatrix, isHermMatrix, coerceMatrix ),
     ReadMatrix,
     WriteMatrix,
     
-    -- * Matrix shape
-    module Data.Tensor.Class,
+    -- * Overloaded interface for matrices
     module Data.Matrix.Class,
-    coerceMatrix,
+    module Data.Matrix.Class.MMatrix,
+    
+    -- * Creating matrices
+    newMatrix_,
+    newMatrix,
+    newListMatrix,
+    newRowsMatrix,
+    newColsMatrix,
+    newRowMatrix,
+    newColMatrix,
 
-    module Data.Matrix.Dense.Class.Creating,
-    module Data.Matrix.Dense.Class.Elements,
-    module Data.Matrix.Dense.Class.Special,
-    module Data.Matrix.Dense.Class.Views,
-    module Data.Matrix.Dense.Class.Copying,
-    module Data.Matrix.Dense.Class.Operations,
+    -- * Special matrices
+    newZeroMatrix,
+    setZeroMatrix,
+    newConstantMatrix,
+    setConstantMatrix,
+    newIdentityMatrix,
+    setIdentityMatrix,
     
-    -- * Low-level functions
-    ldaOfMatrix,
-    isHermMatrix,
-    withMatrixPtr,
+    -- * Copying matrices
+    newCopyMatrix,
+    newCopyMatrix',
+    copyMatrix,
+    swapMatrix,
     
+    -- * Swapping rows and columns
+    swapRows,
+    swapCols,
+
+    -- * Matrix views
+    submatrixView,
+    splitRowsAt,
+    splitColsAt,
+
+    -- * Row and Column views
+    rowViews,
+    colViews,
+    rowView,
+    colView,
+    diagView,
+    
+    -- * Getting diagonals
+    getDiag,
+    
+    -- * Overloaded interface for reading and writing matrix elements
+    module Data.Tensor.Class,
+    module Data.Tensor.Class.MTensor,
+
+    -- * Matrix operations
+    -- ** Unary
+    getConjMatrix,
+    getScaledMatrix,
+    getShiftedMatrix,
+    doConjMatrix,
+    scaleByMatrix,
+    shiftByMatrix,
+    
+    -- ** Binary
+    getAddMatrix,
+    getSubMatrix,
+    getMulMatrix,
+    getDivMatrix,
+    addMatrix,
+    subMatrix,
+    axpyMatrix,
+    mulMatrix,
+    divMatrix,
+
+    -- * Conversions between mutable and immutable matrices
+    freezeMatrix,
+    thawMatrix,
+    unsafeFreezeMatrix,
+    unsafeThawMatrix,
+        
     ) where
 
-import Data.Matrix.Dense.Class.Internal( BaseMatrix_(..), ldaOfMatrix, 
-    isHermMatrix, BaseMatrix, ReadMatrix, WriteMatrix, coerceMatrix, withMatrixPtr )
-import Data.Tensor.Class
+import Data.Matrix.Dense.Base
+
 import Data.Matrix.Class
-import Data.Matrix.Dense.Class.Creating
-import Data.Matrix.Dense.Class.Elements
-import Data.Matrix.Dense.Class.Special
-import Data.Matrix.Dense.Class.Views
-import Data.Matrix.Dense.Class.Copying
-import Data.Matrix.Dense.Class.Operations
+import Data.Matrix.Class.MMatrix
+
+import Data.Tensor.Class
+import Data.Tensor.Class.MTensor
+

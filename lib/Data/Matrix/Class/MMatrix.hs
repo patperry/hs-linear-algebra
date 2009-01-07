@@ -60,7 +60,7 @@ import Data.Matrix.Class
 import Data.Tensor.Class
 
 import Data.Vector.Dense.Class
-import Data.Matrix.Dense.Class.Internal
+import Data.Matrix.Dense.Base
 
 
 -- | Get the given row in a matrix.

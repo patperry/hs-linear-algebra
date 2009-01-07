@@ -14,5 +14,5 @@ module Data.Matrix.Dense.IO (
     module Data.Matrix.Dense.Class,
     ) where
 
-import Data.Matrix.Dense.Class.Internal( IOMatrix )
+import Data.Matrix.Dense.IOBase( IOMatrix )
 import Data.Matrix.Dense.Class

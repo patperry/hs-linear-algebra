@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
-        RankNTypes #-}
+        RankNTypes, ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Base
@@ -18,14 +18,19 @@ import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
     checkedRow, checkedCol )
+import BLAS.Types
 
 import Data.Elem.BLAS( Complex, Elem, BLAS1, BLAS3, conjugate )
+import qualified Data.Elem.BLAS as BLAS
 
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
 import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
+import Data.Matrix.Herm
+import Data.Matrix.Tri.Internal
+
 import Data.Vector.Dense.Base
 
 import Data.Matrix.Dense.IOBase
@@ -81,8 +86,8 @@ class (HasVectorView a, Elem e, MatrixShaped a e
 
 
 class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m
-      -- , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
-      -- , MSolve (Tri a) e m
+      , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
+      , MSolve (Tri a) e m
       , ReadVector (VectorView a) e m) => ReadMatrix a e m where
           
     -- | Creates a new matrix of the given shape.  The elements will be 
@@ -562,6 +567,551 @@ unsafeGetDivMatrix ::
 unsafeGetDivMatrix = unsafeGetBinaryMatrixOp unsafeDivMatrix
 {-# INLINE unsafeGetDivMatrix #-}
 
+-------------------------------- MMatrix ----------------------------------
+
+-- | A type class for mutable matrices associated with a monad.  The member
+-- functions of the type class do not perform any checks on the validity of
+-- shapes or indices, so in general their safe counterparts should be
+-- preferred.
+class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
+    unsafeGetSApply :: (ReadVector x e m, ReadVector y e m) =>
+        e -> a (k,l) e -> x l e -> m (y k e)
+    unsafeGetSApply alpha a x = do
+        y <- newVector_ (numRows a)
+        unsafeDoSApplyAdd alpha a x 0 y
+        return y
+    {-# INLINE unsafeGetSApply #-}
+
+    unsafeGetSApplyMat :: (ReadMatrix b e m, ReadMatrix c e m) =>
+        e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
+    unsafeGetSApplyMat alpha a b = do
+        c <- newMatrix_ (numRows a, numCols b)
+        unsafeDoSApplyAddMat alpha a b 0 c
+        return c
+    {-# INLINE unsafeGetSApplyMat #-}
+
+    unsafeDoSApplyAdd :: (ReadVector x e m, ReadVector y e m) =>
+        e -> a (k,l) e -> x l e -> e -> y k e -> m ()
+    unsafeDoSApplyAdd alpha a x beta (y :: y k e) = do
+        (y' :: y k e) <- unsafeGetSApply alpha a x
+        unsafeScaleByVector beta y
+        unsafeAxpyVector 1 y' y
+    {-# INLINE unsafeDoSApplyAdd #-}
+
+    unsafeDoSApplyAddMat :: (ReadMatrix b e m, ReadMatrix c e m) =>
+        e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+    unsafeDoSApplyAddMat alpha a b beta (c :: c (r,t) e) = do
+        (c' :: c (r,t) e) <- unsafeGetSApplyMat alpha a b
+        unsafeScaleByMatrix beta c
+        unsafeAxpyMatrix 1 c' c
+    {-# INLINE unsafeDoSApplyAddMat #-}
+
+    unsafeDoSApply_ :: (ReadVector y e m) =>
+        e -> a (n,n) e -> y n e -> m ()
+    unsafeDoSApply_ alpha a (x :: y n e) = do
+        (y :: y n e) <- newVector_ (dim x)
+        unsafeDoSApplyAdd alpha a x 0 y
+        unsafeCopyVector x y
+    {-# INLINE unsafeDoSApply_ #-}
+
+    unsafeDoSApplyMat_ :: (ReadMatrix b e m) =>
+        e -> a (k,k) e -> b (k,l) e -> m ()
+    unsafeDoSApplyMat_ alpha a (b :: b (k,l) e) = do
+        (c :: b (k,l) e) <- newMatrix_ (shape b)
+        unsafeDoSApplyAddMat alpha a b 0 c
+        unsafeCopyMatrix b c
+    {-# INLINE unsafeDoSApplyMat_ #-}
+
+    unsafeGetRow :: (ReadVector x e m) => a (k,l) e -> Int -> m (x l e)
+    unsafeGetRow (a :: a (k,l) e) i =
+        let unsafeGetRowHelp :: (ReadVector x e m) => x l e -> m (x l e)
+            unsafeGetRowHelp (_ :: x l e) = do
+                (e :: x k e) <- newBasisVector (numRows a) i
+                liftM conj $ unsafeGetSApply 1 (herm a) e
+        in unsafeGetRowHelp undefined
+    {-# INLINE unsafeGetRow #-}        
+        
+    unsafeGetCol :: (ReadVector x e m) => a (k,l) e -> Int -> m (x k e)
+    unsafeGetCol (a :: a (k,l) e) j =
+        let unsafeGetColHelp :: (ReadVector x e m) => x k e -> m (x k e)
+            unsafeGetColHelp (_ :: x k e) = do
+                (e :: x l e) <- newBasisVector (numCols a) j
+                unsafeGetSApply 1 a e
+        in unsafeGetColHelp undefined
+    {-# INLINE unsafeGetCol #-}
+
+
+-- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
+gemv :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
+    e -> a (k,l) e -> x l e -> e -> y k e -> m ()
+gemv alpha a x beta y
+    | numRows a == 0 || numCols a == 0 =
+        unsafeScaleByVector beta y
+        
+    | isConj y && (isConj x || stride x == 1) =
+        let transA = if isConj x then NoTrans else ConjTrans
+            transB = blasTransOf (herm a)
+            m      = 1
+            n      = dim y
+            k      = dim x
+            ldA    = stride x
+            ldB    = ldaMatrix a
+            ldC    = stride y
+            alpha' = conjugate alpha
+            beta'  = conjugate beta
+        in 
+            withVectorPtr   x $ \pA ->
+            withMatrixPtrIO a $ \pB ->
+            withVectorPtrIO y $ \pC ->
+                BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
+    
+    | (isConj y && otherwise) || isConj x = do
+        unsafeDoConjVector y
+        gemv alpha a x beta (conj y)
+        unsafeDoConjVector y
+        
+    | otherwise =
+        let transA = blasTransOf a
+            (m,n)  = case (isHermMatrix a) of
+                         False -> shape a
+                         True  -> (flipShape . shape) a
+            ldA    = ldaMatrix a
+            incX   = stride x
+            incY   = stride y
+        in 
+            withMatrixPtr a   $ \pA ->
+            withVectorPtrIO x $ \pX ->
+            withVectorPtrIO y $ \pY -> do
+                BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
+
+-- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
+gemm :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+    e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+gemm alpha a b beta c
+    | numRows a == 0 || numCols a == 0 || numCols b == 0 = 
+        unsafeScaleByMatrix beta c
+    | isHermMatrix c = gemm (conjugate alpha) (herm b) (herm a) (conjugate beta) (herm c)
+    | otherwise =
+        let transA = blasTransOf a
+            transB = blasTransOf b
+            (m,n)  = shape c
+            k      = numCols a
+            ldA    = ldaMatrix a
+            ldB    = ldaMatrix b
+            ldC    = ldaMatrix c
+        in 
+            withMatrixPtr   a $ \pA ->
+            withMatrixPtrIO b $ \pB ->
+            withMatrixPtrIO c $ \pC ->
+                BLAS.gemm transA transB m n k alpha pA ldA pB ldB beta pC ldC
+
+hemv :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
+    e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
+hemv alpha h (x :: x k e) beta y
+    | numRows h == 0 =
+        return ()
+    | isConj y = do
+        unsafeDoConjVector y
+        hemv alpha h x beta (conj y)
+        unsafeDoConjVector y
+    | isConj x = do
+        (x' :: x k e) <- newCopyVector' x
+        hemv alpha h x' beta y
+    | otherwise =
+        let (u,a) = hermToBase h
+            n     = numCols a
+            u'    = case isHermMatrix a of
+                        True  -> flipUpLo u
+                        False -> u
+            uploA = u'
+            ldA   = ldaMatrix a
+            incX  = stride x
+            incY  = stride y
+        in 
+            withMatrixPtr a   $ \pA ->
+            withVectorPtrIO x $ \pX ->
+            withVectorPtrIO y $ \pY ->
+                BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
+
+hemm :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+    e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
+hemm alpha h b beta c
+    | numRows b == 0 || numCols b == 0 || numCols c == 0 = return ()
+    | (isHermMatrix a) /= (isHermMatrix c) || (isHermMatrix a) /= (isHermMatrix b) =
+        zipWithM_ (\x y -> hemv alpha h x beta y) (colViews b) (colViews c)
+    | otherwise =
+        let (m,n)   = shape c
+            (side,u',m',n')
+                    = if isHermMatrix a
+                          then (RightSide, flipUpLo u, n, m)
+                          else (LeftSide,  u,          m, n)
+            uploA   = u'
+            ldA     = ldaMatrix a
+            ldB     = ldaMatrix b
+            ldC     = ldaMatrix c
+        in 
+            withMatrixPtr   a $ \pA ->
+            withMatrixPtrIO b $ \pB ->
+            withMatrixPtrIO c $ \pC ->
+                BLAS.hemm side uploA m' n' alpha pA ldA pB ldB beta pC ldC
+    where
+      (u,a) = hermToBase h
+
+hemv' :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
+    e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
+hemv' alpha a x beta y = 
+    hemv alpha (coerceHerm a) x beta (coerceVector y)
+
+hemm' :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+    e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+hemm' alpha a b beta c = 
+    hemm alpha (coerceHerm a) b beta (coerceMatrix c)
+
+unsafeDoSApplyAddTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadVector x e m, ReadVector y e m) =>
+        e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
+unsafeDoSApplyAddTriMatrix alpha t x beta (y :: y k e) =
+    if beta == 0
+        then unsafeDoSApplyTriMatrix alpha t x y
+        else do
+            (y' :: y k e) <- newCopyVector y
+            unsafeDoSApplyTriMatrix alpha t x y'
+            unsafeScaleByVector beta y
+            unsafeAxpyVector 1 y' y
+
+unsafeDoSApplyAddMatTriMatrix :: (ReadMatrix a e m,
+    ReadMatrix b e m, ReadMatrix c e m) =>
+        e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
+unsafeDoSApplyAddMatTriMatrix alpha t b beta (c :: c (r,t) e) =
+    if beta == 0
+        then unsafeDoSApplyMatTriMatrix alpha t b c
+        else do
+            (c' :: c (r,t) e) <- newCopyMatrix c
+            unsafeDoSApplyMatTriMatrix alpha t b c'
+            unsafeScaleByMatrix beta c
+            unsafeAxpyMatrix 1 c' c
+
+unsafeDoSApplyTriMatrix :: (ReadMatrix a e m, MMatrix a e m, 
+    ReadVector x e m, ReadVector y e m) =>
+        e -> Tri a (k,l) e -> x l e -> y k e -> m ()
+unsafeDoSApplyTriMatrix alpha t x y =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyVector y (coerceVector x)
+            trmv alpha t' y
+            
+        (Lower,Right (t',r),_) -> do
+            let y1 = unsafeSubvectorView y 0            (numRows t')
+                y2 = unsafeSubvectorView y (numRows t') (numRows r)
+            unsafeCopyVector y1 x
+            trmv alpha t' y1
+            unsafeDoSApplyAdd alpha r x 0 y2
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyVector (coerceVector y) x
+            trmv alpha t' (coerceVector y)
+
+        (Upper,_,Right (t',r)) ->
+            let x1 = unsafeSubvectorView x 0            (numCols t')
+                x2 = unsafeSubvectorView x (numCols t') (numCols r)
+            in do
+                unsafeCopyVector y x1
+                trmv alpha t' y
+                unsafeDoSApplyAdd alpha r x2 1 y
+  where
+    (u,d,a) = triToBase t
+
+unsafeDoSApplyMatTriMatrix :: (ReadMatrix a e m,
+    ReadMatrix b e m, ReadMatrix c e m) =>
+        e -> Tri a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
+unsafeDoSApplyMatTriMatrix alpha t b c =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyMatrix c (coerceMatrix b)
+            trmm alpha t' c
+            
+        (Lower,Right (t',r),_) -> do
+            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
+                c2 = unsafeSubmatrixView c (numRows t',0) (numRows r ,numCols c)
+            unsafeCopyMatrix c1 b
+            trmm alpha t' c1
+            unsafeDoSApplyAddMat alpha r b 0 c2
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyMatrix (coerceMatrix c) b
+            trmm alpha t' (coerceMatrix c)
+
+        (Upper,_,Right (t',r)) ->
+            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
+                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
+            in do
+                unsafeCopyMatrix c b1
+                trmm alpha t' c
+                unsafeDoSApplyAddMat alpha r b2 1 c
+  where
+    (u,d,a) = triToBase t
+
+
+toLower :: (BaseMatrix a e) => Diag -> a (m,n) e 
+        -> Either (Tri a (m,m) e) 
+                  (Tri a (n,n) e, a (d,n) e)
+toLower diag a =
+    if m <= n
+        then Left $  triFromBase Lower diag (unsafeSubmatrixView a (0,0) (m,m))
+        else let t = triFromBase Lower diag (unsafeSubmatrixView a (0,0) (n,n))
+                 r = unsafeSubmatrixView a (n,0) (d,n)
+             in Right (t,r)
+  where
+    (m,n) = shape a
+    d     = m - n
+    
+toUpper :: (BaseMatrix a e) => Diag -> a (m,n) e
+        -> Either (Tri a (n,n) e)
+                  (Tri a (m,m) e, a (m,d) e)
+toUpper diag a =
+    if n <= m
+        then Left $  triFromBase Upper diag (unsafeSubmatrixView a (0,0) (n,n))
+        else let t = triFromBase Upper diag (unsafeSubmatrixView a (0,0) (m,m))
+                 r = unsafeSubmatrixView a (0,m) (m,d)
+             in Right (t,r)
+  where
+    (m,n) = shape a
+    d     = n - m
+
+trmv :: (ReadMatrix a e m, ReadVector y e m) => 
+    e -> Tri a (k,k) e -> y n e -> m ()
+trmv alpha t x 
+    | dim x == 0 = 
+        return ()
+        
+    | isConj x =
+        let (u,d,a) = triToBase t
+            side    = RightSide
+            (h,u')  = if isHermMatrix a then (NoTrans  , flipUpLo u) 
+                                        else (ConjTrans, u)
+            uploA   = u'
+            transA  = h
+            diagA   = d
+            m       = 1
+            n       = dim x
+            alpha'  = conjugate alpha
+            ldA     = ldaMatrix a
+            ldB     = stride x
+        in 
+            withMatrixPtr   a $ \pA ->
+            withVectorPtrIO x $ \pB ->
+                BLAS.trmm side uploA transA diagA m n alpha' pA ldA pB ldB
+
+    | otherwise =
+        let (u,d,a)   = triToBase t
+            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                            else (NoTrans  , u)
+            uploA     = u'
+            diagA     = d
+            n         = dim x
+            ldA       = ldaMatrix a
+            incX      = stride x
+        in do
+            when (alpha /= 1) $ unsafeScaleByVector alpha x
+            withMatrixPtr a   $ \pA ->
+                withVectorPtrIO x $ \pX -> do
+                   BLAS.trmv uploA transA diagA n pA ldA pX incX
+
+
+trmm :: (ReadMatrix a e m, ReadMatrix b e m) => 
+    e -> Tri a (k,k) e -> b (k,l) e -> m ()
+trmm _ _ b
+    | numRows b == 0 || numCols b == 0 = return ()
+trmm alpha t b =
+    let (u,d,a)   = triToBase t
+        (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
+        (m,n)     = shape b
+        (side,h',m',n',alpha')
+                  = if isHermMatrix b
+                        then (RightSide, flipTrans h, n, m, conjugate alpha)
+                        else (LeftSide , h          , m, n, alpha       )
+        uploA     = u'
+        transA    = h'
+        diagA     = d
+        ldA       = ldaMatrix a
+        ldB       = ldaMatrix b
+    in  
+        withMatrixPtr   a $ \pA ->
+        withMatrixPtrIO b $ \pB ->
+            BLAS.trmm side uploA transA diagA m' n' alpha' pA ldA pB ldB
+
+unsafeDoSSolveTriMatrix :: (ReadMatrix a e m,
+    ReadVector y e m, ReadVector x e m) =>
+        e -> Tri a (k,l) e -> y k e -> x l e -> m ()
+unsafeDoSSolveTriMatrix alpha t y x =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' (coerceVector x)
+            
+        (Lower,Right (t',_),_) -> do
+            let y1 = unsafeSubvectorView y 0            (numRows t')
+            unsafeCopyVector x y1
+            trsv alpha t' x
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' x
+
+        (Upper,_,Right (t',r)) ->
+            let x1 = unsafeSubvectorView x 0            (numCols t')
+                x2 = unsafeSubvectorView x (numCols t') (numCols r)
+            in do
+                unsafeCopyVector x1 y
+                trsv alpha t' x1
+                unsafeSetZeroVector x2
+  where
+    (u,d,a) = triToBase t
+
+
+unsafeDoSSolveMatTriMatrix :: (ReadMatrix a e m,
+    ReadMatrix c e m, ReadMatrix b e m) =>
+        e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+unsafeDoSSolveMatTriMatrix alpha t c b =
+    case (u, toLower d a, toUpper d a) of
+        (Lower,Left t',_) -> do
+            unsafeCopyMatrix b (coerceMatrix c)
+            trsm alpha t' (coerceMatrix b)
+            
+        (Lower,Right (t',_),_) -> do
+            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
+            unsafeCopyMatrix b c1
+            trsm alpha t' b
+            
+        (Upper,_,Left t') -> do
+            unsafeCopyMatrix (coerceMatrix b) c
+            trsm alpha t' (coerceMatrix b)
+
+        (Upper,_,Right (t',r)) ->
+            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
+                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
+            in do
+                unsafeCopyMatrix b1 c
+                trsm alpha t' b1
+                unsafeSetZeroMatrix b2
+  where
+    (u,d,a) = triToBase t
+
+
+trsv :: (ReadMatrix a e m, ReadVector y e m) => 
+    e -> Tri a (k,k) e -> y n e -> m ()
+trsv alpha t x
+    | dim x == 0 = return ()
+
+    | isConj x =
+        let (u,d,a) = triToBase t
+            side    = RightSide
+            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
+            uploA   = u'
+            transA  = h
+            diagA   = d
+            m       = 1
+            n       = dim x
+            alpha'  = conjugate alpha
+            ldA     = ldaMatrix a
+            ldB     = stride x
+        in 
+            withMatrixPtr   a $ \pA ->
+            withVectorPtrIO x $ \pB ->
+                BLAS.trsm side uploA transA diagA m n alpha' pA ldA pB ldB
+
+    | otherwise =
+        let (u,d,a) = triToBase t
+            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                            else (NoTrans  , u)
+            uploA     = u'
+            diagA     = d
+            n         = dim x
+            ldA       = ldaMatrix a
+            incX      = stride x
+        in do
+            when (alpha /= 1) $ unsafeScaleByVector alpha x
+            withMatrixPtr   a $ \pA ->
+                withVectorPtrIO x $ \pX ->
+                    BLAS.trsv uploA transA diagA n pA ldA pX incX
+
+trsm :: (ReadMatrix a e m, ReadMatrix b e m) => 
+    e -> Tri a (k,k) e -> b (k,l) e -> m ()
+trsm _ _ b
+    | numRows b == 0 || numCols b == 0 = return ()
+trsm alpha t b =
+    let (u,d,a)   = triToBase t
+        (h,u')    = if isHermMatrix a then (ConjTrans, flipUpLo u) else (NoTrans, u)
+        (m,n)     = shape b
+        (side,h',m',n',alpha')
+                  = if isHermMatrix b
+                        then (RightSide, flipTrans h, n, m, conjugate alpha)
+                        else (LeftSide , h          , m, n, alpha     )
+        uploA     = u'
+        transA    = h'
+        diagA     = d
+        ldA       = ldaMatrix a
+        ldB       = ldaMatrix b
+    in 
+        withMatrixPtr   a $ \pA ->
+        withMatrixPtrIO b $ \pB -> do
+            BLAS.trsm side uploA transA diagA m' n' alpha' pA ldA pB ldB
+
+
+------------------------------------ MSolve ------------------------------
+
+-- | A type class for mutable matrices with inverses.  The member
+-- functions of the type class do not perform any checks on the validity
+-- of shapes or indices, so in general their safe counterparts should be
+-- preferred.
+class (MatrixShaped a e, BLAS3 e, Monad m) => MSolve a e m where
+    unsafeDoSolve :: (ReadVector y e m, ReadVector x e m) =>
+        a (k,l) e -> y k e -> x l e -> m ()
+    unsafeDoSolve = unsafeDoSSolve 1
+    {-# INLINE unsafeDoSolve #-}
+    
+    unsafeDoSolveMat :: (ReadMatrix c e m, ReadMatrix b e m) =>
+        a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+    unsafeDoSolveMat = unsafeDoSSolveMat 1
+    {-# INLINE unsafeDoSolveMat #-}    
+    
+    unsafeDoSSolve :: (ReadVector y e m, ReadVector x e m) =>
+        e -> a (k,l) e -> y k e -> x l e -> m ()
+    unsafeDoSSolve alpha a y x = do
+        unsafeDoSolve a y x
+        unsafeScaleByVector alpha x
+    {-# INLINE unsafeDoSSolve #-}        
+    
+    unsafeDoSSolveMat :: (ReadMatrix c e m, ReadMatrix b e m) =>
+        e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
+    unsafeDoSSolveMat alpha a c b = do
+        unsafeDoSolveMat a c b
+        unsafeScaleByMatrix alpha b
+    {-# INLINE unsafeDoSSolveMat #-}
+
+    unsafeDoSolve_ :: (ReadVector x e m) => a (k,k) e -> x k e -> m ()
+    unsafeDoSolve_ = unsafeDoSSolve_ 1
+    {-# INLINE unsafeDoSolve_ #-}
+
+    unsafeDoSSolve_ :: (ReadVector x e m) => e -> a (k,k) e -> x k e -> m ()
+    unsafeDoSSolve_ alpha a x = do
+        unsafeScaleByVector alpha x
+        unsafeDoSolve_ a x
+    {-# INLINE unsafeDoSSolve_ #-}        
+        
+    unsafeDoSolveMat_ :: (ReadMatrix b e m) => a (k,k) e -> b (k,l) e -> m ()
+    unsafeDoSolveMat_ = unsafeDoSSolveMat_ 1
+    {-# INLINE unsafeDoSolveMat_ #-}
+        
+    unsafeDoSSolveMat_ :: (ReadMatrix b e m) => e -> a (k,k) e -> b (k,l) e -> m ()         
+    unsafeDoSSolveMat_ alpha a b = do
+        unsafeScaleByMatrix alpha b
+        unsafeDoSolveMat_ a b
+    {-# INLINE unsafeDoSSolveMat_ #-}
+
+------------------------------------ Instances ------------------------------
+
+
 instance (Elem e) => BaseMatrix IOMatrix e where
     ldaMatrix = ldaMatrixIOMatrix
     {-# INLINE ldaMatrix #-}
@@ -587,6 +1137,42 @@ instance (Elem e) => BaseMatrix IOMatrix e where
     {-# INLINE unsafeIOMatrixToMatrix #-}
     unsafeMatrixToIOMatrix = id
     {-# INLINE unsafeMatrixToIOMatrix #-}
+
+instance (BLAS3 e) => MMatrix IOMatrix e IO where
+    unsafeDoSApplyAdd = gemv
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = gemm
+    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeGetRow = unsafeGetRowMatrix
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColMatrix
+    {-# INLINE unsafeGetCol #-}
+
+instance (BLAS3 e) => MMatrix (Herm IOMatrix) e IO where
+    unsafeDoSApplyAdd = hemv'
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = hemm'
+    {-# INLINE unsafeDoSApplyAddMat #-}    
+
+instance (BLAS3 e) => MMatrix (Tri IOMatrix) e IO where
+    unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
+    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeDoSApply_ = trmv
+    {-# INLINE unsafeDoSApply_ #-}
+    unsafeDoSApplyMat_ = trmm
+    {-# INLINE unsafeDoSApplyMat_ #-}
+
+instance (BLAS3 e) => MSolve  (Tri IOMatrix) e IO where
+    unsafeDoSSolve = unsafeDoSSolveTriMatrix
+    {-# INLINE unsafeDoSSolve #-}
+    unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
+    {-# INLINE unsafeDoSSolveMat #-}    
+    unsafeDoSSolve_ = trsv
+    {-# INLINE unsafeDoSSolve_ #-}
+    unsafeDoSSolveMat_ = trsm
+    {-# INLINE unsafeDoSSolveMat_ #-}
 
 instance (BLAS3 e) => ReadMatrix IOMatrix e IO where
     newMatrix_ = newIOMatrix_
@@ -662,3 +1248,21 @@ unsafeGetBinaryMatrixOp f a b = do
     c <- newCopyMatrix a
     f c b
     return c
+
+blasTransOf :: (BaseMatrix a e) => a (n,p) e -> Trans
+blasTransOf a = 
+    case (isHermMatrix a) of
+          False -> NoTrans
+          True  -> ConjTrans
+
+flipShape :: (Int,Int) -> (Int,Int)
+flipShape (m,n) = (n,m)
+
+indexOfMatrix :: (BaseMatrix a e) => a (n,p) e -> (Int,Int) -> Int
+indexOfMatrix a (i,j) = 
+    let (i',j') = case isHermMatrix a of
+                        True  -> (j,i)
+                        False -> (i,j)
+        l = ldaMatrix a
+    in i' + j'*l
+{-# INLINE indexOfMatrix #-}
