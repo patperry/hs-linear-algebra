@@ -76,10 +76,6 @@ module Data.Vector.Dense.Class (
     unsafeFreezeVector,
     unsafeThawVector,
 
-    -- * Conversions from @ForeignPtr@s
-    vectorViewArray,
-    vectorViewArrayWithStride,
-    
     -- * Conversions from @IOVector@s
     unsafeVectorToIOVector,
     unsafeConvertIOVector,

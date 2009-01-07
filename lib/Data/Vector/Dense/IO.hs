@@ -11,11 +11,13 @@
 module Data.Vector.Dense.IO (
     -- * The IOVector data type
     IOVector,
+    vectorViewArray,
+    vectorViewArrayWithStride,
     withIOVector,
     
     -- * Overloaded mutable dense vector interface
     module Data.Vector.Dense.Class,
     ) where
 
-import Data.Vector.Dense.IOBase( IOVector, withIOVector )
+import Data.Vector.Dense.IOBase
 import Data.Vector.Dense.Class

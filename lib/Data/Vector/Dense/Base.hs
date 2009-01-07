@@ -114,27 +114,6 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
 -- | An overloaded interface for vectors that can be modified in a monad.
 class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
 
--- | View an array in memory as a vector.
-vectorViewArray :: (BaseVector x e)
-                => ForeignPtr e 
-                -> Int          -- ^ offset
-                -> Int          -- ^ length
-                -> x n e
-vectorViewArray = vectorViewArrayWithStride 1
-{-# INLINE vectorViewArray #-}
-
--- | View an array in memory as a vector, with the given stride.
-vectorViewArrayWithStride :: (BaseVector x e)
-                          => Int          -- ^ stride
-                          -> ForeignPtr e
-                          -> Int          -- ^ offset
-                          -> Int          -- ^ length
-                          -> x n e
-vectorViewArrayWithStride s f o n =
-    let p = unsafeForeignPtrToPtr f `advancePtr` o
-    in unsafeIOVectorToVector (IOVector f p n s False)
-{-# INLINE vectorViewArrayWithStride #-}
-                          
 -- | Creates a new vector with the given association list.  Unspecified
 -- indices will get initialized to zero.
 newVector :: (ReadVector x e m) => Int -> [(Int,e)] -> m (x n e)

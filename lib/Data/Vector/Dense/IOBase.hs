@@ -37,6 +37,27 @@ data IOVector n e =
                {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
                {-# UNPACK #-} !Bool           -- indicates whether or not the vector is conjugated
 
+-- | View an array in memory as an vector.
+vectorViewArray :: (Elem e)
+                => ForeignPtr e 
+                -> Int          -- ^ offset
+                -> Int          -- ^ length
+                -> IOVector n e
+vectorViewArray = vectorViewArrayWithStride 1
+{-# INLINE vectorViewArray #-}
+
+-- | View an array in memory as a vector, with the given stride.
+vectorViewArrayWithStride :: (Elem e)
+                          => Int          -- ^ stride
+                          -> ForeignPtr e
+                          -> Int          -- ^ offset
+                          -> Int          -- ^ length
+                          -> IOVector n e
+vectorViewArrayWithStride s f o n =
+    let p = unsafeForeignPtrToPtr f `advancePtr` o
+    in IOVector f p n s False
+{-# INLINE vectorViewArrayWithStride #-}
+                          
 dimIOVector :: IOVector n e -> Int
 dimIOVector (IOVector _ _ n _ _) = n
 {-# INLINE dimIOVector #-}
