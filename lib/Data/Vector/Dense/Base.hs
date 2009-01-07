@@ -654,7 +654,13 @@ assocsVector x = zip (indicesVector x) (elemsVector x)
 {-# INLINE assocsVector #-}
 
 unsafeAtVector :: (Elem e) => Vector n e -> Int -> e
-unsafeAtVector (Vector x) i = inlinePerformIO (unsafeReadElemIOVector x i)
+unsafeAtVector x i | isConj x  = conjugate $ unsafeAtVector (conj x) i
+                   | otherwise = case x of { (Vector (IOVector f p _ inc _)) ->
+    inlinePerformIO $ do
+        e  <- peekElemOff p (i*inc)
+        io <- touchForeignPtr f
+        e `seq` io `seq` return e
+    }
 {-# INLINE unsafeAtVector #-}
 
 tmapVector :: (BLAS1 e) => (e -> e) -> Vector n e -> Vector n e
