@@ -201,8 +201,7 @@ unsafeSwapElemsIOVector (IOVector f p _ incX _) i1 i2 =
         touchForeignPtr f
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n Double -> Int -> Int -> IO () #-}
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n (Complex Double) -> Int -> Int -> IO () #-}
-        
-                    
+                            
 modifyWithIOVector :: (Elem e) => (e -> e) -> IOVector n e -> IO ()
 modifyWithIOVector g (IOVector f p n incX c) =
     let g'  = if c then (conjugate . g . conjugate) else g
@@ -216,14 +215,12 @@ modifyWithIOVector g (IOVector f p n incX c) =
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Double -> Double) -> IOVector n Double -> IO () #-}
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Complex Double -> Complex Double) -> IOVector n (Complex Double) -> IO () #-}
 
--- | Set every element in the vector to zero.
 setZeroIOVector :: (Elem e) => IOVector n e -> IO ()
 setZeroIOVector x@(IOVector f p n incX _)
     | incX == 1 = clearArray p n >> touchForeignPtr f
     | otherwise = setConstantIOVector 0 x
 {-# INLINE setZeroIOVector #-}
 
--- | Set every element in the vector to a constant.
 setConstantIOVector :: (Elem e) => e -> IOVector n e -> IO ()
 setConstantIOVector 0 x | strideIOVector x == 1 = setZeroIOVector x
 setConstantIOVector e (IOVector f p n incX c) =
@@ -235,7 +232,6 @@ setConstantIOVector e (IOVector f p n incX c) =
                    go (p' `advancePtr` incX)
     in go p
 {-# INLINE setConstantIOVector #-}
-
 
 doConjIOVector :: (BLAS1 e) => IOVector n e -> IO ()
 doConjIOVector (IOVector f p n incX _) =

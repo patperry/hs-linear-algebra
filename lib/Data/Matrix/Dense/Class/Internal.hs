@@ -173,22 +173,6 @@ class (ReadMatrix a e m, WriteTensor a (Int,Int) e m
 
 ------------------------- Basic Matrix Properties ---------------------------
 
-size1 :: (BaseMatrix a e) => a mn e -> Int
-size1 a = let (_,_,m,_,_,_) = arrayFromMatrix a in m
-{-# INLINE size1  #-}
-
-size2 :: (BaseMatrix a e) => a mn e -> Int
-size2 a = let (_,_,_,n,_,_) = arrayFromMatrix a in n
-{-# INLINE size2 #-}
-
-ldaOfMatrix :: (BaseMatrix a e) => a mn e -> Int
-ldaOfMatrix a = let (_,_,_,_,l,_) = arrayFromMatrix a in l
-{-# INLINE ldaOfMatrix #-}
-
-isHermMatrix :: (BaseMatrix a e) => a mn e -> Bool
-isHermMatrix a = let (_,_,_,_,_,h) = arrayFromMatrix a in h
-{-# INLINE isHermMatrix #-}
-
 -- | Cast the shape type of the matrix.
 coerceMatrix :: (BaseMatrix a e) => a mn e -> a mn' e
 coerceMatrix = unsafeCoerce
@@ -279,87 +263,11 @@ liftMatrix2 f a b =
 
 -------------------------- Shaped functions -----------------------------
 
-shapeMatrix :: (BaseMatrix a e) => a mn e -> (Int,Int)
-shapeMatrix a | isHermMatrix a  = (size2 a, size1 a)
-              | otherwise       = (size1 a, size2 a)
-{-# INLINE shapeMatrix #-}
-
-boundsMatrix :: (BaseMatrix a e) => a mn e -> ((Int,Int), (Int,Int))
-boundsMatrix a = ((0,0), (m-1,n-1)) where (m,n) = shapeMatrix a
-{-# INLINE boundsMatrix #-}
-
-
--------------------------- BaseMatrix functions -----------------------------
-
-hermMatrix :: (BaseMatrix a e) => a (m,n) e -> a (n,m) e
-hermMatrix a = let (f,p,m,n,l,h) = arrayFromMatrix a
-               in matrixViewArray f p m n l (not h)
-{-# INLINE hermMatrix #-}
-
 
 -------------------------- ReadTensor functions -----------------------------
 
-getSizeMatrix :: (ReadMatrix a e m) => a mn e -> m Int
-getSizeMatrix a = return (m*n) where (m,n) = shape a
-
-getIndicesMatrix :: (ReadMatrix a e m) => a mn e -> m [(Int,Int)]
-getIndicesMatrix = return . indicesMatrix
-{-# INLINE getIndicesMatrix #-}
-
-getElemsMatrix :: (ReadMatrix a e m) => a mn e -> m [e]
-getElemsMatrix a
-    | isHermMatrix a = getElemsMatrix (herm $ coerceMatrix a) >>= 
-                           return . map conjugate
-    | otherwise = 
-        liftM concat $
-            unsafeInterleaveM $ 
-                mapM getElems (colViews $ coerceMatrix a)
-
-getAssocsMatrix :: (ReadMatrix a e m) => a mn e -> m [((Int,Int),e)]
-getAssocsMatrix a = do
-    is <- getIndicesMatrix a
-    es <- getElemsMatrix a
-    return $ zip is es
-    
-getIndicesMatrix' :: (ReadMatrix a e m) => a mn e -> m [(Int,Int)]
-getIndicesMatrix' = getIndicesMatrix
-{-# INLINE getIndicesMatrix' #-}
-
-getElemsMatrix' :: (ReadMatrix a e m) => a mn e -> m [e]
-getElemsMatrix' a
-    | isHermMatrix a = getElemsMatrix' (herm $ coerceMatrix a) >>= 
-                           return . map conjugate
-    | otherwise = 
-        liftM concat $
-            mapM getElems' (colViews $ coerceMatrix a)
-
-getAssocsMatrix' :: (ReadMatrix a e m) => a mn e -> m [((Int,Int),e)]
-getAssocsMatrix' a = do
-    is <- getIndicesMatrix' a
-    es <- getElemsMatrix' a
-    return $ zip is es
-
-unsafeReadElemMatrix :: (ReadMatrix a e m) => a mn e -> (Int,Int) -> m e
-unsafeReadElemMatrix a (i,j)
-    | isHermMatrix a = unsafeReadElem (herm $ coerceMatrix a) (j,i) >>= 
-                           return . conjugate
-    | otherwise = unsafeIOToM $
-                      withMatrixPtr a $ \ptr ->
-                          peekElemOff ptr (indexOfMatrix a (i,j))
-{-# INLINE unsafeReadElemMatrix #-}
-
 
 ------------------------- WriteTensor functions -----------------------------
-
--- | Create a new matrix of given shape, but do not initialize the elements.
-newMatrix_ :: (WriteMatrix a e m) => (Int,Int) -> m (a mn e)
-newMatrix_ (m,n) 
-    | m < 0 || n < 0 =
-        fail $ 
-            "Tried to create a matrix with shape `" ++ show (m,n) ++ "'"
-    | otherwise = unsafeIOToM $ do
-        f <- mallocForeignPtrArray (m*n)
-        return $ matrixViewArray f (unsafeForeignPtrToPtr f) m n (max 1 m) False
 
 -- | Create a zero matrix of the specified shape.
 newZeroMatrix :: (WriteMatrix a e m) => (Int,Int) -> m (a mn e)
@@ -375,42 +283,6 @@ newConstantMatrix mn e = do
     setConstant e a
     return a
 
-setZeroMatrix :: (WriteMatrix a e m) => a mn e -> m ()    
-setZeroMatrix = liftMatrix setZero
-
-setConstantMatrix :: (WriteMatrix a e m) => e -> a mn e -> m ()
-setConstantMatrix e = liftMatrix (setConstant e)
-
-unsafeWriteElemMatrix :: (WriteMatrix a e m) => 
-    a mn e -> (Int,Int) -> e -> m ()
-unsafeWriteElemMatrix a (i,j) e
-    | isHermMatrix a  = unsafeWriteElem a' (j,i) $ conjugate e
-    | otherwise       = unsafeIOToM $
-                            withMatrixPtr a $ \ptr ->
-                                pokeElemOff ptr (indexOfMatrix a (i,j)) e
-  where
-    a' = (herm . coerceMatrix) a
-
-modifyWithMatrix :: (WriteMatrix a e m) => (e -> e) -> a mn e -> m ()
-modifyWithMatrix f = liftMatrix (modifyWith f)
-
-canModifyElemMatrix :: (WriteMatrix a e m) => a mn e -> (Int,Int) -> m Bool
-canModifyElemMatrix _ _ = return True
-{-# INLINE canModifyElemMatrix #-}
-
-
-------------------------- CopyTensor functions ------------------------------
-
-newCopyMatrix :: (ReadMatrix a e m, WriteMatrix b e m) => 
-    a mn e -> m (b mn e)
-newCopyMatrix a 
-    | isHermMatrix a =
-        newCopyMatrix ((herm . coerceMatrix) a) >>= 
-            return . coerceMatrix . herm
-    | otherwise = do
-        a' <- newMatrix_ (shape a)
-        unsafeCopyMatrix a' a
-        return a'
 
 unsafeCopyMatrix :: (WriteMatrix b e m, ReadMatrix a e m) => 
     b mn e -> a mn e -> m ()
@@ -555,15 +427,6 @@ blasTransOf a =
 flipShape :: (Int,Int) -> (Int,Int)
 flipShape (m,n) = (n,m)
 
-withMatrixPtr :: (BaseMatrix a e) =>
-    a mn e -> (Ptr e -> IO b) -> IO b
-withMatrixPtr a f =
-    let (fp,p,_,_,_,_) = arrayFromMatrix a
-    in do
-        b <- f p
-        touchForeignPtr fp
-        return b
-
 indexOfMatrix :: (BaseMatrix a e) => a mn e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 
     let (i',j') = case isHermMatrix a of
@@ -572,12 +435,6 @@ indexOfMatrix a (i,j) =
         l = ldaOfMatrix a
     in i' + j'*l
 {-# INLINE indexOfMatrix #-}
-
-indicesMatrix :: (BaseMatrix a e) => a mn e -> [(Int,Int)]
-indicesMatrix a 
-    | isHermMatrix a = [ (i,j) | i <- range (0,m-1), j <- range (0,n-1) ]
-    | otherwise      = [ (i,j) | j <- range (0,n-1), i <- range (0,m-1) ]
-  where (m,n) = shape a
 
 unsafeDoMatrixOp2 :: (ReadMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
     (c n e -> b n e -> m ()) -> a n e -> b n e -> c n e -> m ()
@@ -1132,17 +989,6 @@ class (MatrixShaped a e, BLAS3 e, Monad m) => MSolve a e m where
 
 ------------------------------------ Instances ------------------------------
 
--- | The mutable dense matrix data type.  It can either store elements in 
--- column-major order, or provide a view into another matrix.  The view 
--- transposes and conjugates the underlying matrix.
-data IOMatrix mn e =
-      DM {-# UNPACK #-} !(ForeignPtr e) -- a pointer to the storage region
-         {-# UNPACK #-} !(Ptr e)        -- a pointer to the first element
-         {-# UNPACK #-} !Int            -- the number of rows in the matrix
-         {-# UNPACK #-} !Int            -- the number of columns in the matrix
-         {-# UNPACK #-} !Int            -- the leading dimension size of the matrix
-         {-# UNPACK #-} !Bool           -- indicates whether or not the matrix is transposed and conjugated
-
 newtype STMatrix s mn e = ST (IOMatrix mn e)
 
 unsafeIOMatrixToSTMatrix :: IOMatrix mn e -> STMatrix s mn e
@@ -1152,9 +998,6 @@ unsafeIOMatrixToSTMatrix = ST
 unsafeSTMatrixToIOMatrix :: STMatrix s mn e -> IOMatrix mn e
 unsafeSTMatrixToIOMatrix (ST x) = x
 {-# INLINE unsafeSTMatrixToIOMatrix #-}
-
-instance HasVectorView IOMatrix where
-    type VectorView IOMatrix = IOVector
 
 instance HasVectorView (STMatrix s) where
     type VectorView (STMatrix s) = STVector s
@@ -1170,23 +1013,9 @@ instance (Elem e) => BaseMatrix_ (STMatrix s) e where
 instance (Elem e) => BaseMatrix IOMatrix e
 instance (Elem e) => BaseMatrix (STMatrix s) e
 
-instance (Elem e) => Shaped IOMatrix (Int,Int) e where
-    shape  = shapeMatrix
-    bounds = boundsMatrix
-
 instance (Elem e) => Shaped (STMatrix s) (Int,Int) e where
     shape  = shapeMatrix
     bounds = boundsMatrix
-
-instance (BLAS3 e) => ReadTensor IOMatrix (Int,Int) e IO where
-    getSize        = getSizeMatrix
-    getAssocs      = getAssocsMatrix
-    getIndices     = getIndicesMatrix
-    getElems       = getElemsMatrix
-    getAssocs'     = getAssocsMatrix'
-    getIndices'    = getIndicesMatrix'
-    getElems'      = getElemsMatrix'
-    unsafeReadElem = unsafeReadElemMatrix
 
 instance (BLAS3 e) => ReadTensor (STMatrix s) (Int,Int) e (ST s) where
     getSize        = getSizeMatrix
@@ -1198,16 +1027,6 @@ instance (BLAS3 e) => ReadTensor (STMatrix s) (Int,Int) e (ST s) where
     getElems'      = getElemsMatrix'
     unsafeReadElem = unsafeReadElemMatrix
 
-instance (BLAS3 e) => WriteTensor IOMatrix (Int,Int) e IO where
-    setConstant     = setConstantMatrix
-    setZero         = setZeroMatrix
-    modifyWith      = modifyWithMatrix
-    unsafeWriteElem = unsafeWriteElemMatrix
-    canModifyElem   = canModifyElemMatrix
-    doConj          = doConjMatrix
-    scaleBy         = scaleByMatrix
-    shiftBy         = shiftByMatrix
-
 instance (BLAS3 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     setConstant     = setConstantMatrix
     setZero         = setZeroMatrix
@@ -1217,9 +1036,6 @@ instance (BLAS3 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     doConj          = doConjMatrix
     scaleBy         = scaleByMatrix
     shiftBy         = shiftByMatrix
-
-instance (Elem e) => MatrixShaped IOMatrix e where
-    herm = hermMatrix
 
 instance (Elem e) => MatrixShaped (STMatrix s) e where
     herm = hermMatrix
