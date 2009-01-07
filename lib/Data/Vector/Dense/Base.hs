@@ -167,8 +167,14 @@ newConstantVector n e = do
 
 -- | Set every element in the vector to a constant.
 setConstantVector :: (WriteVector x e m) => e -> x n e -> m ()
-setConstantVector = setConstant
+setConstantVector = unsafeSetConstantVector
 {-# INLINE setConstantVector #-}
+
+unsafeSetConstantVector :: (ReadVector x e m) => e -> x n e -> m ()
+unsafeSetConstantVector e x =
+    withVectorPtr x $ \_ ->
+        setConstantIOVector e (unsafeVectorToIOVector x)
+{-# INLINE unsafeSetConstantVector #-}
 
 -- | @newBasisVector n i@ creates a vector of length @n@ that is all zero 
 -- except for at position @i@, where it equal to one.
@@ -242,21 +248,20 @@ unsafeCopyVector y x
 {-# INLINE unsafeCopyVector #-}
 
 -- | Swap the values stored in two vectors.
-swapVector :: (WriteVector y e m) => 
-    y n e -> y n e -> m ()
+swapVector :: (WriteVector x e m, WriteVector y e m) => 
+    x n e -> y n e -> m ()
 swapVector x y = checkBinaryOp (shape x) (shape y) $ unsafeSwapVector x y
 {-# INLINE swapVector #-}
 
-unsafeSwapVector :: (WriteVector y e m) =>
-    y n e -> y n e -> m ()
+unsafeSwapVector :: (ReadVector x e m, ReadVector y e m) =>
+    x n e -> y n e -> m ()
 unsafeSwapVector x y
-    | isConj x && isConj y =
+    | isConj x =
         unsafeSwapVector (conj x) (conj y)
-    | isConj x || isConj y =
-        forM_ [0..(dim x - 1)] $ \i -> do
-            tmp <- unsafeReadElem x i
-            unsafeReadElem y i >>= unsafeWriteElem x i
-            unsafeWriteElem y i tmp
+    | isConj y = do
+        vectorCall2 BLAS.swap x y
+        vectorCall  BLAS.vconj x
+        vectorCall  BLAS.vconj y
     | otherwise =
         vectorCall2 BLAS.swap x y
 {-# INLINE unsafeSwapVector #-}
@@ -285,7 +290,7 @@ subvectorViewWithStride s x =
 -- of the given vector
 getConjVector :: (ReadVector x e m, ReadVector y e m) =>
     x n e -> m (y n e)
-getConjVector = getUnaryOp unsafeDoConjVector
+getConjVector = getUnaryVectorOp unsafeDoConjVector
 {-# INLINE getConjVector #-}
 
 -- | Conjugate every element of the vector.
@@ -303,7 +308,7 @@ unsafeDoConjVector x =
 -- by a given value.
 getScaledVector :: (ReadVector x e m, ReadVector y e m) =>
     e -> x n e -> m (y n e)
-getScaledVector e = getUnaryOp (unsafeScaleByVector e)
+getScaledVector e = getUnaryVectorOp (unsafeScaleByVector e)
 {-# INLINE getScaledVector #-}
 
 -- | Scale every element by the given value.
@@ -321,7 +326,7 @@ unsafeScaleByVector k x =
 -- by a given value.
 getShiftedVector :: (ReadVector x e m, ReadVector y e m) =>
     e -> x n e -> m (y n e)
-getShiftedVector e = getUnaryOp (unsafeShiftByVector e)
+getShiftedVector e = getUnaryVectorOp (unsafeShiftByVector e)
 {-# INLINE getShiftedVector #-}
 
 -- | Add the given value to every element.
@@ -340,13 +345,13 @@ unsafeShiftByVector k x =
 getAddVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-getAddVector = checkTensorOp2 unsafeGetAddVector
+getAddVector = checkVectorOp2 unsafeGetAddVector
 {-# INLINE getAddVector #-}
 
 unsafeGetAddVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-unsafeGetAddVector = unsafeGetBinaryOp unsafeAddVector
+unsafeGetAddVector = unsafeGetBinaryVectorOp unsafeAddVector
 {-# INLINE unsafeGetAddVector #-}
 
 -- | @addVector y x@ replaces @y@ with @y+x@.
@@ -365,13 +370,13 @@ unsafeAddVector y x = unsafeAxpyVector 1 x y
 getSubVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-getSubVector = checkTensorOp2 unsafeGetSubVector
+getSubVector = checkVectorOp2 unsafeGetSubVector
 {-# INLINE getSubVector #-}
 
 unsafeGetSubVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-unsafeGetSubVector = unsafeGetBinaryOp unsafeSubVector
+unsafeGetSubVector = unsafeGetBinaryVectorOp unsafeSubVector
 {-# INLINE unsafeGetSubVector #-}
 
 -- | @subVector y x@ replaces @y@ with @y-x@.
@@ -408,13 +413,13 @@ unsafeAxpyVector alpha x y
 getMulVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-getMulVector = checkTensorOp2 unsafeGetMulVector
+getMulVector = checkVectorOp2 unsafeGetMulVector
 {-# INLINE getMulVector #-}
 
 unsafeGetMulVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-unsafeGetMulVector = unsafeGetBinaryOp unsafeMulVector
+unsafeGetMulVector = unsafeGetBinaryVectorOp unsafeMulVector
 {-# INLINE unsafeGetMulVector #-}
 
 -- | @mulVector y x@ replaces @y@ with @y*x@.
@@ -440,13 +445,13 @@ unsafeMulVector y x
 getDivVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-getDivVector = checkTensorOp2 unsafeGetDivVector
+getDivVector = checkVectorOp2 unsafeGetDivVector
 {-# INLINE getDivVector #-}
 
 unsafeGetDivVector :: 
     (ReadVector x e m, ReadVector y e m, ReadVector z e m) => 
     x n e -> y n e -> m (z n e)
-unsafeGetDivVector = unsafeGetBinaryOp unsafeDivVector
+unsafeGetDivVector = unsafeGetBinaryVectorOp unsafeDivVector
 {-# INLINE unsafeGetDivVector #-}
 
 -- | @divVector y x@ replaces @y@ with @y/x@.
@@ -869,27 +874,27 @@ vectorCall2 f x y =
            f n pX incX pY incY
 {-# INLINE vectorCall2 #-}    
 
-checkTensorOp2 :: (Shaped x i e, Shaped y i e) => 
-    (x n e -> y n e -> a) ->
-        x n e -> y n e -> a
-checkTensorOp2 f x y = 
-    checkBinaryOp (shape x) (shape y) $ f x y
-{-# INLINE checkTensorOp2 #-}
+checkVectorOp2 :: (BaseVector x e, BaseVector y f) => 
+    (x n e -> y n f -> a) ->
+        x n e -> y n f -> a
+checkVectorOp2 f x y = 
+    checkBinaryOp (dim x) (dim y) $ f x y
+{-# INLINE checkVectorOp2 #-}
 
-getUnaryOp :: (ReadVector x e m, ReadVector y e m) =>
+getUnaryVectorOp :: (ReadVector x e m, ReadVector y e m) =>
     (y n e -> m ()) -> x n e -> m (y n e)
-getUnaryOp f x = do
+getUnaryVectorOp f x = do
     y <- newCopyVector x
     f y
     return y
-{-# INLINE getUnaryOp #-}
+{-# INLINE getUnaryVectorOp #-}
 
-unsafeGetBinaryOp :: 
+unsafeGetBinaryVectorOp :: 
     (ReadVector z e m, ReadVector x e m, ReadVector y e m) => 
     (z n e -> y n e -> m ()) ->
         x n e -> y n e -> m (z n e)
-unsafeGetBinaryOp f x y = do
+unsafeGetBinaryVectorOp f x y = do
     z <- newCopyVector x
     f z y
     return z
-{-# INLINE unsafeGetBinaryOp #-}
+{-# INLINE unsafeGetBinaryVectorOp #-}
