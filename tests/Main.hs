@@ -13,7 +13,6 @@ import HermBanded
 import TriMatrix
 import TriBanded
 
-
 main :: IO ()
 main = do
     args <- getArgs

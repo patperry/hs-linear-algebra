@@ -144,7 +144,7 @@ liftIOMatrix g (IOMatrix f p m n l h)
             end     = p `advancePtr` (n'*l)
             go p' | p' == end = return ()
                   | otherwise = do
-                      g (IOVector f p m' 1 h)
+                      g (IOVector f p' m' 1 h)
                       go (p' `advancePtr` l)
         in go p
 
@@ -263,7 +263,7 @@ getElemsIOMatrix' :: (Elem e) => IOMatrix np e -> IO [e]
 getElemsIOMatrix' (IOMatrix f p m n l h) 
     | h         = liftM (map conjugate) $ 
                       getElemsIOMatrix' (IOMatrix f p n m l False)
-    | l == m    = getElemsIOVector (IOVector f p (m*n) 1 False)
+    | l == m    = getElemsIOVector' (IOVector f p (m*n) 1 False)
     | otherwise =
         let end   = p `advancePtr` (n*l)
             go p' | p' == end = return []

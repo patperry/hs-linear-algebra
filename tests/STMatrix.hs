@@ -48,6 +48,10 @@ getIndices_S a = ( indices a, a )
 
 prop_GetIndicesLazy   = getIndices `implements`  getIndices_S
 prop_GetIndicesStrict = getIndices' `implements` getIndices_S
+
+getElems_S a = ( elems a, a )
+prop_GetElemsLazy   = getElems  `implements` getElems_S
+prop_GetElemsStrict = getElems' `implements` getElems_S
     
 getElemsLazyModifyWith_S f a = ( elems a', a' ) where a' = tmap f a
 prop_GetElemsLazyModifyWith f =
@@ -250,7 +254,8 @@ implementsFor :: (AEq a, Show a) =>
 implementsFor mn a f =
     forAll (Test.matrix mn) $ \x ->
         runST $ do
-            commutes (unsafeThawMatrix x) a f
+            x' <- unsafeThawMatrix x
+            commutes x' a f
 
 implementsFor2 :: (AEq a, Show a) =>
     (Int,Int) ->
@@ -261,8 +266,9 @@ implementsFor2 mn a f =
     forAll (Test.matrix mn) $ \x ->
     forAll (Test.matrix mn) $ \y ->
         runST $ do
-            commutes2 (unsafeThawMatrix x) (unsafeThawMatrix y) a f
-
+            x' <- unsafeThawMatrix x
+            y' <- unsafeThawMatrix y
+            commutes2 x' y' a f
 
 implementsIf :: (AEq a, Show a) =>
     (forall s . STMatrix s (m,n) E -> ST s Bool) ->
@@ -276,7 +282,8 @@ implementsIf pre a f =
             x' <- thawMatrix x
             pre x') ==>
         runST ( do
-            commutes (unsafeThawMatrix x) a f )
+            x' <- unsafeThawMatrix x
+            commutes x' a f )
 
 implementsIf2 :: (AEq a, Show a) =>
     (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s Bool) ->
@@ -292,7 +299,9 @@ implementsIf2 pre a f =
             y' <- thawMatrix y
             pre x' y') ==>
         runST ( do
-            commutes2 (unsafeThawMatrix x) (unsafeThawMatrix y) a f )
+            x' <- unsafeThawMatrix x
+            y' <- unsafeThawMatrix y
+            commutes2 x' y' a f )
             
 ------------------------------------------------------------------------
 
@@ -308,10 +317,13 @@ tests_STMatrix =
 
     , ("getIndices", mytest prop_GetIndicesLazy)
     , ("getIndices'", mytest prop_GetIndicesStrict)
-    , ("getElems", mytest prop_GetElemsLazyModifyWith)
-    , ("getElems'", mytest prop_GetElemsStrictModifyWith)
-    , ("getAssocs", mytest prop_GetAssocsLazyModifyWith)
-    , ("getAssocs'", mytest prop_GetAssocsStrictModifyWith)
+    , ("getElems", mytest prop_GetElemsLazy)
+    , ("getElems'", mytest prop_GetElemsStrict)
+
+    , ("getElems . modifyWith", mytest prop_GetElemsLazyModifyWith)
+    , ("getElems' . modifyWith", mytest prop_GetElemsStrictModifyWith)
+    , ("getAssocs . modifyWith", mytest prop_GetAssocsLazyModifyWith)
+    , ("getAssocs' . modifyWith", mytest prop_GetAssocsStrictModifyWith)
 
     , ("newZeroMatrix", mytest prop_NewZeroMatrix)
     , ("setZeroMatrix", mytest prop_SetZeroMatrix)
