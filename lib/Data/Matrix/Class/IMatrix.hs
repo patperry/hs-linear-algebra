@@ -38,15 +38,14 @@ import Data.Elem.BLAS( BLAS3 )
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
-import Data.Matrix.Class.MMatrix( unsafeGetSApply, unsafeGetSApplyMat,
-    unsafeGetRow, unsafeGetCol )
+import Data.Matrix.Class
+import Data.Tensor.Class
 
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal
-import Data.Matrix.Dense.Internal
-import Data.Matrix.Dense.Class( unsafeRowView, unsafeColView )
+import Data.Matrix.Dense.Base
 import Data.Matrix.Dense.ST( runSTMatrix )
 
 infixr 7 <*>, <**>

@@ -21,6 +21,7 @@ module Data.Matrix.Class (
     isSquare,
     isFat,
     isTall,
+    flipShape,
     ) where
 
 import Data.Tensor.Class
@@ -66,3 +67,9 @@ isFat a = numRows a <= numCols a
 isTall :: (MatrixShaped a e) => a mn e -> Bool
 isTall a = numRows a >= numCols a
 {-# INLINE isTall #-}
+
+-- | Replaces @(m,n)@ with @(n,m)@
+flipShape :: (Int,Int) -> (Int,Int)
+flipShape (m,n) = (n,m)
+{-# INLINE flipShape #-}
+

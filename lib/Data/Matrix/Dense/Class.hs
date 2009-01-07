@@ -6,6 +6,11 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- An overloaded interface to mutable dense matrices.  For matrix types
+-- than can be used with this interface, see "Data.Matrix.Dense.IO" and
+-- "Data.Matrix.Dense.ST".  Many of these functions can also be used with
+-- the immutable type defined in "Data.Matrix.Dense".
+--
 
 module Data.Matrix.Dense.Class (
     -- * Overloaded dense matrix types

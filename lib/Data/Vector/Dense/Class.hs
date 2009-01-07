@@ -8,7 +8,9 @@
 --
 -- An overloaded interface to mutable dense vectors.  For vector types
 -- than can be used with this interface, see "Data.Vector.Dense.IO" and
--- "Data.Vector.Dense.ST".
+-- "Data.Vector.Dense.ST".  Many of these functions can also be used with
+-- the immutable type defined in "Data.Vector.Dense".
+--
 
 module Data.Vector.Dense.Class (
     -- * Overloaded dense vector types

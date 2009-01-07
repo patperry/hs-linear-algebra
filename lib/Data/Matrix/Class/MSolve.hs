@@ -47,7 +47,7 @@ import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
 
 import Data.Vector.Dense.Class
-import Data.Matrix.Dense.Class.Internal
+import Data.Matrix.Dense.Base
 
 
 unsafeGetSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 

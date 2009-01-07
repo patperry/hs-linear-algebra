@@ -8,24 +8,17 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Mutable dense matrices in the ST monad.
+--
 
 module Data.Matrix.Dense.ST (
     -- * The @STMatrix@ data type
-    STMatrix,
     runSTMatrix,
+    STMatrix,
 
-    unsafeIOMatrixToSTMatrix,
-    unsafeSTMatrixToIOMatrix,
-
+    -- * Overloaded mutable dense vector interface
     module Data.Matrix.Dense.Class,
     ) where
 
-import Control.Monad.ST
-
-import Data.Matrix.Dense.Internal( Matrix(..) )
 import Data.Matrix.Dense.Class
-import Data.Matrix.Dense.Class.Internal( STMatrix, unsafeIOMatrixToSTMatrix,
-    unsafeSTMatrixToIOMatrix )
-
-runSTMatrix :: (forall s . ST s (STMatrix s n e)) -> Matrix n e
-runSTMatrix x = runST $ x >>= return . M . unsafeSTMatrixToIOMatrix
+import Data.Matrix.Dense.STBase

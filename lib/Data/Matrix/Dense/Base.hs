@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
         TypeFamilies, RankNTypes, ScopedTypeVariables #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.Base
@@ -20,9 +21,9 @@ import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
     checkedRow, checkedCol, inlinePerformIO )
-import BLAS.Types
 
-import Data.Elem.BLAS( Complex, Elem, BLAS1, BLAS3, conjugate )
+import Data.Elem.BLAS( Elem, BLAS1, BLAS3, conjugate,
+    Trans(..), UpLo(..), Diag(..), Side(..), flipTrans, flipUpLo )
 import qualified Data.Elem.BLAS as BLAS
 
 import Data.Tensor.Class
@@ -37,6 +38,16 @@ import Data.Vector.Dense.Base
 
 import Data.Matrix.Dense.IOBase
 
+-- | Immutable dense matrices.  The type arguments are as follows:
+--
+--     * @np@: a phantom type for the shape of the matrix.  Most functions
+--       will demand that this be specified as a pair.  When writing a function
+--       signature, you should always prefer @Matrix (n,p) e@ to
+--       @Matrix np e@.
+--
+--     * @e@: the element type of the matrix.  Only certain element types
+--       are supported.
+--
 newtype Matrix np e = Matrix (IOMatrix np e)
 
 freezeIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO (Matrix np e)
@@ -652,7 +663,7 @@ gemv alpha a x beta y
         
     | isConj y && (isConj x || stride x == 1) =
         let transA = if isConj x then NoTrans else ConjTrans
-            transB = blasTransOf (herm a)
+            transB = transMatrix (herm a)
             m      = 1
             n      = dim y
             k      = dim x
@@ -673,7 +684,7 @@ gemv alpha a x beta y
         unsafeDoConjVector y
         
     | otherwise =
-        let transA = blasTransOf a
+        let transA = transMatrix a
             (m,n)  = case (isHermMatrix a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
@@ -694,8 +705,8 @@ gemm alpha a b beta c
         unsafeScaleByMatrix beta c
     | isHermMatrix c = gemm (conjugate alpha) (herm b) (herm a) (conjugate beta) (herm c)
     | otherwise =
-        let transA = blasTransOf a
-            transB = blasTransOf b
+        let transA = transMatrix a
+            transB = transMatrix b
             (m,n)  = shape c
             k      = numCols a
             ldA    = ldaMatrix a
@@ -856,29 +867,29 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
 
 toLower :: (BaseMatrix a e) => Diag -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
-                  (Tri a (n,n) e, a (d,n) e)
-toLower diag a =
+                  (Tri a (n,n) e, a (k,n) e)
+toLower d a =
     if m <= n
-        then Left $  triFromBase Lower diag (unsafeSubmatrixView a (0,0) (m,m))
-        else let t = triFromBase Lower diag (unsafeSubmatrixView a (0,0) (n,n))
-                 r = unsafeSubmatrixView a (n,0) (d,n)
+        then Left $  triFromBase Lower d (unsafeSubmatrixView a (0,0) (m,m))
+        else let t = triFromBase Lower d (unsafeSubmatrixView a (0,0) (n,n))
+                 r = unsafeSubmatrixView a (n,0) (k,n)
              in Right (t,r)
   where
     (m,n) = shape a
-    d     = m - n
+    k     = m - n
     
 toUpper :: (BaseMatrix a e) => Diag -> a (m,n) e
         -> Either (Tri a (n,n) e)
-                  (Tri a (m,m) e, a (m,d) e)
-toUpper diag a =
+                  (Tri a (m,m) e, a (m,k) e)
+toUpper d a =
     if n <= m
-        then Left $  triFromBase Upper diag (unsafeSubmatrixView a (0,0) (n,n))
-        else let t = triFromBase Upper diag (unsafeSubmatrixView a (0,0) (m,m))
-                 r = unsafeSubmatrixView a (0,m) (m,d)
+        then Left $  triFromBase Upper d (unsafeSubmatrixView a (0,0) (n,n))
+        else let t = triFromBase Upper d (unsafeSubmatrixView a (0,0) (m,m))
+                 r = unsafeSubmatrixView a (0,m) (m,k)
              in Right (t,r)
   where
     (m,n) = shape a
-    d     = n - m
+    k     = n - m
 
 trmv :: (ReadMatrix a e m, ReadVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
@@ -1656,14 +1667,12 @@ unsafeGetBinaryMatrixOp f a b = do
     f c b
     return c
 
-blasTransOf :: (BaseMatrix a e) => a (n,p) e -> Trans
-blasTransOf a = 
+transMatrix :: (BaseMatrix a e) => a (n,p) e -> Trans
+transMatrix a = 
     case (isHermMatrix a) of
           False -> NoTrans
           True  -> ConjTrans
-
-flipShape :: (Int,Int) -> (Int,Int)
-flipShape (m,n) = (n,m)
+{-# INLINE transMatrix #-}
 
 indexOfMatrix :: (BaseMatrix a e) => a (n,p) e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 

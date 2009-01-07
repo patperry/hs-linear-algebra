@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeFamilies, 
         RankNTypes #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.IOBase
@@ -29,9 +30,16 @@ import Data.Tensor.Class.MTensor
 import Data.Vector.Dense.IOBase
 
 
--- | The mutable dense matrix data type.  It can either store elements in 
--- colunp-major order, or provide a view into another matrix.  The view 
--- transposes and conjugates the underlying matrix.
+-- | Dense matrix in the 'IO' monad.  The type arguments are as follows:
+--
+--     * @np@: a phantom type for the shape of the matrix.  Most functions
+--       will demand that this be specified as a pair.  When writing a function
+--       signature, you should always prefer @IOMatrix (n,p) e@ to
+--       @IOMatrix np e@.
+--
+--     * @e@: the element type of the matrix.  Only certain element types
+--       are supported.
+--
 data IOMatrix np e =
       IOMatrix {-# UNPACK #-} !(ForeignPtr e) -- a pointer to the storage region
                {-# UNPACK #-} !(Ptr e)        -- a pointer to the first element
@@ -41,11 +49,11 @@ data IOMatrix np e =
                {-# UNPACK #-} !Bool           -- indicates whether or not the matrix is transposed and conjugated
 
 numRowsIOMatrix :: IOMatrix np e -> Int
-numRowsIOMatrix (IOMatrix _ _ m n _ h) = m
+numRowsIOMatrix (IOMatrix _ _ m _ _ _) = m
 {-# INLINE numRowsIOMatrix #-}
 
 numColsIOMatrix :: IOMatrix np e -> Int
-numColsIOMatrix (IOMatrix _ _ m n _ h) = n
+numColsIOMatrix (IOMatrix _ _ _ n _ _) = n
 {-# INLINE numColsIOMatrix #-}
 
 ldaMatrixIOMatrix :: IOMatrix np e -> Int
@@ -62,24 +70,24 @@ hermIOMatrix (IOMatrix f p m n l h) = (IOMatrix f p n m l (not h))
 
 unsafeSubmatrixViewIOMatrix :: (Elem e) =>
     IOMatrix np e -> (Int,Int) -> (Int,Int) -> IOMatrix np' e
-unsafeSubmatrixViewIOMatrix (IOMatrix f p m n l h) (i,j) (m',n') =
+unsafeSubmatrixViewIOMatrix (IOMatrix f p _ _ l h) (i,j) (m',n') =
     let o = if h then i*l+j else i+j*l
         p' = p `advancePtr` o
     in IOMatrix f p' m' n' l h
 {-# INLINE unsafeSubmatrixViewIOMatrix #-}
 
 unsafeRowViewIOMatrix :: (Elem e) => IOMatrix np e -> Int -> IOVector p e
-unsafeRowViewIOMatrix (IOMatrix f p m n l h) i =
+unsafeRowViewIOMatrix (IOMatrix f p _ n l h) i =
     let (o,s) = if h then (i*l,1) else (i,l)
         p'    = p `advancePtr` o
     in IOVector f p' n s h
 {-# INLINE unsafeRowViewIOMatrix #-}
 
 unsafeColViewIOMatrix :: (Elem e) => IOMatrix np e -> Int -> IOVector n e
-unsafeColViewIOMatrix (IOMatrix f p m n l h) j =
+unsafeColViewIOMatrix (IOMatrix f p m _ l h) j =
     let (o,s) = if h then (j,l) else (j*l,1)
         p'    = p `advancePtr` o
-    in IOVector f p' n s h
+    in IOVector f p' m s h
 {-# INLINE unsafeColViewIOMatrix #-}
 
 unsafeDiagViewIOMatrix :: (Elem e) => IOMatrix np e -> Int -> IOVector k e

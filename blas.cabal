@@ -68,9 +68,12 @@ library
                             Data.Matrix.Banded.Class
                         
                         Data.Matrix.Dense
-                            Data.Matrix.Dense.IO
-                            Data.Matrix.Dense.ST
+                            Data.Matrix.Dense.Base
                             Data.Matrix.Dense.Class
+                            Data.Matrix.Dense.IO
+                            Data.Matrix.Dense.IOBase
+                            Data.Matrix.Dense.ST
+                            Data.Matrix.Dense.STBase
 
                         Data.Matrix.Herm
                         Data.Matrix.Tri
@@ -110,15 +113,6 @@ library
                         Data.Matrix.Banded.Class.Special
                         Data.Matrix.Banded.Class.Views
                         Data.Matrix.Banded.Class.Copying
-                        
-                        Data.Matrix.Dense.Internal
-                        Data.Matrix.Dense.Class.Internal
-                        Data.Matrix.Dense.Class.Creating
-                        Data.Matrix.Dense.Class.Elements
-                        Data.Matrix.Dense.Class.Special
-                        Data.Matrix.Dense.Class.Views
-                        Data.Matrix.Dense.Class.Copying
-                        Data.Matrix.Dense.Class.Operations
                         
                         Data.Matrix.Tri.Internal                        
     

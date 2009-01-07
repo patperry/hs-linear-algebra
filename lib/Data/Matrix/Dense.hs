@@ -7,47 +7,51 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Immutable dense matrices.
+--
 
 module Data.Matrix.Dense (
-    module Data.Matrix.Dense.Internal,
+    -- * Dense matrix type
+    Matrix(..),
+
+    -- * Overloaded interface for dense matrices
+    BaseMatrix( isHermMatrix, coerceMatrix ),
+
+    -- * Overloaded interface for matrices
+    module Data.Matrix.Class,
+    module Data.Matrix.Class.IMatrix,    
     
-    -- * Matrix and vector multiplication
-    module Data.Matrix.Class.IMatrix,
+    -- * Creating matrices
+    matrix, 
+    listMatrix,
+    rowsMatrix,
+    colsMatrix,
+    rowMatrix,
+    colMatrix,
     
-    -- * Converting between mutable and immutable matrices
-    UnsafeFreezeMatrix(..),
-    UnsafeThawMatrix(..),
-    freezeMatrix,
-    thawMatrix,
+    -- * Special matrices
+    zeroMatrix,
+    constantMatrix,
+    identityMatrix,
+
+    -- * Matrix views
+    submatrix,
+    splitRowsAt,
+    splitColsAt,
+    
+    -- * Vector views
+    diag,
+
+    -- * Overloaded interface for reading matrix elements
+    module Data.Tensor.Class,
+    module Data.Tensor.Class.ITensor,
+
     ) where
 
-import Data.Matrix.Dense.Internal hiding ( M )
-import qualified Data.Matrix.Dense.Internal as I
-import Data.Matrix.Dense.ST
-import Data.Matrix.Dense.IO
+import Data.Matrix.Dense.Base
+
+import Data.Matrix.Class
 import Data.Matrix.Class.IMatrix
-
-class UnsafeFreezeMatrix a where
-    unsafeFreezeMatrix :: a mn e -> Matrix mn e
-instance UnsafeFreezeMatrix IOMatrix where
-    unsafeFreezeMatrix = I.M
-instance UnsafeFreezeMatrix (STMatrix s) where
-    unsafeFreezeMatrix = unsafeFreezeMatrix . unsafeSTMatrixToIOMatrix    
     
-class UnsafeThawMatrix a where
-    unsafeThawMatrix :: Matrix mn e -> a mn e
-instance UnsafeThawMatrix IOMatrix where
-    unsafeThawMatrix (I.M a) = a
-instance UnsafeThawMatrix (STMatrix s) where
-    unsafeThawMatrix = unsafeIOMatrixToSTMatrix . unsafeThawMatrix
-    
-freezeMatrix :: (ReadMatrix a e m, WriteMatrix b e m, UnsafeFreezeMatrix b) =>
-    a mn e -> m (Matrix mn e)
-freezeMatrix x = do
-    x' <- newCopyMatrix x
-    return (unsafeFreezeMatrix x')
-
-thawMatrix :: (ReadMatrix Matrix e m, WriteMatrix a e m) => 
-    Matrix mn e -> m (a mn e)
-thawMatrix a = newCopyMatrix a
-
+import Data.Tensor.Class
+import Data.Tensor.Class.ITensor

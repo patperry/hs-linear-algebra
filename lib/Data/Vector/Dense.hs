@@ -13,7 +13,7 @@ module Data.Vector.Dense (
     Vector,
 
     -- * Overloaded interface for vectors
-    BaseVector( dim, conj, coerceVector ),
+    BaseVector( dim, conj, isConj, coerceVector ),
 
     -- * Creating new vectors
     vector, 

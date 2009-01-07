@@ -92,8 +92,6 @@ import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
-import Data.Matrix.Class.MMatrix
-import Data.Matrix.Class.MSolve
 
 import Data.Vector.Dense.Base
 import Data.Vector.Dense.IOBase
@@ -101,9 +99,9 @@ import Data.Vector.Dense.STBase
 
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal
-import Data.Matrix.Dense.Class( BaseMatrix, ReadMatrix, WriteMatrix,
-    isHermMatrix, arrayFromMatrix, matrixViewArray, colViews,
-    coerceMatrix, newCopyMatrix, unsafeCopyMatrix, axpyMatrix )
+
+import Data.Matrix.Dense.IOBase
+import Data.Matrix.Dense.Base
 
 
 class (MatrixShaped a e, HasVectorView a, Elem e) => BaseBanded_ a e where
@@ -162,15 +160,15 @@ matrixFromBanded :: (BaseBanded b e, BaseMatrix a e) =>
     b mn e -> ((Int,Int), (Int,Int), a mn' e, Bool)
 matrixFromBanded b =
     let (f,p,m,n,kl,ku,ld,h) = arrayFromBanded b
-        a = matrixViewArray f p (kl+1+ku) n ld False
+        a = unsafeIOMatrixToMatrix $ IOMatrix f p (kl+1+ku) n ld False
     in ((m,n), (kl,ku), a, h)
 
 bandedViewMatrix :: (BaseMatrix a e, BaseBanded b e) => 
-    (Int,Int) -> (Int,Int) -> a mn e -> Bool -> Maybe (b mn' e)
+    (Int,Int) -> (Int,Int) -> a (n,p) e -> Bool -> Maybe (b mn' e)
 bandedViewMatrix (m,n) (kl,ku) a h = 
     if isHermMatrix a 
         then Nothing
-        else let (f,p,m',n',ld,_) = arrayFromMatrix a
+        else let (IOMatrix f p m' n' ld _) = unsafeMatrixToIOMatrix a
              in case undefined of
                  _ | m' /= kl+1+ku -> 
                      error $ "bandedViewMatrix:"
@@ -424,7 +422,7 @@ gbmv alpha a (x :: x l e) beta y
                    BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
-gbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
+gbmm :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 gbmm alpha a b beta c =
     sequence_ $
@@ -464,7 +462,7 @@ hbmv alpha h (x :: x k e) beta y
                withVectorPtrIO y $ \pY -> do
                    BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
 
-hbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
+hbmm :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
 hbmm alpha h b beta c =
     zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
@@ -474,7 +472,7 @@ hbmv' :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) =>
 hbmv' alpha a x beta y = 
     hbmv alpha (coerceHerm a) x beta (coerceVector y)
 
-hbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
+hbmm' :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
     e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 hbmm' alpha a b beta c = 
     hbmm alpha (coerceHerm a) b beta (coerceMatrix c)
@@ -508,10 +506,10 @@ tbmv alpha t x =
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbmv uploA transA diagA n k pA ldA pX incX
 
-tbmm :: (ReadBanded a e m, WriteMatrix b e m) =>
+tbmm :: (ReadBanded a e m, ReadMatrix b e m) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
-tbmm alpha t b = scaleBy alpha b >> tbmm 1 t b
+tbmm alpha t b = unsafeScaleByMatrix alpha b >> tbmm 1 t b
 
 tbmv' :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) => 
     e -> Tri a (r,s) e -> x s e -> e -> y r e -> m ()
@@ -525,25 +523,24 @@ tbmv' alpha a (x :: x s e) beta y
         unsafeCopyVector (coerceVector y) x
         tbmv alpha (coerceTri a) (coerceVector y)
 
-tbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
+tbmm' :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
-tbmm' alpha a b beta c
+tbmm' alpha a (b :: b (s,t) e) beta c
     | beta /= 0 = do
-        b' <- newCopyMatrix b
+        (b' :: b (s,t) e) <- newCopyMatrix b
         tbmm alpha (coerceTri a) b'
-        scaleBy beta c
-        axpyMatrix 1 b' (coerceMatrix c)
+        unsafeScaleByMatrix beta c
+        unsafeAxpyMatrix 1 b' (coerceMatrix c)
     | otherwise = do
         unsafeCopyMatrix (coerceMatrix c) b
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
-tbsv :: (ReadBanded a e m, WriteVector y e m) => 
+tbsv :: (ReadBanded a e m, ReadVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbsv alpha t x | isConj x = do
-    doConj x
+    unsafeDoConjVector x
     tbsv alpha t (conj x)
-    doConj x
-    
+    unsafeDoConjVector x
 tbsv alpha t x = 
     let (u,d,a) = triToBase t
         (transA,u') = if isHermBanded a then (ConjTrans, flipUpLo u)
@@ -559,26 +556,26 @@ tbsv alpha t x =
                         Upper -> withBandedPtr a
                         Lower -> withBandedElemPtr a (0,0)
     in do
-        scaleBy alpha x
+        unsafeScaleByVector alpha x
         unsafeIOToM $
             withPtrA $ \pA ->
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbsv uploA transA diagA n k pA ldA pX incX
 
-tbsm :: (ReadBanded a e m, WriteMatrix b e m) => 
+tbsm :: (ReadBanded a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
-tbsm alpha t b = scaleBy alpha b >> tbsm 1 t b
+tbsm alpha t b = unsafeScaleByMatrix alpha b >> tbsm 1 t b
 
 unsafeDoSSolveTriBanded :: (ReadBanded a e m,
-    ReadVector y e m, WriteVector x e m) =>
+    ReadVector y e m, ReadVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriBanded alpha a y x = do
     unsafeCopyVector (coerceVector x) y
     tbsv alpha (coerceTri a) (coerceVector x)
 
 unsafeDoSSolveMatTriBanded :: (ReadBanded a e m,
-    ReadMatrix c e m, WriteMatrix b e m) =>
+    ReadMatrix c e m, ReadMatrix b e m) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriBanded alpha a c b = do
     unsafeCopyMatrix (coerceMatrix b) c
@@ -624,10 +621,6 @@ blasTransOf a =
     case (isHermBanded a) of
           False -> NoTrans
           True  -> ConjTrans
-
-flipShape :: (Int,Int) -> (Int,Int)
-flipShape (m,n) = (n,m)
-
 
 ------------------------------------ Instances ------------------------------
 
