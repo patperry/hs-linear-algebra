@@ -64,8 +64,8 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Get the memory stride (in elements) between consecutive elements.
     stride :: x n e -> Int
 
-    -- | Indicate whether or not the vector stores the complex conjugates
-    -- of its elements.
+    -- | Indicate whether or not internally the vector stores the complex
+    -- conjugates of its elements.
     isConj :: x n e -> Bool
 
     -- | Get a view into the complex conjugate of a vector.
@@ -78,20 +78,27 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
 
     unsafeSubvectorViewWithStride :: Int -> x n e -> Int -> Int -> x n' e
 
-    withVectorPtrIO :: x n e -> (Ptr e -> IO a) -> IO a
+    -- | Unsafe cast from an 'IOVector' to a vector.
     unsafeIOVectorToVector :: IOVector n e -> x n e
+
+    -- | Unsafe cast from a vector to an 'IOVector'.
     unsafeVectorToIOVector :: x n e -> IOVector n e
 
 -- | An overloaded interface for vectors that can be read or created in
 -- a monad.
 class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where
+    -- | Unsafely convert an 'IO' action that creates an 'IOVector' into
+    -- an action in @m@ that creates a vector.
+    unsafeConvertIOVector :: IO (IOVector n e) -> m (x n e)
+
+    -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
+    -- convert the @IO@ action to an action in the monad @m@.  This
+    -- operation is /very/ unsafe.
+    unsafePerformIOWithVector :: x n e -> (IOVector n e -> IO a) -> m a
+
     -- | Creates a new vector of the given length.  The elements will be 
     -- uninitialized.
     newVector_ :: Int -> m (x n e)
-
-    -- | Execture an @IO@ action with a pointer to the first element and then
-    -- convert the @IO@ action to an action in the monad @m@.
-    withVectorPtr :: x n e -> (Ptr e -> IO a) -> m a
 
     -- | Convert a mutable vector to an immutable one by taking a complete
     -- copy of it.
@@ -107,28 +114,51 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
 -- | An overloaded interface for vectors that can be modified in a monad.
 class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
 
+-- | View an array in memory as a vector.
+vectorViewArray :: (BaseVector x e)
+                => ForeignPtr e 
+                -> Int          -- ^ offset
+                -> Int          -- ^ length
+                -> x n e
+vectorViewArray = vectorViewArrayWithStride 1
+{-# INLINE vectorViewArray #-}
+
+-- | View an array in memory as a vector, with the given stride.
+vectorViewArrayWithStride :: (BaseVector x e)
+                          => Int          -- ^ stride
+                          -> ForeignPtr e
+                          -> Int          -- ^ offset
+                          -> Int          -- ^ length
+                          -> x n e
+vectorViewArrayWithStride s f o n =
+    let p = unsafeForeignPtrToPtr f `advancePtr` o
+    in unsafeIOVectorToVector (IOVector f p n s False)
+{-# INLINE vectorViewArrayWithStride #-}
+                          
 -- | Creates a new vector with the given association list.  Unspecified
 -- indices will get initialized to zero.
 newVector :: (ReadVector x e m) => Int -> [(Int,e)] -> m (x n e)
 newVector n ies = do
     x <- newZeroVector n
-    withVectorPtr x $ \p ->
-        forM_ ies $ \(i,e) -> do
-            when (i < 0 || i >= n) $ fail $
-                "Index `" ++ show i ++ 
-                    "' is invalid for a vector with dimension `" ++ show n ++
-                    "'"
-            pokeElemOff p i e
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            forM_ ies $ \(i,e) -> do
+                when (i < 0 || i >= n) $ fail $
+                    "Index `" ++ show i ++ 
+                        "' is invalid for a vector with dimension `" ++ 
+                        show n ++ "'"
+                pokeElemOff p i e
+            return x
 {-# INLINE newVector #-}
 
 unsafeNewVector :: (ReadVector x e m) => Int -> [(Int,e)] -> m (x n e)
 unsafeNewVector n ies = do
     x <- newZeroVector n
-    withVectorPtr x $ \p ->
-        forM_ ies $ \(i,e) -> do
-            pokeElemOff p i e
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            forM_ ies $ \(i,e) ->
+                pokeElemOff p i e
+            return x
 {-# INLINE unsafeNewVector #-}
 
 -- | Creates a new vector of the given dimension with the given elements.
@@ -137,18 +167,20 @@ unsafeNewVector n ies = do
 newListVector :: (ReadVector x e m) => Int -> [e] -> m (x n e)
 newListVector n es = do
     x <- newVector_ n
-    withVectorPtr x $ \p ->
-        pokeArray p $ take n $ es ++ (repeat 0)
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            pokeArray p $ take n $ es ++ (repeat 0)
+            return x
 {-# INLINE newListVector #-}
 
 -- | Create a zero vector of the specified length.
 newZeroVector :: (ReadVector x e m) => Int -> m (x n e)
 newZeroVector n = do
     x <- newVector_ n
-    withVectorPtr x $ \p ->
-        clearArray p n
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            clearArray p n
+            return x
 {-# INLINE newZeroVector #-}
 
 -- | Set every element in the vector to zero.
@@ -158,17 +190,17 @@ setZeroVector = unsafeSetZeroVector
 
 unsafeSetZeroVector :: (ReadVector x e m) => x n e -> m ()
 unsafeSetZeroVector x =
-    withVectorPtr x $ \_ ->
-        setZeroIOVector (unsafeVectorToIOVector x)
+    unsafePerformIOWithVector x $ setZeroIOVector
 {-# INLINE unsafeSetZeroVector #-}
 
 -- | Create a vector with every element initialized to the same value.
 newConstantVector :: (ReadVector x e m) => Int -> e -> m (x n e)
 newConstantVector n e = do
     x <- newVector_ n
-    withVectorPtr x $ \p ->
-        pokeArray p (replicate n e)
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            pokeArray p (replicate n e)
+            return x
 {-# INLINE newConstantVector #-}
 
 -- | Set every element in the vector to a constant.
@@ -178,8 +210,7 @@ setConstantVector = unsafeSetConstantVector
 
 unsafeSetConstantVector :: (ReadVector x e m) => e -> x n e -> m ()
 unsafeSetConstantVector e x =
-    withVectorPtr x $ \_ ->
-        setConstantIOVector e (unsafeVectorToIOVector x)
+    unsafePerformIOWithVector x $ setConstantIOVector e
 {-# INLINE unsafeSetConstantVector #-}
 
 -- | @newBasisVector n i@ creates a vector of length @n@ that is all zero 
@@ -187,9 +218,10 @@ unsafeSetConstantVector e x =
 newBasisVector :: (ReadVector x e m) => Int -> Int -> m (x n e)
 newBasisVector n i = do
     x <- newZeroVector n
-    withVectorPtr x $ \p ->
-        pokeElemOff p i 1
-    return x
+    unsafePerformIOWithVector x $ \x' ->
+        withIOVector x' $ \p -> do
+            pokeElemOff p i 1
+            return x
 {-# INLINE newBasisVector #-}
 
 -- | @setBasis x i@ sets the @i@th coordinate of @x@ to @1@, and all other
@@ -213,9 +245,10 @@ newCopyVector x
         newCopyVector (conj x) >>= return . conj
     | otherwise = do
         y <- newVector_ n
-        withVectorPtr x $ \pX ->
-            withVectorPtrIO y $ \pY ->
-                BLAS.copy n pX incX pY 1
+        unsafePerformIOWithVector y $ \y' ->
+            withIOVector (unsafeVectorToIOVector x) $ \pX ->
+                withIOVector y' $ \pY ->
+                    BLAS.copy n pX incX pY 1
         return y
   where
     n    = dim x
@@ -229,9 +262,10 @@ newCopyVector' :: (ReadVector x e m, ReadVector y e m) => x n e -> m (y n e)
 newCopyVector' x | not (isConj x) = newCopyVector x
                  | otherwise = do
                      y <- newCopyVector (conj x)
-                     withVectorPtr y $ \pY ->
-                        BLAS.vconj (dim x) pY 1
-                     return y
+                     unsafePerformIOWithVector y $ \y' ->
+                        withIOVector y' $ \pY -> do
+                            BLAS.vconj (dim x) pY 1
+                            return y
 {-# INLINE newCopyVector' #-}
 
 -- | @copyVector dst src@ replaces the values in @dst@ with those in
@@ -306,8 +340,7 @@ doConjVector = unsafeDoConjVector
 
 unsafeDoConjVector :: (ReadVector x e m) => x n e -> m ()
 unsafeDoConjVector x =
-    withVectorPtr x $ \_ ->
-        doConjIOVector (unsafeVectorToIOVector x)
+    unsafePerformIOWithVector x $ doConjIOVector
 {-# INLINE unsafeDoConjVector #-}
 
 -- | Get a new vector by scaling the elements of another vector
@@ -324,8 +357,7 @@ scaleByVector = unsafeScaleByVector
 
 unsafeScaleByVector :: (ReadVector x e m) => e -> x n e -> m ()
 unsafeScaleByVector k x =
-    withVectorPtr x $ \_ ->
-        scaleByIOVector k (unsafeVectorToIOVector x)
+    unsafePerformIOWithVector x $ scaleByIOVector k
 {-# INLINE unsafeScaleByVector #-}
                     
 -- | Get a new vector by shifting the elements of another vector
@@ -342,8 +374,7 @@ shiftByVector = unsafeShiftByVector
 
 unsafeShiftByVector :: (ReadVector x e m) => e -> x n e -> m ()
 unsafeShiftByVector k x =
-    withVectorPtr x $ \_ ->
-        shiftByIOVector k (unsafeVectorToIOVector x)
+    unsafePerformIOWithVector x $ shiftByIOVector k
 {-# INLINE unsafeShiftByVector #-}
 
 -- | @getAddVector x y@ creates a new vector equal to the sum @x+y@.  The 
@@ -528,18 +559,18 @@ instance (Elem e) => BaseVector IOVector e where
     {-# INLINE conj #-}
     unsafeSubvectorViewWithStride = unsafeSubvectorViewWithStrideIOVector
     {-# INLINE unsafeSubvectorViewWithStride #-}
-    unsafeIOVectorToVector = id
-    {-# INLINE unsafeIOVectorToVector #-}
     unsafeVectorToIOVector = id
     {-# INLINE unsafeVectorToIOVector #-}
-    withVectorPtrIO = withIOVectorPtr
-    {-# INLINE withVectorPtrIO #-}
+    unsafeIOVectorToVector = id
+    {-# INLINE unsafeIOVectorToVector #-}
     
 instance (BLAS1 e) => ReadVector IOVector e IO where
     newVector_ = newIOVector_
     {-# INLINE newVector_ #-}
-    withVectorPtr = withIOVectorPtr
-    {-# INLINE withVectorPtr #-}
+    unsafeConvertIOVector = id
+    {-# NOINLINE unsafeConvertIOVector #-}
+    unsafePerformIOWithVector x f = f x
+    {-# INLINE unsafePerformIOWithVector #-}
     freezeVector = freezeIOVector
     {-# INLINE freezeVector #-}
     unsafeFreezeVector = unsafeFreezeIOVector
@@ -770,18 +801,18 @@ instance (Elem e) => BaseVector Vector e where
     unsafeSubvectorViewWithStride s (Vector x) o n = 
         Vector (unsafeSubvectorViewWithStrideIOVector s x o n)
     {-# INLINE unsafeSubvectorViewWithStride #-}
-    unsafeIOVectorToVector = Vector
-    {-# INLINE unsafeIOVectorToVector #-}
     unsafeVectorToIOVector (Vector x) = x
     {-# INLINE unsafeVectorToIOVector #-}
-    withVectorPtrIO (Vector x) = withIOVectorPtr x
-    {-# INLINE withVectorPtrIO #-}
+    unsafeIOVectorToVector = Vector
+    {-# INLINE unsafeIOVectorToVector #-}
 
 instance (BLAS1 e) => ReadVector Vector e IO where
     newVector_ n = liftM Vector $ newIOVector_ n
     {-# INLINE newVector_ #-}
-    withVectorPtr (Vector x) f = withVectorPtr x f
-    {-# INLINE withVectorPtr #-}
+    unsafeConvertIOVector = liftM Vector
+    {-# NOINLINE unsafeConvertIOVector #-}
+    unsafePerformIOWithVector (Vector x) f = f x
+    {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (Vector x) = freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector = return
@@ -794,8 +825,10 @@ instance (BLAS1 e) => ReadVector Vector e IO where
 instance (BLAS1 e) => ReadVector Vector e (ST s) where
     newVector_ n = unsafeIOToST $ liftM Vector $ newIOVector_ n
     {-# INLINE newVector_ #-}
-    withVectorPtr (Vector x) f = unsafeIOToST $ withVectorPtr x f
-    {-# INLINE withVectorPtr #-}
+    unsafeConvertIOVector = unsafeIOToST . liftM Vector
+    {-# NOINLINE unsafeConvertIOVector #-}    
+    unsafePerformIOWithVector (Vector x) f = unsafeIOToST $ f x
+    {-# INLINE unsafePerformIOWithVector #-}    
     freezeVector (Vector x) = unsafeIOToST $ freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector = return
@@ -864,26 +897,29 @@ instance (BLAS1 e, Floating e) => Floating (Vector n e) where
     acosh = tmap acosh
     atanh = tmap atanh
 
-vectorCall :: (ReadVector x e m) => 
-    (Int -> Ptr e -> Int -> IO a) 
-        ->  x n e -> m a
-vectorCall f x =
-    let n    = dim x
-        incX = stride x
-    in withVectorPtr x $ \pX -> 
-           f n pX incX
+vectorCall :: (ReadVector x e m)
+           => (Int -> Ptr e -> Int -> IO a) 
+           ->  x n e -> m a
+vectorCall f x = 
+    unsafePerformIOWithVector x $ \x' ->
+        let n    = dimIOVector x'
+            incX = strideIOVector x'
+        in withIOVector x' $ \pX ->
+               f n pX incX
 {-# INLINE vectorCall #-}
 
-vectorCall2 :: (ReadVector x e m, ReadVector y f m) => 
-       (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
-    -> x n e -> y n' f -> m a
+vectorCall2 :: (ReadVector x e m, ReadVector y f m)
+            => (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
+            -> x n e -> y n' f -> m a
 vectorCall2 f x y =
-    let n    = dim x
-        incX = stride x
-        incY = stride y
-    in withVectorPtr x $ \pX ->
-       withVectorPtrIO y $ \pY ->
-           f n pX incX pY incY
+    unsafePerformIOWithVector x $ \x' ->
+        let y'   = unsafeVectorToIOVector y
+            n    = dimIOVector x'
+            incX = strideIOVector x'
+            incY = strideIOVector y'
+        in withIOVector x' $ \pX ->
+           withIOVector y' $ \pY ->
+               f n pX incX pY incY
 {-# INLINE vectorCall2 #-}    
 
 checkVectorOp2 :: (BaseVector x e, BaseVector y f) => 

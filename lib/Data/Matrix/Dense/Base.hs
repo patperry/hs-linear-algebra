@@ -34,6 +34,7 @@ import Data.Matrix.Class
 import Data.Matrix.Herm
 import Data.Matrix.Tri.Internal
 
+import Data.Vector.Dense.IOBase
 import Data.Vector.Dense.Base
 
 import Data.Matrix.Dense.IOBase
@@ -672,10 +673,12 @@ gemv alpha a x beta y
             ldC    = stride y
             alpha' = conjugate alpha
             beta'  = conjugate beta
+            x'     = unsafeVectorToIOVector x
+            y'     = unsafeVectorToIOVector y
         in 
-            withVectorPtr   x $ \pA ->
-            withMatrixPtrIO a $ \pB ->
-            withVectorPtrIO y $ \pC ->
+            withMatrixPtr a $ \pB ->
+            withIOVector x' $ \pA ->
+            withIOVector y' $ \pC ->
                 BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
     
     | (isConj y && otherwise) || isConj x = do
@@ -691,10 +694,12 @@ gemv alpha a x beta y
             ldA    = ldaMatrix a
             incX   = stride x
             incY   = stride y
+            x'     = unsafeVectorToIOVector x
+            y'     = unsafeVectorToIOVector y
         in 
             withMatrixPtr a   $ \pA ->
-            withVectorPtrIO x $ \pX ->
-            withVectorPtrIO y $ \pY -> do
+            withIOVector x' $ \pX ->
+            withIOVector y' $ \pY -> do
                 BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
@@ -740,10 +745,12 @@ hemv alpha h (x :: x k e) beta y
             ldA   = ldaMatrix a
             incX  = stride x
             incY  = stride y
+            x'    = unsafeVectorToIOVector x
+            y'    = unsafeVectorToIOVector y
         in 
             withMatrixPtr a   $ \pA ->
-            withVectorPtrIO x $ \pX ->
-            withVectorPtrIO y $ \pY ->
+            withIOVector x' $ \pX ->
+            withIOVector y' $ \pY ->
                 BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
 
 hemm :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
@@ -929,7 +936,7 @@ trmv alpha t x
             withMatrixPtr a   $ \pA ->
                 withVectorPtrIO x $ \pX -> do
                    BLAS.trmv uploA transA diagA n pA ldA pX incX
-
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
 trmm :: (ReadMatrix a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -1047,6 +1054,7 @@ trsv alpha t x
             withMatrixPtr   a $ \pA ->
                 withVectorPtrIO x $ \pX ->
                     BLAS.trsv uploA transA diagA n pA ldA pX incX
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
 trsm :: (ReadMatrix a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()

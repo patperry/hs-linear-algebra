@@ -59,12 +59,14 @@ unsafeSubvectorViewWithStrideIOVector s' (IOVector f p _ inc c) o' n' =
     IOVector f (p `advancePtr` (inc*o')) n' (inc*s') c
 {-# INLINE unsafeSubvectorViewWithStrideIOVector #-}
 
-withIOVectorPtr :: IOVector n e -> (Ptr e -> IO a) -> IO a
-withIOVectorPtr (IOVector f p _ _ _) g = do
+-- | Execute an 'IO' action with a pointer to the first element in the
+-- vector.
+withIOVector :: IOVector n e -> (Ptr e -> IO a) -> IO a
+withIOVector (IOVector f p _ _ _) g = do
     a <- g p
     touchForeignPtr f
     return a
-{-# INLINE withIOVectorPtr #-}
+{-# INLINE withIOVector #-}
 
 newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
 newIOVector_ n

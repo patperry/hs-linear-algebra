@@ -415,10 +415,12 @@ gbmv alpha a (x :: x l e) beta y
             ldA    = ldaOfBanded a
             incX   = stride x
             incY   = stride y
+            x'     = unsafeVectorToIOVector x
+            y'     = unsafeVectorToIOVector y
         in unsafeIOToM $
                withBandedPtr a   $ \pA ->
-               withVectorPtrIO x $ \pX ->
-               withVectorPtrIO y $ \pY -> do
+               withIOVector x' $ \pX ->
+               withIOVector y' $ \pY -> do
                    BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
@@ -456,10 +458,12 @@ hbmv alpha h (x :: x k e) beta y
             withPtrA 
                   = case u' of Upper -> withBandedPtr a
                                Lower -> withBandedElemPtr a (0,0)
+            x'    = unsafeVectorToIOVector x
+            y'    = unsafeVectorToIOVector y
         in unsafeIOToM $
                withPtrA $ \pA ->
-               withVectorPtrIO x $ \pX ->
-               withVectorPtrIO y $ \pY -> do
+               withIOVector x' $ \pX ->
+               withIOVector y' $ \pY -> do
                    BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
 
 hbmm :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
@@ -505,6 +509,7 @@ tbmv alpha t x =
             withPtrA $ \pA ->
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbmv uploA transA diagA n k pA ldA pX incX
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
 tbmm :: (ReadBanded a e m, ReadMatrix b e m) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -561,6 +566,7 @@ tbsv alpha t x =
             withPtrA $ \pA ->
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbsv uploA transA diagA n k pA ldA pX incX
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
 tbsm :: (ReadBanded a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()

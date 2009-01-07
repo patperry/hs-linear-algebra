@@ -100,18 +100,18 @@ instance (Elem e) => BaseVector (STVector s) e where
     unsafeSubvectorViewWithStride s (STVector x) o n = 
         STVector (unsafeSubvectorViewWithStrideIOVector s x o n)
     {-# INLINE unsafeSubvectorViewWithStride #-}    
-    unsafeIOVectorToVector = STVector
-    {-# INLINE unsafeIOVectorToVector #-}
     unsafeVectorToIOVector (STVector x) = x
     {-# INLINE unsafeVectorToIOVector #-}
-    withVectorPtrIO (STVector x) = withIOVectorPtr x
-    {-# INLINE withVectorPtrIO #-}
+    unsafeIOVectorToVector = STVector
+    {-# INLINE unsafeIOVectorToVector #-}
 
 instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
     newVector_ = liftM STVector . unsafeIOToST . newIOVector_
     {-# INLINE newVector_ #-}
-    withVectorPtr (STVector x) f = unsafeIOToST $ withIOVectorPtr x f
-    {-# INLINE withVectorPtr #-}
+    unsafeConvertIOVector = unsafeIOToST . liftM STVector
+    {-# NOINLINE unsafeConvertIOVector #-}        
+    unsafePerformIOWithVector (STVector x) f = unsafeIOToST $ f x
+    {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (STVector x) = unsafeIOToST $ freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
