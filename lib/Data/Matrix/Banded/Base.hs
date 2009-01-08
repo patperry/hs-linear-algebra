@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
-        TypeFamilies, RankNTypes #-}
+        TypeFamilies, Rank2Types #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -121,12 +121,11 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
     unsafeDiagViewBanded :: a (n,p) e -> Int -> VectorView a k e
     unsafeRowViewBanded :: a (n,p) e -> Int -> (Int, VectorView a k e, Int)
     unsafeColViewBanded :: a (n,p) e -> Int -> (Int, VectorView a k e, Int)
-
-    -- | Unsafe cast from an 'IOBanded' to a banded matrix.
-    unsafeIOBandedToBanded :: IOBanded (n,p) e -> a (n,p) e
     
     -- | Unsafe cast from a matrix to an 'IOBanded'.
     unsafeBandedToIOBanded :: a (n,p) e -> IOBanded (n,p) e
+    unsafeIOBandedToBanded :: IOBanded (n,p) e -> a (n,p) e
+
 
 -- | Banded matrices that can be read in a monad.
 class ( BaseBanded a e, BLAS2 e, ReadTensor a (Int,Int) e m

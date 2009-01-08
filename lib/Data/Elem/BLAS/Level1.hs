@@ -41,22 +41,22 @@ class (Elem a) => BLAS1 a where
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
-    -- | Replaces @y@ with @conj y@.
+    -- Replaces @y@ with @conj y@.
     vconj  :: Int -> Ptr a -> Int -> IO ()
 
-    -- | Replaces @y@ with @alpha (conj x) + y@
+    -- Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- | Replaces @y@ with @x*y@.
+    -- Replaces @y@ with @x*y@.
     vmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- | Replaces @y@ with @conj(x)*y@.
+    -- Replaces @y@ with @conj(x)*y@.
     vcmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- | Replaces @y@ with @y/x@.
+    -- Replaces @y@ with @y/x@.
     vdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- | Replaces @y@ with @y/conj(x)@.
+    -- Replaces @y@ with @y/conj(x)@.
     vcdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
-        TypeFamilies, RankNTypes, ScopedTypeVariables #-}
+        TypeFamilies, Rank2Types, ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -94,12 +94,11 @@ class (HasVectorView a, Elem e, MatrixShaped a e
     -- | Possibly create a matrix view of a column vector.  This will fail
     -- if the stride of the vector is not @1@ and the vector is not conjugated.
     maybeViewAsCol  :: VectorView a n e -> Maybe (a (n,one) e)
-
-    -- | Unsafe cast from an 'IOMatrix' to a matrix.
-    unsafeIOMatrixToMatrix :: IOMatrix (n,p) e -> a (n,p) e
     
     -- | Unsafe cast from a matrix to an 'IOMatrix'.
     unsafeMatrixToIOMatrix :: a (n,p) e -> IOMatrix (n,p) e
+    unsafeIOMatrixToMatrix :: IOMatrix (n,p) e -> a (n,p) e
+
 
 -- | Dense matrices that can be read in a monad.
 class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m

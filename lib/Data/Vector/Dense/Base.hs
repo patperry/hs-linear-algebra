@@ -78,11 +78,9 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
 
     unsafeSubvectorViewWithStride :: Int -> x n e -> Int -> Int -> x n' e
 
-    -- | Unsafe cast from an 'IOVector' to a vector.
-    unsafeIOVectorToVector :: IOVector n e -> x n e
-
     -- | Unsafe cast from a vector to an 'IOVector'.
     unsafeVectorToIOVector :: x n e -> IOVector n e
+    unsafeIOVectorToVector :: IOVector n e -> x n e
 
 -- | Vectors that can be read in a monad.
 class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where

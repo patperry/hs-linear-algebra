@@ -107,12 +107,9 @@ library
 
     other-modules:      
                         BLAS.Types
-                        BLAS.UnsafeIOToM
-
                         Data.Elem.BLAS.Base
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        
                         Data.Matrix.Tri.Internal                        
     
     includes:           cbits/config.h
@@ -122,9 +119,15 @@ library
                         cbits/zomplex.c
                         
     ghc-options:        -Wall
-    extensions:         BangPatterns, FlexibleContexts, 
-                        FlexibleInstances, ForeignFunctionInterface, 
-                        FunctionalDependencies, MultiParamTypeClasses,
+    
+    extensions:         BangPatterns, 
+                        FlexibleContexts, 
+                        FlexibleInstances, 
+                        ForeignFunctionInterface, 
+                        FunctionalDependencies, 
+                        MultiParamTypeClasses,
+                        Rank2Types,
                         ScopedTypeVariables,
                         TypeFamilies
+                         
     build-depends:      base, ieee, storable-complex, QuickCheck >= 1.2
