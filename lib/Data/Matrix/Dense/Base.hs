@@ -66,6 +66,7 @@ unsafeFreezeIOMatrix = return . Matrix
 unsafeThawIOMatrix :: Matrix np e -> IO (IOMatrix np e)
 unsafeThawIOMatrix (Matrix x) = return x
 
+-- | Common functionality for all dense matrix types.
 class (HasVectorView a, Elem e, MatrixShaped a e
       , BaseVector (VectorView a) e) => BaseMatrix a e where
           
@@ -99,7 +100,7 @@ class (HasVectorView a, Elem e, MatrixShaped a e
     -- | Unsafe cast from a matrix to an 'IOMatrix'.
     unsafeMatrixToIOMatrix :: a (n,p) e -> IOMatrix (n,p) e
 
-
+-- | Dense matrices that can be read in a monad.
 class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m
       , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
       , MSolve (Tri a) e m
@@ -115,7 +116,7 @@ class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m
     freezeMatrix :: a (n,p) e -> m (Matrix (n,p) e)
     unsafeFreezeMatrix :: a (n,p) e -> m (Matrix (n,p) e)
 
-
+-- | Dense matrices that can be created or modified in a monad.
 class (ReadMatrix a e m, WriteTensor a (Int,Int) e m
       , WriteVector (VectorView a) e m) =>
     WriteMatrix a e m where

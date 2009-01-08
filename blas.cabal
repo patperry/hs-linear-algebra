@@ -67,9 +67,12 @@ library
                             Data.Matrix.Class.MSolveBase
 
                         Data.Matrix.Banded
-                            Data.Matrix.Banded.IO
-                            Data.Matrix.Banded.ST
+                            Data.Matrix.Banded.Base
                             Data.Matrix.Banded.Class
+                            Data.Matrix.Banded.IO
+                            Data.Matrix.Banded.IOBase
+                            Data.Matrix.Banded.ST
+                            Data.Matrix.Banded.STBase
                         
                         Data.Matrix.Dense
                             Data.Matrix.Dense.Base
@@ -109,14 +112,6 @@ library
                         Data.Elem.BLAS.Level3
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        
-                        Data.Matrix.Banded.Internal
-                        Data.Matrix.Banded.Class.Internal
-                        Data.Matrix.Banded.Class.Creating
-                        Data.Matrix.Banded.Class.Elements
-                        Data.Matrix.Banded.Class.Special
-                        Data.Matrix.Banded.Class.Views
-                        Data.Matrix.Banded.Class.Copying
                         
                         Data.Matrix.Tri.Internal                        
     

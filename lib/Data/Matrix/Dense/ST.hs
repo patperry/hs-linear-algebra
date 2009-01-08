@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances,
-        Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Dense.ST
@@ -13,10 +11,10 @@
 
 module Data.Matrix.Dense.ST (
     -- * The @STMatrix@ data type
-    runSTMatrix,
     STMatrix,
+    runSTMatrix,
 
-    -- * Overloaded mutable dense vector interface
+    -- * Overloaded mutable dense matrix interface
     module Data.Matrix.Dense.Class,
     ) where
 

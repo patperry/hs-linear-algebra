@@ -12,7 +12,7 @@
 
 module Data.Matrix.Dense (
     -- * Dense matrix type
-    Matrix(..),
+    Matrix,
 
     -- * Overloaded interface for dense matrices
     BaseMatrix( isHermMatrix, coerceMatrix ),

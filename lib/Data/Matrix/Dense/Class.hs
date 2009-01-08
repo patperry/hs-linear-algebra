@@ -13,7 +13,7 @@
 --
 
 module Data.Matrix.Dense.Class (
-    -- * Overloaded dense matrix types
+    -- * Dense matrix type classes
     BaseMatrix( ldaMatrix, isHermMatrix, coerceMatrix ),
     ReadMatrix,
     WriteMatrix,

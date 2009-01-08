@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded
@@ -7,42 +6,41 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Immutable banded matrices.
+--
 
 module Data.Matrix.Banded (
-    module Data.Matrix.Banded.Internal,
+    -- * Banded matrix type
+    Banded,
+
+    -- * Overloaded interface for banded matrices
+    BaseBanded( numLower, numUpper, bandwidths
+              , matrixBanded, maybeBandedFromMatrix, coerceBanded ),
+
+    -- * Overloaded interface for matrices
+    module Data.Matrix.Class,
+    module Data.Matrix.Class.IMatrix,    
     
-    -- * Converting between mutable and immutable banded matrices
-    UnsafeFreezeBanded(..),
-    UnsafeThawBanded(..),
-    freezeBanded,
-    thawBanded,
+    -- * Creating banded matrices
+    banded,
+    listsBanded,
+
+    -- * Special banded matrices
+    zeroBanded,
+    constantBanded,
+
+    -- * Vector views
+    diagBanded,
+
+    -- * Overloaded interface for reading banded matrix elements
+    module Data.Tensor.Class,
+    module Data.Tensor.Class.ITensor,
     ) where
 
-import Data.Matrix.Banded.Internal hiding ( B )
-import qualified Data.Matrix.Banded.Internal as I
-import Data.Matrix.Banded.ST
-import Data.Matrix.Banded.IO
+import Data.Matrix.Banded.Base
 
-class UnsafeFreezeBanded a where
-    unsafeFreezeBanded :: a mn e -> Banded mn e
-instance UnsafeFreezeBanded IOBanded where
-    unsafeFreezeBanded = I.B
-instance UnsafeFreezeBanded (STBanded s) where
-    unsafeFreezeBanded = unsafeFreezeBanded . unsafeSTBandedToIOBanded    
-    
-class UnsafeThawBanded a where
-    unsafeThawBanded :: Banded mn e -> a mn e
-instance UnsafeThawBanded IOBanded where
-    unsafeThawBanded (I.B a) = a
-instance UnsafeThawBanded (STBanded s) where
-    unsafeThawBanded = unsafeIOBandedToSTBanded . unsafeThawBanded
-    
-freezeBanded :: (ReadBanded a e m, WriteBanded b e m, UnsafeFreezeBanded b) =>
-    a mn e -> m (Banded mn e)
-freezeBanded x = do
-    x' <- newCopyBanded x
-    return (unsafeFreezeBanded x')
+import Data.Matrix.Class
+import Data.Matrix.Class.IMatrix
 
-thawBanded :: (ReadBanded Banded e m, WriteBanded a e m) =>
-    Banded mn e -> m (a mn e)
-thawBanded = newCopyBanded
+import Data.Tensor.Class
+import Data.Tensor.Class.ITensor

@@ -28,6 +28,7 @@ import Test.Matrix ( matrixSized )
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
+import Data.Matrix.Banded.Base( listsFromBanded )
 import Data.Elem.BLAS ( BLAS3 )
 
 import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )

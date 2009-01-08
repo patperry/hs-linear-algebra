@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
         TypeFamilies, ScopedTypeVariables #-}
+{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded.IOBase
@@ -35,13 +36,25 @@ import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Dense.IOBase( IOMatrix(..) )
-import Data.Matrix.Dense.Base( unsafeAxpyMatrix, unsafeCopyMatrix )
-import Data.Matrix.Dense.Class
+import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
+    newCopyMatrix, colViews, scaleByMatrix, unsafeCopyMatrix, 
+    unsafeAxpyMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
-import Data.Vector.Dense.Base( unsafeAxpyVector, unsafeCopyVector )
-import Data.Vector.Dense.Class
+import Data.Vector.Dense.Base( ReadVector, WriteVector, coerceVector,
+    stride, conj, isConj, unsafeVectorToIOVector, newListVector,
+    newCopyVector, newCopyVector', scaleByVector, doConjVector,
+    unsafeCopyVector, unsafeAxpyVector )
 
--- | The Banded matrix data type.
+-- | Banded matrix in the 'IO' monad.  The type arguments are as follows:
+--
+--     * @np@: a phantom type for the shape of the matrix.  Most functions
+--       will demand that this be specified as a pair.  When writing a function
+--       signature, you should always prefer @IOBanded (n,p) e@ to
+--       @IOBanded np e@.
+--
+--     * @e@: the element type of the matrix.  Only certain element types
+--       are supported.
+--
 data IOBanded np e =
     IOBanded { fptrIOBanded     :: {-# UNPACK #-} !(ForeignPtr e)
              , ptrIOBanded      :: {-# UNPACK #-} !(Ptr e)
@@ -65,15 +78,17 @@ hermIOBanded a = a{ numRowsIOBanded  = numColsIOBanded a
 indexIOBanded :: IOBanded np e -> (Int,Int) -> Int
 indexIOBanded (IOBanded _ _ _ _ kl ku ld h) (i,j) =
     let (ku',i',j') = if h then (kl,j,i) else (ku,i,j)
-    in ku + (i' - j') + j' * ld
+    in ku' + (i' - j') + j' * ld
 {-# INLINE indexIOBanded #-}
 
 hasStorageIOBanded :: IOBanded np e -> (Int,Int) -> Bool
 hasStorageIOBanded (IOBanded _ _ m n kl ku _ h) (i,j) =
     let (m',kl',ku',i',j') = if h then (n,ku,kl,j,i) else (m,kl,ku,i,j)
-    in inRange (max 0 (j'-ku), min (m-1) (j'+kl)) i'
+    in inRange (max 0 (j'-ku'), min (m'-1) (j'+kl')) i'
 {-# INLINE hasStorageIOBanded #-}
 
+-- | Execute an 'IO' action with a pointer to the first element in the
+-- banded matrix.
 withIOBanded :: IOBanded (n,p) e -> (Ptr e -> IO a) -> IO a
 withIOBanded b f = do
     a <- f (ptrIOBanded b)
@@ -597,28 +612,39 @@ instance (BLAS3 e) => WriteTensor IOBanded (Int,Int) e IO where
 
 instance (BLAS3 e) => MMatrix IOBanded e IO where
     unsafeDoSApplyAdd    = gbmv
+    {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gbmm
+    {-# INLINE unsafeDoSApplyAddMat #-}
     unsafeGetRow         = unsafeGetRowIOBanded
+    {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColIOBanded
+    {-# INLINE unsafeGetCol #-}
 
 instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
     unsafeDoSApplyAdd    = hbmv
+    {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
+    {-# INLINE unsafeDoSApplyAddMat #-}    
 
 instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
     unsafeDoSApply_      = tbmv
+    {-# INLINE unsafeDoSApply_ #-}        
     unsafeDoSApplyMat_   = tbmm
+    {-# INLINE unsafeDoSApplyMat_ #-}    
     unsafeDoSApplyAdd    = tbmv'
+    {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
+    {-# INLINE unsafeDoSApplyAddMat #-}    
 
 instance (BLAS3 e) => MSolve (Tri IOBanded) e IO where
-    unsafeDoSSolve     = tbsv'
-    unsafeDoSSolveMat  = tbsm'
     unsafeDoSSolve_    = tbsv
+    {-# INLINE unsafeDoSSolve_ #-}    
     unsafeDoSSolveMat_ = tbsm
-
-
-
+    {-# INLINE unsafeDoSSolveMat_ #-}    
+    unsafeDoSSolve     = tbsv'
+    {-# INLINE unsafeDoSSolve #-}
+    unsafeDoSSolveMat  = tbsm'
+    {-# INLINE unsafeDoSSolveMat #-}    
 
 transIOBanded :: IOBanded np e -> Trans
 transIOBanded a =

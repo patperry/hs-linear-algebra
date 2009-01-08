@@ -56,7 +56,7 @@ unsafeFreezeIOVector = return . Vector
 unsafeThawIOVector :: Vector n e -> IO (IOVector n e)
 unsafeThawIOVector (Vector x) = return x
 
--- | Common functionality between all vector types.
+-- | Common functionality for all vector types.
 class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Get the dimension (length) of the vector.
     dim :: x n e -> Int
@@ -84,8 +84,7 @@ class (Shaped x Int e, Elem e) => BaseVector x e where
     -- | Unsafe cast from a vector to an 'IOVector'.
     unsafeVectorToIOVector :: x n e -> IOVector n e
 
--- | An overloaded interface for vectors that can be read or created in
--- a monad.
+-- | Vectors that can be read in a monad.
 class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where
     -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
     -- convert the @IO@ action to an action in the monad @m@.  This
@@ -97,8 +96,7 @@ class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e
     freezeVector :: x n e -> m (Vector n e)
     unsafeFreezeVector :: x n e -> m (Vector n e)
 
--- | An overloaded interface for vectors that can be created or modified
--- in a monad.
+-- | Vectors that can be created or modified in a monad.
 class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
     -- | Unsafely convert an 'IO' action that creates an 'IOVector' into
     -- an action in @m@ that creates a vector.

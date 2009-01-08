@@ -34,7 +34,7 @@ data Herm a nn e = Herm UpLo (a nn e)
 coerceHerm :: Herm a mn e -> Herm a mn' e
 coerceHerm = unsafeCoerce
 
-mapHerm :: (a (n,n) e -> b (n,n) e) -> Herm a (n,n) e -> Herm b (n,n) e
+mapHerm :: (a nn e -> b nn e) -> Herm a nn e -> Herm b nn e
 mapHerm f (Herm u a) = Herm u $ f a
 
 hermFromBase :: UpLo -> a (n,n) e -> Herm a (n,n) e

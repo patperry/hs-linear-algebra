@@ -13,7 +13,7 @@
 --
 
 module Data.Vector.Dense.Class (
-    -- * Overloaded dense vector types
+    -- * Dense vector type classes
     BaseVector( dim, conj, stride, isConj, coerceVector ),
     ReadVector,
     WriteVector,

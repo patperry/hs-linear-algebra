@@ -6,12 +6,22 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- An overloaded interface to mutable banded matrices.  For matrix types
+-- than can be used with this interface, see "Data.Matrix.Banded.IO" and
+-- "Data.Matrix.Banded.ST".  Many of these functions can also be used with
+-- the immutable type defined in "Data.Matrix.Banded".
+--
 
 module Data.Matrix.Banded.Class (
-    -- * The banded matrix type classes
-    BaseBanded,
+    -- * Banded matrix type classes
+    BaseBanded( numLower, numUpper, bandwidths, ldaBanded, isHermBanded
+              , matrixBanded, maybeBandedFromMatrix, coerceBanded ),
     ReadBanded,
     WriteBanded,
+
+    -- * Overloaded interface for matrices
+    module Data.Matrix.Class,
+    module Data.Matrix.Class.MMatrix,
 
     -- * Creating banded matrices
     newBanded,
@@ -23,48 +33,39 @@ module Data.Matrix.Banded.Class (
     newConstantBanded,
     setConstantBanded,
 
-    -- * Copying Banded matrices
+    -- * Copying banded matrices
     newCopyBanded,
     copyBanded,
 
     -- * Row and column views
-    diagViewBanded,
     rowViewBanded,
     colViewBanded,
+    diagViewBanded,
     
-        
-    -- * Banded matrix shape
-    module Data.Tensor.Class,
-    module Data.Matrix.Class,
-    coerceBanded,
-    
-    -- * Bandwidth
-    numLower,
-    numUpper,
-    bandwidth,
+    -- * Getting diagonals
+    getDiagBanded,
 
-    module Data.Matrix.Banded.Class.Creating,
-    module Data.Matrix.Banded.Class.Elements,
-    module Data.Matrix.Banded.Class.Special,
-    module Data.Matrix.Banded.Class.Views,
-    module Data.Matrix.Banded.Class.Copying,
-    
-    -- * Low-level functions
-    ldaOfBanded,
-    isHermBanded,
-    withBandedPtr,
-    withBandedElemPtr,
+    -- * Overloaded interface for reading and writing banded matrix elements
+    module Data.Tensor.Class,
+    module Data.Tensor.Class.MTensor,
+
+    -- * Conversions between mutable and immutable banded matrices
+    freezeBanded,
+    thawBanded,
+    unsafeFreezeBanded,
+    unsafeThawBanded,
+
+    -- * Conversions from @IOBanded@s
+    unsafeBandedToIOBanded,
+    unsafeConvertIOBanded,
+    unsafePerformIOWithBanded,
     
     ) where
 
-import Data.Matrix.Banded.Class.Internal( BaseBanded_(..), 
-    BaseBanded, ReadBanded, 
-    WriteBanded, numLower, numUpper, bandwidth, ldaOfBanded, isHermBanded,
-    coerceBanded, withBandedPtr, withBandedElemPtr )
-import Data.Tensor.Class
+import Data.Matrix.Banded.Base
+
 import Data.Matrix.Class
-import Data.Matrix.Banded.Class.Creating
-import Data.Matrix.Banded.Class.Elements
-import Data.Matrix.Banded.Class.Special
-import Data.Matrix.Banded.Class.Views
-import Data.Matrix.Banded.Class.Copying
+import Data.Matrix.Class.MMatrix
+
+import Data.Tensor.Class
+import Data.Tensor.Class.MTensor

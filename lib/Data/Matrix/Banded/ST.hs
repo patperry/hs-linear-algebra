@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances,
-        Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded.ST
@@ -8,24 +6,17 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Mutable dense matrices in the ST monad.
+--
 
 module Data.Matrix.Banded.ST (
     -- * The @STBanded@ data type
     STBanded,
     runSTBanded,
 
-    unsafeIOBandedToSTBanded,
-    unsafeSTBandedToIOBanded,
-
+    -- * Overloaded mutable banded matrix interface
     module Data.Matrix.Banded.Class,
     ) where
 
-import Control.Monad.ST
-
-import Data.Matrix.Banded.Internal( Banded(..) )
+import Data.Matrix.Banded.STBase
 import Data.Matrix.Banded.Class
-import Data.Matrix.Banded.Class.Internal( STBanded, unsafeIOBandedToSTBanded,
-    unsafeSTBandedToIOBanded )
-
-runSTBanded :: (forall s . ST s (STBanded s mn e)) -> Banded mn e
-runSTBanded x = runST $ x >>= return . B . unsafeSTBandedToIOBanded

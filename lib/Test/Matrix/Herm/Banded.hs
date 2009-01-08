@@ -27,6 +27,7 @@ import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Banded
+import Data.Matrix.Banded.Base( listsFromBanded )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Herm
 
