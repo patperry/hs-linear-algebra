@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
+        RankNTypes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Matrix.Banded.Base
@@ -11,7 +12,10 @@
 module Data.Matrix.Banded.Base
     where
 
+import Control.Monad
 import Unsafe.Coerce
+
+import BLAS.Internal( clearArray, checkedRow, checkedCol )
 
 import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3 )
 
@@ -97,8 +101,8 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
                           -> Maybe (a (n,p) e)
 
     unsafeDiagViewBanded :: a (n,p) e -> Int -> VectorView a k e
-    unsafeRowViewBanded :: a (n,p) e -> Int -> (Int, VectorView a p e, Int)
-    unsafeColViewBanded :: a (n,p) e -> Int -> (Int, VectorView a n e, Int)
+    unsafeRowViewBanded :: a (n,p) e -> Int -> (Int, VectorView a k e, Int)
+    unsafeColViewBanded :: a (n,p) e -> Int -> (Int, VectorView a k e, Int)
 
     -- | Unsafe cast from an 'IOBanded' to a banded matrix.
     unsafeIOBandedToBanded :: IOBanded (n,p) e -> a (n,p) e
@@ -139,6 +143,125 @@ class ( ReadBanded a e m, WriteTensor a (Int,Int) e m
     -- complete copy of it.
     thawBanded :: Banded (n,p) e -> m (a (n,p) e)
     unsafeThawBanded :: Banded (n,p) e -> m (a (n,p) e)
+
+-- | Create a banded matrix with the given shape, bandwidths, and 
+-- associations.  The indices in the associations list must all fall
+-- in the bandwidth of the matrix.  Unspecified elements will be set
+-- to zero.
+newBanded :: (WriteBanded a e m) => 
+    (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
+newBanded = newBandedHelp writeElem
+{-# INLINE newBanded #-}
+
+unsafeNewBanded :: (WriteBanded a e m) => 
+    (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
+unsafeNewBanded = newBandedHelp unsafeWriteElem
+{-# INLINE unsafeNewBanded #-}
+
+newBandedHelp :: (WriteBanded a e m) => 
+       (IOBanded (n,p) e -> (Int,Int) -> e -> IO ())
+    -> (Int,Int) -> (Int,Int) -> [((Int,Int),e)] -> m (a (n,p) e)
+newBandedHelp set (m,n) (kl,ku) ijes = 
+    unsafeConvertIOBanded $ do
+        x <- newBanded_ (m,n) (kl,ku)
+        withIOBanded x $ flip clearArray ((kl+1+ku)*n)
+        mapM_ (uncurry $ set x) ijes
+        return x
+{-# INLINE newBandedHelp #-}
+
+-- | Create a banded matrix of the given shape and bandwidths by specifying
+-- its diagonal elements.  The lists must all have the same length, equal
+-- to the number of elements in the main diagonal of the matrix.  The 
+-- sub-diagonals are specified first, then the super-diagonals.  In 
+-- subdiagonal @i@, the first @i@ elements of the list are ignored.
+newListsBanded :: (WriteBanded a e m) => 
+    (Int,Int) -> (Int,Int) -> [[e]] -> m (a (n,p) e)
+newListsBanded (m,n) (kl,ku) xs = do
+    a <- newBanded_ (m,n) (kl,ku)
+    zipWithM_ (writeDiagElems a) [(negate kl)..ku] xs
+    return a
+  where
+    writeDiagElems :: (WriteBanded a e m) => a (n,p) e -> Int -> [e] -> m ()
+    writeDiagElems a i es =
+        let d   = unsafeDiagViewBanded a i
+            nb  = max 0 (negate i)
+            es' = drop nb es
+        in zipWithM_ (unsafeWriteElem d) [0..(dim d - 1)] es'
+{-# INLINE newListsBanded #-}
+
+-- | Create a zero banded matrix with the specified shape and bandwidths.
+newZeroBanded :: (WriteBanded a e m) => (Int,Int) -> (Int,Int) -> m (a (n,p) e)
+newZeroBanded mn bw = unsafeConvertIOBanded $
+    newZeroIOBanded mn bw
+{-# INLINE newZeroBanded #-}
+ 
+-- | Create a constant banded matrix of the specified shape and bandwidths.
+newConstantBanded :: (WriteBanded a e m) 
+                  => (Int,Int) -> (Int,Int) -> e -> m (a (n,p) e)
+newConstantBanded mn bw e = unsafeConvertIOBanded $
+    newConstantIOBanded mn bw e
+{-# INLINE newConstantBanded #-}
+ 
+-- | Set every element of a banded matrix to zero.
+setZeroBanded :: (WriteBanded a e m) => a (n,p) e -> m ()
+setZeroBanded a =
+    unsafePerformIOWithBanded a $ setZeroIOBanded
+{-# INLINE setZeroBanded #-}
+ 
+-- | Set every element of a banded matrix to a constant.
+setConstantBanded :: (WriteBanded a e m) => e -> a (n,p) e -> m ()
+setConstantBanded e a =
+    unsafePerformIOWithBanded a $ setConstantBanded e
+{-# INLINE setConstantBanded #-}
+
+newCopyBanded :: (ReadBanded a e m, WriteBanded b e m)
+              => a (n,p) e -> m (b (n,p) e)
+newCopyBanded a = unsafeConvertIOBanded $
+    newCopyIOBanded (unsafeBandedToIOBanded a)
+{-# INLINE newCopyBanded #-}
+
+copyBanded :: (WriteBanded b e m, ReadBanded a e m) =>
+    b (n,p) e -> a (n,p) e -> m ()
+copyBanded dst src
+    | shape dst /= shape src =
+        error "Shape mismatch in copyBanded."
+    | bandwidths dst /= bandwidths src =
+        error "Bandwidth mismatch in copyBanded."
+    | otherwise =
+        unsafeCopyBanded dst src
+{-# INLINE copyBanded #-}
+
+unsafeCopyBanded :: (WriteBanded b e m, ReadBanded a e m)
+                 => b (n,p) e -> a (n,p) e -> m ()
+unsafeCopyBanded dst src =
+    unsafePerformIOWithBanded dst $ \dst' ->
+        unsafeCopyIOBanded dst' (unsafeBandedToIOBanded src)
+{-# INLINE unsafeCopyBanded #-}
+
+-- | Get a view of a diagonal of the banded matrix.  This will fail if
+-- the index is outside of the bandwidth.
+diagViewBanded :: (BaseBanded a e)
+               => a (n,p) e -> Int -> VectorView a k e
+diagViewBanded a i
+    | i < -(numLower a) || i > numUpper a =
+        error $ "Tried to get a diagonal view outside of the bandwidth."
+    | otherwise =
+        unsafeDiagViewBanded a i
+{-# INLINE diagViewBanded #-}
+
+-- | Get a view into the partial row of the banded matrix, along with the
+-- number of zeros to pad before and after the view.
+rowViewBanded :: (BaseBanded a e) => 
+    a (n,p) e -> Int -> (Int, VectorView a k e, Int)
+rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
+{-# INLINE rowViewBanded #-}
+
+-- | Get a view into the partial column of the banded matrix, along with the
+-- number of zeros to pad before and after the view.
+colViewBanded :: (BaseBanded a e) => 
+    a (n,p) e -> Int -> (Int, VectorView a k e, Int)
+colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
+{-# INLINE colViewBanded #-}
 
 
 instance (Elem e) => BaseBanded IOBanded e where

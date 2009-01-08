@@ -9,10 +9,29 @@
 
 module Data.Matrix.Banded.Class (
     -- * The banded matrix type classes
-    BaseBanded_(..),
     BaseBanded,
     ReadBanded,
     WriteBanded,
+
+    -- * Creating banded matrices
+    newBanded,
+    newListsBanded,
+
+    -- * Special banded matrices
+    newZeroBanded,
+    setZeroBanded,
+    newConstantBanded,
+    setConstantBanded,
+
+    -- * Copying Banded matrices
+    newCopyBanded,
+    copyBanded,
+
+    -- * Row and column views
+    diagViewBanded,
+    rowViewBanded,
+    colViewBanded,
+    
         
     -- * Banded matrix shape
     module Data.Tensor.Class,
