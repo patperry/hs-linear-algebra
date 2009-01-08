@@ -10,7 +10,7 @@
 
 module Data.Matrix.Tri.Internal (
     Tri(..),
-    UpLo(..), Diag(..),
+    UpLoEnum(..), DiagEnum(..),
 
     triFromBase,
     triToBase,
@@ -40,9 +40,9 @@ import Unsafe.Coerce
 import BLAS.Internal ( checkSquare, checkFat, checkTall )
 import Data.Matrix.Class
 import Data.Tensor.Class
-import BLAS.Types ( UpLo(..), Diag(..), flipUpLo )
+import BLAS.Types ( UpLoEnum(..), DiagEnum(..), flipUpLo )
 
-data Tri a mn e = Tri UpLo Diag (a mn e)
+data Tri a mn e = Tri UpLoEnum DiagEnum (a mn e)
 
 -- | Coerce the shape type.
 coerceTri :: Tri a mn e -> Tri a mn' e
@@ -51,10 +51,10 @@ coerceTri = unsafeCoerce
 mapTri :: (a (m,n) e -> b (m,n) e) -> Tri a (m,n) e -> Tri b (m,n) e
 mapTri f (Tri u d a) = Tri u d $ f a
 
-triFromBase :: UpLo -> Diag -> a (m,n) e -> Tri a (m,n) e
+triFromBase :: UpLoEnum -> DiagEnum -> a (m,n) e -> Tri a (m,n) e
 triFromBase = Tri
         
-triToBase :: Tri a (m,n) e -> (UpLo, Diag, a (m,n) e)
+triToBase :: Tri a (m,n) e -> (UpLoEnum, DiagEnum, a (m,n) e)
 triToBase (Tri u d a) = (u,d,a)
 
 

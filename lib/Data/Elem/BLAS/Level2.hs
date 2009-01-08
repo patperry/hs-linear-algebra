@@ -23,18 +23,18 @@ import Data.Elem.BLAS.Zomplex
    
 -- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where
-    gemv :: Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    gbmv :: Trans -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmv :: UpLo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbmv :: UpLo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsv :: UpLo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbsv :: UpLo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    hemv :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hbmv :: UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gemv :: TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gbmv :: TransEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    trmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    hemv :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hbmv :: UpLoEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     geru :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     gerc :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    her  :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    her2 :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    her  :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    her2 :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 instance BLAS2 Double where
     gemv t = dgemv (cblasTrans t)

@@ -10,7 +10,7 @@
 
 module Data.Matrix.Herm (
     Herm(..),
-    UpLo(..),
+    UpLoEnum(..),
 
     hermFromBase,
     hermToBase,
@@ -27,9 +27,9 @@ import Unsafe.Coerce
 
 import Data.Matrix.Class
 import Data.Tensor.Class
-import BLAS.Types ( UpLo(..) )
+import BLAS.Types ( UpLoEnum(..) )
 
-data Herm a nn e = Herm UpLo (a nn e)
+data Herm a nn e = Herm UpLoEnum (a nn e)
 
 coerceHerm :: Herm a mn e -> Herm a mn' e
 coerceHerm = unsafeCoerce
@@ -37,10 +37,10 @@ coerceHerm = unsafeCoerce
 mapHerm :: (a nn e -> b nn e) -> Herm a nn e -> Herm b nn e
 mapHerm f (Herm u a) = Herm u $ f a
 
-hermFromBase :: UpLo -> a (n,n) e -> Herm a (n,n) e
+hermFromBase :: UpLoEnum -> a (n,n) e -> Herm a (n,n) e
 hermFromBase = Herm
         
-hermToBase :: Herm a (n,n) e -> (UpLo, a (n,n) e)
+hermToBase :: Herm a (n,n) e -> (UpLoEnum, a (n,n) e)
 hermToBase (Herm u a) = (u,a)
 
 hermL :: a (n,n) e -> Herm a (n,n) e

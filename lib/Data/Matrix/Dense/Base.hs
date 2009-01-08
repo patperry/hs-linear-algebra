@@ -22,8 +22,7 @@ import Unsafe.Coerce
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
     checkedRow, checkedCol, inlinePerformIO )
 
-import Data.Elem.BLAS( Elem, BLAS1, BLAS3, conjugate,
-    Trans(..), UpLo(..), Diag(..), Side(..), flipTrans, flipUpLo )
+import Data.Elem.BLAS( Elem, BLAS1, BLAS3, conjugate )
 import qualified Data.Elem.BLAS.Level1 as BLAS
 import qualified Data.Elem.BLAS.Level2 as BLAS
 import qualified Data.Elem.BLAS.Level3 as BLAS
@@ -865,7 +864,7 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
     (u,d,a) = triToBase t
 
 
-toLower :: (BaseMatrix a e) => Diag -> a (m,n) e 
+toLower :: (BaseMatrix a e) => DiagEnum -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
                   (Tri a (n,n) e, a (k,n) e)
 toLower d a =
@@ -878,7 +877,7 @@ toLower d a =
     (m,n) = shape a
     k     = m - n
     
-toUpper :: (BaseMatrix a e) => Diag -> a (m,n) e
+toUpper :: (BaseMatrix a e) => DiagEnum -> a (m,n) e
         -> Either (Tri a (n,n) e)
                   (Tri a (m,m) e, a (m,k) e)
 toUpper d a =
@@ -1662,7 +1661,7 @@ unsafeGetBinaryMatrixOp f a b = do
     f c b
     return c
 
-transMatrix :: (BaseMatrix a e) => a (n,p) e -> Trans
+transMatrix :: (BaseMatrix a e) => a (n,p) e -> TransEnum
 transMatrix a = 
     case (isHermMatrix a) of
           False -> NoTrans

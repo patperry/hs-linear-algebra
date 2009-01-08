@@ -28,11 +28,11 @@ import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
 import Data.Elem.BLAS ( BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
+import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
 
 import Unsafe.Coerce
 
-triMatrix :: (BLAS3 e, Arbitrary e) => UpLo -> Diag -> (Int,Int) -> Gen (Matrix (m,n) e)
+triMatrix :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix (m,n) e)
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
@@ -45,7 +45,7 @@ triMatrix u d (m,n) =
   where
     mn = min m n
 
-isTriIndex :: UpLo -> Diag -> (Int,Int) -> Bool
+isTriIndex :: UpLoEnum -> DiagEnum -> (Int,Int) -> Bool
 isTriIndex Upper NonUnit (i,j) = i <= j
 isTriIndex Upper Unit    (i,j) = i <  j
 isTriIndex Lower NonUnit (i,j) = i >= j

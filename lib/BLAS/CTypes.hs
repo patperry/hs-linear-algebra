@@ -50,7 +50,7 @@ rowMajor, colMajor :: CBLASOrder
 rowMajor = CBLASOrder 101
 colMajor = CBLASOrder 102
 
-cblasOrder :: Order -> CBLASOrder
+cblasOrder :: OrderEnum -> CBLASOrder
 cblasOrder RowMajor = CBLASOrder 101
 cblasOrder ColMajor = CBLASOrder 102
 
@@ -59,7 +59,7 @@ noTrans   = CBLASTrans 111
 trans     = CBLASTrans 112
 conjTrans = CBLASTrans 113
 
-cblasTrans :: Trans -> CBLASTrans
+cblasTrans :: TransEnum -> CBLASTrans
 cblasTrans NoTrans   = CBLASTrans 111
 cblasTrans ConjTrans = CBLASTrans 113
 
@@ -67,7 +67,7 @@ upper, lower :: CBLASUpLo
 upper = CBLASUpLo 121
 lower = CBLASUpLo 122
 
-cblasUpLo :: UpLo -> CBLASUpLo
+cblasUpLo :: UpLoEnum -> CBLASUpLo
 cblasUpLo Upper = CBLASUpLo 121
 cblasUpLo Lower = CBLASUpLo 122
 
@@ -75,7 +75,7 @@ nonUnit, unit :: CBLASDiag
 nonUnit = CBLASDiag 131
 unit    = CBLASDiag 132
 
-cblasDiag :: Diag -> CBLASDiag
+cblasDiag :: DiagEnum -> CBLASDiag
 cblasDiag NonUnit = CBLASDiag 131
 cblasDiag Unit    = CBLASDiag 132
 
@@ -83,6 +83,6 @@ leftSide, rightSide :: CBLASSide
 leftSide  = CBLASSide 141
 rightSide = CBLASSide 142
 
-cblasSide :: Side -> CBLASSide
+cblasSide :: SideEnum -> CBLASSide
 cblasSide LeftSide  = CBLASSide 141
 cblasSide RightSide = CBLASSide 142

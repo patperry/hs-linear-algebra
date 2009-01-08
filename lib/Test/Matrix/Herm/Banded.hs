@@ -23,7 +23,6 @@ import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
 import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conjugate )
-import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Banded

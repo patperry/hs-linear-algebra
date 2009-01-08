@@ -8,11 +8,11 @@
 --
 
 module BLAS.Types (
-    Order(..),
-    Trans(..),
-    UpLo(..),
-    Diag(..),
-    Side(..),
+    OrderEnum(..),
+    TransEnum(..),
+    UpLoEnum(..),
+    DiagEnum(..),
+    SideEnum(..),
     
     flipOrder,
     flipTrans,
@@ -21,36 +21,36 @@ module BLAS.Types (
     ) where
 
 -- | Matrix element storage order.
-data Order = RowMajor | ColMajor deriving (Eq, Show)
+data OrderEnum = RowMajor | ColMajor deriving (Eq, Show, Enum)
 
 -- | Transpose type.
-data Trans = NoTrans | ConjTrans deriving (Eq,Show)
+data TransEnum = NoTrans | ConjTrans deriving (Eq, Show, Enum)
 
 -- | Lower or upper triangular storage.
-data UpLo = Upper | Lower deriving (Eq,Show)
+data UpLoEnum = Upper | Lower deriving (Eq, Show, Enum)
 
 -- | Diagonal storage.
-data Diag = Unit | NonUnit deriving (Eq,Show)
+data DiagEnum = Unit | NonUnit deriving (Eq, Show, Enum)
 
 -- | Multiplication side.
-data Side = LeftSide | RightSide deriving (Eq,Show)
+data SideEnum = LeftSide | RightSide deriving (Eq, Show, Enum)
 
 -- | Exchange @RowMajor@ and @ColMajor@.
-flipOrder :: Order -> Order
+flipOrder :: OrderEnum -> OrderEnum
 flipOrder RowMajor = ColMajor
 flipOrder ColMajor = RowMajor
 
--- | Exchange @Trans@ and @ConjTrans@.
-flipTrans :: Trans -> Trans
+-- | Exchange @NoTrans@ and @ConjTrans@.
+flipTrans :: TransEnum -> TransEnum
 flipTrans NoTrans = ConjTrans
 flipTrans ConjTrans = NoTrans
 
 -- | Exchange @Upper@ and @Lower@.
-flipUpLo :: UpLo -> UpLo
+flipUpLo :: UpLoEnum -> UpLoEnum
 flipUpLo Upper = Lower
 flipUpLo Lower = Upper
         
 -- | Exchange @LeftSide@ and @RigthSide@.
-flipSide :: Side -> Side
+flipSide :: SideEnum -> SideEnum
 flipSide LeftSide  = RightSide
 flipSide RightSide = LeftSide

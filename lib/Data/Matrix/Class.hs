@@ -14,8 +14,7 @@
 --
 
 module Data.Matrix.Class (
-    HasVectorView(..),
-    HasMatrixStorage(..),
+    -- * Matrix shape
     MatrixShaped(..),
     numRows,
     numCols,
@@ -23,8 +22,17 @@ module Data.Matrix.Class (
     isFat,
     isTall,
     flipShape,
+
+    -- * Associated types for matrices
+    HasVectorView(..),
+    HasMatrixStorage(..),
+
+    -- * Matrix storage types
+    module BLAS.Types,
+
     ) where
 
+import BLAS.Types
 import Data.Tensor.Class
 
 -- | A class for matrices with an associated type for row, column, and

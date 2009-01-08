@@ -21,7 +21,6 @@ import Test.Matrix ( matrixSized )
 import Test.Matrix.Dense ( matrix )
 
 import Data.Elem.BLAS ( BLAS3 )
-import BLAS.Types ( flipUpLo )
 
 import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense hiding ( matrix )

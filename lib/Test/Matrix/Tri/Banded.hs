@@ -31,11 +31,11 @@ import Data.Matrix.Banded
 import Data.Matrix.Banded.Base( listsFromBanded )
 import Data.Elem.BLAS ( BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLo(..), Diag(..), triFromBase )
+import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
 
 import Unsafe.Coerce
 
-triBanded :: (BLAS3 e, Arbitrary e) => UpLo -> Diag -> Int -> Int -> Gen (Banded (n,n) e)
+triBanded :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
     d <- QC.vector n
