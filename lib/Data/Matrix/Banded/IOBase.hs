@@ -20,19 +20,25 @@ import System.IO.Unsafe
 import Unsafe.Coerce
 
 import BLAS.Internal( diagLen )
-import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, Trans(..), conjugate )
+import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, Trans(..), flipUpLo, 
+    conjugate )
 import qualified Data.Elem.BLAS as BLAS
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrixBase
 import Data.Matrix.Class.MSolveBase
 
+import Data.Matrix.Herm
+import Data.Matrix.Tri
+
 import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Dense.IOBase( IOMatrix(..) )
+import Data.Matrix.Dense.Base( unsafeAxpyMatrix, unsafeCopyMatrix )
 import Data.Matrix.Dense.Class
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
+import Data.Vector.Dense.Base( unsafeAxpyVector, unsafeCopyVector )
 import Data.Vector.Dense.Class
 
 -- | The Banded matrix data type.
@@ -286,7 +292,8 @@ unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
             len = m - (nb + na)
         in (nb, IOVector f p' len inc False, na)
 
-unsafeGetRowIOBanded :: (BLAS1 e) => IOBanded np e -> Int -> IO (IOVector p e)
+unsafeGetRowIOBanded :: (WriteVector y e IO, BLAS1 e) 
+                     => IOBanded np e -> Int -> IO (y p e)
 unsafeGetRowIOBanded a i =
     let (nb,x,na) = unsafeRowViewIOBanded a i
         n = numCols a
@@ -294,20 +301,19 @@ unsafeGetRowIOBanded a i =
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColIOBanded :: (BLAS1 e) => IOBanded np e -> Int -> IO (IOVector n e)
+unsafeGetColIOBanded :: (WriteVector y e IO, BLAS1 e) 
+                     => IOBanded np e -> Int -> IO (y n e)
 unsafeGetColIOBanded a j =
     liftM conj $ unsafeGetRowIOBanded (hermIOBanded a) j
 
 -- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
-gbmv :: (ReadVector x e IO, ReadVector y e IO, BLAS2 e)
+gbmv :: (ReadVector x e IO, WriteVector y e IO, BLAS2 e)
      => e -> IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
-gbmv alpha a x beta y =
-    gbmvIO alpha a (unsafeVectorToIOVector x) beta (unsafeVectorToIOVector y)
-gbmv alpha a x beta y
+gbmv alpha a (x :: x p e) beta y
     | numRows a == 0 || numCols a == 0 =
         scaleByVector beta y
     | isConj x = do
-        newCopyVector' x
+        x' <- newCopyVector' x :: IO (IOVector p e) 
         gbmv alpha a x' beta y
     | isConj y = do
         doConjVector y
@@ -331,11 +337,152 @@ gbmv alpha a x beta y
                 BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
-gbmm :: (BLAS2 e)
-     => e -> IOBanded (n,p) e -> IOMatrix (p,q) e -> e -> IOMatrix (n,q) e -> IO ()
+gbmm :: (ReadMatrix b e IO, WriteMatrix c e IO, BLAS2 e)
+     => e -> IOBanded (n,p) e -> b (p,q) e -> e -> c (n,q) e -> IO ()
 gbmm alpha a b beta c =
     sequence_ $
         zipWith (\x y -> gbmv alpha a x beta y) (colViews b) (colViews c)
+
+hbmv :: (ReadVector x e IO, WriteVector y e IO, BLAS2 e) => 
+    e -> Herm IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
+hbmv alpha h (x :: x p e) beta (y :: y n e)
+    | numRows h == 0 =
+        return ()
+    | isConj y = do
+        doConjVector y
+        hbmv alpha h x beta (conj y)
+        doConjVector y
+    | isConj x = do
+        (x' :: IOVector p e) <- newCopyVector' x
+        hbmv alpha h x' beta y
+    | otherwise =
+        let (u,a) = hermToBase (coerceHerm h)
+            n     = numCols a
+            k     = case u of 
+                        Upper -> numUpperIOBanded a
+                        Lower -> numLowerIOBanded a      
+            u'    = case (isHermIOBanded a) of
+                        True  -> flipUpLo u
+                        False -> u
+            uploA = u'
+            ldA   = ldaIOBanded a
+            incX  = stride x
+            incY  = stride y
+            withPtrA 
+                  = case u' of Upper -> withIOBanded a
+                               Lower -> withIOBandedElem a (0,0)
+        in
+            withPtrA $ \pA ->
+            withIOVector (unsafeVectorToIOVector x) $ \pX ->
+            withIOVector (unsafeVectorToIOVector y) $ \pY -> do
+                BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
+
+hbmm :: (ReadMatrix b e IO, WriteMatrix c e IO) => 
+    e -> Herm IOBanded (n,p) e -> b (p,q) e -> e -> c (n,q) e -> IO ()
+hbmm alpha h b beta c =
+    zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
+
+tbmv :: (WriteVector y e IO, BLAS2 e) => 
+    e -> Tri IOBanded (n,n) e -> y n e -> IO ()
+tbmv alpha t x | isConj x = do
+    doConjVector x
+    tbmv alpha t (conj x)
+    doConjVector x
+
+tbmv alpha t x =
+    let (u,d,a) = triToBase t
+        (transA,u') 
+                  = if isHermIOBanded a then (ConjTrans, flipUpLo u) 
+                                        else (NoTrans  , u)
+        uploA     = u'
+        diagA     = d
+        n         = numCols a
+        k         = case u of Upper -> numUpperIOBanded a 
+                              Lower -> numLowerIOBanded a
+        ldA       = ldaIOBanded a
+        incX      = stride x
+        withPtrA  = case u' of 
+                        Upper -> withIOBanded a
+                        Lower -> withIOBandedElem a (0,0)
+    in do
+        scaleByVector alpha x
+        withPtrA $ \pA ->
+            withVectorPtrIO x $ \pX -> do
+                BLAS.tbmv uploA transA diagA n k pA ldA pX incX
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+
+tbmm :: (WriteMatrix b e IO, BLAS2 e) =>
+    e -> Tri IOBanded (n,n) e -> b (n,p) e -> IO ()
+tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
+tbmm alpha t b = scaleByMatrix alpha b >> tbmm 1 t b
+
+tbmv' :: (ReadVector x e IO, WriteVector y e IO, BLAS2 e) => 
+    e -> Tri IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
+tbmv' alpha a (x :: x p e) beta (y  :: y n e)
+    | beta /= 0 = do
+        (x' :: y p e) <- newCopyVector x
+        tbmv alpha (coerceTri a) x'
+        scaleByVector beta y
+        unsafeAxpyVector 1 x' (coerceVector y)
+    | otherwise = do
+        unsafeCopyVector (coerceVector y) x
+        tbmv alpha (coerceTri a) (coerceVector y)
+
+tbmm' :: (ReadMatrix b e IO, WriteMatrix c e IO, BLAS2 e) => 
+    e -> Tri IOBanded (r,s) e -> b (s,t) e -> e -> c (r,t) e -> IO ()
+tbmm' alpha a (b :: b (s,t) e) beta (c :: c (r,t) e)
+    | beta /= 0 = do
+        (b' :: c (s,t) e) <- newCopyMatrix b
+        tbmm alpha (coerceTri a) b'
+        scaleByMatrix beta c
+        unsafeAxpyMatrix 1 b' (coerceMatrix c)
+    | otherwise = do
+        unsafeCopyMatrix (coerceMatrix c) b
+        tbmm alpha (coerceTri a) (coerceMatrix c)
+
+tbsv :: (WriteVector y e IO, BLAS2 e) => 
+    e -> Tri IOBanded (k,k) e -> y n e -> IO ()
+tbsv alpha t x | isConj x = do
+    doConjVector x
+    tbsv alpha t (conj x)
+    doConjVector x
+tbsv alpha t x = 
+    let (u,d,a) = triToBase t
+        (transA,u') = if isHermIOBanded a then (ConjTrans, flipUpLo u)
+                                          else (NoTrans  , u)
+        uploA     = u'
+        diagA     = d
+        n         = numCols a
+        k         = case u of Upper -> numUpperIOBanded a 
+                              Lower -> numLowerIOBanded a        
+        ldA       = ldaIOBanded a
+        incX      = stride x
+        withPtrA  = case u' of 
+                        Upper -> withIOBanded a
+                        Lower -> withIOBandedElem a (0,0)
+    in do
+        scaleByVector alpha x
+        withPtrA $ \pA ->
+            withVectorPtrIO x $ \pX -> do
+                BLAS.tbsv uploA transA diagA n k pA ldA pX incX
+  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+
+tbsm :: (WriteMatrix b e IO, BLAS2 e) => 
+    e -> Tri IOBanded (k,k) e -> b (k,l) e -> IO ()
+tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
+tbsm alpha t b = scaleByMatrix alpha b >> tbsm 1 t b
+
+tbsv' :: (ReadVector y e IO, WriteVector x e IO, BLAS2 e)
+      => e -> Tri IOBanded (k,l) e -> y k e -> x l e -> IO ()
+tbsv' alpha a y x = do
+    unsafeCopyVector (coerceVector x) y
+    tbsv alpha (coerceTri a) (coerceVector x)
+
+tbsm' :: (ReadMatrix c e IO, WriteMatrix b e IO, BLAS2 e) 
+      => e -> Tri IOBanded (r,s) e -> c (r,t) e -> b (s,t) e -> IO ()
+tbsm' alpha a c b = do
+    unsafeCopyMatrix (coerceMatrix b) c
+    tbsm alpha (coerceTri a) b
 
 
 
@@ -344,33 +491,68 @@ instance HasVectorView IOBanded where
 
 instance (Elem e) => Shaped IOBanded (Int,Int) e where
     shape  = shapeIOBanded
+    {-# INLINE shape #-}
     bounds = boundsIOBanded
+    {-# INLINE bounds #-}
 
 instance (Elem e) => MatrixShaped IOBanded e where
     herm = hermIOBanded
+    {-# INLINE herm #-}
 
 instance (BLAS3 e) => ReadTensor IOBanded (Int,Int) e IO where
     getSize        = getSizeIOBanded
+    {-# INLINE getSize #-}
     getAssocs      = getAssocsIOBanded
+    {-# INLINE getAssocs #-}
     getIndices     = getIndicesIOBanded
+    {-# INLINE getIndices #-}
     getElems       = getElemsIOBanded
+    {-# INLINE getElems #-}
     getAssocs'     = getAssocsIOBanded'
+    {-# INLINE getAssocs' #-}
     getIndices'    = getIndicesIOBanded'
+    {-# INLINE getIndices' #-}
     getElems'      = getElemsIOBanded'
+    {-# INLINE getElems' #-}
     unsafeReadElem = unsafeReadElemIOBanded
+    {-# INLINE unsafeReadElem #-}
 
 instance (BLAS3 e) => WriteTensor IOBanded (Int,Int) e IO where
     setConstant     = setConstantIOBanded
+    {-# INLINE setConstant #-}
     setZero         = setZeroIOBanded
+    {-# INLINE setZero #-}
     modifyWith      = modifyWithIOBanded
+    {-# INLINE modifyWith #-}
     unsafeWriteElem = unsafeWriteElemIOBanded
+    {-# INLINE unsafeWriteElem #-}
     canModifyElem   = canModifyElemIOBanded
+    {-# INLINE canModifyElem #-}
 
 instance (BLAS3 e) => MMatrix IOBanded e IO where
     unsafeDoSApplyAdd    = gbmv
     unsafeDoSApplyAddMat = gbmm
     unsafeGetRow         = unsafeGetRowIOBanded
     unsafeGetCol         = unsafeGetColIOBanded
+
+instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
+    unsafeDoSApplyAdd    = hbmv
+    unsafeDoSApplyAddMat = hbmm
+
+instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
+    unsafeDoSApply_      = tbmv
+    unsafeDoSApplyMat_   = tbmm
+    unsafeDoSApplyAdd    = tbmv'
+    unsafeDoSApplyAddMat = tbmm'
+
+instance (BLAS3 e) => MSolve (Tri IOBanded) e IO where
+    unsafeDoSSolve     = tbsv'
+    unsafeDoSSolveMat  = tbsm'
+    unsafeDoSSolve_    = tbsv
+    unsafeDoSSolveMat_ = tbsm
+
+
+
 
 transIOBanded :: IOBanded np e -> Trans
 transIOBanded a =
