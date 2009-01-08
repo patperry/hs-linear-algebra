@@ -20,7 +20,8 @@ import Data.Ix
 import System.IO.Unsafe
 import Unsafe.Coerce
 
-import BLAS.Internal( clearArray, checkedRow, checkedCol, inlinePerformIO )
+import BLAS.Internal( clearArray, checkedRow, checkedCol, checkedDiag,
+    diagLen, inlinePerformIO )
 
 import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3 )
 
@@ -40,7 +41,8 @@ import Data.Matrix.Tri
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Vector.Dense.Base( BaseVector, ReadVector, WriteVector, Vector(..), 
     dim, unsafeVectorToIOVector, unsafePerformIOWithVector,
-    unsafeConvertIOVector, newCopyVector )
+    unsafeConvertIOVector, newZeroVector, newCopyVector,
+    unsafeFreezeVector )
 import Data.Matrix.Dense.ST( runSTMatrix )
 import Data.Matrix.Dense.Base( BaseMatrix, ReadMatrix, WriteMatrix, Matrix(..),
     unsafeMatrixToIOMatrix, unsafePerformIOWithMatrix )
@@ -288,8 +290,13 @@ colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 -- | Get a copy of the given diagonal of a banded matrix.
 getDiagBanded :: (ReadBanded a e m, WriteVector y e m) =>
     a (n,p) e -> Int -> m (y k e)
-getDiagBanded a i = 
-    newCopyVector $ diagViewBanded a i
+getDiagBanded a i | i >= -kl && i <= ku =
+                       newCopyVector $ diagViewBanded a i
+                  | otherwise =
+                       newZeroVector $ diagLen (m,n) i
+  where
+    (m,n)   = shape a
+    (kl,ku) = bandwidths a
 {-# INLINE getDiagBanded #-}
  
 unsafeGetDiagBanded :: (ReadBanded a e m, WriteVector y e m) =>
@@ -476,12 +483,16 @@ constantBanded mn kl e = unsafePerformIO $
 
 -- | Get a the given diagonal in a banded matrix.  Negative indices correspond 
 -- to sub-diagonals.
-diagBanded :: (Elem e) => Banded (n,p) e -> Int -> Vector k e
-diagBanded = diagViewBanded
+diagBanded :: (BLAS1 e) => Banded (n,p) e -> Int -> Vector k e
+diagBanded a = checkedDiag (shape a) (unsafeDiagBanded a)
 {-# INLINE diagBanded #-}
 
-unsafeDiagBanded :: (Elem e) => Banded (n,p) e -> Int -> Vector k e
-unsafeDiagBanded = unsafeDiagViewBanded
+unsafeDiagBanded :: (BLAS1 e) => Banded (n,p) e -> Int -> Vector k e
+unsafeDiagBanded a i | i >= -kl && i <= ku = unsafeDiagViewBanded a i
+               | otherwise = runSTVector $ 
+    newZeroVector $ diagLen (shape a) i
+  where
+    (kl,ku) = bandwidths a
 {-# INLINE unsafeDiagBanded #-}
 
 listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])

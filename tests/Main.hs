@@ -7,10 +7,10 @@ import Vector
 import STVector
 import Matrix
 import STMatrix
-import Banded
 import HermMatrix
-import HermBanded
 import TriMatrix
+import Banded
+import HermBanded
 import TriBanded
 
 main :: IO ()
@@ -38,9 +38,9 @@ main = do
             , ("STVector"    , tests_STVector)
             , ("Matrix"      , tests_Matrix)
             , ("STMatrix"    , tests_STMatrix)
-            , ("Banded"      , tests_Banded)
             , ("Herm Matrix" , tests_HermMatrix)
-            , ("Herm Banded" , tests_HermBanded)
             , ("Tri Matrix"  , tests_TriMatrix)
+            , ("Banded"      , tests_Banded)
+            , ("Herm Banded" , tests_HermBanded)
             , ("Tri Banded"  , tests_TriBanded)
             ]

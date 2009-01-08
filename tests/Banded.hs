@@ -15,6 +15,7 @@ import Data.Elem.BLAS
 import Data.Vector.Dense 
 import Data.Matrix.Dense ( Matrix, identityMatrix )
 import Data.Matrix.Banded
+import Data.Matrix.Banded.Base( listsFromBanded )
 
 import Test.Matrix
 import Test.Matrix.Banded hiding ( banded )
@@ -58,13 +59,14 @@ prop_replace_elems (a :: B) (Assocs2 _ ijes) =
 prop_shape (a :: B) = 
     shape a == (numRows a, numCols a)
 
-prop_bandwidth (a :: B) =
-    bandwidth a == ((negate . numLower) a, numUpper a)
+prop_bandwidths (a :: B) =
+    bandwidths a == (numLower a, numUpper a)
 
 prop_size (a :: B) =
-    size a == (sum $ map diagLen (range $ bandwidth a))
+    size a == (sum $ map diagLen (range (-kl,ku)))
   where
     (m,n) = shape a
+    (kl,ku) = bandwidths a
     diagLen i | i <= 0    = min (m+i) n
               | otherwise = min m     (n-i) 
 
@@ -160,7 +162,7 @@ tests_Banded =
     , ("elems of replace"      , mytest prop_replace_elems)
     
     , ("numRows/numCols"       , mytest prop_shape)
-    , ("numLower/numUpper"     , mytest prop_bandwidth)
+    , ("numLower/numUpper"     , mytest prop_bandwidths)
     , ("size"                  , mytest prop_size)
     , ("bounds"                , mytest prop_bounds)
 
