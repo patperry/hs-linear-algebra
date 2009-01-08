@@ -12,10 +12,13 @@
 module Data.Matrix.Dense.IO (
     -- * The IOMatrix data type
     IOMatrix,
+    withIOMatrix,
+    matrixViewArray,
+    matrixViewArrayWithLda,
     
     -- * Overloaded mutable dense matrix interface
     module Data.Matrix.Dense.Class,
     ) where
 
-import Data.Matrix.Dense.IOBase( IOMatrix )
+import Data.Matrix.Dense.IOBase
 import Data.Matrix.Dense.Class

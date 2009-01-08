@@ -93,24 +93,30 @@ class (HasVectorView a, Elem e, MatrixShaped a e
     -- if the stride of the vector is not @1@ and the vector is not conjugated.
     maybeViewAsCol  :: VectorView a n e -> Maybe (a (n,one) e)
 
-    withMatrixPtrIO :: a np e -> (Ptr e -> IO r) -> IO r
-
-    unsafeIOMatrixToMatrix :: IOMatrix np e -> a np e
-    unsafeMatrixToIOMatrix :: a np e -> IOMatrix np e
+    -- | Unsafe cast from an 'IOMatrix' to a matrix.
+    unsafeIOMatrixToMatrix :: IOMatrix (n,p) e -> a (n,p) e
+    
+    -- | Unsafe cast from a matrix to an 'IOMatrix'.
+    unsafeMatrixToIOMatrix :: a (n,p) e -> IOMatrix (n,p) e
 
 
 class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m
       , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
       , MSolve (Tri a) e m
       , ReadVector (VectorView a) e m) => ReadMatrix a e m where
-          
+
+    -- | Unsafely convert an 'IO' action that creates an 'IOMatrix' into
+    -- an action in @m@ that creates a matrix.
+    unsafeConvertIOMatrix :: IO (IOMatrix (n,p) e) -> m (a (n,p) e)
+
+    -- | Cast the matrix to an 'IOMatrix', perform an @IO@ action, and
+    -- convert the @IO@ action to an action in the monad @m@.  This
+    -- operation is /very/ unsafe.
+    unsafePerformIOWithMatrix :: a (n,p) e -> (IOMatrix (n,p) e -> IO r) -> m r
+
     -- | Creates a new matrix of the given shape.  The elements will be 
     -- uninitialized.
     newMatrix_ :: (Int,Int) -> m (a (n,p) e)
-
-    -- | Execture an @IO@ action with a pointer to the first element and then
-    -- convert the @IO@ action to an action in the monad @m@.
-    withMatrixPtr :: a (n,p) e -> (Ptr e -> IO r) -> m r
 
     -- | Convert a mutable matrix to an immutable one by taking a complete
     -- copy of it.
@@ -131,9 +137,9 @@ class (ReadMatrix a e m, WriteTensor a (Int,Int) e m
 -- indices will get initialized to zero.
 newMatrix :: (ReadMatrix a e m) => 
     (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
-newMatrix (m,n) ies = do
+newMatrix (m,n) ies = unsafeConvertIOMatrix $ do
     a <- newZeroMatrix (m,n)
-    withMatrixPtr a $ \p ->
+    withIOMatrix a $ \p ->
         forM_ ies $ \((i,j),e) -> do
             when (i < 0 || i >= m || j < 0 || j >= n) $ fail $
                 "Index `" ++ show (i,j) ++ 
@@ -145,9 +151,9 @@ newMatrix (m,n) ies = do
     
 unsafeNewMatrix :: (ReadMatrix a e m) => 
     (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
-unsafeNewMatrix (m,n) ies = do
+unsafeNewMatrix (m,n) ies = unsafeConvertIOMatrix $ do
     a <- newZeroMatrix (m,n)
-    withMatrixPtr a $ \p ->
+    withIOMatrix a $ \p ->
         forM_ ies $ \((i,j),e) -> do
             pokeElemOff p (i+j*m) e
     return a
@@ -157,8 +163,9 @@ unsafeNewMatrix (m,n) ies = do
 newListMatrix :: (ReadMatrix a e m) => (Int,Int) -> [e] -> m (a (n,p) e)
 newListMatrix (m,n) es = do
     a <- newZeroMatrix (m,n)
-    withMatrixPtr a $ flip pokeArray (take (m*n) es)
-    return a
+    unsafePerformIOWithMatrix a $ \a' -> do
+        withIOMatrix a' $ flip pokeArray (take (m*n) es)
+        return a
 {-# INLINE newListMatrix #-}
 
 -- | Form a matrix from a list of column vectors.
@@ -208,8 +215,7 @@ setZeroMatrix = unsafeSetZeroMatrix
 
 unsafeSetZeroMatrix :: (ReadMatrix a e m) => a (n,p) e -> m ()
 unsafeSetZeroMatrix a =
-    withMatrixPtr a $ \_ ->
-        setZeroIOMatrix (unsafeMatrixToIOMatrix a)
+    unsafePerformIOWithMatrix a $ setZeroIOMatrix
 {-# INLINE unsafeSetZeroMatrix #-}
 
 -- | Create a constant matrix of the specified shape.
@@ -227,8 +233,7 @@ setConstantMatrix = unsafeSetConstantMatrix
 
 unsafeSetConstantMatrix :: (ReadMatrix a e m) => e -> a (n,p) e -> m ()
 unsafeSetConstantMatrix e a =
-    withMatrixPtr a $ \_ ->
-        setConstantIOMatrix e (unsafeMatrixToIOMatrix a)
+    unsafePerformIOWithMatrix a $ setConstantIOMatrix e
 {-# INLINE unsafeSetConstantMatrix #-}
 
 -- | Create a new matrix of the given shape with ones along the diagonal, 
@@ -701,6 +706,9 @@ gemv alpha a x beta y
             withIOVector x' $ \pX ->
             withIOVector y' $ \pY -> do
                 BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gemm :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
@@ -719,9 +727,12 @@ gemm alpha a b beta c
             ldC    = ldaMatrix c
         in 
             withMatrixPtr   a $ \pA ->
-            withMatrixPtrIO b $ \pB ->
-            withMatrixPtrIO c $ \pC ->
+            withIOMatrix (unsafeMatrixToIOMatrix b) $ \pB ->
+            withIOMatrix (unsafeMatrixToIOMatrix c) $ \pC ->
                 BLAS.gemm transA transB m n k alpha pA ldA pB ldB beta pC ldC
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+
 
 hemv :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
@@ -752,6 +763,8 @@ hemv alpha h (x :: x k e) beta y
             withIOVector x' $ \pX ->
             withIOVector y' $ \pY ->
                 BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
 
 hemm :: (ReadMatrix a e m, ReadMatrix b e m, ReadMatrix c e m) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
@@ -771,10 +784,11 @@ hemm alpha h b beta c
             ldC     = ldaMatrix c
         in 
             withMatrixPtr   a $ \pA ->
-            withMatrixPtrIO b $ \pB ->
-            withMatrixPtrIO c $ \pC ->
+            withIOMatrix (unsafeMatrixToIOMatrix b) $ \pB ->
+            withIOMatrix (unsafeMatrixToIOMatrix c) $ \pC ->
                 BLAS.hemm side uploA m' n' alpha pA ldA pB ldB beta pC ldC
     where
+      withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
       (u,a) = hermToBase h
 
 hemv' :: (ReadMatrix a e m, ReadVector x e m, ReadVector y e m) => 
@@ -936,7 +950,10 @@ trmv alpha t x
             withMatrixPtr a   $ \pA ->
                 withVectorPtrIO x $ \pX -> do
                    BLAS.trmv uploA transA diagA n pA ldA pX incX
-  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+    withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+
 
 trmm :: (ReadMatrix a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -957,9 +974,11 @@ trmm alpha t b =
         ldB       = ldaMatrix b
     in  
         withMatrixPtr   a $ \pA ->
-        withMatrixPtrIO b $ \pB ->
+        withIOMatrix (unsafeMatrixToIOMatrix b) $ \pB ->
             BLAS.trmm side uploA transA diagA m' n' alpha' pA ldA pB ldB
-
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+  
 unsafeDoSSolveTriMatrix :: (ReadMatrix a e m,
     ReadVector y e m, ReadVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
@@ -1054,7 +1073,9 @@ trsv alpha t x
             withMatrixPtr   a $ \pA ->
                 withVectorPtrIO x $ \pX ->
                     BLAS.trsv uploA transA diagA n pA ldA pX incX
-  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+  where 
+    withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
 
 trsm :: (ReadMatrix a e m, ReadMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
@@ -1075,9 +1096,10 @@ trsm alpha t b =
         ldB       = ldaMatrix b
     in 
         withMatrixPtr   a $ \pA ->
-        withMatrixPtrIO b $ \pB -> do
+        withIOMatrix (unsafeMatrixToIOMatrix b) $ \pB -> do
             BLAS.trsm side uploA transA diagA m' n' alpha' pA ldA pB ldB
-
+  where 
+    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
 
 ------------------------------------ MSolve ------------------------------
 
@@ -1152,8 +1174,6 @@ instance (Elem e) => BaseMatrix IOMatrix e where
     {-# INLINE maybeViewAsRow #-}    
     maybeViewAsCol = maybeViewAsColIOMatrix
     {-# INLINE maybeViewAsCol #-}
-    withMatrixPtrIO = withIOMatrixPtr
-    {-# INLINE withMatrixPtrIO #-}
     unsafeIOMatrixToMatrix = id
     {-# INLINE unsafeIOMatrixToMatrix #-}
     unsafeMatrixToIOMatrix = id
@@ -1196,10 +1216,12 @@ instance (BLAS3 e) => MSolve  (Tri IOMatrix) e IO where
     {-# INLINE unsafeDoSSolveMat_ #-}
 
 instance (BLAS3 e) => ReadMatrix IOMatrix e IO where
+    unsafeConvertIOMatrix = id
+    {-# INLINE unsafeConvertIOMatrix #-}
+    unsafePerformIOWithMatrix a f = f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
     newMatrix_ = newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    withMatrixPtr = withIOMatrixPtr
-    {-# INLINE withMatrixPtr #-}
     freezeMatrix = freezeIOMatrix
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix = unsafeFreezeIOMatrix
@@ -1403,8 +1425,6 @@ instance (Elem e) => BaseMatrix Matrix e where
     {-# INLINE maybeViewAsRow #-}
     maybeViewAsCol (Vector x) = liftM Matrix (maybeViewAsCol x)
     {-# INLINE maybeViewAsCol #-}
-    withMatrixPtrIO (Matrix a) = withIOMatrixPtr a
-    {-# INLINE withMatrixPtrIO #-}
     unsafeIOMatrixToMatrix = Matrix
     {-# INLINE unsafeIOMatrixToMatrix #-}
     unsafeMatrixToIOMatrix (Matrix a) = a
@@ -1487,10 +1507,12 @@ instance (BLAS3 e) => MSolve  (Tri Matrix) e IO where
     {-# INLINE unsafeDoSSolveMat_ #-}
 
 instance (BLAS3 e) => ReadMatrix Matrix e IO where
+    unsafeConvertIOMatrix = liftM Matrix
+    {-# INLINE unsafeConvertIOMatrix #-}
+    unsafePerformIOWithMatrix (Matrix a) f = f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
     newMatrix_ = liftM Matrix . newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    withMatrixPtr (Matrix a) = withIOMatrixPtr a
-    {-# INLINE withMatrixPtr #-}
     freezeMatrix (Matrix a) = freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix (Matrix a) = unsafeFreezeIOMatrix a
@@ -1537,10 +1559,12 @@ instance (BLAS3 e) => MSolve  (Tri Matrix) e (ST s) where
     {-# INLINE unsafeDoSSolveMat_ #-}
 
 instance (BLAS3 e) => ReadMatrix Matrix e (ST s) where
+    unsafeConvertIOMatrix = unsafeIOToST . liftM Matrix
+    {-# INLINE unsafeConvertIOMatrix #-}
+    unsafePerformIOWithMatrix (Matrix a) f = unsafeIOToST $ f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
     newMatrix_ = unsafeIOToST . liftM Matrix . newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    withMatrixPtr (Matrix a) f = unsafeIOToST $ withIOMatrixPtr a f
-    {-# INLINE withMatrixPtr #-}
     freezeMatrix (Matrix a) = unsafeIOToST $ freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix (Matrix a) = unsafeIOToST $ unsafeFreezeIOMatrix a

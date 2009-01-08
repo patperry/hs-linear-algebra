@@ -161,18 +161,18 @@ instance (Elem e) => BaseMatrix (STMatrix s) e where
     {-# INLINE maybeViewAsRow #-}
     maybeViewAsCol (STVector x) = liftM STMatrix (maybeViewAsCol x)
     {-# INLINE maybeViewAsCol #-}
-    withMatrixPtrIO (STMatrix a) = withIOMatrixPtr a
-    {-# INLINE withMatrixPtrIO #-}
     unsafeIOMatrixToMatrix = STMatrix
     {-# INLINE unsafeIOMatrixToMatrix #-}
     unsafeMatrixToIOMatrix (STMatrix a) = a
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
 instance (BLAS3 e) => ReadMatrix (STMatrix s) e (ST s) where
+    unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix
+    {-# INLINE unsafeConvertIOMatrix #-}
+    unsafePerformIOWithMatrix (STMatrix a) f = unsafeIOToST $ f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
     newMatrix_ = unsafeIOToST . liftM STMatrix . newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    withMatrixPtr (STMatrix a) f = unsafeIOToST $ withIOMatrixPtr a f
-    {-# INLINE withMatrixPtr #-}
     freezeMatrix (STMatrix a) = unsafeIOToST $ freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix (STMatrix a) = unsafeIOToST $ unsafeFreezeIOMatrix a

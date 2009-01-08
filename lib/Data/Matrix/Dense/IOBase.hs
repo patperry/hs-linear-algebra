@@ -48,6 +48,29 @@ data IOMatrix np e =
                {-# UNPACK #-} !Int            -- the leading dimension size of the matrix
                {-# UNPACK #-} !Bool           -- indicates whether or not the matrix is transposed and conjugated
 
+-- | View an array in memory as a matrix.
+matrixViewArray :: (Elem e)
+                => ForeignPtr e
+                -> Int          -- ^ offset
+                -> (Int,Int)    -- ^ shape
+                -> IOMatrix (n,p) e
+matrixViewArray f o (m,n) = matrixViewArrayWithLda m f o (m,n)
+{-# INLINE matrixViewArray #-}
+
+-- | View an array in memory as a matrix, with the given leading dimension
+-- size.
+matrixViewArrayWithLda :: (Elem e)
+                       => Int          -- ^ leading dimension size
+                       -> ForeignPtr e
+                       -> Int          -- ^ offset
+                       -> (Int,Int)    -- ^ shape
+                       -> IOMatrix (n,p) e
+matrixViewArrayWithLda l f o (m,n) =
+    let p = unsafeForeignPtrToPtr f `advancePtr` o
+    in IOMatrix f p m n l False
+{-# INLINE matrixViewArrayWithLda #-}
+
+
 numRowsIOMatrix :: IOMatrix np e -> Int
 numRowsIOMatrix (IOMatrix _ _ m _ _ _) = m
 {-# INLINE numRowsIOMatrix #-}
@@ -171,12 +194,14 @@ liftIOMatrix2 f a b =
     rowViews c = [ unsafeRowViewIOMatrix c i | i <- [ 0..numRows c ] ]
     colViews c = [ unsafeColViewIOMatrix c j | j <- [ 0..numCols c ] ]
 
-withIOMatrixPtr :: IOMatrix np e -> (Ptr e -> IO a) -> IO a
-withIOMatrixPtr (IOMatrix f p _ _ _ _) g = do
+-- | Perform an 'IO' action with a pointer to the first element of the
+-- matrix.
+withIOMatrix :: IOMatrix (n,p) e -> (Ptr e -> IO a) -> IO a
+withIOMatrix (IOMatrix f p _ _ _ _) g = do
     a <- g p
     touchForeignPtr f
     return a
-{-# INLINE withIOMatrixPtr #-}
+{-# INLINE withIOMatrix #-}
 
 -- | Create a new matrix of given shape, but do not initialize the elements.
 newIOMatrix_ :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)

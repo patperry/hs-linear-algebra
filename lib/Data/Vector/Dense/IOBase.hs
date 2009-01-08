@@ -37,7 +37,7 @@ data IOVector n e =
                {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
                {-# UNPACK #-} !Bool           -- indicates whether or not the vector is conjugated
 
--- | View an array in memory as an vector.
+-- | View an array in memory as a vector.
 vectorViewArray :: (Elem e)
                 => ForeignPtr e 
                 -> Int          -- ^ offset

@@ -93,6 +93,11 @@ module Data.Matrix.Dense.Class (
     thawMatrix,
     unsafeFreezeMatrix,
     unsafeThawMatrix,
+
+    -- * Conversions from @IOMatrix@s
+    unsafeMatrixToIOMatrix,
+    unsafeConvertIOMatrix,
+    unsafePerformIOWithMatrix,
         
     ) where
 

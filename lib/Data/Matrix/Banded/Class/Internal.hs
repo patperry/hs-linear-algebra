@@ -157,7 +157,7 @@ isHermBanded a = let (_,_,_,_,_,_,_,h) = arrayFromBanded a in h
 {-# INLINE isHermBanded #-}
 
 matrixFromBanded :: (BaseBanded b e, BaseMatrix a e) => 
-    b mn e -> ((Int,Int), (Int,Int), a mn' e, Bool)
+    b (n,p) e -> ((Int,Int), (Int,Int), a (n',p') e, Bool)
 matrixFromBanded b =
     let (f,p,m,n,kl,ku,ld,h) = arrayFromBanded b
         a = unsafeIOMatrixToMatrix $ IOMatrix f p (kl+1+ku) n ld False
