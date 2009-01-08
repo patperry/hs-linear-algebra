@@ -24,6 +24,7 @@ module Data.Matrix.Banded.Class (
     module Data.Matrix.Class.MMatrix,
 
     -- * Creating banded matrices
+    newBanded_,
     newBanded,
     newListsBanded,
 
