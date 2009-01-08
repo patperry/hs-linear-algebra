@@ -41,8 +41,7 @@ import Data.Matrix.Tri
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Vector.Dense.Base( BaseVector, ReadVector, WriteVector, Vector(..), 
     dim, unsafeVectorToIOVector, unsafePerformIOWithVector,
-    unsafeConvertIOVector, newZeroVector, newCopyVector,
-    unsafeFreezeVector )
+    unsafeConvertIOVector, newZeroVector, newCopyVector )
 import Data.Matrix.Dense.ST( runSTMatrix )
 import Data.Matrix.Dense.Base( BaseMatrix, ReadMatrix, WriteMatrix, Matrix(..),
     unsafeMatrixToIOMatrix, unsafePerformIOWithMatrix )

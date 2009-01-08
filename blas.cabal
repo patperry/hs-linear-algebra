@@ -51,6 +51,9 @@ library
                         BLAS.CTypes
 
                         Data.Elem.BLAS
+                        Data.Elem.BLAS.Level1
+                        Data.Elem.BLAS.Level2
+                        Data.Elem.BLAS.Level3
 
                         Data.Tensor.Class
                             Data.Tensor.Class.ITensor
@@ -107,9 +110,6 @@ library
                         BLAS.UnsafeIOToM
 
                         Data.Elem.BLAS.Base
-                        Data.Elem.BLAS.Level1
-                        Data.Elem.BLAS.Level2
-                        Data.Elem.BLAS.Level3
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
                         

@@ -23,7 +23,8 @@ import Unsafe.Coerce
 import BLAS.Internal( diagLen, diagStart )
 import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, Trans(..), flipUpLo, 
     conjugate )
-import qualified Data.Elem.BLAS as BLAS
+import qualified Data.Elem.BLAS.Level1 as BLAS
+import qualified Data.Elem.BLAS.Level2 as BLAS
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrixBase

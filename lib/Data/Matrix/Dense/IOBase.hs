@@ -20,7 +20,7 @@ import System.IO.Unsafe
 import BLAS.Internal( diagLen )
 
 import Data.Elem.BLAS( Complex, Elem, BLAS1, conjugate )
-import qualified Data.Elem.BLAS as BLAS
+import qualified Data.Elem.BLAS.Level1 as BLAS
 
 import Data.Matrix.Class
 

@@ -24,7 +24,9 @@ import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
 
 import Data.Elem.BLAS( Elem, BLAS1, BLAS3, conjugate,
     Trans(..), UpLo(..), Diag(..), Side(..), flipTrans, flipUpLo )
-import qualified Data.Elem.BLAS as BLAS
+import qualified Data.Elem.BLAS.Level1 as BLAS
+import qualified Data.Elem.BLAS.Level2 as BLAS
+import qualified Data.Elem.BLAS.Level3 as BLAS
 
 import Data.Tensor.Class
 import Data.Tensor.Class.ITensor
