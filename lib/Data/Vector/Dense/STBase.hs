@@ -106,19 +106,19 @@ instance (Elem e) => BaseVector (STVector s) e where
     {-# INLINE unsafeIOVectorToVector #-}
 
 instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
-    newVector_ = liftM STVector . unsafeIOToST . newIOVector_
-    {-# INLINE newVector_ #-}
-    unsafeConvertIOVector = unsafeIOToST . liftM STVector
-    {-# NOINLINE unsafeConvertIOVector #-}        
     unsafePerformIOWithVector (STVector x) f = unsafeIOToST $ f x
     {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (STVector x) = unsafeIOToST $ freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
     {-# INLINE unsafeFreezeVector #-}
+
+instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
+    newVector_ = liftM STVector . unsafeIOToST . newIOVector_
+    {-# INLINE newVector_ #-}
+    unsafeConvertIOVector = unsafeIOToST . liftM STVector
+    {-# NOINLINE unsafeConvertIOVector #-}
     thawVector = liftM STVector . unsafeIOToST . thawIOVector
     {-# INLINE thawVector #-}
     unsafeThawVector = liftM STVector . unsafeIOToST . unsafeThawIOVector
     {-# INLINE unsafeThawVector #-}
-
-instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where

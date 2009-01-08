@@ -167,20 +167,20 @@ instance (Elem e) => BaseMatrix (STMatrix s) e where
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
 instance (BLAS3 e) => ReadMatrix (STMatrix s) e (ST s) where
-    unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix
-    {-# INLINE unsafeConvertIOMatrix #-}
     unsafePerformIOWithMatrix (STMatrix a) f = unsafeIOToST $ f a
     {-# INLINE unsafePerformIOWithMatrix #-}
-    newMatrix_ = unsafeIOToST . liftM STMatrix . newIOMatrix_
-    {-# INLINE newMatrix_ #-}
     freezeMatrix (STMatrix a) = unsafeIOToST $ freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix (STMatrix a) = unsafeIOToST $ unsafeFreezeIOMatrix a
     {-# INLINE unsafeFreezeMatrix #-}
+
+instance (BLAS3 e) => WriteMatrix (STMatrix s) e (ST s) where
+    newMatrix_ = unsafeIOToST . liftM STMatrix . newIOMatrix_
+    {-# INLINE newMatrix_ #-}
+    unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix
+    {-# INLINE unsafeConvertIOMatrix #-}
     thawMatrix = unsafeIOToST . liftM STMatrix . thawIOMatrix
     {-# INLINE thawMatrix #-}
     unsafeThawMatrix = unsafeIOToST . liftM STMatrix . unsafeThawIOMatrix
     {-# INLINE unsafeThawMatrix #-}
-
-instance (BLAS3 e) => WriteMatrix (STMatrix s) e (ST s) where
     

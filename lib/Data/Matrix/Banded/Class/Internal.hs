@@ -375,7 +375,7 @@ unsafeColViewBanded a j =
     (f,p,m,_,kl,ku,ld,h) = arrayFromBanded a
     a' = (hermBanded . coerceBanded) a
 
-unsafeGetRowBanded :: (ReadBanded a e m, ReadVector y e m) => 
+unsafeGetRowBanded :: (ReadBanded a e m, WriteVector y e m) => 
     a (k,l) e -> Int -> m (y l e)
 unsafeGetRowBanded a i = 
     let (nb,x,na) = unsafeRowViewBanded a i
@@ -384,7 +384,7 @@ unsafeGetRowBanded a i =
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColBanded :: (ReadBanded a e m, ReadVector y e m) => 
+unsafeGetColBanded :: (ReadBanded a e m, WriteVector y e m) => 
     a (k,l) e -> Int -> m (y k e)
 unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
 
@@ -392,18 +392,18 @@ unsafeGetColBanded a j = unsafeGetRowBanded (hermBanded a) j >>= return . conj
 -------------------------- Matrix multiplication ----------------------------
 
 -- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
-gbmv :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) => 
+gbmv :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m) => 
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
-gbmv alpha a (x :: x l e) beta y
+gbmv alpha a (x :: x l e) beta (y :: y k e)
     | numRows a == 0 || numCols a == 0 =
-        unsafeScaleByVector beta y
+        scaleByVector beta y
     | isConj x = do
-        (x' :: x l e) <- newCopyVector' x
+        (x' :: y l e) <- newCopyVector' x
         gbmv alpha a x' beta y
     | isConj y = do
-        unsafeDoConjVector y
+        doConjVector y
         gbmv alpha a x beta (conj y)
-        unsafeDoConjVector y
+        doConjVector y
     | otherwise =
         let transA = blasTransOf a
             (m,n)  = case (isHermBanded a) of
@@ -424,23 +424,23 @@ gbmv alpha a (x :: x l e) beta y
                    BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
-gbmm :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+gbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 gbmm alpha a b beta c =
     sequence_ $
         zipWith (\x y -> gbmv alpha a x beta y) (colViews b) (colViews c)
 
-hbmv :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) => 
+hbmv :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m) => 
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
-hbmv alpha h (x :: x k e) beta y
+hbmv alpha h (x :: x k e) beta (y :: y k e)
     | numRows h == 0 =
         return ()
     | isConj y = do
-        unsafeDoConjVector y
+        doConjVector y
         hbmv alpha h x beta (conj y)
-        unsafeDoConjVector y
+        doConjVector y
     | isConj x = do
-        (x' :: x k e) <- newCopyVector' x
+        (x' :: y k e) <- newCopyVector' x
         hbmv alpha h x' beta y
     | otherwise =
         let (u,a) = hermToBase h
@@ -466,27 +466,27 @@ hbmv alpha h (x :: x k e) beta y
                withIOVector y' $ \pY -> do
                    BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
 
-hbmm :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+hbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Herm a (k,k) e -> b (k,l) e -> e -> c (k,l) e -> m ()
 hbmm alpha h b beta c =
     zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
 
-hbmv' :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) => 
+hbmv' :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m) => 
     e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
 hbmv' alpha a x beta y = 
     hbmv alpha (coerceHerm a) x beta (coerceVector y)
 
-hbmm' :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+hbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 hbmm' alpha a b beta c = 
     hbmm alpha (coerceHerm a) b beta (coerceMatrix c)
 
-tbmv :: (ReadBanded a e m, ReadVector y e m) => 
+tbmv :: (ReadBanded a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbmv alpha t x | isConj x = do
-    unsafeDoConjVector x
+    doConjVector x
     tbmv alpha t (conj x)
-    unsafeDoConjVector x
+    doConjVector x
 
 tbmv alpha t x =
     let (u,d,a) = triToBase t
@@ -504,48 +504,48 @@ tbmv alpha t x =
                         Upper -> withBandedPtr a
                         Lower -> withBandedElemPtr a (0,0)
     in do
-        unsafeScaleByVector alpha x
+        scaleByVector alpha x
         unsafeIOToM $
             withPtrA $ \pA ->
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbmv uploA transA diagA n k pA ldA pX incX
   where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
-tbmm :: (ReadBanded a e m, ReadMatrix b e m) =>
+tbmm :: (ReadBanded a e m, WriteMatrix b e m) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
-tbmm alpha t b = unsafeScaleByMatrix alpha b >> tbmm 1 t b
+tbmm alpha t b = scaleByMatrix alpha b >> tbmm 1 t b
 
-tbmv' :: (ReadBanded a e m, ReadVector x e m, ReadVector y e m) => 
+tbmv' :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m) => 
     e -> Tri a (r,s) e -> x s e -> e -> y r e -> m ()
-tbmv' alpha a (x :: x s e) beta y 
+tbmv' alpha a (x :: x s e) beta (y  :: y r e)
     | beta /= 0 = do
-        (x' :: x s e) <- newCopyVector x
+        (x' :: y s e) <- newCopyVector x
         tbmv alpha (coerceTri a) x'
-        unsafeScaleByVector beta y
+        scaleByVector beta y
         unsafeAxpyVector 1 x' (coerceVector y)
     | otherwise = do
         unsafeCopyVector (coerceVector y) x
         tbmv alpha (coerceTri a) (coerceVector y)
 
-tbmm' :: (ReadBanded a e m, ReadMatrix b e m, ReadMatrix c e m) => 
+tbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m) => 
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
-tbmm' alpha a (b :: b (s,t) e) beta c
+tbmm' alpha a (b :: b (s,t) e) beta (c :: c (r,t) e)
     | beta /= 0 = do
-        (b' :: b (s,t) e) <- newCopyMatrix b
+        (b' :: c (s,t) e) <- newCopyMatrix b
         tbmm alpha (coerceTri a) b'
-        unsafeScaleByMatrix beta c
+        scaleByMatrix beta c
         unsafeAxpyMatrix 1 b' (coerceMatrix c)
     | otherwise = do
         unsafeCopyMatrix (coerceMatrix c) b
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
-tbsv :: (ReadBanded a e m, ReadVector y e m) => 
+tbsv :: (ReadBanded a e m, WriteVector y e m) => 
     e -> Tri a (k,k) e -> y n e -> m ()
 tbsv alpha t x | isConj x = do
-    unsafeDoConjVector x
+    doConjVector x
     tbsv alpha t (conj x)
-    unsafeDoConjVector x
+    doConjVector x
 tbsv alpha t x = 
     let (u,d,a) = triToBase t
         (transA,u') = if isHermBanded a then (ConjTrans, flipUpLo u)
@@ -561,27 +561,27 @@ tbsv alpha t x =
                         Upper -> withBandedPtr a
                         Lower -> withBandedElemPtr a (0,0)
     in do
-        unsafeScaleByVector alpha x
+        scaleByVector alpha x
         unsafeIOToM $
             withPtrA $ \pA ->
             withVectorPtrIO x $ \pX -> do
                 BLAS.tbsv uploA transA diagA n k pA ldA pX incX
   where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
 
-tbsm :: (ReadBanded a e m, ReadMatrix b e m) => 
+tbsm :: (ReadBanded a e m, WriteMatrix b e m) => 
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
-tbsm alpha t b = unsafeScaleByMatrix alpha b >> tbsm 1 t b
+tbsm alpha t b = scaleByMatrix alpha b >> tbsm 1 t b
 
 unsafeDoSSolveTriBanded :: (ReadBanded a e m,
-    ReadVector y e m, ReadVector x e m) =>
+    ReadVector y e m, WriteVector x e m) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriBanded alpha a y x = do
     unsafeCopyVector (coerceVector x) y
     tbsv alpha (coerceTri a) (coerceVector x)
 
 unsafeDoSSolveMatTriBanded :: (ReadBanded a e m,
-    ReadMatrix c e m, ReadMatrix b e m) =>
+    ReadMatrix c e m, WriteMatrix b e m) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatTriBanded alpha a c b = do
     unsafeCopyMatrix (coerceMatrix b) c
