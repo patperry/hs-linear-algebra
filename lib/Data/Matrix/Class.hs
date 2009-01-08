@@ -15,6 +15,7 @@
 
 module Data.Matrix.Class (
     HasVectorView(..),
+    HasMatrixStorage(..),
     MatrixShaped(..),
     numRows,
     numCols,
@@ -34,6 +35,12 @@ class HasVectorView (a :: * -> * -> *) where
     -- so that modifying an element in the view will affect the
     -- corresponding element in the matrix, and vice versa.
     type VectorView a :: * -> * -> *
+
+-- | A class for matrix types that use a matrix internally for storage,
+-- "Data.Matrix.Banded.Class" for example.
+class HasMatrixStorage (a :: * -> * -> *) where
+    -- | An associated type for the underlying matrix storage.
+    type MatrixStorage a :: * -> * -> *
 
 -- | A base class for objects shaped like matrices.
 class (Shaped a (Int,Int) e) => MatrixShaped a e where

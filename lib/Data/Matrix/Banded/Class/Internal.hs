@@ -104,21 +104,7 @@ import Data.Matrix.Dense.IOBase
 import Data.Matrix.Dense.Base
 
 
-class (MatrixShaped a e, HasVectorView a, Elem e) => BaseBanded_ a e where
-    bandedViewArray :: ForeignPtr e -> Ptr e -> Int -> Int -> Int -> Int -> Int -> Bool -> a mn e
-    arrayFromBanded :: a mn e -> (ForeignPtr e, Ptr e, Int, Int, Int, Int, Int, Bool)
 
-class (BaseBanded_ a e, BaseVector (VectorView a) e) => BaseBanded a e
-
-class ( BaseBanded a e, BLAS2 e, UnsafeIOToM m, ReadTensor a (Int,Int) e m
-      , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
-      , MSolve (Tri a) e m
-      , ReadVector (VectorView a) e m) => 
-    ReadBanded a e m where
-
-class (ReadBanded a e m, WriteTensor a (Int,Int) e m,
-           WriteVector (VectorView a) e m) => 
-    WriteBanded a e m | m -> a where
 
 
 ------------------------- Basic Banded Properties ---------------------------

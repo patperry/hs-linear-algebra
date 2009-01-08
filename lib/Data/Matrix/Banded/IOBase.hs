@@ -19,7 +19,7 @@ import Foreign
 import System.IO.Unsafe
 import Unsafe.Coerce
 
-import BLAS.Internal( diagLen )
+import BLAS.Internal( diagLen, diagStart )
 import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, Trans(..), flipUpLo, 
     conjugate )
 import qualified Data.Elem.BLAS as BLAS
@@ -94,28 +94,33 @@ matrixIOBanded (IOBanded f p m n kl ku l h) =
     in IOMatrix f p (kl+1+ku) n' l False
 {-# INLINE matrixIOBanded #-}
 
-bandedFromIOMatrix :: (Int,Int)
+maybeBandedFromIOMatrix :: (Int,Int)
                    -> (Int,Int)
                    -> IOMatrix np e
                    -> Maybe (IOBanded np' e)
-bandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
+maybeBandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
     | h         = Nothing
     | otherwise =
          case undefined of
+             _ | kl < 0 ->
+                  error $ "maybeBandedFromMatrix:"
+                        ++ " lower bandwidth must be non-negative"
+             _ | ku < 0 ->
+                  error $ "maybeBandedFromMatrix:"
+                        ++ " upper bandwidth must be non-negative"
              _ | m' /= kl+1+ku ->
-                  error $ "bandedFromMatrix:"
+                  error $ "maybeBandedFromMatrix:"
                         ++ " number of rows must be equal to number of diagonals"
              _ | n' /= n ->
-                  error $ "bandedFromMatrix:"
+                  error $ "maybeBandedFromMatrix:"
                         ++ " numbers of columns must be equal"
              _ ->
                   Just $ IOBanded f p m n kl ku l False
 
-bandwidthIOBanded :: IOBanded np e -> (Int,Int)
-bandwidthIOBanded a =
-    let (kl,ku) = (numLowerIOBanded a, numUpperIOBanded a)
-    in (negate kl, ku)
-{-# INLINE bandwidthIOBanded #-}
+bandwidthsIOBanded :: IOBanded np e -> (Int,Int)
+bandwidthsIOBanded a =
+    (numLowerIOBanded a, numUpperIOBanded a)
+{-# INLINE bandwidthsIOBanded #-}
 
 coerceIOBanded :: IOBanded np e -> IOBanded np' e
 coerceIOBanded = unsafeCoerce
@@ -256,6 +261,53 @@ setConstantIOBanded e a
         mapM_ (\i -> unsafeWriteElemIOBanded a i e) is
 {-# INLINE setConstantIOBanded #-}
 
+newCopyIOBanded :: (BLAS1 e) => IOBanded np e -> IO (IOBanded np e)
+newCopyIOBanded a 
+    | isHermIOBanded a =
+        liftM hermIOBanded $ newCopyIOBanded (hermIOBanded a)
+    | otherwise = do
+        a' <- newIOBanded_ (shapeIOBanded a) (numLowerIOBanded a, numUpperIOBanded a)
+        unsafeCopyIOBanded a' a
+        return a'
+
+unsafeCopyIOBanded :: (BLAS1 e)
+                   => IOBanded mn e -> IOBanded mn e -> IO ()
+unsafeCopyIOBanded dst src
+    | isHermIOBanded dst = 
+        unsafeCopyIOBanded (hermIOBanded dst) 
+                           (hermIOBanded src)
+                         
+    | (not . isHermIOBanded) src =
+        withIOBanded (coerceIOBanded dst) $ \pDst ->
+        withIOBanded (coerceIOBanded src) $ \pSrc ->
+            if ldDst == m && ldSrc == m
+                then copyBlock pDst pSrc
+                else copyCols  pDst pSrc n
+                
+    | otherwise =
+        zipWithM_ unsafeCopyVector (diagViews dst) (diagViews src)
+        
+  where
+    m     = numLowerIOBanded dst + numUpperIOBanded dst + 1 -- we can be sure dst is not herm
+    n     = numColsIOBanded dst
+    ldDst = ldaIOBanded dst
+    ldSrc = ldaIOBanded src
+
+    copyBlock pDst pSrc =
+        BLAS.copy (m*n) pSrc 1 pDst 1
+
+    copyCols pDst pSrc nleft
+        | nleft == 0 = return ()
+        | otherwise = do
+            BLAS.copy m pSrc 1 pDst 1
+            copyCols (pDst `advancePtr` ldDst) (pSrc `advancePtr` ldSrc) 
+                     (nleft-1)
+
+    diagViews a = 
+        case bandwidthsIOBanded a of
+            (kl,ku) -> map (unsafeDiagViewIOBanded a) $ range (-kl,ku)
+
+
 unsafeRowViewIOBanded :: (Elem e)
                       => IOBanded np e
                       -> Int
@@ -291,6 +343,19 @@ unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
             inc = 1
             len = m - (nb + na)
         in (nb, IOVector f p' len inc False, na)
+
+unsafeDiagViewIOBanded :: (Elem e) => 
+    IOBanded np e -> Int -> IOVector k e
+unsafeDiagViewIOBanded a@(IOBanded fp p m n _ _ ld h) d
+    | h         = conj $ unsafeDiagViewIOBanded (hermIOBanded a) (negate d)
+    | otherwise =
+        let off = indexIOBanded a (diagStart d)
+            p'  = p `advancePtr` off
+            len = diagLen (m,n) d
+            inc = ld
+            c   = False
+        in (IOVector fp p' len inc c)
+
 
 unsafeGetRowIOBanded :: (WriteVector y e IO, BLAS1 e) 
                      => IOBanded np e -> Int -> IO (y p e)
@@ -484,10 +549,11 @@ tbsm' alpha a c b = do
     unsafeCopyMatrix (coerceMatrix b) c
     tbsm alpha (coerceTri a) b
 
-
-
 instance HasVectorView IOBanded where
     type VectorView IOBanded = IOVector
+
+instance HasMatrixStorage IOBanded where
+    type MatrixStorage IOBanded = IOMatrix
 
 instance (Elem e) => Shaped IOBanded (Int,Int) e where
     shape  = shapeIOBanded

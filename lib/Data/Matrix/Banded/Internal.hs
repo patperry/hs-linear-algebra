@@ -16,10 +16,6 @@ module Data.Matrix.Banded.Internal (
     -- * Banded shape
     module Data.Tensor.Class,
     module Data.Matrix.Class,
-    bandwidth,
-    numLower,
-    numUpper,
-    coerceBanded,
 
     -- * Creating banded matrices
     banded,
@@ -40,10 +36,6 @@ module Data.Matrix.Banded.Internal (
     -- * Converting to lists
     listsFromBanded,
 
-    -- * Low-level properties
-    ldaOfBanded,
-    isHermBanded,
-    
     -- * Matrix and vector multiplication
     module Data.Matrix.Class.IMatrix,
 

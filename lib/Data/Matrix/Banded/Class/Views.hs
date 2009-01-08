@@ -40,17 +40,3 @@ colViewBanded :: (BaseBanded a e) =>
     a mn e -> Int -> (Int, VectorView a k e, Int)
 colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 
-unsafeDiagViewBanded :: (BaseBanded a e) => 
-    a mn e -> Int -> VectorView a k e
-unsafeDiagViewBanded a d
-    | isHermBanded a = conj $ unsafeDiagViewBanded a' (negate d)
-    | otherwise =
-        let (fp,p,m,n,_,_,ld,_) = arrayFromBanded a
-            off = indexOfBanded a (diagStart d)
-            p'  = p `advancePtr` off
-            len = diagLen (m,n) d
-            inc = ld
-            c   = False
-        in unsafeIOVectorToVector (IOVector fp p' len inc c)
-  where
-    a' = (hermBanded . coerceBanded) a
