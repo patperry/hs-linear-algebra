@@ -62,9 +62,10 @@ import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
 import Data.Matrix.Class.IMatrix
-import Data.Matrix.Class.MMatrix
-import Data.Matrix.Class.ISolve
-import Data.Matrix.Class.MSolve
+import Data.Matrix.Class.IMatrixBase
+import Data.Matrix.Class.MMatrixBase
+import Data.Matrix.Class.ISolveBase
+import Data.Matrix.Class.MSolveBase
 
 import Data.Ix( inRange, range )
 import Data.Matrix.Herm

@@ -58,9 +58,13 @@ library
 
                         Data.Matrix.Class
                             Data.Matrix.Class.IMatrix
+                            Data.Matrix.Class.IMatrixBase
                             Data.Matrix.Class.MMatrix
+                            Data.Matrix.Class.MMatrixBase
                             Data.Matrix.Class.ISolve
+                            Data.Matrix.Class.ISolveBase
                             Data.Matrix.Class.MSolve
+                            Data.Matrix.Class.MSolveBase
 
                         Data.Matrix.Banded
                             Data.Matrix.Banded.IO
