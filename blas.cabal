@@ -1,6 +1,6 @@
 name:            blas
 version:         0.7
-homepage:        http://stat.stanford.edu/~patperry/code/blas
+homepage:        http://github.com/patperry/blas
 synopsis:        Bindings to the BLAS library
 description:
     The BLAS (Basic Linear Algebra Subprograms) are routines that provide

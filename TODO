@@ -1,17 +1,39 @@
 
+One great way to help is just to use the library, and give me feedback from
+your experience.  What do you like?  What don't you like?  What is fast?
+What is slow?  This stuff is really important for me to know.
+
+If you are interested in hacking on the library, there is tons of work to do.
+Here is a partial list.  Let me know what you would like to work on, and I can
+give you some guidance on the best way to approach the task.
+
+Small projects
+--------------
+
+* Write tests.  Look at the HPC output (from `make hpc` in the `tests` 
+  directory), to find what functions are not being tested.
+
+* Write benchmarks, especially ones that allow comparisons with C or Fortran.  
+  The LU decomposition [on my blog][] is a good starting point.
+  [on my blog]:http://quantile95.com/2008/10/31/ann-blas-bindings-for-haskell-version-06
+
+* Write a tutorial or blog post about the library.
+
 * The tests for solving triangular systems fail when an ill-conditioned 
   matrix gets generated.  I have investigated some of the failing cases
   in R, and have determined this isn't a bug.  Ideally, we should only
   test with well-conditioned systems. 
 
-* There is one remaining functional dependency in `Shaped x i | x -> i`.  We
-  cannot get rid of it since GHC 6.10.1 has not yet implemented equality
-  constraints in superclass contexts, which are required for MatrixShaped.
-  When GHC implements this feature, get rid of this last remaining
-  dependency.
+* Put better checks in swapElem for WriteTensor.
+
+* Better error reporting.  Change the "check" functions in BLAS.Internal
+  to be like "checkIsSquare".
+
+* The ReadTensor/WriteTensor functions for Banded matrices are
+  really terrible.  Re-write these to be more efficient.
 
 * Add getSum/sum.  Put in re-write rules from scale and add to axpy.  Here
- is the old code and re-write rules:
+  is the old code and re-write rules (from version 0.4):
  
     unsafeGetSum :: (BLAS1 e) => 
         e -> DVector s n e -> e -> DVector t n e -> IO (DVector r n e)
@@ -28,27 +50,72 @@
             return (unsafeCoerce s)
 
     {-# RULES
-    "scale/plus"   forall k l x y. plus (scale k x) (scale l y) = add k x l y
-    "scale1/plus"  forall k x y.   plus (scale k x) y = add k x 1 y
-    "scale2/plus"  forall k x y.   plus x (scale k y) = add 1 x k y
-
-    "scale/minus"  forall k l x y. minus (scale k x) (scale l y) = 
-                                       add k x (-l) y
-    "scale1/minus" forall k x y.   minus (scale k x) y = add k x (-1) y
-    "scale2/minus" forall k x y.   minus x (scale k y) = add 1 x (-k) y
+      "scale/plus"   forall k l x y. plus (scale k x) (scale l y) = add k x l y
+      "scale1/plus"  forall k x y.   plus (scale k x) y = add k x 1 y
+      "scale2/plus"  forall k x y.   plus x (scale k y) = add 1 x k y
+      
+      "scale/minus"  forall k l x y. minus (scale k x) (scale l y) = 
+                                         add k x (-l) y
+      "scale1/minus" forall k x y.   minus (scale k x) y = add k x (-1) y
+      "scale2/minus" forall k x y.   minus x (scale k y) = add 1 x (-k) y
       #-}
 
-* Add getSubmatrix function to MMatrix (?)
 
-* Add getDense/toDense to MMatrix/IMatrix
+Medium projects
+---------------
 
-* Put better checks in swapElem for WriteTensor
+* Looking at the HPC output, there are a few important code paths that 
+  aren't getting covered by the tests.  Specifically in the following 
+  functions: gemm, hemv, hemm, hbmm, trmv, trmm, etc.  These functions
+  are in Data.Matrix.Banded.IOBase and Data.Matrix.Dense.Base.
+  It is impossible to test these code paths using pure code.  You need to
+  use STMatrix and STVector.  I suggest stealing "Mondaic.hs" from
+  QuickCheck2 for this purpose.  
 
-* Add "Mult" class and get rid of <**> ?
+* There do not yet exist bindings for `ger`, `syr`, etc.  Add them.  The
+  bindings should only be for mutable types, and should have names like
+  `rank1UpdateMatrix`, `rankKUpdateHermMatrix`, etc.
 
-* Add "Solv" class and get rid of <\\> ?
+* Provide custum `unsafeGetRow`/`unsafeGetCol` functions for Herm Matrix,
+  Tri Matrix, etc. rather than using matrix multiplication, which is what
+  the default instance does.
 
-* Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
+* Provide Read/Write Tensor instances for Herm Matrix, Tri Matrix, 
+  Herm Banded, etc.
 
-* Optimization: The ReadTensor/WriteTensor functions for Banded matrices are
-really terrible.  Re-write these to be more efficient.
+* Write tests for STBanded.  The easiest way to do this is to mimic what is
+  done in the STMatrix tests.
+
+* Add getDenseMatrix/toDenseMatrix to MMatrix/IMatrix.  Ideally put in
+  customized versions for all 6 matrix types.
+
+* Optimization: Add `isRealType :: e -> Bool` and specilize hemm.
+
+* Add functions for arithmetic on banded matrices, and provide a `Num`
+  instance for Banded.
+
+
+Big Projects
+------------
+
+* Support for packed storage of symmetric and triangular matrices.  
+  Add a Data.Matrix.Packed class with a heirarchy similar to 
+  Data.Matrix.Banded. Provide MMatrix/IMatrix instances for 
+  Tri Packed and Herm Packed.
+
+* Data.Matrix.Dense.Base is really, really ugly.  Unfortunately, I didn't
+  figure out the best way to write these functions until after I had 
+  written all of the dense matrix ones.  The cleaner approach is the one
+  followed in Data.Matrix.Banded.{IOBase,Base}, where all of the functions
+  are determined in terms of IO types (instead of using the general type
+  classes).  Reorganize Data.Matrix.Dense.{Base,IOBase,STBase} to mimic
+  the style of Data.Matrix.Banded.
+
+Notes
+-----
+
+* There is one remaining functional dependency in `Shaped x i | x -> i`.  We
+  cannot get rid of it since GHC 6.10.1 has not yet implemented equality
+  constraints in superclass contexts, which are required for MatrixShaped.
+  When GHC implements this feature, get rid of this last remaining
+  dependency.

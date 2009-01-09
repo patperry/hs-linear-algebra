@@ -1,4 +1,34 @@
 
+Changes in 0.7:
+
+* Massive code cleanup.
+
+* Get rid of most functional dependencies in favor of type families.
+  There is one remaining functional dependency that cannot be gotten
+  rid of until GHC implements equality constraints in superclass
+  contexts.
+
+* Put the right superclass constraints in  ReadMatrix/ReadBanded.
+
+* Fix freeze/thaw functions.
+
+* Fix a bug in getting a row view of a banded matrix.
+
+* Make sure no NaNs/Infinities/Denormals are used when testing.
+
+* Documentation.
+
+* Export functions for writing QuickCheck tests.
+
+* Remove Perm and Diag.  These will be in the LAPACK bindings.
+
+* Get rid of "UnsafeIOToM" type class.
+
+* Lots of INLINE everywhere.  This should improve performance.
+
+* Switch to autoconf for build system.
+
+
 Changes in 0.6:
 
 * Massive overhaul of the types.  It is now possible to do mutable operations
