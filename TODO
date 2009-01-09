@@ -1,4 +1,9 @@
 
+* The tests for solving triangular systems fail when an ill-conditioned 
+  matrix gets generated.  I have investigated some of the failing cases
+  in R, and have determined this isn't a bug.  Ideally, we should only
+  test with well-conditioned systems. 
+
 * Add getSum/sum.  Put in re-write rules from scale and add to axpy.  Here
  is the old code and re-write rules:
  
@@ -27,44 +32,17 @@
     "scale2/minus" forall k x y.   minus x (scale k y) = add 1 x (-k) y
       #-}
 
-* Matrix creation functions are inconsistent in phantom types.  Some have
-  pairs, some do not.
-
-* Add getSubmatrix function to MMatrix.
+* Add getSubmatrix function to MMatrix (?)
 
 * Add getDense/toDense to MMatrix/IMatrix
 
 * Put better checks in swapElem for WriteTensor
 
-* STDiag and IODiag instead of current type?
-
 * Add "Mult" class and get rid of <**> ?
 
 * Add "Solv" class and get rid of <\\> ?
 
-* lazy getRows/getCols needs to be re-implemented
-
 * Optimization: Put 'isReal' in Elem class and specialize swap, copy, axpy, dot.
-
-* Optimization: better "swapElem" for vector and matrix
-
-* Optimization: Put vector/matrix fields in the typeclass and inline them.  
-Implementation for IOVector:
-
-    fptrOfVector (DV f _ _ _ _) = f
-    {-# INLINE fptrOfVector #-}
-
-    offsetOfVector (DV _ o _ _ _) = o
-    {-# INLINE offsetOfVector #-}
-    
-    dim (DV _ _ n _ _) = n
-    {-# INLINE dim #-}
-    
-    stride (DV _ _ _ s _) = s
-    {-# INLINE stride #-}
-    
-    isConj (DV _ _ _ _ c) = c
-    {-# INLINE isConj #-}
 
 * Optimization: The ReadTensor/WriteTensor functions for Banded matrices are
 really terrible.  Re-write these to be more efficient.
