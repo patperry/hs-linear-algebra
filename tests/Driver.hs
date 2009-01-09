@@ -51,12 +51,15 @@ import Debug.Trace
 import System.IO
 import System.Random
 
+import Test.Vector.Dense()
+import Test.Matrix.Dense()
+import Test.Matrix.Banded()
+
 import Test.QuickCheck hiding ( vector )
+import qualified Test.QuickCheck.BLAS as Test
 
 import Text.Printf
 import Text.Show.Functions
-
-import Test.Matrix
 
 #ifdef COMPLEX
 field = "Complex Double"
@@ -80,11 +83,7 @@ instance Arbitrary Natural where
 
 newtype Natural2 = Nat2 (Int,Int) deriving (Eq,Show)
 instance Arbitrary Natural2 where
-    arbitrary = matrixSized $ \s -> do
-        (Nat m) <- resize s arbitrary
-        (Nat n) <- resize s arbitrary
-        return $ Nat2 (m,n)
-        
+    arbitrary = liftM Nat2 Test.shape
     coarbitrary = undefined
 
 data Index = Index Int Int deriving (Eq,Show)
@@ -98,10 +97,11 @@ instance Arbitrary Index where
 
 data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
 instance Arbitrary Index2 where
-    arbitrary = matrixSized $ \s -> do
-        (Index i m) <- resize s arbitrary
-        (Index j n) <- resize s arbitrary
-        return $ Index2 (i,j) (m,n)
+    arbitrary = do
+        (m',n') <- Test.shape
+        i <- choose (0,m')
+        j <- choose (0,n')
+        return $ Index2 (i,j) (m'+1,n'+1)
     
     coarbitrary = undefined
 

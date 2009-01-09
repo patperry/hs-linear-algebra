@@ -16,11 +16,8 @@ module Test.Matrix.Herm.Banded (
 
 import Control.Monad ( liftM, replicateM )
 
-import Test.QuickCheck hiding ( vector )
-import qualified Test.QuickCheck as QC
-import Test.Vector.Dense ( vector )
-import Test.Matrix ( matrixSized )
-import Test.Matrix.Dense ( matrix )
+import Test.QuickCheck hiding ( Test.vector )
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conjugate )
 
@@ -43,22 +40,18 @@ hermBanded n k
     | k < 0 = 
         error $ "hermBanded: k must be non-negative"
     | k == 0 = do
-        d <- liftM toElems (QC.vector n)
+        d <- Test.realElements n
         return $ listsBanded (n,n) (0,0) [d]
     | otherwise = do
         a <- hermBanded n (k-1)
         let (_,_,ds) = listsFromBanded a
         
-        d <- QC.vector (n-k)
+        d <- Test.elements (n-k)
         let d'  = map conjugate d
             pad = replicate k 0
             ds' = [pad ++ d] ++ ds ++ [d' ++ pad]
 
         return $ listsBanded (n,n) (k,k) ds'
-        
-  where
-    toElems :: Elem e => [Double] -> [e]
-    toElems = map fromReal
 
 data HermBanded n e =
     HermBanded (Herm Banded (n,n) e)
@@ -66,14 +59,14 @@ data HermBanded n e =
     deriving Show
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBanded n e) where
-    arbitrary = matrixSized $ \s -> do
-        n <- choose (0,s)
+    arbitrary = do
+        n <- liftM fst Test.shape
         k <- if n == 0 then return 0 else choose (0,n-1)
         l <- if n == 0 then return 0 else choose (0,n-1)
             
         a <- hermBanded n k
             
-        junk <- replicateM l $ QC.vector n
+        junk <- replicateM l $ Test.elements n
         let (_,_,ds) = listsFromBanded a
             (u ,b ) = (Upper, listsBanded (n,n) (l,k) $ junk ++ (drop k ds))
             (u',b') = (Lower, listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk)
@@ -97,7 +90,7 @@ data HermBandedMV n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMV n e) where
     arbitrary = do
         (HermBanded h a) <- arbitrary
-        x <- vector (numCols a)
+        x <- Test.vector (numCols a)
         return $ HermBandedMV h a x
 
     coarbitrary = undefined
@@ -110,10 +103,10 @@ data HermBandedMM m n e =
     deriving Show
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMM m n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         (HermBanded a h) <- arbitrary
-        n <- choose (0,s)
-        b <- matrix (numCols h,n)
+        (_,n) <- Test.shape
+        b <- Test.matrix (numCols h,n)
 
         return $ HermBandedMM a h b
             

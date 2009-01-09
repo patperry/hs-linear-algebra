@@ -96,14 +96,8 @@ library
                             Data.Vector.Dense.ST
                             Data.Vector.Dense.STBase
 
-                        Test.Vector.Dense
-                        Test.Matrix
-                        Test.Matrix.Banded
-                        Test.Matrix.Dense
-                        Test.Matrix.Herm.Banded
-                        Test.Matrix.Herm.Dense
-                        Test.Matrix.Tri.Banded
-                        Test.Matrix.Tri.Dense
+                        Test.QuickCheck.BLAS
+                        Test.QuickCheck.BLASBase
 
     other-modules:      
                         BLAS.Types

@@ -22,55 +22,20 @@ module Test.Matrix.Dense (
     MatrixMMPair(..)
     ) where
 
-import Test.QuickCheck hiding ( vector )
-import qualified Test.QuickCheck as QC
-
-import Test.Vector.Dense ( vector )
-import Test.Matrix
+import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLASBase( SubMatrix(..) )
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense ( Vector, dim )
-import Data.Matrix.Dense hiding ( matrix )
+import Data.Matrix.Dense hiding ( Test.matrix )
 import Data.Elem.BLAS ( BLAS3 )
 
-data SubMatrix m n e = 
-    SubMatrix (Matrix (m,n) e) 
-              (Int,Int) 
-              (Int,Int) 
-    deriving (Show)
-
 matrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
-matrix mn = frequency [ (3, rawMatrix mn)  
-                      , (2, hermedMatrix mn)
-                      , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
-                                 return $ submatrix a ij mn)
-                      ]
+matrix = Test.matrix
 
-rawMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
-rawMatrix (m,n) = do
-    es <- QC.vector (m*n)
-    return $ listMatrix (m,n) es
-
-hermedMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
-hermedMatrix (m,n) = do
-    x <- matrix (n,m)
-    return $ (herm x)
-
-subMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (SubMatrix m n e)
-subMatrix (m,n) = do
-    i <- choose (0,5)
-    j <- choose (0,5)
-    e <- choose (0,5)
-    f <- choose (0,5)
-    x <- matrix (i+m+e, j+n+f)
-
-    return $ SubMatrix x (i,j) (m,n)
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (Matrix (m,n) e) where
-    arbitrary = matrixSized $ \k -> do
-        m <- choose (0,k)
-        n <- choose (0,k)
-        matrix (m,n)
-        
+    arbitrary   = Test.matrix =<< Test.shape
     coarbitrary = undefined
 
 data MatrixAt m n e =
@@ -78,25 +43,17 @@ data MatrixAt m n e =
              (Int,Int)
     deriving (Show)
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixAt m n e) where
-    arbitrary = matrixSized $ \k -> do
-        m <- choose (0,k) >>= return . (+1)
-        n <- choose (0,k) >>= return . (+1)
-        i <- choose (0,m-1)
-        j <- choose (0,n-1)
-        a <- matrix (m,n)
+    arbitrary = do
+        (m',n') <- Test.shape
+        i <- choose (0,m')
+        j <- choose (0,n')
+        a <- Test.matrix (m'+1,n'+1)
         return $ MatrixAt a (i,j)
         
     coarbitrary = undefined
 
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (SubMatrix m n e) where
-    arbitrary = matrixSized $ \k -> do
-        m <- choose (0,k)
-        n <- choose (0,k)
-        (SubMatrix a ij mn) <- subMatrix (m,n)
-        return $ SubMatrix a ij mn
-        
-    coarbitrary = undefined
+
         
 data MatrixPair m n e = 
     MatrixPair (Matrix (m,n) e) 
@@ -106,7 +63,7 @@ data MatrixPair m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixPair m n e) where
     arbitrary = do
         a <- arbitrary
-        b <- matrix (shape a)
+        b <- Test.matrix (shape a)
         return $ MatrixPair a b
         
     coarbitrary = undefined
@@ -119,7 +76,7 @@ data MatrixMV m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMV m n e) where
     arbitrary = do
         a <- arbitrary
-        x <- vector (numCols a)
+        x <- Test.vector (numCols a)
         return $ MatrixMV a x
             
     coarbitrary = undefined
@@ -133,7 +90,7 @@ data MatrixMVPair m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMVPair m n e) where
     arbitrary = do
         (MatrixMV a x) <- arbitrary
-        y <- vector (dim x)
+        y <- Test.vector (dim x)
         return $ MatrixMVPair a x y
         
     coarbitrary = undefined
@@ -145,10 +102,10 @@ data MatrixMM m n k e =
     deriving (Show)
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMM m n k e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         a <- arbitrary
-        n <- choose (0,s)
-        b <- matrix (numCols a, n)
+        (_,n) <- Test.shape
+        b <- Test.matrix (numCols a, n)
         return $ MatrixMM a b
             
     coarbitrary = undefined
@@ -162,7 +119,7 @@ data MatrixMMPair m n k e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMMPair m n k e) where
     arbitrary = do
         (MatrixMM a b) <- arbitrary
-        c <- matrix (shape b)
+        c <- Test.matrix (shape b)
         return $ MatrixMMPair a b c
         
     coarbitrary = undefined

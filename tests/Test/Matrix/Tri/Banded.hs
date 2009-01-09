@@ -19,11 +19,9 @@ module Test.Matrix.Tri.Banded (
 
 import Control.Monad ( replicateM )
 
-import Test.QuickCheck hiding ( vector )
+import Test.QuickCheck hiding ( Test.vector )
 import qualified Test.QuickCheck as QC
-import Test.Vector.Dense ( vector )
-import Test.Matrix.Dense ( matrix )
-import Test.Matrix ( matrixSized )
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
@@ -38,13 +36,13 @@ import Unsafe.Coerce
 triBanded :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
-    d <- QC.vector n
+    d <- Test.elements n
     let (_,_,(_:ds)) = listsFromBanded a
     return $ listsBanded (n,n) (0,k) (d:ds)
 
 triBanded Lower NonUnit n k = do
     a <- triBanded Lower Unit n k
-    d <- QC.vector n
+    d <- Test.elements n
     let (_,_,ds) = listsFromBanded a
         ds' = (init ds) ++ [d]
     return $ listsBanded (n,n) (k,0) ds'
@@ -56,7 +54,7 @@ triBanded Upper Unit n k = do
     a <- triBanded Upper Unit n (k-1)
     let (_,_,ds) = listsFromBanded a
     
-    d <- QC.vector (n-k) >>= \xs -> return $ xs ++ replicate k 0
+    d <- Test.elements (n-k) >>= \xs -> return $ xs ++ replicate k 0
     
     return $ listsBanded (n,n) (0,k) $ ds ++ [d]
     
@@ -64,7 +62,7 @@ triBanded Lower Unit n k = do
     a <- triBanded Lower Unit n (k-1)
     let (_,_,ds) = listsFromBanded a
 
-    d <- QC.vector (n-k) >>= \xs -> return $ replicate k 0 ++ xs
+    d <- Test.elements (n-k) >>= \xs -> return $ replicate k 0 ++ xs
     
     return $ listsBanded (n,n) (k,0) $ [d] ++ ds
     
@@ -73,16 +71,16 @@ data TriBanded n e =
     TriBanded (Tri Banded (n,n) e) (Banded (n,n) e) deriving Show
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBanded n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
-        n <- choose (0,s)
-        k <- if n == 0 then return 0 else choose (0,n-1)
+        (m,n) <- Test.shape
+        (_,k) <- Test.bandwidths (m,n)
         a <- triBanded u d n k
 
         l    <- if n == 0 then return 0 else choose (0,n-1)
-        junk <- replicateM l $ QC.vector n
-        diagJunk <- QC.vector n
+        junk <- replicateM l $ Test.elements n
+        diagJunk <- Test.elements n
         let (_,_,ds) = listsFromBanded a
             t = triFromBase u d $ case (u,d) of 
                     (Upper,NonUnit) -> 
@@ -105,20 +103,19 @@ data TriBandedMV n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
-        x <- vector (numCols t)
+        x <- Test.vector (numCols t)
         return $ TriBandedMV t a x
         
-    coarbitrary (TriBandedMV t a x) =
-        coarbitrary (TriBanded t a, x)
+    coarbitrary = undefined
         
 data TriBandedMM m n e = 
     TriBandedMM (Tri Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving Show
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMM m n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         (TriBanded t a) <- arbitrary
-        n <- choose (0,s)
-        b <- matrix (numCols t, n)
+        (_,n) <- Test.shape
+        b <- Test.matrix (numCols t, n)
         return $ TriBandedMM t a b
             
     coarbitrary = undefined
@@ -132,7 +129,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSV n e) where
         if any (== 0) (elems $ diagBanded a 0)
             then arbitrary
             else do
-                x <- vector (numCols t)
+                x <- Test.vector (numCols t)
                 let y = t <*> x
                 return (TriBandedSV t y)
         
@@ -144,11 +141,10 @@ data TriBandedSM m n e =
     deriving (Show)
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSM m n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         (TriBandedSV t _) <- arbitrary
-
-        n <- choose (0, s)
-        a <- matrix (numCols t, n)
+        (_,n) <- Test.shape
+        a <- Test.matrix (numCols t, n)
         
         let b = t <**> a
         return (TriBandedSM t b)

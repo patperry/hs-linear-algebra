@@ -14,23 +14,22 @@ module Test.Matrix.Herm.Dense(
     HermMatrixMM(..),
     ) where
 
-import Test.QuickCheck hiding ( vector )
-import qualified Test.QuickCheck as QC
-import Test.Vector.Dense ( vector )
-import Test.Matrix ( matrixSized )
-import Test.Matrix.Dense ( matrix )
+import Control.Monad( liftM )
+
+import Test.QuickCheck hiding ( Test.vector )
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Elem.BLAS ( BLAS3 )
 
-import Data.Vector.Dense hiding ( vector )
-import Data.Matrix.Dense hiding ( matrix )
+import Data.Vector.Dense hiding ( Test.vector )
+import Data.Matrix.Dense hiding ( Test.matrix )
 import Data.Matrix.Herm
 
 
 
 hermMatrix :: (BLAS3 e, Arbitrary e) => Int -> Gen (Matrix (n,n) e)
 hermMatrix n  = do
-    a <- matrix (n,n)
+    a <- Test.matrix (n,n)
     let h = (a + herm a)
     elements [ h, herm h ]
 
@@ -41,11 +40,11 @@ data HermMatrix n e =
     deriving Show
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrix n e) where
-    arbitrary = matrixSized $ \k -> do
-        n <- choose (0,k)
+    arbitrary = do
+        n <- liftM fst Test.shape
         a <- hermMatrix n
         
-        junk <- QC.vector (n*n)
+        junk <- Test.elements (n*n)
         let (u ,b ) = (Upper, a // zip (filter (uncurry (>)) $ indices a) junk)
             (u',b') = (Lower, a // zip (filter (uncurry (<)) $ indices a) junk)
 
@@ -68,7 +67,7 @@ data HermMatrixMV n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMV n e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
-        x <- vector (numCols a)
+        x <- Test.vector (numCols a)
         return $ HermMatrixMV h a x
         
     coarbitrary = undefined
@@ -81,10 +80,10 @@ data HermMatrixMM m n e =
     deriving Show
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMM m n e) where
-    arbitrary = matrixSized $ \k -> do
+    arbitrary = do
         (HermMatrix h a) <- arbitrary
-        n <- choose (0,k)
-        b <- matrix (numCols a,n)
+        n <- liftM fst Test.shape
+        b <- Test.matrix (numCols a,n)
         return $ HermMatrixMM h a b
             
     coarbitrary = undefined

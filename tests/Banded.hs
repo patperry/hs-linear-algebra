@@ -17,7 +17,6 @@ import Data.Matrix.Dense ( Matrix, identityMatrix )
 import Data.Matrix.Banded
 import Data.Matrix.Banded.Base( listsFromBanded )
 
-import Test.Matrix
 import Test.Matrix.Banded hiding ( banded )
         
 type V = Vector Int E

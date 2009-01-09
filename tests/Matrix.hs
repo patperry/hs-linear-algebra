@@ -280,7 +280,7 @@ tests_Matrix =
 
 
 assocsEq :: [((Int,Int), E)] -> [((Int,Int), E)] -> Bool
-assocsEq ies ies' = ordered ies ~== ordered ies'
+assocsEq ies ies' = ordered ies === ordered ies'
   where
     ordered = sortAssocs . nubAssocs
     nubAssocs = reverse . nubBy ((==) `on` fst) . reverse      

@@ -114,23 +114,30 @@ maybeBandedFromIOMatrix :: (Int,Int)
                    -> IOMatrix np e
                    -> Maybe (IOBanded np' e)
 maybeBandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
-    | h         = Nothing
+    | m < 0 || n < 0 =
+        err "dimensions must be non-negative."
+    | kl < 0 =
+        err "lower bandwdth must be non-negative."
+    | m /= 0 && kl >= m =
+        err "lower bandwidth must be less than m."
+    | ku < 0 =
+        err "upper bandwidth must be non-negative."
+    | n /= 0 && ku >= n =
+        err "upper bandwidth must be less than n."
+    | m' /= kl+1+ku =
+        err $ "number of rows in the underlying matrix"
+              ++ " must be equal to number of diagonals."
+    | n' /= n =
+        err $ "numbers of columns must be equal"
+            ++ " to the number of columns in the underlying matrix."
+    | h =
+        Nothing    
     | otherwise =
-         case undefined of
-             _ | kl < 0 ->
-                  error $ "maybeBandedFromMatrix:"
-                        ++ " lower bandwidth must be non-negative"
-             _ | ku < 0 ->
-                  error $ "maybeBandedFromMatrix:"
-                        ++ " upper bandwidth must be non-negative"
-             _ | m' /= kl+1+ku ->
-                  error $ "maybeBandedFromMatrix:"
-                        ++ " number of rows must be equal to number of diagonals"
-             _ | n' /= n ->
-                  error $ "maybeBandedFromMatrix:"
-                        ++ " numbers of columns must be equal"
-             _ ->
-                  Just $ IOBanded f p m n kl ku l False
+        Just $ IOBanded f p m n kl ku l False
+  where
+    err s = 
+      error $ "maybeBandedFromMatrix " ++ show (m,n) ++ " " ++ show (kl,ku) 
+            ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
 bandwidthsIOBanded :: IOBanded np e -> (Int,Int)
 bandwidthsIOBanded a =

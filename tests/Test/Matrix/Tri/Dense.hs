@@ -17,14 +17,12 @@ module Test.Matrix.Tri.Dense (
     ) where
 
 import Data.Ix ( range )
+import Control.Monad( liftM )
 
-import Test.QuickCheck hiding ( vector )
-import qualified Test.QuickCheck as QC
-import Test.Vector.Dense ( vector )
-import qualified Test.Matrix.Dense as Test
-import Test.Matrix ( matrixSized )
+import Test.QuickCheck hiding ( Test.vector )
+import qualified Test.QuickCheck.BLAS as Test
 
-import Data.Vector.Dense hiding ( vector )
+import Data.Vector.Dense hiding ( Test.vector )
 import Data.Matrix.Dense
 import Data.Elem.BLAS ( BLAS3 )
 
@@ -36,8 +34,8 @@ triMatrix :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen 
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
-        es <- QC.vector (m*n)
-        let a = matrix (m,n) $ zip ijs es
+        es <- Test.elements (m*n)
+        let a  = matrix (m,n) $ zip ijs es
             a' = case d of
                     NonUnit -> a
                     Unit    -> a // [ ((i,i),1) | i <- [0..(mn-1)] ]
@@ -51,21 +49,20 @@ isTriIndex Upper Unit    (i,j) = i <  j
 isTriIndex Lower NonUnit (i,j) = i >= j
 isTriIndex Lower Unit    (i,j) = i >  j
 
--- | A triangular matrix and an equivalent dense matrix
+-- | A triangular Test.matrix and an equivalent dense Test.matrix
 data TriMatrix m n e = 
     TriMatrix (Tri Matrix (m,n) e) 
               (Matrix (m,n) e) 
     deriving Show
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrix m n e) where
-    arbitrary = matrixSized $ \k -> do
+    arbitrary = do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
-        m <- choose (0,k)
-        n <- choose (0,k)
+        (m,n) <- Test.shape
         a <- triMatrix u d (m,n)
         
-        junk <- QC.vector (m*n)
+        junk <- Test.elements (m*n)
         let ijs = [ (i,j) | i <- [0..(m-1)]
                           , j <- [0..(n-1)]
                           , (not . (isTriIndex u d)) (i,j) ]
@@ -78,7 +75,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrix m n e) where
     coarbitrary = undefined
 
 
--- | A triangular matrix, and equivalent dense matrix, and a vector in
+-- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.vector in
 -- their domain.        
 data TriMatrixMV m n e = 
     TriMatrixMV (Tri Matrix (m,n) e) 
@@ -89,12 +86,12 @@ data TriMatrixMV m n e =
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
-        x <- vector (numCols a)
+        x <- Test.vector (numCols a)
         return $ TriMatrixMV t a x
 
     coarbitrary = undefined
 
--- | A triangular matrix, and equivalent dense matrix, and a matrix in
+-- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.matrix in
 -- their domain.        
 data TriMatrixMM m k n e = 
     TriMatrixMM (Tri Matrix (m,k) e) 
@@ -103,15 +100,15 @@ data TriMatrixMM m k n e =
     deriving Show
 
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMM m k n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary =  do
         (TriMatrix t a) <- arbitrary
-        n <- choose (0,s)
+        n <- liftM fst Test.shape
         b <- Test.matrix (numCols a, n)
         return $ TriMatrixMM t a b
             
     coarbitrary = undefined
 
--- | A triangular matrix and a vector in its range
+-- | A triangular Test.matrix and a Test.vector in its range
 data TriMatrixSV m n e = 
     TriMatrixSV (Tri Matrix (m,n) e) 
                 (Vector m e) 
@@ -123,28 +120,30 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV m n e) where
         if any (== 0) (elems $ diag a 0)
             then arbitrary
             else do
-                x <- vector (numCols a)
-                let y = a <*> x
+                x <- Test.vector (numCols a)
+                let y  = a <*> x
                 return (TriMatrixSV t y)
         
     coarbitrary = undefined
 
--- | A triangular matrix and a matrix in its range
+-- | A triangular Test.matrix and a Test.matrix in its range
 data TriMatrixSM m k n e = 
     TriMatrixSM (Tri Matrix (m,k) e) 
                 (Matrix (m,n) e) 
     deriving Show
     
 instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m k n e) where
-    arbitrary = matrixSized $ \s -> do
+    arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)
             then arbitrary
             else do
-                n <- choose (0, s)
+                n <- liftM fst Test.shape
                 b <- Test.matrix (numCols a, n)
-                let c = a <**> b
+                let c  = a <**> b
                 return (TriMatrixSM t c)
         
     coarbitrary = undefined
-    
+
+normF :: (BLAS3 e) => Matrix (n,p) e -> Double
+normF = sum . map norm2 . cols
