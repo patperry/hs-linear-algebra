@@ -21,7 +21,6 @@ module Test.QuickCheck.BLAS (
     
     -- ** Matrices
     shape,
-    bandwidth,
     bandwidths,
     matrix,
     banded,
