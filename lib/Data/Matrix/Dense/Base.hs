@@ -100,7 +100,11 @@ class (HasVectorView a, Elem e, MatrixShaped a e
     
     -- | Possible create a matrix view of the vector.  This will fail if
     -- the stride of the vector is not @1@ or the vector is conjugated.
-    maybeViewVectorAsMatrix :: (Int,Int) -> VectorView a np e -> Maybe (a (n,p) e)
+    -- An error will be called if the vector does not have the same number
+    -- of elements as the desired matrix.
+    maybeViewVectorAsMatrix :: (Int,Int) 
+                            -> VectorView a np e 
+                            -> Maybe (a (n,p) e)
     
     -- | Unsafe cast from a matrix to an 'IOMatrix'.
     unsafeMatrixToIOMatrix :: a (n,p) e -> IOMatrix (n,p) e

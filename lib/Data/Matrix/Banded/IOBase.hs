@@ -103,17 +103,17 @@ withIOBandedElem a (i,j) f =
         f $ p `advancePtr` (indexIOBanded a (i,j))
 {-# INLINE withIOBandedElem #-}
 
-matrixIOBanded :: IOBanded np e -> IOMatrix np' e
-matrixIOBanded (IOBanded f p m n kl ku l h) =
-    let n' = if h then m else n
-    in IOMatrix f p (kl+1+ku) n' l False
-{-# INLINE matrixIOBanded #-}
+maybeMatrixStorageFromIOBanded :: IOBanded (n,p) e -> Maybe (IOMatrix (k,p) e)
+maybeMatrixStorageFromIOBanded (IOBanded f p _ n kl ku l h)
+    | h         = Nothing
+    | otherwise = Just $ IOMatrix f p (kl+1+ku) n l False
+{-# INLINE maybeMatrixStorageFromIOBanded #-}
 
-maybeBandedFromIOMatrix :: (Int,Int)
+maybeIOBandedFromMatrixStorage :: (Int,Int)
                    -> (Int,Int)
                    -> IOMatrix np e
                    -> Maybe (IOBanded np' e)
-maybeBandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
+maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix f p m' n' l h)
     | m < 0 || n < 0 =
         err "dimensions must be non-negative."
     | kl < 0 =
@@ -136,7 +136,7 @@ maybeBandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
         Just $ IOBanded f p m n kl ku l False
   where
     err s = 
-      error $ "maybeBandedFromMatrix " ++ show (m,n) ++ " " ++ show (kl,ku) 
+      error $ "maybeBandedFromMatrixStorage " ++ show (m,n) ++ " " ++ show (kl,ku) 
             ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
 viewVectorAsIOBanded :: (Int,Int) -> IOVector k e -> IOBanded (n,p) e

@@ -15,7 +15,7 @@ module Data.Matrix.Banded (
 
     -- * Overloaded interface for banded matrices
     BaseBanded( numLower, numUpper, bandwidths
-              , matrixBanded, maybeBandedFromMatrix, coerceBanded ),
+              , maybeMatrixStorageFromBanded, maybeBandedFromMatrixStorage, coerceBanded ),
 
     -- * Overloaded interface for matrices
     module Data.Matrix.Class,

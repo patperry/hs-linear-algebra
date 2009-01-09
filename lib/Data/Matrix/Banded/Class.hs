@@ -15,7 +15,7 @@
 module Data.Matrix.Banded.Class (
     -- * Banded matrix type classes
     BaseBanded( numLower, numUpper, bandwidths, ldaBanded, isHermBanded
-              , matrixBanded, maybeBandedFromMatrix, coerceBanded ),
+              , maybeMatrixStorageFromBanded, maybeBandedFromMatrixStorage, coerceBanded ),
     ReadBanded,
     WriteBanded,
 

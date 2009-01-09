@@ -106,7 +106,19 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
     {-# INLINE coerceBanded #-}
 
     -- | Get a matrix with the underlying storage of the banded matrix.
-    matrixBanded :: a (n,p) e -> MatrixStorage a (k,l) e
+    -- This will fail if the banded matrix is hermed.
+    maybeMatrixStorageFromBanded :: a (n,p) e -> Maybe (MatrixStorage a (k,p) e)
+
+    -- | Given a shape and bandwidths, possibly view the elements stored
+    -- in a dense matrix as a banded matrix.  This will if the matrix
+    -- storage is hermed.  An error will be called if the number of rows
+    -- in the matrix does not equal the desired number of diagonals or
+    -- if the number of columns in the matrix does not equal the desired
+    -- number of columns.
+    maybeBandedFromMatrixStorage :: (Int,Int)
+                                 -> (Int,Int)
+                                 -> MatrixStorage a (k,p) e
+                                 -> Maybe (a (n,p) e)
 
     -- | View a vector as a banded matrix of the given shape.  The vector
     -- must have length equal to one of the specified dimensions.
@@ -122,16 +134,6 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
     -- | If the banded matrix has only a single diagonal, return a view
     -- into that diagonal.  Otherwise, return @Nothing@.
     maybeViewBandedAsVector :: a (n,p) e -> Maybe (VectorView a k e)
-
-    -- | Given a shape and bandwidths, possibly view the elements stored
-    -- in a dense matrix as a banded matrix.  This will fail unless
-    -- the dense matrix has @isHermMatrix@ to be false, has the same
-    -- number of columns as the desired banded matrix, and has number of
-    -- rows equal to the desired number of diagonals.
-    maybeBandedFromMatrix :: (Int,Int)
-                          -> (Int,Int)
-                          -> MatrixStorage a (k,p) e
-                          -> Maybe (a (n,p) e)
 
     unsafeDiagViewBanded :: a (n,p) e -> Int -> VectorView a k e
     unsafeRowViewBanded :: a (n,p) e -> Int -> (Int, VectorView a k e, Int)
@@ -425,10 +427,10 @@ instance (Elem e) => BaseBanded IOBanded e where
     {-# INLINE ldaBanded #-}
     isHermBanded = IO.isHermIOBanded
     {-# INLINE isHermBanded #-}
-    matrixBanded = IO.matrixIOBanded
-    {-# INLINE matrixBanded #-}
-    maybeBandedFromMatrix = IO.maybeBandedFromIOMatrix
-    {-# INLINE maybeBandedFromMatrix #-}
+    maybeMatrixStorageFromBanded = IO.maybeMatrixStorageFromIOBanded
+    {-# INLINE maybeMatrixStorageFromBanded #-}
+    maybeBandedFromMatrixStorage = IO.maybeIOBandedFromMatrixStorage
+    {-# INLINE maybeBandedFromMatrixStorage #-}
     viewVectorAsBanded = IO.viewVectorAsIOBanded
     {-# INLINE viewVectorAsBanded #-}
     maybeViewBandedAsVector = IO.maybeViewIOBandedAsVector
@@ -652,11 +654,11 @@ instance (Elem e) => BaseBanded Banded e where
     {-# INLINE ldaBanded #-}
     isHermBanded (Banded a) = IO.isHermIOBanded a
     {-# INLINE isHermBanded #-}
-    matrixBanded (Banded a) = Matrix $ IO.matrixIOBanded a
-    {-# INLINE matrixBanded #-}
-    maybeBandedFromMatrix mn kl (Matrix a) = 
-        liftM Banded $ IO.maybeBandedFromIOMatrix mn kl a
-    {-# INLINE maybeBandedFromMatrix #-}
+    maybeMatrixStorageFromBanded (Banded a) = liftM Matrix $ IO.maybeMatrixStorageFromIOBanded a
+    {-# INLINE maybeMatrixStorageFromBanded #-}
+    maybeBandedFromMatrixStorage mn kl (Matrix a) = 
+        liftM Banded $ IO.maybeIOBandedFromMatrixStorage mn kl a
+    {-# INLINE maybeBandedFromMatrixStorage #-}
     viewVectorAsBanded mn (Vector x) = Banded $ IO.viewVectorAsIOBanded mn x
     {-# INLINE viewVectorAsBanded #-}
     maybeViewBandedAsVector (Banded a) = 

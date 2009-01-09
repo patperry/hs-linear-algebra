@@ -21,7 +21,7 @@ import qualified Test.QuickCheck as QC
 import Data.Vector.Dense( Vector, listVector, subvectorWithStride,
     conj )
 import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix )
-import Data.Matrix.Banded( Banded, maybeBandedFromMatrix )
+import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
 import Data.Elem.BLAS
 
 -- | Element types that can be tested with QuickCheck properties.
@@ -180,7 +180,7 @@ rawBanded (m,n) (kl,ku) =
                        , (1, rawSubMatrix (bw,n) >>= \(SubMatrix b ij _) ->
                                  return $ submatrix b ij (bw,n))     
                        ]
-        return $ fromJust (maybeBandedFromMatrix (m,n) (kl,ku) a)
+        return $ fromJust (maybeBandedFromMatrixStorage (m,n) (kl,ku) a)
 
 hermedBanded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)

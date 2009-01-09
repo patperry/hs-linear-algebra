@@ -113,11 +113,12 @@ instance (Elem e) => BaseBanded (STBanded s) e where
     {-# INLINE ldaBanded #-}
     isHermBanded (STBanded a) = IO.isHermIOBanded a
     {-# INLINE isHermBanded #-}
-    matrixBanded (STBanded a) = STMatrix $ IO.matrixIOBanded a
-    {-# INLINE matrixBanded #-}
-    maybeBandedFromMatrix mn kl (STMatrix a) = 
-        liftM STBanded $ IO.maybeBandedFromIOMatrix mn kl a
-    {-# INLINE maybeBandedFromMatrix #-}
+    maybeMatrixStorageFromBanded (STBanded a) = 
+        liftM STMatrix $ IO.maybeMatrixStorageFromIOBanded a
+    {-# INLINE maybeMatrixStorageFromBanded #-}
+    maybeBandedFromMatrixStorage mn kl (STMatrix a) = 
+        liftM STBanded $ IO.maybeIOBandedFromMatrixStorage mn kl a
+    {-# INLINE maybeBandedFromMatrixStorage #-}
     viewVectorAsBanded mn (STVector x) = STBanded $ IO.viewVectorAsIOBanded mn x
     {-# INLINE viewVectorAsBanded #-}
     maybeViewBandedAsVector (STBanded a) = 
