@@ -108,6 +108,9 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
     -- | Get a matrix with the underlying storage of the banded matrix.
     matrixBanded :: a (n,p) e -> MatrixStorage a (k,l) e
 
+    -- | View a vector as a banded matrix of the given shape.
+    --viewVectorAsBanded :: (Int,Int) -> VectorView a k e -> a (n,p) e
+
     -- | Given a shape and bandwidths, possibly view the elements stored
     -- in a dense matrix as a banded matrix.  This will fail unless
     -- the dense matrix has @isHermMatrix@ to be false, has the same

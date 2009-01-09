@@ -60,6 +60,11 @@ module Data.Matrix.Dense.Class (
     rowView,
     colView,
     diagView,
+
+    -- * Conversions between matrices and vectors
+    maybeMatrixToVectorView,
+    maybeViewVectorAsRow,
+    maybeViewVectorAsCol,  
     
     -- * Getting diagonals
     getDiag,

@@ -124,37 +124,37 @@ unsafeDiagViewIOMatrix (IOMatrix f p m n l h) i =
     in IOVector f p' k s h
 {-# INLINE unsafeDiagViewIOMatrix #-}
 
-maybeViewAsRowIOMatrix :: (Elem e) => IOVector p e -> Maybe (IOMatrix p1 e)
-maybeViewAsRowIOMatrix (IOVector f p n s c)
+maybeViewVectorAsRowIOMatrix :: (Elem e) => IOVector p e -> Maybe (IOMatrix p1 e)
+maybeViewVectorAsRowIOMatrix (IOVector f p n s c)
     | c && (s == 1) =
         Just $ IOMatrix f p 1 n (max 1 n) True
     | not c =
         Just $ IOMatrix f p 1 n s         False
     | otherwise =
         Nothing
-{-# INLINE maybeViewAsRowIOMatrix #-}
+{-# INLINE maybeViewVectorAsRowIOMatrix #-}
 
-maybeViewAsColIOMatrix :: (Elem e) => IOVector n e -> Maybe (IOMatrix n1 e)
-maybeViewAsColIOMatrix (IOVector f p n s c)
+maybeViewVectorAsColIOMatrix :: (Elem e) => IOVector n e -> Maybe (IOMatrix n1 e)
+maybeViewVectorAsColIOMatrix (IOVector f p n s c)
     | c =
         Just $ IOMatrix f p n 1 s         True
     | s == 1 =
         Just $ IOMatrix f p n 1 (max 1 n) False
     | otherwise =
         Nothing
-{-# INLINE maybeViewAsColIOMatrix #-}
+{-# INLINE maybeViewVectorAsColIOMatrix #-}
 
-maybeToVectorViewIOMatrix :: (Elem e) => IOMatrix np e -> Maybe (IOVector k e)
-maybeToVectorViewIOMatrix (IOMatrix f p m n l h)
+maybeMatrixToVectorViewIOMatrix :: (Elem e) => IOMatrix np e -> Maybe (IOVector k e)
+maybeMatrixToVectorViewIOMatrix (IOMatrix f p m n l h)
     | h = 
-        liftM conjIOVector $ maybeToVectorViewIOMatrix (IOMatrix f p n m l False)
+        liftM conjIOVector $ maybeMatrixToVectorViewIOMatrix (IOMatrix f p n m l False)
     | l == m =
         Just $ IOVector f p (m*n) 1 False
     | m == 1 =
         Just $ IOVector f p n     l False
     | otherwise =
         Nothing
-{-# INLINE maybeToVectorViewIOMatrix #-}
+{-# INLINE maybeMatrixToVectorViewIOMatrix #-}
 
 liftIOMatrix :: (Elem e) => (forall n. IOVector n e -> IO ()) -> IOMatrix np e -> IO ()
 liftIOMatrix g (IOMatrix f p m n l h)
@@ -176,7 +176,7 @@ liftIOMatrix2 :: (Elem e, Elem f) =>
         IOMatrix np e -> IOMatrix np f -> IO ()
 liftIOMatrix2 f a b =
     if isHermIOMatrix a == isHermIOMatrix b
-        then case (maybeToVectorViewIOMatrix a, maybeToVectorViewIOMatrix b) of
+        then case (maybeMatrixToVectorViewIOMatrix a, maybeMatrixToVectorViewIOMatrix b) of
                  ((Just x), (Just y)) -> f x y
                  _                    -> elementwise
         else elementwise
