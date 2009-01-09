@@ -150,7 +150,7 @@ doSSolveMat alpha a c b =
 doSolve_ :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
     a (k,k) e -> x k e -> m ()
 doSolve_ a x =
-    checkSquare (shape a) $
+    checkSquare "doSolve_" (shape a) $
         checkMatVecSolv (shape a) (dim x) $
             unsafeDoSolve_ a x
 {-# INLINE doSolve_ #-}
@@ -159,7 +159,7 @@ doSolve_ a x =
 doSSolve_ :: (MSolve a e m, WriteVector x e m) => 
     e -> a (k,k) e -> x k e -> m ()
 doSSolve_ alpha a x =
-    checkSquare (shape a) $
+    checkSquare ("doSSolve_ " ++ show alpha) (shape a) $
         checkMatVecSolv (shape a) (dim x) $
             unsafeDoSSolve_ alpha a x
 {-# INLINE doSSolve_ #-}
@@ -168,7 +168,7 @@ doSSolve_ alpha a x =
 doSolveMat_ :: (MSolve a e m, WriteMatrix b e m) => 
     a (k,k) e -> b (k,l) e -> m ()          
 doSolveMat_ a b =
-    checkSquare (shape a) $
+    checkSquare "doSolveMat_" (shape a) $
         checkMatMatSolv (shape a) (shape b) $
             unsafeDoSolveMat_ a b
 {-# INLINE doSolveMat_ #-}
@@ -177,7 +177,7 @@ doSolveMat_ a b =
 doSSolveMat_ :: (MSolve a e m, WriteMatrix b e m) =>
     e -> a (k,k) e -> b (k,l) e -> m ()          
 doSSolveMat_ alpha a b =
-    checkSquare (shape a) $
+    checkSquare ("doSSolveMat_ " ++ show alpha) (shape a) $
         checkMatMatSolv (shape a) (shape b) $
             unsafeDoSSolveMat_ alpha a b
 {-# INLINE doSSolveMat_ #-}

@@ -27,7 +27,8 @@ import Data.Vector.Dense hiding ( Test.vector )
 import Data.Matrix.Dense
 import Data.Elem.BLAS ( BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
+import Data.Matrix.Tri ( Tri, triFromBase )
+import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
 import Unsafe.Coerce
 

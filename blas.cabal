@@ -86,7 +86,9 @@ library
                             Data.Matrix.Dense.STBase
 
                         Data.Matrix.Herm
+                        Data.Matrix.HermBase
                         Data.Matrix.Tri
+                        Data.Matrix.TriBase
 
                         Data.Vector.Dense
                             Data.Vector.Dense.Base
@@ -104,7 +106,6 @@ library
                         Data.Elem.BLAS.Base
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
-                        Data.Matrix.Tri.Internal                        
     
     includes:           cbits/config.h
                         cbits/BLAS.h

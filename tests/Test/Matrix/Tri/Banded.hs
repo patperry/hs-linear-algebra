@@ -30,7 +30,8 @@ import Data.Matrix.Banded
 import Data.Matrix.Banded.Base( listsFromBanded )
 import Data.Elem.BLAS ( BLAS3 )
 
-import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
+import Data.Matrix.Tri ( Tri, triFromBase )
+import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
 import Unsafe.Coerce
 

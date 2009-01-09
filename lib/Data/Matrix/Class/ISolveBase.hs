@@ -34,7 +34,7 @@ import Data.Vector.Dense ( Vector, dim, (*>) )
 import Data.Vector.Dense.ST ( runSTVector )
 import Data.Matrix.Dense ( Matrix, shape )
 import Data.Matrix.Dense.ST ( runSTMatrix )
-import Data.Matrix.Tri.Internal
+import Data.Matrix.TriBase
 
 infixr 7 <\>, <\\>
 

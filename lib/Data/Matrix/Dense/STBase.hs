@@ -26,7 +26,7 @@ import Data.Matrix.Dense.Base
 import Data.Matrix.Dense.IOBase
 
 import Data.Matrix.Herm
-import Data.Matrix.Tri.Internal
+import Data.Matrix.TriBase
 
 import Data.Vector.Dense.STBase
 

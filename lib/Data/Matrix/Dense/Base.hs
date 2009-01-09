@@ -34,7 +34,7 @@ import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Class
 import Data.Matrix.Herm
-import Data.Matrix.Tri.Internal
+import Data.Matrix.TriBase
 
 import Data.Vector.Dense.IOBase
 import Data.Vector.Dense.Base

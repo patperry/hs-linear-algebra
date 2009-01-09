@@ -45,7 +45,7 @@ import Data.Tensor.Class
 import Data.Vector.Dense
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Matrix.Herm
-import Data.Matrix.Tri.Internal
+import Data.Matrix.TriBase
 import Data.Matrix.Dense.Base
 import Data.Matrix.Dense.ST( runSTMatrix )
 

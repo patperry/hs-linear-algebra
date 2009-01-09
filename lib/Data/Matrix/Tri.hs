@@ -6,13 +6,29 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Triangular views of matrices.
+--
 
 module Data.Matrix.Tri (
-    module Data.Matrix.Tri.Internal,
+    -- * Triangular matrix types
+    Tri(..),
+
+    triFromBase,
+    triToBase,
+    mapTri,
+
+    lower,
+    lowerU,
+    upper,
+    upperU,
+
+    coerceTri,
+
+    -- * Overloaded interface for solving linear systems
     module Data.Matrix.Class.ISolve,
     module Data.Matrix.Class.MSolve,
     ) where
 
-import Data.Matrix.Tri.Internal
+import Data.Matrix.TriBase
 import Data.Matrix.Class.ISolve
 import Data.Matrix.Class.MSolve

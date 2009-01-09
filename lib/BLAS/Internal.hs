@@ -269,28 +269,28 @@ checkMatMatSolvTo mk mn kn
             (show (snd mk, snd mn)) (show kn)
     | otherwise = id
 
-checkSquare :: (Int,Int) -> a -> a
-checkSquare (m,n)
+checkSquare :: String -> (Int,Int) -> a -> a
+checkSquare str (m,n)
     | m /= n =
         error $ printf
-            ("Expected a square matrix but got one with shape `%s'")
-            (show (m,n))
+            "%s <matrix of shape (%d,%d)>: matrix shape must be square."
+            str m n
     | otherwise = id
 
-checkFat :: (Int,Int) -> a -> a
-checkFat (m,n)
+checkFat :: String -> (Int,Int) -> a -> a
+checkFat str (m,n)
     | m > n =
         error $ printf
-            ("Expected a fat matrix but got one with shape `%s'")
-            (show (m,n))
+            "%s <matrix of shape (%d,%d)>: matrix must have at least as many columns as rows."
+            str m n
     | otherwise = id
 
-checkTall :: (Int,Int) -> a -> a
-checkTall (m,n)
+checkTall :: String -> (Int,Int) -> a -> a
+checkTall str (m,n)
     | m < n =
         error $ printf
-            ("Expected a tall matrix but got one with shape `%s'")
-            (show (m,n))
+            "%s <matrix of shape (%d,%d)>: matrix must have at least as many rows as columns."
+            str m n
     | otherwise = id
 
 checkBinaryOp :: (Eq i, Show i) => i -> i -> a -> a

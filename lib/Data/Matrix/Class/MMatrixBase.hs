@@ -142,7 +142,7 @@ getApplyMat a b =
 doSApply_ :: (MMatrix a e m, WriteVector y e m) =>
     e -> a (n,n) e -> y n e -> m ()
 doSApply_ alpha a x =
-    checkSquare (shape a) $
+    checkSquare ("doSApply_ " ++ show alpha) (shape a) $
         checkMatVecMult (shape a) (dim x) $
             unsafeDoSApply_ alpha a x
 {-# INLINE doSApply_ #-}
@@ -151,7 +151,7 @@ doSApply_ alpha a x =
 doSApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
     e -> a (s,s) e -> b (s,t) e -> m ()
 doSApplyMat_ alpha a b =
-    checkSquare (shape a) $
+    checkSquare ("doSApplyMat_ " ++ show alpha) (shape a) $
         checkMatMatMult (shape a) (shape b) $
             unsafeDoSApplyMat_ alpha a b
 {-# INLINE doSApplyMat_ #-}
@@ -196,7 +196,7 @@ unsafeDoApplyMat a b c = unsafeDoSApplyAddMat 1 a b 0 c
 doApply_ :: (MMatrix a e m, WriteVector y e m) =>
     a (n,n) e -> y n e -> m ()
 doApply_ a x =
-    checkSquare (shape a) $
+    checkSquare "doApply_" (shape a) $
         checkMatVecMult (shape a) (dim x) $
             unsafeDoApply_ a x
 {-# INLINE doApply_ #-}
@@ -205,7 +205,7 @@ doApply_ a x =
 doApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
     a (s,s) e -> b (s,t) e -> m ()
 doApplyMat_ a b =
-    checkSquare (shape a) $
+    checkSquare "doApplyMat_" (shape a) $
         checkMatMatMult (shape a) (shape b) $
             unsafeDoApplyMat_ a b
 {-# INLINE doApplyMat_ #-}
