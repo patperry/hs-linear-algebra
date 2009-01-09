@@ -149,12 +149,20 @@ instance (BLAS3 e) => MMatrix (STBanded s) e (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm (STBanded s)) e (ST s) where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
     unsafeDoSApply_      = tbmv
@@ -165,6 +173,10 @@ instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve (Tri (STBanded s)) e (ST s) where
     unsafeDoSSolve_    = tbsv

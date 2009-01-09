@@ -626,12 +626,20 @@ instance (BLAS3 e) => MMatrix IOBanded e IO where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColIOBanded
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm IOBanded) e IO where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
     unsafeDoSApply_      = tbmv
@@ -642,6 +650,10 @@ instance (BLAS3 e) => MMatrix (Tri IOBanded) e IO where
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve (Tri IOBanded) e IO where
     unsafeDoSSolve_    = tbsv

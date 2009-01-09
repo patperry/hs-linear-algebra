@@ -114,12 +114,20 @@ instance (BLAS3 e) => MMatrix (STMatrix s) e (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColMatrix
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm (STMatrix s)) e (ST s) where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
@@ -130,6 +138,10 @@ instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
     {-# INLINE unsafeDoSApply_ #-}
     unsafeDoSApplyMat_ = trmm
     {-# INLINE unsafeDoSApplyMat_ #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve  (Tri (STMatrix s)) e (ST s) where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix

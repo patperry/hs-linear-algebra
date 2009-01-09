@@ -651,12 +651,20 @@ instance (BLAS3 e) => MMatrix Banded e IO where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm Banded) e IO where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri Banded) e IO where
     unsafeDoSApply_      = tbmv
@@ -667,6 +675,10 @@ instance (BLAS3 e) => MMatrix (Tri Banded) e IO where
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve (Tri Banded) e IO where
     unsafeDoSSolve_    = tbsv
@@ -695,12 +707,20 @@ instance (BLAS3 e) => MMatrix Banded e (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm Banded) e (ST s) where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri Banded) e (ST s) where
     unsafeDoSApply_      = tbmv
@@ -711,6 +731,10 @@ instance (BLAS3 e) => MMatrix (Tri Banded) e (ST s) where
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve (Tri Banded) e (ST s) where
     unsafeDoSSolve_    = tbsv

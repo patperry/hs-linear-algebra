@@ -17,6 +17,7 @@ import Control.Monad
 import Control.Monad.ST
 import Data.AEq
 import Foreign
+import System.IO.Unsafe
 import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
@@ -636,6 +637,57 @@ class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
         in unsafeGetColHelp undefined
     {-# INLINE unsafeGetCol #-}
 
+    -- | Get a lazy list the row vectors in the matrix.
+    getRows :: (WriteVector x e m) => 
+        a (k,l) e -> m [x l e]
+    {-# INLINE getRows #-}
+
+    -- | Get a lazy list of the column vectors in the matrix.
+    getCols :: (WriteVector x e m) => 
+        a (k,l) e -> m [x k e]
+
+getColsM :: (MMatrix a e m, WriteVector x e m)
+          => (forall b. m b -> m b)
+          -> a (k,l) e -> m [x k e]
+getColsM unsafeInterleaveM a =
+    let n    = numCols a
+        go j | j == n    = return []
+             | otherwise = unsafeInterleaveM $ do
+                               c  <- unsafeGetCol a j
+                               cs <- go (j+1)
+                               return (c:cs)
+    in go 0
+{-# INLINE getColsM #-}
+
+getColsIO :: (MMatrix a e IO, WriteVector x e IO)
+          => a (k,l) e -> IO [x k e]
+getColsIO = getColsM unsafeInterleaveIO
+
+getColsST :: (MMatrix a e (ST s), WriteVector x e (ST s))
+          => a (k,l) e -> ST s [x k e]
+getColsST = getColsM unsafeInterleaveST
+
+getRowsM :: (MMatrix a e m, WriteVector x e m)
+         => (forall b. m b -> m b)
+         -> a (k,l) e -> m [x l e]
+getRowsM unsafeInterleaveM a =
+    let m    = numRows a
+        go i | i == m    = return []
+             | otherwise = unsafeInterleaveM $ do
+                                r  <- unsafeGetRow a i
+                                rs <- go (i+1)
+                                return (r:rs)
+    in go 0
+{-# INLINE getRowsM #-}
+
+getRowsIO :: (MMatrix a e IO, WriteVector x e IO)
+          => a (k,l) e -> IO [x l e]
+getRowsIO = getRowsM unsafeInterleaveIO
+
+getRowsST :: (MMatrix a e (ST s), WriteVector x e (ST s))
+          => a (k,l) e -> ST s [x l e]
+getRowsST = getRowsM unsafeInterleaveST
+
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
 gemv :: (ReadMatrix a e m, ReadVector x e m, WriteVector y e m) =>
@@ -1165,12 +1217,20 @@ instance (BLAS3 e) => MMatrix IOMatrix e IO where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColMatrix
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm IOMatrix) e IO where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri IOMatrix) e IO where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
@@ -1181,6 +1241,10 @@ instance (BLAS3 e) => MMatrix (Tri IOMatrix) e IO where
     {-# INLINE unsafeDoSApply_ #-}
     unsafeDoSApplyMat_ = trmm
     {-# INLINE unsafeDoSApplyMat_ #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve  (Tri IOMatrix) e IO where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix
@@ -1456,12 +1520,20 @@ instance (BLAS3 e) => MMatrix Matrix e IO where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColMatrix
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm Matrix) e IO where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri Matrix) e IO where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
@@ -1472,6 +1544,10 @@ instance (BLAS3 e) => MMatrix (Tri Matrix) e IO where
     {-# INLINE unsafeDoSApply_ #-}
     unsafeDoSApplyMat_ = trmm
     {-# INLINE unsafeDoSApplyMat_ #-}
+    getRows = getRowsIO
+    {-# INLINE getRows #-}
+    getCols = getColsIO
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve  (Tri Matrix) e IO where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix
@@ -1500,12 +1576,20 @@ instance (BLAS3 e) => MMatrix Matrix e (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColMatrix
     {-# INLINE unsafeGetCol #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Herm Matrix) e (ST s) where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MMatrix (Tri Matrix) e (ST s) where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
@@ -1516,6 +1600,10 @@ instance (BLAS3 e) => MMatrix (Tri Matrix) e (ST s) where
     {-# INLINE unsafeDoSApply_ #-}
     unsafeDoSApplyMat_ = trmm
     {-# INLINE unsafeDoSApplyMat_ #-}
+    getRows = getRowsST
+    {-# INLINE getRows #-}
+    getCols = getColsST
+    {-# INLINE getCols #-}
 
 instance (BLAS3 e) => MSolve  (Tri Matrix) e (ST s) where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix

@@ -19,8 +19,8 @@ module Data.Matrix.Class.MMatrix (
     -- * Getting rows and columns
     getRow,
     getCol,
-    --getRows,
-    --getCols,
+    getRows,
+    getCols,
     getRows',
     getCols',
     
