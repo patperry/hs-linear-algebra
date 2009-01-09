@@ -26,13 +26,17 @@ module Data.Matrix.Dense (
     listMatrix,
     rowsMatrix,
     colsMatrix,
-    rowMatrix,
-    colMatrix,
     
     -- * Special matrices
     zeroMatrix,
     constantMatrix,
     identityMatrix,
+
+    -- * Conversions between vectors and matrices
+    matrixFromRow,
+    matrixFromCol,
+    matrixFromVector,
+    vectorFromMatrix,
 
     -- * Matrix views
     submatrix,

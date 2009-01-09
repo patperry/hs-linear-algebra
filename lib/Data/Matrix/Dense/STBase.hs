@@ -167,8 +167,11 @@ instance (Elem e) => BaseMatrix (STMatrix s) e where
     {-# INLINE unsafeRowView #-}
     unsafeColView (STMatrix a) i = STVector (unsafeColViewIOMatrix a i)
     {-# INLINE unsafeColView #-}
-    maybeMatrixToVectorView (STMatrix a) = liftM STVector (maybeMatrixToVectorView a)
-    {-# INLINE maybeMatrixToVectorView #-}
+    maybeViewMatrixAsVector (STMatrix a) = liftM STVector (maybeViewMatrixAsVector a)
+    {-# INLINE maybeViewMatrixAsVector #-}
+    maybeViewVectorAsMatrix mn (STVector x) = 
+        liftM STMatrix $ maybeViewVectorAsIOMatrix mn x
+    {-# INLINE maybeViewVectorAsMatrix #-}    
     maybeViewVectorAsRow (STVector x) = liftM STMatrix (maybeViewVectorAsRow x)
     {-# INLINE maybeViewVectorAsRow #-}
     maybeViewVectorAsCol (STVector x) = liftM STMatrix (maybeViewVectorAsCol x)

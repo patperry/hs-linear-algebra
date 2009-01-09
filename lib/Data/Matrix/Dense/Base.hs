@@ -85,16 +85,22 @@ class (HasVectorView a, Elem e, MatrixShaped a e
     unsafeRowView :: a (n,p) e -> Int -> VectorView a p e
     unsafeColView :: a (n,p) e -> Int -> VectorView a n e
 
-    -- | Possibly create a vector view of a matrix.
-    maybeMatrixToVectorView :: a (n,p) e -> Maybe (VectorView a np e)
+    -- | Possibly create a vector view of a matrix.  This will fail if the
+    -- matrix is hermed or if the lda of the matrix is not equal to the
+    -- number of rows in the matrix.
+    maybeViewMatrixAsVector :: a (n,p) e -> Maybe (VectorView a np e)
     
-    -- | Possibly create a matrix view of a row vector.  This will fail if the
-    -- vector is conjugated and the stride is not @1@.
+    -- | Possibly create a matrix view of a row vector.  This will fail if
+    -- the stride of the vector is not @1@ or the vector is conjugated.
     maybeViewVectorAsRow  :: VectorView a p e -> Maybe (a (one,p) e)
     
     -- | Possibly create a matrix view of a column vector.  This will fail
-    -- if the stride of the vector is not @1@ and the vector is not conjugated.
+    -- if the stride of the vector is not @1@ or the vector is not conjugated.
     maybeViewVectorAsCol  :: VectorView a n e -> Maybe (a (n,one) e)
+    
+    -- | Possible create a matrix view of the vector.  This will fail if
+    -- the stride of the vector is not @1@ or the vector is conjugated.
+    maybeViewVectorAsMatrix :: (Int,Int) -> VectorView a np e -> Maybe (a (n,p) e)
     
     -- | Unsafe cast from a matrix to an 'IOMatrix'.
     unsafeMatrixToIOMatrix :: a (n,p) e -> IOMatrix (n,p) e
@@ -1197,8 +1203,10 @@ instance (Elem e) => BaseMatrix IOMatrix e where
     {-# INLINE unsafeRowView #-}
     unsafeColView = unsafeColViewIOMatrix
     {-# INLINE unsafeColView #-}
-    maybeMatrixToVectorView = maybeMatrixToVectorViewIOMatrix
-    {-# INLINE maybeMatrixToVectorView #-}
+    maybeViewMatrixAsVector = maybeViewIOMatrixAsVector
+    {-# INLINE maybeViewMatrixAsVector #-}
+    maybeViewVectorAsMatrix = maybeViewVectorAsIOMatrix
+    {-# INLINE maybeViewVectorAsMatrix #-}
     maybeViewVectorAsRow = maybeViewVectorAsRowIOMatrix
     {-# INLINE maybeViewVectorAsRow #-}    
     maybeViewVectorAsCol = maybeViewVectorAsColIOMatrix
@@ -1322,20 +1330,39 @@ colsMatrix mn cs = unsafePerformIO $
 {-# NOINLINE colsMatrix #-}
 
 -- | Get a matrix from a row vector.
-rowMatrix :: (BLAS3 e) => Vector p e -> Matrix (one,p) e
-rowMatrix (Vector x) = 
+matrixFromRow :: (BLAS3 e) => Vector p e -> Matrix (one,p) e
+matrixFromRow (Vector x) = 
     case maybeViewVectorAsRow x of
         Just x' -> Matrix x'
         Nothing -> unsafePerformIO $ unsafeFreezeIOMatrix =<< newRowMatrix x
-{-# NOINLINE rowMatrix #-}
+{-# NOINLINE matrixFromRow #-}
 
 -- | Get a matrix from a column vector.
-colMatrix :: (BLAS3 e) => Vector n e -> Matrix (n,one) e
-colMatrix (Vector x) = 
+matrixFromCol :: (BLAS3 e) => Vector n e -> Matrix (n,one) e
+matrixFromCol (Vector x) = 
     case maybeViewVectorAsCol x of
         Just x' -> Matrix x'
         Nothing -> unsafePerformIO $ unsafeFreezeIOMatrix =<< newColMatrix x
-{-# NOINLINE colMatrix #-}
+{-# NOINLINE matrixFromCol #-}
+
+-- | Get a matrix from the elements stored in columnwise order in the vector.
+matrixFromVector :: (BLAS3 e) => (Int,Int) -> Vector np e -> Matrix (n,p) e
+matrixFromVector (m,n) x
+    | dim x /= m*n =
+        error $ "matrixFromVector " ++ show (m,n) ++ "<vector of dim "
+              ++ show (dim x) ++ ">: vector dimension must be equal to "
+              ++ "the number of elements in the desired matrix"
+    | otherwise =
+        case maybeViewVectorAsMatrix (m,n) x of
+            Just a  -> a
+            Nothing -> listMatrix (m,n) (elems x)
+
+-- | Get a vector by concatenating the columns of the matrix.
+vectorFromMatrix :: (BLAS3 e) => Matrix (n,p) e -> Vector np e
+vectorFromMatrix a =
+    case maybeViewMatrixAsVector a of
+        Just x  -> x
+        Nothing -> listVector (size a) (concatMap elems (colViews a))
 
 -- | Get a new zero of the given shape.
 zeroMatrix :: (BLAS3 e) => (Int,Int) -> Matrix (n,p) e
@@ -1397,7 +1424,7 @@ indicesMatrix (Matrix a) = indicesIOMatrix a
 
 elemsMatrix :: (Elem e) => Matrix np e -> [e]
 elemsMatrix (Matrix a) = 
-    case maybeMatrixToVectorViewIOMatrix a of
+    case maybeViewIOMatrixAsVector a of
         (Just x) -> elemsVector (Vector x)
         Nothing  -> concatMap (elemsVector . Vector) (vecViews a)
   where
@@ -1460,8 +1487,11 @@ instance (Elem e) => BaseMatrix Matrix e where
     {-# INLINE unsafeRowView #-}
     unsafeColView (Matrix a) i = Vector (unsafeColViewIOMatrix a i)
     {-# INLINE unsafeColView #-}
-    maybeMatrixToVectorView (Matrix a) = liftM Vector (maybeMatrixToVectorView a)
-    {-# INLINE maybeMatrixToVectorView #-}
+    maybeViewMatrixAsVector (Matrix a) = liftM Vector (maybeViewMatrixAsVector a)
+    {-# INLINE maybeViewMatrixAsVector #-}
+    maybeViewVectorAsMatrix mn (Vector x) = 
+        liftM Matrix $ maybeViewVectorAsIOMatrix mn x
+    {-# INLINE maybeViewVectorAsMatrix #-}
     maybeViewVectorAsRow (Vector x) = liftM Matrix (maybeViewVectorAsRow x)
     {-# INLINE maybeViewVectorAsRow #-}
     maybeViewVectorAsCol (Vector x) = liftM Matrix (maybeViewVectorAsCol x)
@@ -1693,7 +1723,7 @@ instance (BLAS3 e, Floating e) => Floating (Matrix (m,n) e) where
 liftMatrix :: (ReadMatrix a e m) =>
     (forall k. VectorView a k e -> m ()) -> a (n,p) e -> m ()
 liftMatrix f a =
-    case maybeMatrixToVectorView a of
+    case maybeViewMatrixAsVector a of
         Just x -> f x
         _ ->
             let xs = case isHermMatrix a of
@@ -1709,7 +1739,7 @@ liftMatrix2 :: (ReadMatrix a e m, ReadMatrix b f m) =>
         a (n,p) e -> b (n,p) f -> m ()
 liftMatrix2 f a b =
     if isHermMatrix a == isHermMatrix b
-        then case (maybeMatrixToVectorView a, maybeMatrixToVectorView b) of
+        then case (maybeViewMatrixAsVector a, maybeViewMatrixAsVector b) of
                  ((Just x), (Just y)) -> f x y
                  _                    -> elementwise
         else elementwise

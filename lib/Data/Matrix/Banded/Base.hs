@@ -108,8 +108,20 @@ class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
     -- | Get a matrix with the underlying storage of the banded matrix.
     matrixBanded :: a (n,p) e -> MatrixStorage a (k,l) e
 
-    -- | View a vector as a banded matrix of the given shape.
-    --viewVectorAsBanded :: (Int,Int) -> VectorView a k e -> a (n,p) e
+    -- | View a vector as a banded matrix of the given shape.  The vector
+    -- must have length equal to one of the specified dimensions.
+    viewVectorAsBanded :: (Int,Int) -> VectorView a k e -> a (n,p) e
+    
+    -- | View a vector as a diagonal banded matrix.
+    viewVectorAsDiagBanded :: VectorView a n e -> a (n,n) e
+    viewVectorAsDiagBanded x = let
+        n = dim x
+        in viewVectorAsBanded (n,n) x
+    {-# INLINE viewVectorAsBanded #-}
+    
+    -- | If the banded matrix has only a single diagonal, return a view
+    -- into that diagonal.  Otherwise, return @Nothing@.
+    maybeViewBandedAsVector :: a (n,p) e -> Maybe (VectorView a k e)
 
     -- | Given a shape and bandwidths, possibly view the elements stored
     -- in a dense matrix as a banded matrix.  This will fail unless
@@ -417,6 +429,10 @@ instance (Elem e) => BaseBanded IOBanded e where
     {-# INLINE matrixBanded #-}
     maybeBandedFromMatrix = IO.maybeBandedFromIOMatrix
     {-# INLINE maybeBandedFromMatrix #-}
+    viewVectorAsBanded = IO.viewVectorAsIOBanded
+    {-# INLINE viewVectorAsBanded #-}
+    maybeViewBandedAsVector = IO.maybeViewIOBandedAsVector
+    {-# INLINE maybeViewBandedAsVector #-}
     unsafeDiagViewBanded = IO.unsafeDiagViewIOBanded
     {-# INLINE unsafeDiagViewBanded #-}
     unsafeRowViewBanded = IO.unsafeRowViewIOBanded
@@ -481,6 +497,23 @@ constantBanded :: (BLAS3 e) => (Int,Int) -> (Int,Int) -> e -> Banded (n,p) e
 constantBanded mn kl e = unsafePerformIO $
     unsafeFreezeIOBanded =<< newConstantBanded mn kl e
 {-# INLINE constantBanded #-}
+
+-- | Create a banded matrix from a vector.  The vector must have length
+-- equal to one of the specified dimension sizes.
+bandedFromVector :: (Elem e) => (Int,Int) -> Vector k e -> Banded (n,p) e
+bandedFromVector = viewVectorAsBanded
+{-# INLINE bandedFromVector #-}
+
+-- | Create a diagonal banded matrix from a vector.
+diagBandedFromVector :: (Elem e) => Vector n e -> Banded (n,n) e
+diagBandedFromVector = viewVectorAsDiagBanded
+{-# INLINE diagBandedFromVector #-}
+
+-- | Convert a diagonal banded matrix to a vector.  Fail if the banded
+-- matrix has more than one diagonal
+maybeVectorFromBanded :: (Elem e) => Banded (n,p) e -> Maybe (Vector k e)
+maybeVectorFromBanded = maybeViewBandedAsVector
+{-# INLINE maybeVectorFromBanded #-}
 
 -- | Get a the given diagonal in a banded matrix.  Negative indices correspond 
 -- to sub-diagonals.
@@ -624,6 +657,11 @@ instance (Elem e) => BaseBanded Banded e where
     maybeBandedFromMatrix mn kl (Matrix a) = 
         liftM Banded $ IO.maybeBandedFromIOMatrix mn kl a
     {-# INLINE maybeBandedFromMatrix #-}
+    viewVectorAsBanded mn (Vector x) = Banded $ IO.viewVectorAsIOBanded mn x
+    {-# INLINE viewVectorAsBanded #-}
+    maybeViewBandedAsVector (Banded a) = 
+        liftM Vector $ IO.maybeViewIOBandedAsVector a
+    {-# INLINE maybeViewBandedAsVector #-}    
     unsafeDiagViewBanded (Banded a) i = Vector $ IO.unsafeDiagViewIOBanded a i
     {-# INLINE unsafeDiagViewBanded #-}
     unsafeRowViewBanded (Banded a) i = 

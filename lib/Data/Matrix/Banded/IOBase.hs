@@ -139,6 +139,25 @@ maybeBandedFromIOMatrix (m,n) (kl,ku) (IOMatrix f p m' n' l h)
       error $ "maybeBandedFromMatrix " ++ show (m,n) ++ " " ++ show (kl,ku) 
             ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
+viewVectorAsIOBanded :: (Int,Int) -> IOVector k e -> IOBanded (n,p) e
+viewVectorAsIOBanded (m,n) (IOVector f p k l c)
+    | k /= m && k /= n =
+        error $ "viewVectorAsBanded " ++ show (m,n) ++ " "
+              ++ " <vector of dim " ++ show k ++ ">: "
+              ++ "vector must have length equal to one of the specified"
+              ++ " diemsion sizes"
+    | otherwise =
+        IOBanded f p m n 0 0 l c
+{-# INLINE viewVectorAsIOBanded #-}
+
+maybeViewIOBandedAsVector :: IOBanded (n,p) e -> Maybe (IOVector k e)
+maybeViewIOBandedAsVector (IOBanded f p m n kl ku l h)
+    | kl == 0 && ku == 0 =
+        Just $ IOVector f p (min m n) l h
+    | otherwise =
+        Nothing
+{-# INLINE maybeViewIOBandedAsVector #-}
+
 bandwidthsIOBanded :: IOBanded np e -> (Int,Int)
 bandwidthsIOBanded a =
     (numLowerIOBanded a, numUpperIOBanded a)

@@ -29,6 +29,11 @@ module Data.Matrix.Banded (
     zeroBanded,
     constantBanded,
 
+    -- * Conversions between vectors and banded matrices
+    bandedFromVector,
+    diagBandedFromVector,
+    maybeVectorFromBanded,
+
     -- * Vector views
     diagBanded,
 

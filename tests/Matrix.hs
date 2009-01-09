@@ -135,15 +135,15 @@ prop_diag_herm1 (MatrixAt (a :: M) (k,_)) =
 prop_diag_herm2 (MatrixAt (a :: M) (_,k)) =
     diag a k === conj (diag (herm a) (-k))
 
-prop_rowMatrix_shape (x :: V) =
-    shape (rowMatrix x :: M) == (1,dim x)
-prop_rowMatrix_elems (x :: V) =
-    elems (rowMatrix x :: M) === elems x
+prop_matrixFromRow_shape (x :: V) =
+    shape (matrixFromRow x :: M) == (1,dim x)
+prop_matrixFromRow_elems (x :: V) =
+    elems (matrixFromRow x :: M) === elems x
 
-prop_colMatrix_shape (x :: V) =
-    shape (colMatrix x :: M) == (dim x,1)
-prop_colMatrix_elems (x :: V) =
-    elems (colMatrix x :: M) === elems x
+prop_matrixFromCol_shape (x :: V) =
+    shape (matrixFromCol x :: M) == (dim x,1)
+prop_matrixFromCol_elems (x :: V) =
+    elems (matrixFromCol x :: M) === elems x
 
 prop_apply_basis (MatrixAt (a :: M) (_,j)) =
     a <*> (basisVector (numCols a) j :: V) ~== col a j
@@ -247,10 +247,10 @@ tests_Matrix =
     , ("subdiag . herm"        , mytest prop_diag_herm1)
     , ("superdiag . herm"      , mytest prop_diag_herm2)
                                
-    , ("shape . rowMatrix"       , mytest prop_rowMatrix_shape)
-    , ("elems . rowMatrix"       , mytest prop_rowMatrix_elems)
-    , ("shape . colMatrix"       , mytest prop_colMatrix_shape)
-    , ("elems . colMatrix"       , mytest prop_colMatrix_elems)
+    , ("shape . matrixFromRow"       , mytest prop_matrixFromRow_shape)
+    , ("elems . matrixFromRow"       , mytest prop_matrixFromRow_elems)
+    , ("shape . matrixFromCol"       , mytest prop_matrixFromCol_shape)
+    , ("elems . matrixFromCol"       , mytest prop_matrixFromCol_elems)
 
     , ("apply basis"           , mytest prop_apply_basis)
     , ("apply herm basis"      , mytest prop_apply_herm_basis)

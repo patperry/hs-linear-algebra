@@ -144,17 +144,23 @@ maybeViewVectorAsColIOMatrix (IOVector f p n s c)
         Nothing
 {-# INLINE maybeViewVectorAsColIOMatrix #-}
 
-maybeMatrixToVectorViewIOMatrix :: (Elem e) => IOMatrix np e -> Maybe (IOVector k e)
-maybeMatrixToVectorViewIOMatrix (IOMatrix f p m n l h)
-    | h = 
-        liftM conjIOVector $ maybeMatrixToVectorViewIOMatrix (IOMatrix f p n m l False)
-    | l == m =
-        Just $ IOVector f p (m*n) 1 False
-    | m == 1 =
-        Just $ IOVector f p n     l False
-    | otherwise =
-        Nothing
-{-# INLINE maybeMatrixToVectorViewIOMatrix #-}
+maybeViewIOMatrixAsVector :: (Elem e) => IOMatrix np e -> Maybe (IOVector k e)
+maybeViewIOMatrixAsVector (IOMatrix f p m n l h)
+    | h         = Nothing
+    | l /= m    = Nothing
+    | otherwise = Just $ IOVector f p (m*n) 1 False
+{-# INLINE maybeViewIOMatrixAsVector #-}
+
+maybeViewVectorAsIOMatrix :: (Elem e) => (Int,Int) -> IOVector k e -> Maybe (IOMatrix np e)
+maybeViewVectorAsIOMatrix (m,n) (IOVector f p k inc c)
+    | m*n /= k =
+        error $ "maybeViewVectorAsMatrix " ++ show (m,n)
+              ++ " <vector of dim " ++ show k ++ ">: vector dimension"
+              ++ " must equal product of specified dimensions"
+    | c         = Nothing
+    | inc /= 1  = Nothing
+    | otherwise = Just $ IOMatrix f p m n m False
+{-# INLINE maybeViewVectorAsIOMatrix #-}
 
 liftIOMatrix :: (Elem e) => (forall n. IOVector n e -> IO ()) -> IOMatrix np e -> IO ()
 liftIOMatrix g (IOMatrix f p m n l h)
@@ -176,7 +182,7 @@ liftIOMatrix2 :: (Elem e, Elem f) =>
         IOMatrix np e -> IOMatrix np f -> IO ()
 liftIOMatrix2 f a b =
     if isHermIOMatrix a == isHermIOMatrix b
-        then case (maybeMatrixToVectorViewIOMatrix a, maybeMatrixToVectorViewIOMatrix b) of
+        then case (maybeViewIOMatrixAsVector a, maybeViewIOMatrixAsVector b) of
                  ((Just x), (Just y)) -> f x y
                  _                    -> elementwise
         else elementwise

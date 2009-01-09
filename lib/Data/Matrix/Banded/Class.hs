@@ -38,6 +38,11 @@ module Data.Matrix.Banded.Class (
     newCopyBanded,
     copyBanded,
 
+    -- * Conversions between banded matrices and vectors
+    viewVectorAsBanded,
+    viewVectorAsDiagBanded,
+    maybeViewBandedAsVector,
+
     -- * Row and column views
     rowViewBanded,
     colViewBanded,

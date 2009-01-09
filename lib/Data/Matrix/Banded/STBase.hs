@@ -118,6 +118,11 @@ instance (Elem e) => BaseBanded (STBanded s) e where
     maybeBandedFromMatrix mn kl (STMatrix a) = 
         liftM STBanded $ IO.maybeBandedFromIOMatrix mn kl a
     {-# INLINE maybeBandedFromMatrix #-}
+    viewVectorAsBanded mn (STVector x) = STBanded $ IO.viewVectorAsIOBanded mn x
+    {-# INLINE viewVectorAsBanded #-}
+    maybeViewBandedAsVector (STBanded a) = 
+        liftM STVector $ IO.maybeViewIOBandedAsVector a
+    {-# INLINE maybeViewBandedAsVector #-}        
     unsafeDiagViewBanded (STBanded a) i = 
         STVector $ IO.unsafeDiagViewIOBanded a i
     {-# INLINE unsafeDiagViewBanded #-}
