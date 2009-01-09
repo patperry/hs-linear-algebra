@@ -37,8 +37,8 @@ class (AEq e, Storable e, Fractional e) => Elem e where
     maybeToReal :: e -> Maybe Double
     
     -- | Inicates whether or not the value should be used in tests.  For
-    -- examples, for 'Double'
-    -- @isTestableElem e = not (isNaN e || isInfinite e || isDenormalized e)@.
+    -- 'Double's, @isTestableElem e@ is defined as 
+    -- @not (isNaN e || isInfinite e || isDenormalized e)@.
     isTestableElem :: e -> Bool
     
 instance Elem Double where
