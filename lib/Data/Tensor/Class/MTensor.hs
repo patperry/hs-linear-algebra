@@ -29,7 +29,7 @@ import Data.Ix
 import Data.Tensor.Class
 
 -- | Class for mutable read-only tensors.
-class (Shaped x i e, Monad m) => ReadTensor x i e m | x -> i where
+class (Shaped x i, Monad m) => ReadTensor x i e m | x -> i where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     

@@ -62,13 +62,13 @@ instance HasVectorView (STBanded s) where
 instance HasMatrixStorage (STBanded s) where
     type MatrixStorage (STBanded s) = (STMatrix s)
 
-instance (Elem e) => Shaped (STBanded s) (Int,Int) e where
+instance Shaped (STBanded s) (Int,Int) where
     shape (STBanded a) = IO.shapeIOBanded a
     {-# INLINE shape #-}
     bounds (STBanded a) = IO.boundsIOBanded a
     {-# INLINE bounds #-}
 
-instance (Elem e) => MatrixShaped (STBanded s) e where
+instance MatrixShaped (STBanded s) where
     herm (STBanded a) = STBanded $ IO.hermIOBanded a
     {-# INLINE herm #-}
 

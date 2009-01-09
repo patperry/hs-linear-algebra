@@ -49,34 +49,34 @@ triToBase :: Tri a (n,p) e -> (UpLoEnum, DiagEnum, a (n,p) e)
 triToBase (Tri u d a) = (u,d,a)
 
 -- | Get a lower triangular view of a matrix.
-lower :: (MatrixShaped a e) => a (n,p) e -> Tri a (n,p) e
+lower :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
 lower = Tri Lower NonUnit
 
 -- | Get a lower triangular view of a matrix, with unit diagonal.
-lowerU :: (MatrixShaped a e) => a (n,p) e -> Tri a (n,p) e
+lowerU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
 lowerU = Tri Lower Unit
 
 -- | Get an upper triangular view of a matrix.
-upper :: (MatrixShaped a e) => a (n,p) e -> Tri a (n,p) e
+upper :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
 upper = Tri Upper NonUnit
 
 -- | Get an upper triangular view of a matrix, with unit diagonal.
-upperU :: (MatrixShaped a e) => a (n,p) e -> Tri a (n,p) e
+upperU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
 upperU = Tri Upper Unit
 
       
-instance MatrixShaped a e => Shaped (Tri a) (Int,Int) e where
+instance (MatrixShaped a) => Shaped (Tri a) (Int,Int) where
     shape (Tri Lower _ a) = (numRows a, min (numRows a) (numCols a))
     shape (Tri Upper _ a) = (min (numRows a) (numCols a), numCols a)
     {-# INLINE shape #-}    
     bounds a = ((0,0),(m-1,n-1)) where (m,n) = shape a
     {-# INLINE bounds #-}
     
-instance MatrixShaped a e => MatrixShaped (Tri a) e where
+instance (MatrixShaped a) => MatrixShaped (Tri a) where
     herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
     {-# INLINE herm #-}
 
-instance (Show (a (n,p) e), MatrixShaped a e) => Show (Tri a (n,p) e) where
+instance (Show (a (n,p) e), MatrixShaped a) => Show (Tri a (n,p) e) where
     show (Tri u d a) =
         constructor ++ suffix ++ " (" ++ show a ++ ")"
         where

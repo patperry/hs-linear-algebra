@@ -51,35 +51,35 @@ class HasMatrixStorage (a :: * -> * -> *) where
     type MatrixStorage a :: * -> * -> *
 
 -- | A base class for objects shaped like matrices.
-class (Shaped a (Int,Int) e) => MatrixShaped a e where
+class (Shaped a (Int,Int)) => MatrixShaped a where
     -- | Creates a new matrix view that conjugates and transposes the 
     -- given matrix.
     herm :: a (m,n) e -> a (n,m) e
 
 -- | Get the number of rows in the matrix.
-numRows :: (MatrixShaped a e) => a mn e -> Int
+numRows :: (MatrixShaped a) => a mn e -> Int
 numRows = fst . shape
 {-# INLINE numRows #-}
 
 -- | Get the number of rows in the matrix.
-numCols :: (MatrixShaped a e) => a mn e -> Int
+numCols :: (MatrixShaped a) => a mn e -> Int
 numCols = snd . shape
 {-# INLINE numCols #-}
 
 -- | Indicate whether or not a matrix has the same number of rows and columns.
-isSquare :: (MatrixShaped a e) => a mn e -> Bool
+isSquare :: (MatrixShaped a) => a mn e -> Bool
 isSquare a = numRows a == numCols a
 {-# INLINE isSquare #-}
 
 -- | Indicate whether or not the number of rows is less than or equal to 
 -- the number of columns.
-isFat :: (MatrixShaped a e) => a mn e -> Bool
+isFat :: (MatrixShaped a) => a mn e -> Bool
 isFat a = numRows a <= numCols a
 {-# INLINE isFat #-}
 
 -- | Indicate whether or not the number of rows is greater than or equal to 
 -- the number of columns.
-isTall :: (MatrixShaped a e) => a mn e -> Bool
+isTall :: (MatrixShaped a) => a mn e -> Bool
 isTall a = numRows a >= numCols a
 {-# INLINE isTall #-}
 

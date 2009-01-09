@@ -399,7 +399,7 @@ shiftByIOMatrix :: (Elem e) => e -> IOMatrix np e -> IO ()
 shiftByIOMatrix k = liftIOMatrix (shiftByIOVector k)
 {-# INLINE shiftByIOMatrix #-}
 
-instance Shaped IOMatrix (Int,Int) e where
+instance Shaped IOMatrix (Int,Int) where
     shape = shapeIOMatrix
     {-# INLINE shape #-}
     bounds = boundsIOMatrix
@@ -448,6 +448,6 @@ instance (BLAS1 e) => WriteTensor IOMatrix (Int,Int) e IO where
 instance HasVectorView IOMatrix where
     type VectorView IOMatrix = IOVector
 
-instance MatrixShaped IOMatrix e where
+instance MatrixShaped IOMatrix where
     herm = hermIOMatrix
     {-# INLINE herm #-}

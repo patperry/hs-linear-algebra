@@ -49,21 +49,21 @@ hermToBase (Herm u a) = (u,a)
 
 -- | Construct a lower-triangular hermitian view into a matrix.  This also
 -- checks to see if the base matrix is square.
-hermL :: (MatrixShaped a e) => a (n,n) e -> Herm a (n,n) e
+hermL :: (MatrixShaped a) => a (n,n) e -> Herm a (n,n) e
 hermL a = checkSquare "hermL" (shape a) (Herm Lower a)
 
 -- | Construct an upper-triangular hermitian view into a matrix.  This also
 -- checks to see if the base matrix is square.
-hermU :: (MatrixShaped a e) => a (n,n) e -> Herm a (n,n) e
+hermU :: (MatrixShaped a) => a (n,n) e -> Herm a (n,n) e
 hermU a = checkSquare "hermU" (shape a) (Herm Upper a)
       
-instance MatrixShaped a e => Shaped (Herm a) (Int,Int) e where
+instance (MatrixShaped a) => Shaped (Herm a) (Int,Int) where
     shape  (Herm _ a) = (n,n)             where n = min (numRows a) (numCols a)
     {-# INLINE shape #-}
     bounds (Herm _ a) = ((0,0),(n-1,n-1)) where n = min (numRows a) (numCols a)
     {-# INLINE bounds #-}
       
-instance MatrixShaped a e => MatrixShaped (Herm a) e where
+instance (MatrixShaped a) => MatrixShaped (Herm a) where
     herm = coerceHerm
     {-# INLINE herm #-}
     

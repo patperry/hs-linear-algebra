@@ -55,7 +55,7 @@ runSTMatrix mx =
 instance HasVectorView (STMatrix s) where
     type VectorView (STMatrix s) = STVector s
 
-instance (Elem e) => Shaped (STMatrix s) (Int,Int) e where
+instance Shaped (STMatrix s) (Int,Int) where
     shape (STMatrix a) = shapeIOMatrix a
     {-# INLINE shape #-}
     bounds (STMatrix a) = boundsIOMatrix a
@@ -101,7 +101,7 @@ instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
     shiftBy k (STMatrix a) = unsafeIOToST $ shiftByIOMatrix k a
     {-# INLINE shiftBy #-}
 
-instance (Elem e) => MatrixShaped (STMatrix s) e where
+instance MatrixShaped (STMatrix s) where
     herm (STMatrix a) = STMatrix (herm a)
     {-# INLINE herm #-}
     

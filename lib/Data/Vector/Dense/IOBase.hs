@@ -275,7 +275,7 @@ shiftByIOVector k x | isConjIOVector x =
                         modifyWithIOVector (k+) x
 {-# INLINE shiftByIOVector #-}
 
-instance Shaped IOVector Int e where
+instance Shaped IOVector Int where
     shape = shapeIOVector
     {-# INLINE shape #-}
     bounds = boundsIOVector

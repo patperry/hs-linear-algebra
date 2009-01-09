@@ -4,6 +4,12 @@
   in R, and have determined this isn't a bug.  Ideally, we should only
   test with well-conditioned systems. 
 
+* There is one remaining functional dependency in `Shaped x i | x -> i`.  We
+  cannot get rid of it since GHC 6.10.1 has not yet implemented equality
+  constraints in superclass contexts, which are required for MatrixShaped.
+  When GHC implements this feature, get rid of this last remaining
+  dependency.
+
 * Add getSum/sum.  Put in re-write rules from scale and add to axpy.  Here
  is the old code and re-write rules:
  

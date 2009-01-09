@@ -78,7 +78,7 @@ unsafeThawIOBanded :: Banded np e -> IO (IOBanded np e)
 unsafeThawIOBanded (Banded x) = return x
 
 -- | Common functionality for all banded matrix types.
-class ( MatrixShaped a e, HasVectorView a, HasMatrixStorage a, Elem e
+class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a, Elem e
       , BaseVector (VectorView a) e, BaseMatrix (MatrixStorage a) e
       ) => BaseBanded a e where
     
@@ -633,13 +633,13 @@ instance HasVectorView Banded where
 instance HasMatrixStorage Banded where
     type MatrixStorage Banded = Matrix
 
-instance (Elem e) => Shaped Banded (Int,Int) e where
+instance Shaped Banded (Int,Int) where
     shape (Banded a) = IO.shapeIOBanded a
     {-# INLINE shape #-}
     bounds (Banded a) = IO.boundsIOBanded a
     {-# INLINE bounds #-}
 
-instance (Elem e) => MatrixShaped Banded e where
+instance MatrixShaped Banded where
     herm (Banded a) = Banded $ IO.hermIOBanded a
     {-# INLINE herm #-}
     

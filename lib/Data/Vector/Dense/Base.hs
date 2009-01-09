@@ -57,7 +57,7 @@ unsafeThawIOVector :: Vector n e -> IO (IOVector n e)
 unsafeThawIOVector (Vector x) = return x
 
 -- | Common functionality for all vector types.
-class (Shaped x Int e, Elem e) => BaseVector x e where
+class (Shaped x Int, Elem e) => BaseVector x e where
     -- | Get the dimension (length) of the vector.
     dim :: x n e -> Int
     
@@ -698,7 +698,7 @@ whichMaxAbs (Vector x) = unsafePerformIO $ getWhichMaxAbs x
 (<.>) x y = unsafePerformIO $ getDot x y
 {-# NOINLINE (<.>) #-}
 
-instance Shaped Vector Int e where
+instance Shaped Vector Int where
     shape (Vector x) = shapeIOVector x
     {-# INLINE shape #-}
     bounds (Vector x) = boundsIOVector x

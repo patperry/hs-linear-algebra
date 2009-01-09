@@ -42,7 +42,7 @@ runSTVector :: (forall s . ST s (STVector s n e)) -> Vector n e
 runSTVector mx = 
     runST $ mx >>= \(STVector x) -> return (Vector x)
 
-instance Shaped (STVector s) Int e where
+instance Shaped (STVector s) Int where
     shape (STVector x) = shapeIOVector x
     {-# INLINE shape #-}
     bounds (STVector x) = boundsIOVector x

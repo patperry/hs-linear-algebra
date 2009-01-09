@@ -42,7 +42,7 @@ infixr 7 <\>, <\\>
 -- functions of the type class do not perform any checks on the validity
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
-class (MatrixShaped a e, BLAS3 e) => ISolve a e where
+class (MatrixShaped a, BLAS3 e) => ISolve a e where
     unsafeSolve :: a (m,n) e -> Vector m e -> Vector n e
     unsafeSolve = unsafeSSolve 1
     {-# INLINE unsafeSolve #-}

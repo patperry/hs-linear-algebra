@@ -54,7 +54,7 @@ infixr 7 <*>, <**>
 -- | A type class for immutable matrices.  The member functions of the
 -- type class do not perform any checks on the validity of shapes or
 -- indices, so in general their safe counterparts should be preferred.
-class (MatrixShaped a e, BLAS3 e) => IMatrix a e where
+class (MatrixShaped a, BLAS3 e) => IMatrix a e where
     unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 

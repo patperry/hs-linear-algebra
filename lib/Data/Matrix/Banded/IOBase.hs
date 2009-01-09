@@ -596,13 +596,13 @@ instance HasVectorView IOBanded where
 instance HasMatrixStorage IOBanded where
     type MatrixStorage IOBanded = IOMatrix
 
-instance (Elem e) => Shaped IOBanded (Int,Int) e where
+instance Shaped IOBanded (Int,Int) where
     shape  = shapeIOBanded
     {-# INLINE shape #-}
     bounds = boundsIOBanded
     {-# INLINE bounds #-}
 
-instance (Elem e) => MatrixShaped IOBanded e where
+instance MatrixShaped IOBanded where
     herm = hermIOBanded
     {-# INLINE herm #-}
 

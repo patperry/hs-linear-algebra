@@ -24,7 +24,7 @@ infixl 5 `shift`
 
 
 -- | A class for immutable tensors.
-class (Shaped x i e) => ITensor x i e where
+class (Shaped x i) => ITensor x i e where
     -- | Get the numer of elements stored in the tensor.
     size :: x n e -> Int
     

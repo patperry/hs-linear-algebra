@@ -69,7 +69,7 @@ unsafeThawIOMatrix :: Matrix np e -> IO (IOMatrix np e)
 unsafeThawIOMatrix (Matrix x) = return x
 
 -- | Common functionality for all dense matrix types.
-class (HasVectorView a, Elem e, MatrixShaped a e
+class (HasVectorView a, Elem e, MatrixShaped a
       , BaseVector (VectorView a) e) => BaseMatrix a e where
           
     ldaMatrix :: a (n,p) e -> Int
@@ -580,7 +580,7 @@ unsafeGetDivMatrix = unsafeGetBinaryMatrixOp unsafeDivMatrix
 -- functions of the type class do not perform any checks on the validity of
 -- shapes or indices, so in general their safe counterparts should be
 -- preferred.
-class (MatrixShaped a e, BLAS3 e, Monad m) => MMatrix a e m where
+class (MatrixShaped a, BLAS3 e, Monad m) => MMatrix a e m where
     unsafeGetSApply :: (ReadVector x e m, WriteVector y e m) =>
         e -> a (k,l) e -> x l e -> m (y k e)
     unsafeGetSApply alpha a x = do
@@ -1146,7 +1146,7 @@ trsm alpha t b =
 -- functions of the type class do not perform any checks on the validity
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
-class (MatrixShaped a e, BLAS3 e, Monad m) => MSolve a e m where
+class (MatrixShaped a, BLAS3 e, Monad m) => MSolve a e m where
     unsafeDoSolve :: (ReadVector y e m, WriteVector x e m) =>
         a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSolve = unsafeDoSSolve 1
@@ -1464,13 +1464,13 @@ tzipWithMatrix f a b
     mn = shape a
     colElems = (concatMap elems) . colViews . coerceMatrix
 
-instance (Elem e) => Shaped Matrix (Int,Int) e where
+instance Shaped Matrix (Int,Int) where
     shape (Matrix a) = shapeIOMatrix a
     {-# INLINE shape #-}
     bounds (Matrix a) = boundsIOMatrix a
     {-# INLINE bounds #-}
 
-instance (Elem e) => MatrixShaped Matrix e where
+instance MatrixShaped Matrix where
     herm (Matrix a) = Matrix (herm a)
     {-# INLINE herm #-}
     
