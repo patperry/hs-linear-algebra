@@ -17,6 +17,7 @@ module Test.Matrix.Herm.Dense(
 import Control.Monad( liftM )
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Elem.BLAS ( BLAS3 )
@@ -27,7 +28,7 @@ import Data.Matrix.Herm
 
 
 
-hermMatrix :: (BLAS3 e, Arbitrary e) => Int -> Gen (Matrix (n,n) e)
+hermMatrix :: (TestElem e) => Int -> Gen (Matrix (n,n) e)
 hermMatrix n  = do
     a <- Test.matrix (n,n)
     let h = (a + herm a)
@@ -39,7 +40,7 @@ data HermMatrix n e =
                (Matrix (n,n) e)
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrix n e) where
+instance (TestElem e) => Arbitrary (HermMatrix n e) where
     arbitrary = do
         n <- liftM fst Test.shape
         a <- hermMatrix n
@@ -64,7 +65,7 @@ data HermMatrixMV n e =
                  (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMV n e) where
+instance (TestElem e) => Arbitrary (HermMatrixMV n e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -79,7 +80,7 @@ data HermMatrixMM m n e =
                  (Matrix (m,n) e) 
     deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermMatrixMM m n e) where
+instance (TestElem e) => Arbitrary (HermMatrixMM m n e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
         n <- liftM fst Test.shape

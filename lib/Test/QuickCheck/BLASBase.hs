@@ -1,4 +1,5 @@
 {-# OPTIONS_HADDOCK hide #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Test.QuickCheck.BLASBase
@@ -23,17 +24,38 @@ import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix )
 import Data.Matrix.Banded( Banded, maybeBandedFromMatrix )
 import Data.Elem.BLAS
 
+-- | Element types that can be tested with QuickCheck properties.
+class (BLAS3 e, Arbitrary e) => TestElem e where
+    -- | Inicates whether or not the value should be used in tests.  For
+    -- 'Double's, @isTestElemElem e@ is defined as 
+    -- @not (isNaN e || isInfinite e || isDenormalized e)@.
+    isTestElemElem :: e -> Bool
+    
+instance TestElem Double where
+    isTestElemElem e = not (isNaN e || isInfinite e || isDenormalized e)
+    {-# INLINE isTestElemElem #-}
+
+instance Arbitrary (Complex Double) where
+    arbitrary = liftM2 (:+) arbitrary arbitrary
+    {-# INLINE arbitrary #-}
+    coarbitrary (x:+y) = coarbitrary (x,y)
+    {-# INLINE coarbitrary #-}
+
+instance TestElem (Complex Double) where
+    isTestElemElem (x :+ y) = isTestElemElem x && isTestElemElem y
+    {-# INLINE isTestElemElem #-}
+    
 -- | Generate a list of elements suitable for testing with.
-elements :: (Elem e, Arbitrary e) => Int -> Gen [e]
+elements :: (TestElem e) => Int -> Gen [e]
 elements n = do
-    es <- liftM (filter isTestableElem) $ QC.vector n
+    es <- liftM (filter isTestElemElem) $ QC.vector n
     let n' = length es
     if n' < n
         then liftM (es ++) $ elements (n-n')
         else return es
 
 -- | Generate a list of elements for testing that have no imaginary part.
-realElements :: (Elem e, Arbitrary e) => Int -> Gen [e]
+realElements :: (TestElem e) => Int -> Gen [e]
 realElements n = liftM (map fromReal) $ elements n
 
 -- | Get an appropriate dimension for a random vector
@@ -41,7 +63,7 @@ dim :: Gen Int
 dim = liftM abs arbitrary
 
 -- | Generate a random vector of the given size.
-vector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
+vector :: (TestElem e) => Int -> Gen (Vector n e)
 vector n =
     frequency [ (3, rawVector n)  
               , (2, conjVector n)
@@ -56,23 +78,23 @@ data SubVector n e =
               Int 
     deriving (Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (SubVector n e) where
+instance (TestElem e) => Arbitrary (SubVector n e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
         
     coarbitrary = undefined
 
-rawVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
+rawVector :: (TestElem e) => Int -> Gen (Vector n e)
 rawVector n = do
     es <- elements n
     return $ listVector n es
 
-conjVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
+conjVector :: (TestElem e) => Int -> Gen (Vector n e)
 conjVector n = do
     x <- vector n
     return $ (conj x)
 
-subVector :: (BLAS1 e, Arbitrary e) => Int -> Gen (SubVector n e)
+subVector :: (TestElem e) => Int -> Gen (SubVector n e)
 subVector n = do
     o <- choose (0,5)
     s <- choose (1,5)
@@ -93,31 +115,31 @@ shape = sized $ \s ->
     in liftM2 (,) (choose (0,s')) (choose (0,1+s'))
 
 -- | Generate a random matrix of the given shape.
-matrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 matrix mn = frequency [ (3, rawMatrix mn)  
                       , (2, hermedMatrix mn)
                       , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
                                  return $ submatrix a ij mn)
                       ]
 
-rawMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 rawMatrix (m,n) = do
     es <- elements (m*n)
     return $ listMatrix (m,n) es
 
-hermedMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+hermedMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 hermedMatrix (m,n) = do
     x <- matrix (n,m)
     return $ (herm x)
 
-subMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (SubMatrix m n e)
+subMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix m n e)
 subMatrix (m,n) = 
     oneof [ rawSubMatrix (m,n)
           , rawSubMatrix (n,m) >>= \(SubMatrix a (i,j) (m',n')) ->
                 return $ SubMatrix (herm a) (j,i) (n',m')
           ]
 
-rawSubMatrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (SubMatrix m n e)
+rawSubMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix m n e)
 rawSubMatrix (m,n) = do
     i <- choose (0,5)
     j <- choose (0,5)
@@ -126,7 +148,7 @@ rawSubMatrix (m,n) = do
     x <- rawMatrix (i+m+e, j+n+f)
     return $ SubMatrix x (i,j) (m,n)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (SubMatrix m n e) where
+instance (TestElem e) => Arbitrary (SubMatrix m n e) where
     arbitrary = do
         (m,n) <- shape
         (SubMatrix a ij mn) <- subMatrix (m,n)
@@ -143,13 +165,13 @@ bandwidths :: (Int,Int) -> Gen (Int,Int)
 bandwidths (m,n) = liftM2 (,) (bandwidth m) (bandwidth n)
 
 -- | Generate a random banded matrix.
-banded :: (BLAS3 e, Arbitrary e) => 
+banded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 banded mn lu = frequency [ (3, rawBanded mn lu)  
                          , (2, hermedBanded mn lu)
                          ]
 
-rawBanded :: (BLAS3 e, Arbitrary e) => 
+rawBanded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 rawBanded (m,n) (kl,ku) = 
     let bw = kl+ku+1
@@ -160,7 +182,7 @@ rawBanded (m,n) (kl,ku) =
                        ]
         return $ fromJust (maybeBandedFromMatrix (m,n) (kl,ku) a)
 
-hermedBanded :: (BLAS3 e, Arbitrary e) => 
+hermedBanded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 hermedBanded (m,n) (kl,ku) = do
     x <- rawBanded (n,m) (ku,kl)

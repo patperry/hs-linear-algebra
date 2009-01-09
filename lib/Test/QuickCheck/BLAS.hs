@@ -10,6 +10,9 @@
 --
 
 module Test.QuickCheck.BLAS (
+    -- * Testable element types
+    TestElem(..),
+    
     -- * Generating random objects
     -- ** Elements
     elements,
@@ -19,10 +22,12 @@ module Test.QuickCheck.BLAS (
     dim,
     vector,
     
-    -- ** Matrices
+    -- ** Dense matrices
     shape,
-    bandwidths,
     matrix,
+
+    -- ** Banded matrices
+    bandwidths,
     banded,
     ) where
 

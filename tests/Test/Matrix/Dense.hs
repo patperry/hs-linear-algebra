@@ -23,6 +23,7 @@ module Test.Matrix.Dense (
     ) where
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import Test.QuickCheck.BLASBase( SubMatrix(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -30,11 +31,11 @@ import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense hiding ( Test.matrix )
 import Data.Elem.BLAS ( BLAS3 )
 
-matrix :: (BLAS3 e, Arbitrary e) => (Int,Int) -> Gen (Matrix (m,n) e)
+matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 matrix = Test.matrix
 
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (Matrix (m,n) e) where
+instance (TestElem e) => Arbitrary (Matrix (m,n) e) where
     arbitrary   = Test.matrix =<< Test.shape
     coarbitrary = undefined
 
@@ -42,7 +43,7 @@ data MatrixAt m n e =
     MatrixAt (Matrix (m,n) e)
              (Int,Int)
     deriving (Show)
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixAt m n e) where
+instance (TestElem e) => Arbitrary (MatrixAt m n e) where
     arbitrary = do
         (m',n') <- Test.shape
         i <- choose (0,m')
@@ -60,7 +61,7 @@ data MatrixPair m n e =
                (Matrix (m,n) e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixPair m n e) where
+instance (TestElem e) => Arbitrary (MatrixPair m n e) where
     arbitrary = do
         a <- arbitrary
         b <- Test.matrix (shape a)
@@ -73,7 +74,7 @@ data MatrixMV m n e =
              (Vector n e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMV m n e) where
+instance (TestElem e) => Arbitrary (MatrixMV m n e) where
     arbitrary = do
         a <- arbitrary
         x <- Test.vector (numCols a)
@@ -87,7 +88,7 @@ data MatrixMVPair m n e =
                  (Vector n e) 
     deriving (Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMVPair m n e) where
+instance (TestElem e) => Arbitrary (MatrixMVPair m n e) where
     arbitrary = do
         (MatrixMV a x) <- arbitrary
         y <- Test.vector (dim x)
@@ -101,7 +102,7 @@ data MatrixMM m n k e =
              (Matrix (k,n) e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMM m n k e) where
+instance (TestElem e) => Arbitrary (MatrixMM m n k e) where
     arbitrary = do
         a <- arbitrary
         (_,n) <- Test.shape
@@ -116,7 +117,7 @@ data MatrixMMPair m n k e =
                  (Matrix (k,n) e)
     deriving (Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (MatrixMMPair m n k e) where
+instance (TestElem e) => Arbitrary (MatrixMMPair m n k e) where
     arbitrary = do
         (MatrixMM a b) <- arbitrary
         c <- Test.matrix (shape b)

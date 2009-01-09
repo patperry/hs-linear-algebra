@@ -20,6 +20,7 @@ import Data.Ix ( range )
 import Control.Monad( liftM )
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense hiding ( Test.vector )
@@ -30,7 +31,7 @@ import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
 
 import Unsafe.Coerce
 
-triMatrix :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix (m,n) e)
+triMatrix :: (TestElem e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix (m,n) e)
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
@@ -55,7 +56,7 @@ data TriMatrix m n e =
               (Matrix (m,n) e) 
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrix m n e) where
+instance (TestElem e) => Arbitrary (TriMatrix m n e) where
     arbitrary = do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -83,7 +84,7 @@ data TriMatrixMV m n e =
                 (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMV m n e) where
+instance (TestElem e) => Arbitrary (TriMatrixMV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -99,7 +100,7 @@ data TriMatrixMM m k n e =
                 (Matrix (k,n) e) 
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixMM m k n e) where
+instance (TestElem e) => Arbitrary (TriMatrixMM m k n e) where
     arbitrary =  do
         (TriMatrix t a) <- arbitrary
         n <- liftM fst Test.shape
@@ -114,7 +115,7 @@ data TriMatrixSV m n e =
                 (Vector m e) 
     deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSV m n e) where
+instance (TestElem e) => Arbitrary (TriMatrixSV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)
@@ -132,7 +133,7 @@ data TriMatrixSM m k n e =
                 (Matrix (m,n) e) 
     deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriMatrixSM m k n e) where
+instance (TestElem e) => Arbitrary (TriMatrixSM m k n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)

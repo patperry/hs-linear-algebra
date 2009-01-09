@@ -17,6 +17,7 @@ module Test.Matrix.Herm.Banded (
 import Control.Monad ( liftM, replicateM )
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conjugate )
@@ -29,7 +30,7 @@ import Data.Matrix.Herm
 
 
 
-hermBanded :: (BLAS3 e, Arbitrary e) => Int -> Int -> Gen (Banded (n,n) e)
+hermBanded :: (TestElem e) => Int -> Int -> Gen (Banded (n,n) e)
 hermBanded n k 
     | n < 0 = 
         error $ "hermBanded: n must be non-negative"
@@ -58,7 +59,7 @@ data HermBanded n e =
                (Banded (n,n) e)
     deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBanded n e) where
+instance (TestElem e) => Arbitrary (HermBanded n e) where
     arbitrary = do
         n <- liftM fst Test.shape
         k <- if n == 0 then return 0 else choose (0,n-1)
@@ -87,7 +88,7 @@ data HermBandedMV n e =
                  (Vector n e) 
     deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMV n e) where
+instance (TestElem e) => Arbitrary (HermBandedMV n e) where
     arbitrary = do
         (HermBanded h a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -102,7 +103,7 @@ data HermBandedMM m n e =
                  (Matrix (m,n) e) 
     deriving Show
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (HermBandedMM m n e) where
+instance (TestElem e) => Arbitrary (HermBandedMM m n e) where
     arbitrary = do
         (HermBanded a h) <- arbitrary
         (_,n) <- Test.shape

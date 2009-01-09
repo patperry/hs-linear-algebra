@@ -36,11 +36,6 @@ class (AEq e, Storable e, Fractional e) => Elem e where
     -- complex part is zero (according to a comparison by @(~==)@).
     maybeToReal :: e -> Maybe Double
     
-    -- | Inicates whether or not the value should be used in tests.  For
-    -- 'Double's, @isTestableElem e@ is defined as 
-    -- @not (isNaN e || isInfinite e || isDenormalized e)@.
-    isTestableElem :: e -> Bool
-    
 instance Elem Double where
     conjugate   = id
     {-# INLINE conjugate #-}
@@ -52,8 +47,6 @@ instance Elem Double where
     {-# INLINE fromReal #-}
     maybeToReal = Just
     {-# INLINE maybeToReal #-}
-    isTestableElem e = not (isNaN e || isInfinite e || isDenormalized e)
-    {-# INLINE isTestableElem #-}
     
 instance Elem (Complex Double) where
     conjugate      = Complex.conjugate
@@ -67,5 +60,3 @@ instance Elem (Complex Double) where
     maybeToReal (x :+ y) | y ~== 0   = Just x
                          | otherwise = Nothing
     {-# INLINE maybeToReal #-}
-    isTestableElem (x :+ y) = isTestableElem x && isTestableElem y
-    {-# INLINE isTestableElem #-}

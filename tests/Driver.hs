@@ -69,10 +69,6 @@ field = "Double"
 type E = Double
 #endif
 
-instance (Arbitrary e, RealFloat e) => Arbitrary (Complex e) where
-    arbitrary = liftM2 (:+) arbitrary arbitrary
-    coarbitrary (x:+y) = coarbitrary (x,y)
-
 newtype Natural = Nat Int deriving (Eq,Show)
 instance Arbitrary Natural where
     arbitrary = do

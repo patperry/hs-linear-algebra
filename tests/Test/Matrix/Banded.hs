@@ -25,6 +25,7 @@ import Debug.Trace
 import Control.Monad( forM )
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense ( Vector, dim )
@@ -32,11 +33,11 @@ import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded hiding ( banded )
 import Data.Elem.BLAS ( Elem, BLAS3 )
 
-banded :: (BLAS3 e, Arbitrary e) => 
+banded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
 banded = Test.banded
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (Banded (m,n) e) where
+instance (TestElem e) => Arbitrary (Banded (m,n) e) where
     arbitrary = do
         (m,n)   <- Test.shape
         (kl,ku) <- Test.bandwidths (m,n)
@@ -45,7 +46,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (Banded (m,n) e) where
     coarbitrary x = undefined
 
 data BandedAt m n e = BandedAt (Banded (m,n) e) (Int,Int) deriving (Eq, Show)
-instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedAt m n e) where
+instance (TestElem e) => Arbitrary (BandedAt m n e) where
     arbitrary = sized $ \k ->
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -62,7 +63,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedAt m n e) where
     coarbitrary = undefined
 
 data ListsBanded e = ListsBanded !(Int,Int) !(Int,Int) ![[e]] deriving (Eq,Show)
-instance (Arbitrary e, Elem e) => Arbitrary (ListsBanded e) where
+instance (TestElem e) => Arbitrary (ListsBanded e) where
     arbitrary = do
         (m',n') <- Test.shape
         let (m,n) = (m'+1,n'+1)
@@ -99,7 +100,7 @@ instance (Arbitrary e, Elem e) => Arbitrary (MatrixPair m n e) where
   
 data BandedMV m n e = BandedMV (Banded (m,n) e) (Vector n e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMV m n e) where
+instance (TestElem e) => Arbitrary (BandedMV m n e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -116,7 +117,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMV m n e) where
 data BandedMVPair m n e = BandedMVPair (Banded (m,n) e) (Vector n e) (Vector n e) 
     deriving (Eq, Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMVPair m n e) where
+instance (TestElem e) => Arbitrary (BandedMVPair m n e) where
     arbitrary = do
         (BandedMV a x) <- arbitrary
         y <- Test.vector (dim x)
@@ -126,7 +127,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMVPair m n e) where
         
 data BandedMM m n k e = BandedMM (Banded (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMM m n k e) where
+instance (TestElem e) => Arbitrary (BandedMM m n k e) where
     arbitrary = sized $ \s ->
         let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
         in do
@@ -144,7 +145,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMM m n k e) where
 data BandedMMPair m n k e = BandedMMPair (Banded (m,k) e) (Matrix (k,n) e) (Matrix (k,n) e)
     deriving (Eq, Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (BandedMMPair m n k e) where
+instance (TestElem e) => Arbitrary (BandedMMPair m n k e) where
     arbitrary = do
         (BandedMM a b) <- arbitrary
         c <- Test.matrix (shape b)

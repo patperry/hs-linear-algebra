@@ -20,6 +20,7 @@ module Test.Matrix.Tri.Banded (
 import Control.Monad ( replicateM )
 
 import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck as QC
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -33,7 +34,7 @@ import Data.Matrix.Tri ( Tri, UpLoEnum(..), DiagEnum(..), triFromBase )
 
 import Unsafe.Coerce
 
-triBanded :: (BLAS3 e, Arbitrary e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
+triBanded :: (TestElem e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
     d <- Test.elements n
@@ -70,7 +71,7 @@ triBanded Lower Unit n k = do
 data TriBanded n e = 
     TriBanded (Tri Banded (n,n) e) (Banded (n,n) e) deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBanded n e) where
+instance (TestElem e) => Arbitrary (TriBanded n e) where
     arbitrary = do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -100,7 +101,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBanded n e) where
 data TriBandedMV n e = 
     TriBandedMV (Tri Banded (n,n) e) (Banded (n,n) e) (Vector n e) deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMV n e) where
+instance (TestElem e) => Arbitrary (TriBandedMV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         x <- Test.vector (numCols t)
@@ -111,7 +112,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMV n e) where
 data TriBandedMM m n e = 
     TriBandedMM (Tri Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving Show
 
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMM m n e) where
+instance (TestElem e) => Arbitrary (TriBandedMM m n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         (_,n) <- Test.shape
@@ -123,7 +124,7 @@ instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedMM m n e) where
 data TriBandedSV n e = 
     TriBandedSV (Tri Banded (n,n) e) (Vector n e) deriving (Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSV n e) where
+instance (TestElem e) => Arbitrary (TriBandedSV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         if any (== 0) (elems $ diagBanded a 0)
@@ -140,7 +141,7 @@ data TriBandedSM m n e =
     TriBandedSM (Tri Banded (m,m) e) (Matrix (m,n) e) 
     deriving (Show)
     
-instance (Arbitrary e, BLAS3 e) => Arbitrary (TriBandedSM m n e) where
+instance (TestElem e) => Arbitrary (TriBandedSM m n e) where
     arbitrary = do
         (TriBandedSV t _) <- arbitrary
         (_,n) <- Test.shape

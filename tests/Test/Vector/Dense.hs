@@ -18,13 +18,14 @@ module Test.Vector.Dense (
     ) where
 
 import Test.QuickCheck hiding ( vector )
+import Test.QuickCheck.BLAS ( TestElem )
 import Test.QuickCheck.BLASBase( SubVector(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense hiding ( vector )
 import Data.Elem.BLAS ( BLAS1 )
 
-vector :: (BLAS1 e, Arbitrary e) => Int -> Gen (Vector n e)
+vector :: (TestElem e) => Int -> Gen (Vector n e)
 vector = Test.vector
     
 data VectorPair n e = 
@@ -38,13 +39,13 @@ data VectorTriple n e =
                  (Vector n e) 
     deriving (Show)
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (Vector n e) where
+instance (TestElem e) => Arbitrary (Vector n e) where
     arbitrary = sized $ \m ->
         choose (0,m) >>= vector
         
     coarbitrary = undefined
 
-instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
+instance (TestElem e) => Arbitrary (VectorPair n e) where
     arbitrary = sized $ \m -> do
         n <- choose (0,m)
         x <- vector n
@@ -53,7 +54,7 @@ instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorPair n e) where
         
     coarbitrary = undefined
         
-instance (Arbitrary e, BLAS1 e) => Arbitrary (VectorTriple n e) where
+instance (TestElem e) => Arbitrary (VectorTriple n e) where
     arbitrary = sized $ \m -> do
         n <- choose (0,m)
         x <- vector n
