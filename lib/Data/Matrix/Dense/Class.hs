@@ -54,7 +54,7 @@ module Data.Matrix.Dense.Class (
     splitRowsAt,
     splitColsAt,
 
-    -- * Row and Column views
+    -- * Row and column views
     rowViews,
     colViews,
     rowView,
