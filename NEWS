@@ -1,7 +1,6 @@
 
-Changes in 0.7:
-
-* Massive code cleanup.
+Changes in 0.7
+--------------
 
 * Get rid of most functional dependencies in favor of type families.
   There is one remaining functional dependency that cannot be gotten
@@ -28,8 +27,11 @@ Changes in 0.7:
 
 * Switch to autoconf for build system.
 
+* Massive code cleanup.
 
-Changes in 0.6:
+
+Changes in 0.6
+--------------
 
 * Massive overhaul of the types.  It is now possible to do mutable operations
   in the ST monad.  Access control is done via type classes now instead of
@@ -44,7 +46,8 @@ Changes in 0.6:
   now provide access to rows and columns.
   
 
-Changes in 0.5:
+Changes in 0.5
+--------------
 
 * Add Banded matrix data type, as well as Tri Banded and Herm Banded.
 
