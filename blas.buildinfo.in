@@ -1,3 +1,3 @@
 
 buildable: @BUILD_PACKAGE_BOOL@
-ld-options: @BLAS_LIBS@ @LIBS@
+ld-options: @LDFLAGS@ @BLAS_LIBS@ @LIBS@

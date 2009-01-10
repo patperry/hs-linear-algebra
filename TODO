@@ -76,6 +76,11 @@ Medium projects
   bindings should only be for mutable types, and should have names like
   `rank1UpdateMatrix`, `rankKUpdateHermMatrix`, etc.
 
+* I haven't really tested it, but probably the library doesn't build on
+  Windows.  See if it is possible to build the library on windows.  If
+  not, figure out how to do so.  This may involve using something other
+  than autoconf on windows.
+
 * Provide custum `unsafeGetRow`/`unsafeGetCol` functions for Herm Matrix,
   Tri Matrix, etc. rather than using matrix multiplication, which is what
   the default instance does.

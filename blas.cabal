@@ -26,10 +26,18 @@ tested-with:     GHC == 6.10.1
 
 extra-source-files:     NEWS README TODO configure.ac configure
                         aclocal.m4 m4/ax_blas.m4
-                        blas.buildinfo.in cbits/config.h.in tests/Makefile.in
+                        blas.buildinfo.in cbits/config.h.in cbits/BLAS.h
+                        tests/Makefile.in
                         
                         examples/LU.hs
                         
+                        tests/Test/Vector/Dense.hs
+                        tests/Test/Matrix/Banded.hs
+                        tests/Test/Matrix/Dense.hs
+                        tests/Test/Matrix/Herm/Banded.hs
+                        tests/Test/Matrix/Herm/Dense.hs
+                        tests/Test/Matrix/Tri/Banded.hs
+                        tests/Test/Matrix/Tri/Dense.hs
                         tests/Main.hs
                         tests/Driver.hs
                         tests/Vector.hs
