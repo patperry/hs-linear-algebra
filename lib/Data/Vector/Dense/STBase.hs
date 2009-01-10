@@ -93,8 +93,8 @@ instance (Elem e) => BaseVector (STVector s) e where
     {-# INLINE dim #-}
     stride (STVector x) = strideIOVector x
     {-# INLINE stride #-}
-    isConj (STVector x) = isConjIOVector x
-    {-# INLINE isConj #-}
+    conjEnum (STVector x) = conjEnumIOVector x
+    {-# INLINE conjEnum #-}
     conj (STVector x) = STVector (conjIOVector x)
     {-# INLINE conj #-}
     unsafeSubvectorViewWithStride s (STVector x) o n = 

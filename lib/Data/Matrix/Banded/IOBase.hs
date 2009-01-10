@@ -140,20 +140,22 @@ maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix f p m' n' l h)
             ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
 viewVectorAsIOBanded :: (Int,Int) -> IOVector k e -> IOBanded (n,p) e
-viewVectorAsIOBanded (m,n) (IOVector f p k l c)
+viewVectorAsIOBanded (m,n) (IOVector c f p k l)
     | k /= m && k /= n =
         error $ "viewVectorAsBanded " ++ show (m,n) ++ " "
               ++ " <vector of dim " ++ show k ++ ">: "
               ++ "vector must have length equal to one of the specified"
               ++ " diemsion sizes"
     | otherwise =
-        IOBanded f p m n 0 0 l c
+        let h = if c == Conj then True else False
+        in IOBanded f p m n 0 0 l h
 {-# INLINE viewVectorAsIOBanded #-}
 
 maybeViewIOBandedAsVector :: IOBanded (n,p) e -> Maybe (IOVector k e)
 maybeViewIOBandedAsVector (IOBanded f p m n kl ku l h)
     | kl == 0 && ku == 0 =
-        Just $ IOVector f p (min m n) l h
+        let c = if h then Conj else NoConj
+        in Just $ IOVector c f p (min m n) l
     | otherwise =
         Nothing
 {-# INLINE maybeViewIOBandedAsVector #-}
@@ -365,7 +367,7 @@ unsafeRowViewIOBanded a@(IOBanded f p _ n kl ku ld h) i =
             p'  = p `advancePtr` (r + c * ld)
             inc = max (ld - 1) 1
             len = n - (nb + na)
-        in (nb, IOVector f p' len inc False, na)
+        in (nb, IOVector NoConj f p' len inc, na)
 
 unsafeColViewIOBanded :: (Elem e)
                       => IOBanded np e
@@ -383,7 +385,7 @@ unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
             p'  = p `advancePtr` (r + c * ld)
             inc = 1
             len = m - (nb + na)
-        in (nb, IOVector f p' len inc False, na)
+        in (nb, IOVector NoConj f p' len inc, na)
 
 unsafeDiagViewIOBanded :: (Elem e) => 
     IOBanded np e -> Int -> IOVector k e
@@ -394,8 +396,7 @@ unsafeDiagViewIOBanded a@(IOBanded fp p m n _ _ ld h) d
             p'  = p `advancePtr` off
             len = diagLen (m,n) d
             inc = ld
-            c   = False
-        in (IOVector fp p' len inc c)
+        in (IOVector NoConj fp p' len inc)
 
 
 unsafeGetRowIOBanded :: (WriteVector y e IO, BLAS1 e) 

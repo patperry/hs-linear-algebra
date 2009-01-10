@@ -17,6 +17,7 @@ import Foreign
 import System.IO.Unsafe
 
 import BLAS.Internal ( clearArray )
+import BLAS.Types( ConjEnum(..), flipConj )
 import Data.Elem.BLAS ( Complex, Elem, BLAS1, conjugate )
 import qualified Data.Elem.BLAS.Level1 as BLAS
 
@@ -31,11 +32,11 @@ import Data.Tensor.Class.MTensor
 --       are supported.
 --
 data IOVector n e = 
-      IOVector {-# UNPACK #-} !(ForeignPtr e) -- memory owner
+      IOVector {-# UNPACK #-} !ConjEnum       
+               {-# UNPACK #-} !(ForeignPtr e) -- memory owner
                {-# UNPACK #-} !(Ptr e)        -- pointer to the first element
                {-# UNPACK #-} !Int            -- the length of the vector
                {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
-               {-# UNPACK #-} !Bool           -- indicates whether or not the vector is conjugated
 
 -- | View an array in memory as a vector.
 vectorViewArray :: (Elem e)
@@ -55,35 +56,39 @@ vectorViewArrayWithStride :: (Elem e)
                           -> IOVector n e
 vectorViewArrayWithStride s f o n =
     let p = unsafeForeignPtrToPtr f `advancePtr` o
-    in IOVector f p n s False
+    in IOVector NoConj f p n s
 {-# INLINE vectorViewArrayWithStride #-}
                           
 dimIOVector :: IOVector n e -> Int
-dimIOVector (IOVector _ _ n _ _) = n
+dimIOVector (IOVector _ _ _ n _) = n
 {-# INLINE dimIOVector #-}
 
 strideIOVector :: IOVector n e -> Int
-strideIOVector (IOVector _ _ _ incX _) = incX
+strideIOVector (IOVector _ _ _ _ incX) = incX
 {-# INLINE strideIOVector #-}
 
+conjEnumIOVector :: IOVector n e -> ConjEnum
+conjEnumIOVector (IOVector c _ _ _ _) = c
+{-# INLINE conjEnumIOVector #-}
+
 isConjIOVector :: IOVector n e -> Bool
-isConjIOVector (IOVector _ _ _ _ c) = c
+isConjIOVector x = conjEnumIOVector x == Conj
 {-# INLINE isConjIOVector #-}
 
 conjIOVector :: IOVector n e -> IOVector n e
-conjIOVector (IOVector f p n incX c) = (IOVector f p n incX (not c))
+conjIOVector (IOVector c f p n incX) = (IOVector (flipConj c) f p n incX)
 {-# INLINE conjIOVector #-}
 
 unsafeSubvectorViewWithStrideIOVector :: (Elem e) =>
     Int -> IOVector n e -> Int -> Int -> IOVector n' e
-unsafeSubvectorViewWithStrideIOVector s' (IOVector f p _ inc c) o' n' =
-    IOVector f (p `advancePtr` (inc*o')) n' (inc*s') c
+unsafeSubvectorViewWithStrideIOVector s' (IOVector c f p _ inc) o' n' =
+    IOVector c f (p `advancePtr` (inc*o')) n' (inc*s')
 {-# INLINE unsafeSubvectorViewWithStrideIOVector #-}
 
 -- | Execute an 'IO' action with a pointer to the first element in the
 -- vector.
 withIOVector :: IOVector n e -> (Ptr e -> IO a) -> IO a
-withIOVector (IOVector f p _ _ _) g = do
+withIOVector (IOVector _ f p _ _) g = do
     a <- g p
     touchForeignPtr f
     return a
@@ -95,15 +100,15 @@ newIOVector_ n
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
     | otherwise = do
         arr <- mallocForeignPtrArray n
-        return $ IOVector arr (unsafeForeignPtrToPtr arr) n 1 False
+        return $ IOVector NoConj arr (unsafeForeignPtrToPtr arr) n 1
 
 newCopyIOVector :: (BLAS1 e) => IOVector n e -> IO (IOVector n e)
-newCopyIOVector (IOVector f p n incX c) = do
-    (IOVector f' p' _ _ _) <- newIOVector_ n
+newCopyIOVector (IOVector c f p n incX) = do
+    (IOVector _ f' p' _ _) <- newIOVector_ n
     BLAS.copy n p incX p' 1
     touchForeignPtr f
     touchForeignPtr f'
-    return (IOVector f' p' n 1 c)
+    return (IOVector c f' p' n 1)
 
 shapeIOVector :: IOVector n e -> Int
 shapeIOVector = dimIOVector
@@ -138,10 +143,10 @@ getIndicesIOVector' = getIndicesIOVector
 {-# INLINE getIndicesIOVector' #-}
 
 getElemsIOVector :: (Elem e) => IOVector n e -> IO [e]
-getElemsIOVector (IOVector f p n incX True) = do
-    es <- getElemsIOVector (IOVector f p n incX False)
+getElemsIOVector (IOVector Conj f p n incX) = do
+    es <- getElemsIOVector (IOVector NoConj f p n incX)
     return $ map conjugate es
-getElemsIOVector (IOVector f p n incX False) =
+getElemsIOVector (IOVector NoConj f p n incX) =
     let end = p `advancePtr` (n*incX)
         go p' | p' == end = do
                    touchForeignPtr f
@@ -154,11 +159,11 @@ getElemsIOVector (IOVector f p n incX False) =
 {-# SPECIALIZE INLINE getElemsIOVector :: IOVector n Double -> IO [Double] #-}
 {-# SPECIALIZE INLINE getElemsIOVector :: IOVector n (Complex Double) -> IO [Complex Double] #-}
 
-getElemsIOVector' :: (Elem e) => IOVector n e -> IO [e]
-getElemsIOVector' (IOVector f p n incX True) = do
-    es <- getElemsIOVector' (IOVector f p n incX False)
+getElemsIOVector' :: (Elem e) => IOVector      n e -> IO [e]
+getElemsIOVector' (IOVector Conj f p n incX) = do
+    es <- getElemsIOVector' (IOVector NoConj f p n incX)
     return $ map conjugate es    
-getElemsIOVector' (IOVector f p n incX False) =
+getElemsIOVector' (IOVector NoConj f p n incX) =
     let end = p `advancePtr` (-incX)
         go p' es | p' == end = do
                       touchForeignPtr f
@@ -179,12 +184,12 @@ getAssocsIOVector' x = liftM2 zip (getIndicesIOVector' x) (getElemsIOVector' x)
 {-# INLINE getAssocsIOVector' #-}
 
 unsafeReadElemIOVector :: (Elem e) => IOVector n e -> Int -> IO e
-unsafeReadElemIOVector (IOVector f p n incX c) i
-    | c = liftM conjugate $ unsafeReadElemIOVector (IOVector f p n incX False) i
-    | otherwise = do
-        e <- peekElemOff p (i*incX)
-        touchForeignPtr f
-        return e
+unsafeReadElemIOVector (IOVector Conj   f p n incX) i = 
+    liftM conjugate $ unsafeReadElemIOVector (IOVector NoConj f p n incX) i
+unsafeReadElemIOVector (IOVector NoConj f p _ incX) i = do
+    e <- peekElemOff p (i*incX)
+    touchForeignPtr f
+    return e
 {-# SPECIALIZE INLINE unsafeReadElemIOVector :: IOVector n Double -> Int -> IO (Double) #-}
 {-# SPECIALIZE INLINE unsafeReadElemIOVector :: IOVector n (Complex Double) -> Int -> IO (Complex Double) #-}
 
@@ -193,8 +198,8 @@ canModifyElemIOVector _ _ = return True
 {-# INLINE canModifyElemIOVector #-}
 
 unsafeWriteElemIOVector :: (Elem e) => IOVector n e -> Int -> e -> IO ()
-unsafeWriteElemIOVector (IOVector f p _ incX c) i e =
-    let e' = if c then conjugate e else e
+unsafeWriteElemIOVector (IOVector c f p _ incX) i e =
+    let e' = if c == Conj then conjugate e else e
     in do
         pokeElemOff p (i*incX) e'
         touchForeignPtr f
@@ -202,8 +207,8 @@ unsafeWriteElemIOVector (IOVector f p _ incX c) i e =
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n (Complex Double) -> Int -> Complex Double -> IO () #-}
 
 unsafeModifyElemIOVector :: (Elem e) => IOVector n e -> Int -> (e -> e) -> IO ()
-unsafeModifyElemIOVector (IOVector f p _ incX c) i g =
-    let g' = if c then conjugate . g . conjugate else g
+unsafeModifyElemIOVector (IOVector c f p _ incX) i g =
+    let g' = if c == Conj then conjugate . g . conjugate else g
         p' = p `advancePtr` (i*incX)
     in do
         e <- peek p'
@@ -213,7 +218,7 @@ unsafeModifyElemIOVector (IOVector f p _ incX c) i g =
 {-# SPECIALIZE INLINE unsafeModifyElemIOVector :: IOVector n (Complex Double) -> Int -> (Complex Double -> Complex Double) -> IO () #-}
 
 unsafeSwapElemsIOVector :: (Elem e) => IOVector n e -> Int -> Int -> IO ()
-unsafeSwapElemsIOVector (IOVector f p _ incX _) i1 i2 =
+unsafeSwapElemsIOVector (IOVector _ f p _ incX) i1 i2 =
     let p1 = p `advancePtr` (i1*incX)
         p2 = p `advancePtr` (i2*incX)
     in do
@@ -226,8 +231,8 @@ unsafeSwapElemsIOVector (IOVector f p _ incX _) i1 i2 =
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n (Complex Double) -> Int -> Int -> IO () #-}
                             
 modifyWithIOVector :: (Elem e) => (e -> e) -> IOVector n e -> IO ()
-modifyWithIOVector g (IOVector f p n incX c) =
-    let g'  = if c then (conjugate . g . conjugate) else g
+modifyWithIOVector g (IOVector c f p n incX) =
+    let g'  = if c == Conj then (conjugate . g . conjugate) else g
         end = p `advancePtr` (n*incX)
         go p' | p' == end = touchForeignPtr f
               | otherwise = do
@@ -239,15 +244,15 @@ modifyWithIOVector g (IOVector f p n incX c) =
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Complex Double -> Complex Double) -> IOVector n (Complex Double) -> IO () #-}
 
 setZeroIOVector :: (Elem e) => IOVector n e -> IO ()
-setZeroIOVector x@(IOVector f p n incX _)
+setZeroIOVector x@(IOVector _ f p n incX)
     | incX == 1 = clearArray p n >> touchForeignPtr f
     | otherwise = setConstantIOVector 0 x
 {-# INLINE setZeroIOVector #-}
 
 setConstantIOVector :: (Elem e) => e -> IOVector n e -> IO ()
 setConstantIOVector 0 x | strideIOVector x == 1 = setZeroIOVector x
-setConstantIOVector e (IOVector f p n incX c) =
-    let e'   = if c then conjugate e else e
+setConstantIOVector e (IOVector c f p n incX) =
+    let e'   = if c == Conj then conjugate e else e
         end = p `advancePtr` (n*incX)
         go p' | p' == end = touchForeignPtr f
               | otherwise = do
@@ -257,14 +262,14 @@ setConstantIOVector e (IOVector f p n incX c) =
 {-# INLINE setConstantIOVector #-}
 
 doConjIOVector :: (BLAS1 e) => IOVector n e -> IO ()
-doConjIOVector (IOVector f p n incX _) =
+doConjIOVector (IOVector _ f p n incX) =
     BLAS.vconj n p incX >> touchForeignPtr f
 {-# INLINE doConjIOVector #-}
 
 scaleByIOVector :: (BLAS1 e) => e -> IOVector n e -> IO ()
 scaleByIOVector 1 _ = return ()
-scaleByIOVector k (IOVector f p n incX c) =
-    let k' = if c then conjugate k else k
+scaleByIOVector k (IOVector c f p n incX) =
+    let k' = if c == Conj then conjugate k else k
     in BLAS.scal n k' p incX >> touchForeignPtr f
 {-# INLINE scaleByIOVector #-}
                     

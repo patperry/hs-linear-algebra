@@ -68,7 +68,12 @@ class (Shaped x Int, Elem e) => BaseVector x e where
     -- | Indicate whether or not internally the vector stores the complex
     -- conjugates of its elements.
     isConj :: x n e -> Bool
+    isConj x = conjEnum x == Conj
+    {-# INLINE isConj #-}
 
+    -- | Get the conjugace type.
+    conjEnum :: x n e -> ConjEnum
+    
     -- | Get a view into the complex conjugate of a vector.
     conj :: x n e -> x n e
 
@@ -495,10 +500,8 @@ getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
 
 unsafeGetDot :: (ReadVector x e m, ReadVector y e m) => 
     x n e -> y n e -> m e
-unsafeGetDot x y = let
-    conjOf z      = if isConj z then Conj else NoConj
-    (conjX,conjY) = (conjOf x, conjOf y)
-    in vectorCall2 (BLAS.dot conjX conjY) x y
+unsafeGetDot x y =
+    vectorCall2 (BLAS.dot (conjEnum x) (conjEnum y)) x y
 {-# INLINE unsafeGetDot #-}
 
 instance (Elem e) => BaseVector IOVector e where
@@ -506,8 +509,8 @@ instance (Elem e) => BaseVector IOVector e where
     {-# INLINE dim #-}
     stride = strideIOVector
     {-# INLINE stride #-}
-    isConj = isConjIOVector
-    {-# INLINE isConj #-}
+    conjEnum = conjEnumIOVector
+    {-# INLINE conjEnum #-}
     conj = conjIOVector
     {-# INLINE conj #-}
     unsafeSubvectorViewWithStride = unsafeSubvectorViewWithStrideIOVector
@@ -627,7 +630,7 @@ indicesVector (Vector x) = indicesIOVector x
 
 elemsVector :: (Elem e) => Vector n e -> [e]
 elemsVector x | isConj x  = (map conjugate . elemsVector . conj) x
-              | otherwise = case x of { (Vector (IOVector f p n incX _)) ->
+              | otherwise = case x of { (Vector (IOVector _ f p n incX)) ->
     let end = p `advancePtr` (n*incX)
         go p' | p' == end = inlinePerformIO $ do
                                 io <- touchForeignPtr f
@@ -645,7 +648,7 @@ assocsVector x = zip (indicesVector x) (elemsVector x)
 
 unsafeAtVector :: (Elem e) => Vector n e -> Int -> e
 unsafeAtVector x i | isConj x  = conjugate $ unsafeAtVector (conj x) i
-                   | otherwise = case x of { (Vector (IOVector f p _ inc _)) ->
+                   | otherwise = case x of { (Vector (IOVector _ f p _ inc)) ->
     inlinePerformIO $ do
         e  <- peekElemOff p (i*inc)
         io <- touchForeignPtr f
@@ -757,8 +760,8 @@ instance (Elem e) => BaseVector Vector e where
     {-# INLINE dim #-}
     stride (Vector x) = strideIOVector x
     {-# INLINE stride #-}
-    isConj (Vector x) = isConjIOVector x
-    {-# INLINE isConj #-}
+    conjEnum (Vector x) = conjEnumIOVector x
+    {-# INLINE conjEnum #-}
     conj (Vector x) = (Vector (conjIOVector x))
     {-# INLINE conj #-}
     unsafeSubvectorViewWithStride s (Vector x) o n = 
