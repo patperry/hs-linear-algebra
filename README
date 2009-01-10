@@ -12,6 +12,6 @@ e.g
 
     runhaskell Setup.lhs configure --configure-option="--with-blas=<lib>"
 
-To build this package from the darcs repository, first run
+To build this package from the git repository, first run
     aclocal -I m4
     autoreconf
