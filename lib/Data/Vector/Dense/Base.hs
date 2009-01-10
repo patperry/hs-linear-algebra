@@ -630,7 +630,7 @@ indicesVector (Vector x) = indicesIOVector x
 
 elemsVector :: (Elem e) => Vector n e -> [e]
 elemsVector x | isConj x  = (map conjugate . elemsVector . conj) x
-              | otherwise = case x of { (Vector (IOVector _ f p n incX)) ->
+              | otherwise = case x of { (Vector (IOVector _ n f p incX)) ->
     let end = p `advancePtr` (n*incX)
         go p' | p' == end = inlinePerformIO $ do
                                 io <- touchForeignPtr f
@@ -648,7 +648,7 @@ assocsVector x = zip (indicesVector x) (elemsVector x)
 
 unsafeAtVector :: (Elem e) => Vector n e -> Int -> e
 unsafeAtVector x i | isConj x  = conjugate $ unsafeAtVector (conj x) i
-                   | otherwise = case x of { (Vector (IOVector _ f p _ inc)) ->
+                   | otherwise = case x of { (Vector (IOVector _ _ f p inc)) ->
     inlinePerformIO $ do
         e  <- peekElemOff p (i*inc)
         io <- touchForeignPtr f

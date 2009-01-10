@@ -71,9 +71,18 @@ unsafeThawIOMatrix (Matrix x) = return x
 -- | Common functionality for all dense matrix types.
 class (HasVectorView a, Elem e, MatrixShaped a
       , BaseVector (VectorView a) e) => BaseMatrix a e where
-          
+      
+    -- | Get the leading dimension of the storage of the matrix.    
     ldaMatrix :: a (n,p) e -> Int
+    
+    -- | Get the storage type of the matrix.
+    transEnumMatrix :: a (n,p) e -> TransEnum
+    
+    -- | Indicate whether or not the matrix storage is transposed and
+    -- conjugated.
     isHermMatrix :: a (n,p) e -> Bool
+    isHermMatrix = (ConjTrans ==) . transEnumMatrix
+    {-# INLINE isHermMatrix #-}
 
     -- | Cast the shape type of the matrix.
     coerceMatrix :: a np e -> a np' e
@@ -1197,8 +1206,8 @@ class (MatrixShaped a, BLAS3 e, Monad m) => MSolve a e m where
 instance (Elem e) => BaseMatrix IOMatrix e where
     ldaMatrix = ldaMatrixIOMatrix
     {-# INLINE ldaMatrix #-}
-    isHermMatrix = isHermIOMatrix
-    {-# INLINE isHermMatrix #-}
+    transEnumMatrix = transEnumIOMatrix
+    {-# INLINE transEnumMatrix #-}
     unsafeSubmatrixView = unsafeSubmatrixViewIOMatrix
     {-# INLINE unsafeSubmatrixView #-}
     unsafeDiagView = unsafeDiagViewIOMatrix
@@ -1411,8 +1420,8 @@ unsafeDiag (Matrix a) i = Vector (diagView a i)
 {-# INLINE unsafeDiag #-}
 
 unsafeAtMatrix :: (Elem e) => Matrix np e -> (Int,Int) -> e
-unsafeAtMatrix (Matrix (IOMatrix f p _ _ l h)) (i,j)
-    | h = inlinePerformIO $ do
+unsafeAtMatrix (Matrix (IOMatrix h _ _ f p l)) (i,j)
+    | h == ConjTrans = inlinePerformIO $ do
         e  <- liftM conjugate $ peekElemOff p (i*l+j)
         io <- touchForeignPtr f
         e `seq` io `seq` return e
@@ -1480,8 +1489,8 @@ instance HasVectorView Matrix where
 instance (Elem e) => BaseMatrix Matrix e where
     ldaMatrix (Matrix a) = ldaMatrixIOMatrix a
     {-# INLINE ldaMatrix #-}
-    isHermMatrix (Matrix a) = isHermMatrix a
-    {-# INLINE isHermMatrix #-}
+    transEnumMatrix (Matrix a) = transEnumIOMatrix a
+    {-# INLINE transEnumMatrix #-}
     unsafeSubmatrixView (Matrix a) ij mn =
         Matrix (unsafeSubmatrixViewIOMatrix a ij mn)
     {-# INLINE unsafeSubmatrixView #-}

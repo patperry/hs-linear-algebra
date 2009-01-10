@@ -156,8 +156,8 @@ instance (BLAS3 e) => MSolve  (Tri (STMatrix s)) e (ST s) where
 instance (Elem e) => BaseMatrix (STMatrix s) e where
     ldaMatrix (STMatrix a) = ldaMatrixIOMatrix a
     {-# INLINE ldaMatrix #-}
-    isHermMatrix (STMatrix a) = isHermMatrix a
-    {-# INLINE isHermMatrix #-}
+    transEnumMatrix (STMatrix a) = transEnumIOMatrix a
+    {-# INLINE transEnumMatrix #-}
     unsafeSubmatrixView (STMatrix a) ij mn =
         STMatrix (unsafeSubmatrixViewIOMatrix a ij mn)
     {-# INLINE unsafeSubmatrixView #-}

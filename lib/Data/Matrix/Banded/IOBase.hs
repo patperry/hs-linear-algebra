@@ -106,14 +106,14 @@ withIOBandedElem a (i,j) f =
 maybeMatrixStorageFromIOBanded :: IOBanded (n,p) e -> Maybe (IOMatrix (k,p) e)
 maybeMatrixStorageFromIOBanded (IOBanded f p _ n kl ku l h)
     | h         = Nothing
-    | otherwise = Just $ IOMatrix f p (kl+1+ku) n l False
+    | otherwise = Just $ IOMatrix NoTrans (kl+1+ku) n f p l
 {-# INLINE maybeMatrixStorageFromIOBanded #-}
 
 maybeIOBandedFromMatrixStorage :: (Int,Int)
                    -> (Int,Int)
                    -> IOMatrix np e
                    -> Maybe (IOBanded np' e)
-maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix f p m' n' l h)
+maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix h m' n' f p l)
     | m < 0 || n < 0 =
         err "dimensions must be non-negative."
     | kl < 0 =
@@ -130,7 +130,7 @@ maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix f p m' n' l h)
     | n' /= n =
         err $ "numbers of columns must be equal"
             ++ " to the number of columns in the underlying matrix."
-    | h =
+    | h == ConjTrans =
         Nothing    
     | otherwise =
         Just $ IOBanded f p m n kl ku l False
@@ -140,7 +140,7 @@ maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix f p m' n' l h)
             ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
 viewVectorAsIOBanded :: (Int,Int) -> IOVector k e -> IOBanded (n,p) e
-viewVectorAsIOBanded (m,n) (IOVector c f p k l)
+viewVectorAsIOBanded (m,n) (IOVector c k f p l)
     | k /= m && k /= n =
         error $ "viewVectorAsBanded " ++ show (m,n) ++ " "
               ++ " <vector of dim " ++ show k ++ ">: "
@@ -155,7 +155,7 @@ maybeViewIOBandedAsVector :: IOBanded (n,p) e -> Maybe (IOVector k e)
 maybeViewIOBandedAsVector (IOBanded f p m n kl ku l h)
     | kl == 0 && ku == 0 =
         let c = if h then Conj else NoConj
-        in Just $ IOVector c f p (min m n) l
+        in Just $ IOVector c (min m n) f p l
     | otherwise =
         Nothing
 {-# INLINE maybeViewIOBandedAsVector #-}
@@ -367,7 +367,7 @@ unsafeRowViewIOBanded a@(IOBanded f p _ n kl ku ld h) i =
             p'  = p `advancePtr` (r + c * ld)
             inc = max (ld - 1) 1
             len = n - (nb + na)
-        in (nb, IOVector NoConj f p' len inc, na)
+        in (nb, IOVector NoConj len f p' inc, na)
 
 unsafeColViewIOBanded :: (Elem e)
                       => IOBanded np e
@@ -385,7 +385,7 @@ unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
             p'  = p `advancePtr` (r + c * ld)
             inc = 1
             len = m - (nb + na)
-        in (nb, IOVector NoConj f p' len inc, na)
+        in (nb, IOVector NoConj len f p' inc, na)
 
 unsafeDiagViewIOBanded :: (Elem e) => 
     IOBanded np e -> Int -> IOVector k e
@@ -396,7 +396,7 @@ unsafeDiagViewIOBanded a@(IOBanded fp p m n _ _ ld h) d
             p'  = p `advancePtr` off
             len = diagLen (m,n) d
             inc = ld
-        in (IOVector NoConj fp p' len inc)
+        in (IOVector NoConj len fp p' inc)
 
 
 unsafeGetRowIOBanded :: (WriteVector y e IO, BLAS1 e) 
