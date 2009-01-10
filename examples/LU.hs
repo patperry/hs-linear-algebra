@@ -1,4 +1,4 @@
-
+{-# LANGUAGE ScopedTypeVariables #-}
 module LU ( luFactorize ) where
 
 import Data.Elem.BLAS( BLAS3 )
@@ -12,12 +12,13 @@ import Data.Matrix.Tri
 import Data.Vector.Dense.ST
 
 
-lu :: (BLAS3 e) => Matrix (m,n) e -> Either Int (Matrix (m,n) e, [Int])
-lu a = runST $ do
-    a' <- thawMatrix a
-    luFactorize a' >>=
-        return . either Left (\pivots ->
-            Right (unsafeFreezeMatrix a', pivots)
+lu :: (BLAS3 e) => Matrix (n,p) e -> Either Int (Matrix (n,p) e, [Int])
+lu (a :: Matrix (n,p) e) = runST $ do
+    ma <- thawMatrix a :: ST s (STMatrix s (n,p) e)
+    luFactorize ma >>=
+        either (return . Left) (\pivots -> do
+            a' <- unsafeFreezeMatrix ma
+            return $ Right (a',pivots)
             )
 
 
@@ -29,7 +30,7 @@ lu a = runST $ do
  - L and U are stored in A, and a list of the row swaps are returned.
  - On failure, the index of the failing column is returned.
  -}      
-luFactorize :: (WriteMatrix a e m) => a (k,l) e -> m (Either Int [Int])
+luFactorize :: (WriteMatrix a e m) => a (n,p) e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
         let nleft = mn `div` 2
