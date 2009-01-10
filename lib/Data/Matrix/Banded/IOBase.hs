@@ -56,34 +56,40 @@ import Data.Vector.Dense.Base( ReadVector, WriteVector, coerceVector,
 --       are supported.
 --
 data IOBanded np e =
-    IOBanded { fptrIOBanded     :: {-# UNPACK #-} !(ForeignPtr e)
-             , ptrIOBanded      :: {-# UNPACK #-} !(Ptr e)
-             , numRowsIOBanded  :: {-# UNPACK #-} !Int
-             , numColsIOBanded  :: {-# UNPACK #-} !Int
-             , numLowerIOBanded :: {-# UNPACK #-} !Int
-             , numUpperIOBanded :: {-# UNPACK #-} !Int
-             , ldaIOBanded      :: {-# UNPACK #-} !Int
-             , isHermIOBanded   :: {-# UNPACK #-} !Bool
+    IOBanded { transEnumIOBanded :: {-# UNPACK #-} !TransEnum
+             , numRowsIOBanded   :: {-# UNPACK #-} !Int
+             , numColsIOBanded   :: {-# UNPACK #-} !Int
+             , numLowerIOBanded  :: {-# UNPACK #-} !Int
+             , numUpperIOBanded  :: {-# UNPACK #-} !Int
+             , fptrIOBanded      :: {-# UNPACK #-} !(ForeignPtr e)
+             , ptrIOBanded       :: {-# UNPACK #-} !(Ptr e)
+             , ldaIOBanded       :: {-# UNPACK #-} !Int
              }
 
 hermIOBanded :: IOBanded np e -> IOBanded pn e
-hermIOBanded a = a{ numRowsIOBanded  = numColsIOBanded a
-                  , numColsIOBanded  = numRowsIOBanded a
-                  , numLowerIOBanded = numUpperIOBanded a
-                  , numUpperIOBanded = numLowerIOBanded a
-                  , isHermIOBanded   = not (isHermIOBanded a)
+hermIOBanded a = a{ numRowsIOBanded   = numColsIOBanded a
+                  , numColsIOBanded   = numRowsIOBanded a
+                  , numLowerIOBanded  = numUpperIOBanded a
+                  , numUpperIOBanded  = numLowerIOBanded a
+                  , transEnumIOBanded = flipTrans (transEnumIOBanded a)
                   }
 {-# INLINE hermIOBanded #-}
 
+isHermIOBanded :: IOBanded np e -> Bool
+isHermIOBanded = (ConjTrans ==) . transEnumIOBanded
+{-# INLINE isHermIOBanded #-}
+
 indexIOBanded :: IOBanded np e -> (Int,Int) -> Int
-indexIOBanded (IOBanded _ _ _ _ kl ku ld h) (i,j) =
-    let (ku',i',j') = if h then (kl,j,i) else (ku,i,j)
+indexIOBanded (IOBanded h _ _ kl ku _ _ ld) (i,j) =
+    let (ku',i',j') = if h == ConjTrans then (kl,j,i) else (ku,i,j)
     in ku' + (i' - j') + j' * ld
 {-# INLINE indexIOBanded #-}
 
 hasStorageIOBanded :: IOBanded np e -> (Int,Int) -> Bool
-hasStorageIOBanded (IOBanded _ _ m n kl ku _ h) (i,j) =
-    let (m',kl',ku',i',j') = if h then (n,ku,kl,j,i) else (m,kl,ku,i,j)
+hasStorageIOBanded (IOBanded h m n kl ku _ _ _) (i,j) =
+    let (m',kl',ku',i',j') = if h == ConjTrans
+                                 then (n,ku,kl,j,i) 
+                                 else (m,kl,ku,i,j)
     in inRange (max 0 (j'-ku'), min (m'-1) (j'+kl')) i'
 {-# INLINE hasStorageIOBanded #-}
 
@@ -104,9 +110,9 @@ withIOBandedElem a (i,j) f =
 {-# INLINE withIOBandedElem #-}
 
 maybeMatrixStorageFromIOBanded :: IOBanded (n,p) e -> Maybe (IOMatrix (k,p) e)
-maybeMatrixStorageFromIOBanded (IOBanded f p _ n kl ku l h)
-    | h         = Nothing
-    | otherwise = Just $ IOMatrix NoTrans (kl+1+ku) n f p l
+maybeMatrixStorageFromIOBanded (IOBanded h _ n kl ku f p l)
+    | h == ConjTrans = Nothing
+    | otherwise      = Just $ IOMatrix NoTrans (kl+1+ku) n f p l
 {-# INLINE maybeMatrixStorageFromIOBanded #-}
 
 maybeIOBandedFromMatrixStorage :: (Int,Int)
@@ -133,7 +139,7 @@ maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix h m' n' f p l)
     | h == ConjTrans =
         Nothing    
     | otherwise =
-        Just $ IOBanded f p m n kl ku l False
+        Just $ IOBanded NoTrans m n kl ku f p l
   where
     err s = 
       error $ "maybeBandedFromMatrixStorage " ++ show (m,n) ++ " " ++ show (kl,ku) 
@@ -147,14 +153,14 @@ viewVectorAsIOBanded (m,n) (IOVector c k f p l)
               ++ "vector must have length equal to one of the specified"
               ++ " diemsion sizes"
     | otherwise =
-        let h = if c == Conj then True else False
-        in IOBanded f p m n 0 0 l h
+        let h = if c == Conj then ConjTrans else NoTrans
+        in IOBanded h m n 0 0 f p l
 {-# INLINE viewVectorAsIOBanded #-}
 
 maybeViewIOBandedAsVector :: IOBanded (n,p) e -> Maybe (IOVector k e)
-maybeViewIOBandedAsVector (IOBanded f p m n kl ku l h)
+maybeViewIOBandedAsVector (IOBanded h m n kl ku f p l)
     | kl == 0 && ku == 0 =
-        let c = if h then Conj else NoConj
+        let c = if h == ConjTrans then Conj else NoConj
         in Just $ IOVector c (min m n) f p l
     | otherwise =
         Nothing
@@ -178,7 +184,7 @@ boundsIOBanded a = ((0,0), (m-1,n-1)) where (m,n) = shapeIOBanded a
 {-# INLINE boundsIOBanded #-}
 
 sizeIOBanded :: IOBanded np e -> Int
-sizeIOBanded (IOBanded _ _ m n kl ku _ _) =
+sizeIOBanded (IOBanded _ m n kl ku _ _ _) =
     foldl' (+) 0 $ map (diagLen (m,n)) [(-kl)..ku]
 
 indicesIOBanded :: IOBanded np e -> [(Int,Int)]
@@ -268,11 +274,11 @@ newIOBanded_ (m,n) (kl,ku)
     | otherwise =
         let m'  = kl + 1 + ku
             l   = m'
-            h   = False
+            h   = NoTrans
         in do
             fp <- mallocForeignPtrArray (m' * n)
             let p = unsafeForeignPtrToPtr fp
-            return $ IOBanded fp p m n kl ku l h
+            return $ IOBanded h m n kl ku fp p l
     where
       err s = fail $ "newBanded_ " ++ show (m,n) ++ " " ++ show (kl,ku) ++ ": " ++ s
 
@@ -355,8 +361,8 @@ unsafeRowViewIOBanded :: (Elem e)
                       => IOBanded np e
                       -> Int
                       -> (Int, IOVector k e, Int)
-unsafeRowViewIOBanded a@(IOBanded f p _ n kl ku ld h) i =
-    if h then
+unsafeRowViewIOBanded a@(IOBanded h _ n kl ku f p ld) i =
+    if h == ConjTrans then
         case unsafeColViewIOBanded (hermIOBanded a) i of
             (nb, v, na) -> (nb, conj v, na)
     else
@@ -373,8 +379,8 @@ unsafeColViewIOBanded :: (Elem e)
                       => IOBanded np e
                       -> Int
                       -> (Int, IOVector k e, Int)
-unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
-    if h then
+unsafeColViewIOBanded a@(IOBanded h m _ kl ku f p ld) j =
+    if h == ConjTrans then
         case unsafeRowViewIOBanded (hermIOBanded a) j of
             (nb, v, na) -> (nb, conj v, na)
     else
@@ -389,8 +395,9 @@ unsafeColViewIOBanded a@(IOBanded f p m _ kl ku ld h) j =
 
 unsafeDiagViewIOBanded :: (Elem e) => 
     IOBanded np e -> Int -> IOVector k e
-unsafeDiagViewIOBanded a@(IOBanded fp p m n _ _ ld h) d
-    | h         = conj $ unsafeDiagViewIOBanded (hermIOBanded a) (negate d)
+unsafeDiagViewIOBanded a@(IOBanded h m n _ _ fp p ld) d
+    | h == ConjTrans =
+         conj $ unsafeDiagViewIOBanded (hermIOBanded a) (negate d)
     | otherwise =
         let off = indexIOBanded a (diagStart d)
             p'  = p `advancePtr` off
