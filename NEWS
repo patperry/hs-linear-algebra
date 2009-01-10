@@ -1,12 +1,4 @@
 
-Changes in 0.7.2:
-* Put all exported unsafe functions in Unsafe.BLAS
-
-Changes in 0.7.1:
-
-* Update minimum Quickcheck version in cabal file
-
-
 Changes in 0.7:
 
 * Get rid of most functional dependencies in favor of type families.

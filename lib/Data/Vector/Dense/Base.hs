@@ -496,7 +496,7 @@ getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
 unsafeGetDot :: (ReadVector x e m, ReadVector y e m) => 
     x n e -> y n e -> m e
 unsafeGetDot x y = let
-    conjOf z      = if isConj x then Conj else NoConj
+    conjOf z      = if isConj z then Conj else NoConj
     (conjX,conjY) = (conjOf x, conjOf y)
     in vectorCall2 (BLAS.dot conjX conjY) x y
 {-# INLINE unsafeGetDot #-}
