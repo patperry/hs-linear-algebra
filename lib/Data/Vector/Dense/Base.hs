@@ -259,7 +259,7 @@ swapVector :: (WriteVector x e m, WriteVector y e m) =>
 swapVector x y = checkBinaryOp (shape x) (shape y) $ unsafeSwapVector x y
 {-# INLINE swapVector #-}
 
-unsafeSwapVector :: (ReadVector x e m, ReadVector y e m) =>
+unsafeSwapVector :: (WriteVector x e m, WriteVector y e m) =>
     x n e -> y n e -> m ()
 unsafeSwapVector x y
     | isConj x =
@@ -545,7 +545,7 @@ vector n ies = unsafePerformIO $
     unsafeFreezeIOVector =<< newVector n ies
 {-# NOINLINE vector #-}
 
--- | Same as 'vector', but does not range-check the indices.
+-- Same as 'vector', but does not range-check the indices.
 unsafeVector :: (BLAS1 e) => Int -> [(Int, e)] -> Vector n e
 unsafeVector n ies = unsafePerformIO $
     unsafeFreezeIOVector =<< unsafeNewVector n ies
@@ -605,6 +605,11 @@ subvector = subvectorView
 unsafeSubvector :: (BLAS1 e) => Vector n e -> Int -> Int -> Vector n' e
 unsafeSubvector = unsafeSubvectorView
 {-# INLINE unsafeSubvector #-}
+
+unsafeSubvectorWithStride :: (Elem e) =>
+    Int -> Vector n e -> Int -> Int -> Vector n' e
+unsafeSubvectorWithStride = unsafeSubvectorViewWithStride
+{-# INLINE unsafeSubvectorWithStride #-}
 
 -- | @subvectorWithStride s x o n@ creates a subvector of @x@ starting 
 -- at index @o@, having length @n@ and stride @s@.
@@ -697,6 +702,10 @@ whichMaxAbs (Vector x) = unsafePerformIO $ getWhichMaxAbs x
 (<.>) :: (BLAS1 e) => Vector n e -> Vector n e -> e
 (<.>) x y = unsafePerformIO $ getDot x y
 {-# NOINLINE (<.>) #-}
+
+unsafeDot :: (BLAS1 e) => Vector n e -> Vector n e -> e
+unsafeDot x y = unsafePerformIO $ unsafeGetDot x y
+{-# NOINLINE unsafeDot #-}
 
 instance Shaped Vector Int where
     shape (Vector x) = shapeIOVector x

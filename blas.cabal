@@ -1,5 +1,5 @@
 name:            blas
-version:         0.7.1
+version:         0.7.2
 homepage:        http://github.com/patperry/blas
 synopsis:        Bindings to the BLAS library
 description:
@@ -55,9 +55,7 @@ extra-tmp-files:        config.log config.status autom4te.cache
 
 library
     hs-source-dirs:     lib
-    exposed-modules:    BLAS.Internal
-                        BLAS.CTypes
-
+    exposed-modules:    
                         Data.Elem.BLAS
                         Data.Elem.BLAS.Level1
                         Data.Elem.BLAS.Level2
@@ -69,51 +67,54 @@ library
 
                         Data.Matrix.Class
                             Data.Matrix.Class.IMatrix
-                            Data.Matrix.Class.IMatrixBase
                             Data.Matrix.Class.MMatrix
-                            Data.Matrix.Class.MMatrixBase
                             Data.Matrix.Class.ISolve
-                            Data.Matrix.Class.ISolveBase
                             Data.Matrix.Class.MSolve
-                            Data.Matrix.Class.MSolveBase
 
                         Data.Matrix.Banded
-                            Data.Matrix.Banded.Base
                             Data.Matrix.Banded.Class
                             Data.Matrix.Banded.IO
-                            Data.Matrix.Banded.IOBase
                             Data.Matrix.Banded.ST
-                            Data.Matrix.Banded.STBase
                         
                         Data.Matrix.Dense
-                            Data.Matrix.Dense.Base
                             Data.Matrix.Dense.Class
                             Data.Matrix.Dense.IO
-                            Data.Matrix.Dense.IOBase
                             Data.Matrix.Dense.ST
-                            Data.Matrix.Dense.STBase
 
                         Data.Matrix.Herm
-                        Data.Matrix.HermBase
                         Data.Matrix.Tri
-                        Data.Matrix.TriBase
 
                         Data.Vector.Dense
-                            Data.Vector.Dense.Base
                             Data.Vector.Dense.Class
                             Data.Vector.Dense.IO
-                            Data.Vector.Dense.IOBase
                             Data.Vector.Dense.ST
-                            Data.Vector.Dense.STBase
 
                         Test.QuickCheck.BLAS
-                        Test.QuickCheck.BLASBase
+
+                        Unsafe.BLAS
 
     other-modules:      
+                        BLAS.Internal
+                        BLAS.CTypes
                         BLAS.Types
                         Data.Elem.BLAS.Base
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
+                        Data.Matrix.Class.IMatrixBase
+                        Data.Matrix.Class.MMatrixBase
+                        Data.Matrix.Class.ISolveBase
+                        Data.Matrix.Class.MSolveBase
+                        Data.Matrix.Banded.Base
+                        Data.Matrix.Banded.IOBase
+                        Data.Matrix.Banded.STBase
+                        Data.Matrix.Dense.Base
+                        Data.Matrix.Dense.IOBase
+                        Data.Matrix.Dense.STBase
+                        Data.Matrix.HermBase
+                        Data.Matrix.TriBase
+                        Data.Vector.Dense.Base
+                        Data.Vector.Dense.IOBase
+                        Data.Vector.Dense.STBase
     
     includes:           cbits/config.h
                         cbits/BLAS.h

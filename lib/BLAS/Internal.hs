@@ -59,7 +59,7 @@ clearArray = clearArray' undefined
     where
     clearArray' :: Storable e => e -> Ptr e -> Int -> IO ()
     clearArray' e ptr n =
-        let nbytes = (fromInteger . toInteger) (n * sizeOf e)
+        let nbytes = fromIntegral (n * sizeOf e)
         in do
             bzero ptr nbytes
 {-# INLINE clearArray #-}
@@ -68,7 +68,7 @@ clearArray = clearArray' undefined
 bzero :: Ptr a -> Int -> IO ()
 bzero ptr n =
     let ptr' = castPtr ptr
-        n'   = (fromInteger . toInteger) n
+        n'   = fromIntegral n
     in bzero_ ptr' n'
         
 foreign import ccall "strings.h bzero"

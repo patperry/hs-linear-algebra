@@ -416,7 +416,7 @@ getDiag :: (ReadMatrix a e m, WriteVector y e m) =>
 getDiag a = checkedDiag (shape a) (unsafeGetDiag a)
 {-# INLINE getDiag #-}
 
--- | Same as 'getDiag' but not range-checked.
+-- Same as 'getDiag' but not range-checked.
 unsafeGetDiag :: (ReadMatrix a e m, WriteVector y e m) => 
     a (n,p) e -> Int -> m (y k e)
 unsafeGetDiag a i = newCopyVector (unsafeDiagView a i)
@@ -1293,7 +1293,7 @@ matrix mn ies = unsafePerformIO $
     unsafeFreezeIOMatrix =<< newMatrix mn ies
 {-# NOINLINE matrix #-}
 
--- | Same as 'matrix' but does not do any bounds checking.
+-- Same as 'matrix' but does not do any bounds checking.
 unsafeMatrix :: (BLAS3 e) => (Int,Int) -> [((Int,Int), e)] -> Matrix (n,p) e
 unsafeMatrix mn ies =  unsafePerformIO $ 
     unsafeFreezeIOMatrix =<< unsafeNewMatrix mn ies
@@ -1405,7 +1405,7 @@ diag :: (Elem e) => Matrix (n,p) e -> Int -> Vector k e
 diag (Matrix a) i = Vector (diagView a i)
 {-# INLINE diag #-}
 
--- | Same as 'diag' but index is not range-checked.
+-- Same as 'diag' but index is not range-checked.
 unsafeDiag :: (Elem e) => Matrix (n,p) e -> Int -> Vector k e
 unsafeDiag (Matrix a) i = Vector (diagView a i)
 {-# INLINE unsafeDiag #-}

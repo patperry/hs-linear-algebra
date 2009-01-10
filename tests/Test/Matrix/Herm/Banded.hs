@@ -20,13 +20,29 @@ import Test.QuickCheck hiding ( Test.vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
-import Data.Elem.BLAS ( Elem, BLAS3, fromReal, conjugate )
+import Data.Elem.BLAS ( Elem, BLAS1, BLAS3, fromReal, conjugate )
 
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Banded
-import Data.Matrix.Banded.Base( listsFromBanded )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Herm
+
+listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded a = ( (m,n)
+            , (kl,ku)
+            , map paddedDiag [(-kl)..ku]
+            )
+  where
+    (m,n)   = shape a
+    (kl,ku) = bandwidths (coerceBanded a)
+    
+    padBegin i   = replicate (max (-i) 0)    0
+    padEnd   i   = replicate (max (m-n+i) 0) 0
+    paddedDiag i = (  padBegin i
+                   ++ elems (diagBanded (coerceBanded a) i) 
+                   ++ padEnd i 
+                   )
+                   
 
 
 

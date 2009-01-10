@@ -62,6 +62,8 @@ module Data.Matrix.Dense.Class (
     diagView,
 
     -- * Conversions between matrices and vectors
+    liftMatrix,
+    liftMatrix2,
     maybeViewMatrixAsVector,
     maybeViewVectorAsMatrix,
     maybeViewVectorAsRow,

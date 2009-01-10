@@ -15,10 +15,26 @@ import Data.Elem.BLAS
 import Data.Vector.Dense 
 import Data.Matrix.Dense ( Matrix, identityMatrix )
 import Data.Matrix.Banded
-import Data.Matrix.Banded.Base( listsFromBanded )
 
 import Test.Matrix.Banded hiding ( banded )
         
+
+listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded a = ( (m,n)
+            , (kl,ku)
+            , map paddedDiag [(-kl)..ku]
+            )
+  where
+    (m,n)   = shape a
+    (kl,ku) = bandwidths (coerceBanded a)
+    
+    padBegin i   = replicate (max (-i) 0)    0
+    padEnd   i   = replicate (max (m-n+i) 0) 0
+    paddedDiag i = (  padBegin i
+                   ++ elems (diagBanded (coerceBanded a) i) 
+                   ++ padEnd i 
+                   )
+                   
 type V = Vector Int E
 type M = Matrix (Int,Int) E
 type B = Banded (Int,Int) E

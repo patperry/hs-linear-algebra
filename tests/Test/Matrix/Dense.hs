@@ -24,7 +24,6 @@ module Test.Matrix.Dense (
 
 import Test.QuickCheck hiding ( Test.vector )
 import Test.QuickCheck.BLAS ( TestElem )
-import Test.QuickCheck.BLASBase( SubMatrix(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense ( Vector, dim )
@@ -38,6 +37,25 @@ matrix = Test.matrix
 instance (TestElem e) => Arbitrary (Matrix (m,n) e) where
     arbitrary   = Test.matrix =<< Test.shape
     coarbitrary = undefined
+
+data SubMatrix m n e = 
+    SubMatrix (Matrix (m,n) e) 
+              (Int,Int) 
+              (Int,Int) 
+    deriving (Show)
+
+instance (TestElem e) => Arbitrary (SubMatrix m n e) where
+    arbitrary = do
+        (m,n) <- Test.shape
+        i <- choose (0,5)
+        j <- choose (0,5)
+        e <- choose (0,5)
+        f <- choose (0,5)
+        a <- Test.matrix (i+m+e, j+n+f)
+        return $ SubMatrix a (i,j) (m,n)
+        
+    coarbitrary = undefined
+
 
 data MatrixAt m n e =
     MatrixAt (Matrix (m,n) e)

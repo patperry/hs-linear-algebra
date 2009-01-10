@@ -19,7 +19,6 @@ module Test.Vector.Dense (
 
 import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
-import Test.QuickCheck.BLASBase( SubVector(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense hiding ( vector )
@@ -40,14 +39,15 @@ data VectorTriple n e =
     deriving (Show)
 
 instance (TestElem e) => Arbitrary (Vector n e) where
-    arbitrary = sized $ \m ->
-        choose (0,m) >>= vector
+    arbitrary = do
+        n <- Test.dim
+        Test.vector n
         
     coarbitrary = undefined
 
 instance (TestElem e) => Arbitrary (VectorPair n e) where
-    arbitrary = sized $ \m -> do
-        n <- choose (0,m)
+    arbitrary = do
+        n <- Test.dim
         x <- vector n
         y <- vector n
         return $ VectorPair x y
@@ -55,11 +55,29 @@ instance (TestElem e) => Arbitrary (VectorPair n e) where
     coarbitrary = undefined
         
 instance (TestElem e) => Arbitrary (VectorTriple n e) where
-    arbitrary = sized $ \m -> do
-        n <- choose (0,m)
+    arbitrary = do
+        n <- Test.dim
         x <- vector n
         y <- vector n
         z <- vector n
         return $ VectorTriple x y z
     
+    coarbitrary = undefined
+
+data SubVector n e = 
+    SubVector Int 
+              (Vector n e) 
+              Int 
+              Int 
+    deriving (Show)
+
+instance (TestElem e) => Arbitrary (SubVector n e) where
+    arbitrary = do
+        n <- Test.dim
+        o <- choose (0,5)
+        s <- choose (1,5)
+        e <- choose (0,5)
+        x <- Test.vector (o + s*n + e)
+        return (SubVector s x o n)
+        
     coarbitrary = undefined

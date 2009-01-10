@@ -27,14 +27,29 @@ import qualified Test.QuickCheck.BLAS as Test
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
-import Data.Matrix.Banded.Base( listsFromBanded )
-import Data.Elem.BLAS ( BLAS3 )
+import Data.Elem.BLAS ( BLAS1, BLAS3 )
 
 import Data.Matrix.Tri ( Tri, triFromBase )
 import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
 import Unsafe.Coerce
 
+listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded a = ( (m,n)
+            , (kl,ku)
+            , map paddedDiag [(-kl)..ku]
+            )
+  where
+    (m,n)   = shape a
+    (kl,ku) = bandwidths (coerceBanded a)
+    
+    padBegin i   = replicate (max (-i) 0)    0
+    padEnd   i   = replicate (max (m-n+i) 0) 0
+    paddedDiag i = (  padBegin i
+                   ++ elems (diagBanded (coerceBanded a) i) 
+                   ++ padEnd i 
+                   )
+                   
 triBanded :: (TestElem e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
