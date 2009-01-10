@@ -111,8 +111,8 @@ instance (Elem e) => BaseBanded (STBanded s) e where
     {-# INLINE bandwidths #-}
     ldaBanded (STBanded a) = IO.ldaIOBanded a
     {-# INLINE ldaBanded #-}
-    isHermBanded (STBanded a) = IO.isHermIOBanded a
-    {-# INLINE isHermBanded #-}
+    transEnumBanded (STBanded a) = IO.transEnumIOBanded a
+    {-# INLINE transEnumBanded #-}
     maybeMatrixStorageFromBanded (STBanded a) = 
         liftM STMatrix $ IO.maybeMatrixStorageFromIOBanded a
     {-# INLINE maybeMatrixStorageFromBanded #-}

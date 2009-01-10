@@ -14,7 +14,7 @@
 
 module Data.Vector.Dense.Class (
     -- * Dense vector type classes
-    BaseVector( dim, conj, stride, isConj, coerceVector ),
+    BaseVector( dim, conj, stride, isConj, conjEnum, coerceVector ),
     ReadVector,
     WriteVector,
     

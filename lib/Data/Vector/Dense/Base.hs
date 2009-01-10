@@ -71,7 +71,7 @@ class (Shaped x Int, Elem e) => BaseVector x e where
     isConj x = conjEnum x == Conj
     {-# INLINE isConj #-}
 
-    -- | Get the conjugace type.
+    -- | Get the storage type.
     conjEnum :: x n e -> ConjEnum
     
     -- | Get a view into the complex conjugate of a vector.

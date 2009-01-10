@@ -434,7 +434,7 @@ gbmv alpha a (x :: x p e) beta y
         gbmv alpha a x beta (conj y)
         doConjVector y
     | otherwise =
-        let transA = transIOBanded a
+        let transA = transEnumIOBanded a
             (m,n)  = case (isHermIOBanded a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
@@ -691,11 +691,3 @@ instance (BLAS3 e) => MSolve (Tri IOBanded) e IO where
     {-# INLINE unsafeDoSSolve #-}
     unsafeDoSSolveMat  = tbsm'
     {-# INLINE unsafeDoSSolveMat #-}    
-
-transIOBanded :: IOBanded np e -> TransEnum
-transIOBanded a =
-    case (isHermIOBanded a) of
-          False -> NoTrans
-          True  -> ConjTrans
-{-# INLINE transIOBanded #-}
-

@@ -78,8 +78,8 @@ class (HasVectorView a, Elem e, MatrixShaped a
     -- | Get the storage type of the matrix.
     transEnumMatrix :: a (n,p) e -> TransEnum
     
-    -- | Indicate whether or not the matrix storage is transposed and
-    -- conjugated.
+    -- | Indicate whether or not the underlying matrix storage is
+    -- transposed and conjugated.
     isHermMatrix :: a (n,p) e -> Bool
     isHermMatrix = (ConjTrans ==) . transEnumMatrix
     {-# INLINE isHermMatrix #-}
@@ -717,7 +717,7 @@ gemv alpha a x beta y
         
     | isConj y && (isConj x || stride x == 1) =
         let transA = if isConj x then NoTrans else ConjTrans
-            transB = transMatrix (herm a)
+            transB = transEnumMatrix (herm a)
             m      = 1
             n      = dim y
             k      = dim x
@@ -740,7 +740,7 @@ gemv alpha a x beta y
         doConjVector y
         
     | otherwise =
-        let transA = transMatrix a
+        let transA = transEnumMatrix a
             (m,n)  = case (isHermMatrix a) of
                          False -> shape a
                          True  -> (flipShape . shape) a
@@ -766,8 +766,8 @@ gemm alpha a b beta c
         scaleByMatrix beta c
     | isHermMatrix c = gemm (conjugate alpha) (herm b) (herm a) (conjugate beta) (herm c)
     | otherwise =
-        let transA = transMatrix a
-            transB = transMatrix b
+        let transA = transEnumMatrix a
+            transB = transEnumMatrix b
             (m,n)  = shape c
             k      = numCols a
             ldA    = ldaMatrix a
@@ -1790,13 +1790,6 @@ unsafeGetBinaryMatrixOp f a b = do
     c <- newCopyMatrix a
     f c b
     return c
-
-transMatrix :: (BaseMatrix a e) => a (n,p) e -> TransEnum
-transMatrix a = 
-    case (isHermMatrix a) of
-          False -> NoTrans
-          True  -> ConjTrans
-{-# INLINE transMatrix #-}
 
 indexOfMatrix :: (BaseMatrix a e) => a (n,p) e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 

@@ -15,7 +15,7 @@ module Data.Matrix.Dense (
     Matrix,
 
     -- * Overloaded interface for dense matrices
-    BaseMatrix( isHermMatrix, coerceMatrix ),
+    BaseMatrix( ldaMatrix, isHermMatrix, transEnumMatrix, coerceMatrix ),
 
     -- * Overloaded interface for matrices
     module Data.Matrix.Class,

@@ -96,9 +96,14 @@ class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a, Elem e
     -- banded matrix.
     ldaBanded :: a (n,p) e -> Int
     
-    -- | Indicate whether or not the banded matrix is transposed and
-    -- conjugated.
+    -- | Get the storage type of the banded matrix.
+    transEnumBanded :: a (n,p) e -> TransEnum
+
+    -- | Indicate whether or not the banded matrix storage is 
+    -- transposed and conjugated.
     isHermBanded :: a (n,p) e -> Bool
+    isHermBanded = (ConjTrans ==) . transEnumBanded
+    {-# INLINE isHermBanded #-}
 
     -- | Cast the shape type of the banded matrix.
     coerceBanded :: a np e -> a np' e
@@ -425,8 +430,8 @@ instance (Elem e) => BaseBanded IOBanded e where
     {-# INLINE bandwidths #-}
     ldaBanded = IO.ldaIOBanded
     {-# INLINE ldaBanded #-}
-    isHermBanded = IO.isHermIOBanded
-    {-# INLINE isHermBanded #-}
+    transEnumBanded = IO.transEnumIOBanded
+    {-# INLINE transEnumBanded #-}
     maybeMatrixStorageFromBanded = IO.maybeMatrixStorageFromIOBanded
     {-# INLINE maybeMatrixStorageFromBanded #-}
     maybeBandedFromMatrixStorage = IO.maybeIOBandedFromMatrixStorage
@@ -652,8 +657,8 @@ instance (Elem e) => BaseBanded Banded e where
     {-# INLINE bandwidths #-}
     ldaBanded (Banded a) = IO.ldaIOBanded a
     {-# INLINE ldaBanded #-}
-    isHermBanded (Banded a) = IO.isHermIOBanded a
-    {-# INLINE isHermBanded #-}
+    transEnumBanded (Banded a) = IO.transEnumIOBanded a
+    {-# INLINE transEnumBanded #-}
     maybeMatrixStorageFromBanded (Banded a) = liftM Matrix $ IO.maybeMatrixStorageFromIOBanded a
     {-# INLINE maybeMatrixStorageFromBanded #-}
     maybeBandedFromMatrixStorage mn kl (Matrix a) = 
