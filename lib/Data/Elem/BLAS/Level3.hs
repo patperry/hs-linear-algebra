@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Elem.BLAS.Level3
@@ -7,6 +6,8 @@
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
+--
+-- Matrix-Matrix operations.
 --
 
 module Data.Elem.BLAS.Level3
