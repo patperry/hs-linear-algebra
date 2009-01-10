@@ -20,6 +20,7 @@ import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, clearArray, inlinePerformIO,
     checkedSubvector, checkedSubvectorWithStride, checkVecVecOp )
+import BLAS.Types( ConjEnum(..) )
 
 import Data.Elem.BLAS ( Complex, Elem, BLAS1, conjugate )
 import qualified Data.Elem.BLAS.Level1 as BLAS
@@ -494,12 +495,10 @@ getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
 
 unsafeGetDot :: (ReadVector x e m, ReadVector y e m) => 
     x n e -> y n e -> m e
-unsafeGetDot x y =
-    case (isConj x, isConj y) of
-        (False, False) -> vectorCall2 BLAS.dotc x y
-        (True , False) -> vectorCall2 BLAS.dotu x y
-        (False, True ) -> liftM conjugate $ vectorCall2 BLAS.dotu x y
-        (True , True)  -> liftM conjugate $ vectorCall2 BLAS.dotc x y
+unsafeGetDot x y = let
+    conjOf z      = if isConj x then Conj else NoConj
+    (conjX,conjY) = (conjOf x, conjOf y)
+    in vectorCall2 (BLAS.dot conjX conjY) x y
 {-# INLINE unsafeGetDot #-}
 
 instance (Elem e) => BaseVector IOVector e where

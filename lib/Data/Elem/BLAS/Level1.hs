@@ -8,25 +8,26 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
+-- Vector operations.
+--
 
 module Data.Elem.BLAS.Level1
     where
      
-import Prelude hiding ( div )
-
+import Control.Monad( liftM )
 import Foreign ( Ptr, Storable, advancePtr, castPtr, peek, poke, with )
 import Foreign.Storable.Complex ()
 import Data.Complex ( Complex(..) )
 
 import Data.Elem.BLAS.Base
+import BLAS.Types
 import BLAS.CTypes
 import Data.Elem.BLAS.Double  
 import Data.Elem.BLAS.Zomplex
         
 -- | Types with vector-vector operations.
 class (Elem a) => BLAS1 a where
-    dotu  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
-    dotc  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
+    dot   :: ConjEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
     nrm2  :: Int -> Ptr a -> Int -> IO Double
     asum  :: Int -> Ptr a -> Int -> IO Double
     iamax :: Int -> Ptr a -> Int -> IO Int
@@ -40,29 +41,28 @@ class (Elem a) => BLAS1 a where
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
-    -- Replaces @y@ with @conj y@.
+    -- | Replaces @y@ with @conj y@.
     vconj  :: Int -> Ptr a -> Int -> IO ()
 
-    -- Replaces @y@ with @alpha (conj x) + y@
+    -- | Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- Replaces @y@ with @x*y@.
+    -- | Replaces @y@ with @x*y@.
     vmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- Replaces @y@ with @conj(x)*y@.
+    -- | Replaces @y@ with @conj(x)*y@.
     vcmul :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- Replaces @y@ with @y/x@.
+    -- | Replaces @y@ with @y/x@.
     vdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
-    -- Replaces @y@ with @y/conj(x)@.
+    -- | Replaces @y@ with @y/conj(x)@.
     vcdiv :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 
 
 instance BLAS1 Double where
-    dotu  = ddot
-    dotc  = ddot
+    dot _ _ = ddot
     nrm2  = dnrm2
     asum  = dasum
     iamax = idamax
@@ -80,15 +80,21 @@ instance BLAS1 Double where
     vcdiv  = vdiv
 
 instance BLAS1 (Complex Double) where
-    dotu n pX incX pY incY =
-        with 0 $ \pDotu -> do
-            zdotu_sub n pX incX pY incY pDotu
-            peek pDotu
+    dot conjX conjY n pX incX pY incY =
+        case (conjX, conjY) of
+            (NoConj, NoConj) -> dotc
+            (Conj  , NoConj) -> dotu
+            (Conj  , Conj  ) -> liftM conjugate dotc
+            (NoConj, Conj  ) -> liftM conjugate dotu
+      where
+        dotu = with 0 $ \pDotu -> do
+                   zdotu_sub n pX incX pY incY pDotu
+                   peek pDotu
 
-    dotc n pX incX pY incY =
-        with 0 $ \pDotc -> do
-            zdotc_sub n pX incX pY incY pDotc
-            peek pDotc
+        dotc = with 0 $ \pDotc -> do
+                   zdotc_sub n pX incX pY incY pDotc
+                   peek pDotc
+    {-# INLINE dot #-}
 
     nrm2  = znrm2
     asum  = zasum
