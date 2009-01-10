@@ -7,10 +7,10 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
--- Overloaded interface for matrices.  This module contains the common
--- functionality for the types defined in "Data.Matrix.Dense.Class" and
--- "Data.Matrix.Banded.Class", as well as provides a common base class
--- for the mutable and immutable matrix classes defined in submodules.
+-- Common functionality for the types defined in
+-- "Data.Matrix.Dense.Class" and "Data.Matrix.Banded.Class", and 
+-- a base class for the mutable and immutable matrix
+-- classes defined in the submodules of this one.
 --
 
 module Data.Matrix.Class (
