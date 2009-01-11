@@ -153,8 +153,8 @@ instance (BLAS3 e) => MSolve  (Tri (STMatrix s)) e (ST s) where
     unsafeDoSSolveMat_ = trsm
     {-# INLINE unsafeDoSSolveMat_ #-}
 
-instance (Elem e) => BaseMatrix (STMatrix s) e where
-    ldaMatrix (STMatrix a) = ldaMatrixIOMatrix a
+instance BaseMatrix (STMatrix s) where
+    ldaMatrix (STMatrix a) = ldaIOMatrix a
     {-# INLINE ldaMatrix #-}
     transEnumMatrix (STMatrix a) = transEnumIOMatrix a
     {-# INLINE transEnumMatrix #-}

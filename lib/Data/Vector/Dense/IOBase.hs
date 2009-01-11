@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, 
+        GADTs #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -32,6 +33,7 @@ import Data.Tensor.Class.MTensor
 --       are supported.
 --
 data IOVector n e = 
+      Elem e =>
       IOVector {-# UNPACK #-} !ConjEnum       
                {-# UNPACK #-} !Int            -- the length of the vector
                {-# UNPACK #-} !(ForeignPtr e) -- memory owner
@@ -39,7 +41,7 @@ data IOVector n e =
                {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
 
 -- | View an array in memory as a vector.
-vectorViewArray :: (Elem e)
+vectorViewArray :: (BLAS1 e)
                 => ForeignPtr e 
                 -> Int          -- ^ offset
                 -> Int          -- ^ length
@@ -48,7 +50,7 @@ vectorViewArray = vectorViewArrayWithStride 1
 {-# INLINE vectorViewArray #-}
 
 -- | View an array in memory as a vector, with the given stride.
-vectorViewArrayWithStride :: (Elem e)
+vectorViewArrayWithStride :: (BLAS1 e)
                           => Int          -- ^ stride
                           -> ForeignPtr e
                           -> Int          -- ^ offset
@@ -79,7 +81,7 @@ conjIOVector :: IOVector n e -> IOVector n e
 conjIOVector (IOVector c n f p incX) = (IOVector (flipConj c) n f p incX)
 {-# INLINE conjIOVector #-}
 
-unsafeSubvectorViewWithStrideIOVector :: (Elem e) =>
+unsafeSubvectorViewWithStrideIOVector :: 
     Int -> IOVector n e -> Int -> Int -> IOVector n' e
 unsafeSubvectorViewWithStrideIOVector s' (IOVector c _ f p inc) o' n' =
     IOVector c n' f (p `advancePtr` (inc*o')) (inc*s')
@@ -94,7 +96,7 @@ withIOVector (IOVector _ _ f p _) g = do
     return a
 {-# INLINE withIOVector #-}
 
-newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
+newIOVector_ :: (BLAS1 e) => Int -> IO (IOVector n e)
 newIOVector_ n
     | n < 0 = 
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
@@ -142,7 +144,7 @@ getIndicesIOVector' :: IOVector n e -> IO [Int]
 getIndicesIOVector' = getIndicesIOVector
 {-# INLINE getIndicesIOVector' #-}
 
-getElemsIOVector :: (Elem e) => IOVector n e -> IO [e]
+getElemsIOVector :: IOVector n e -> IO [e]
 getElemsIOVector (IOVector Conj n f p incX) = do
     es <- getElemsIOVector (IOVector NoConj n f p incX)
     return $ map conjugate es
@@ -159,7 +161,7 @@ getElemsIOVector (IOVector NoConj n f p incX) =
 {-# SPECIALIZE INLINE getElemsIOVector :: IOVector n Double -> IO [Double] #-}
 {-# SPECIALIZE INLINE getElemsIOVector :: IOVector n (Complex Double) -> IO [Complex Double] #-}
 
-getElemsIOVector' :: (Elem e) => IOVector      n e -> IO [e]
+getElemsIOVector' :: IOVector n e -> IO [e]
 getElemsIOVector' (IOVector Conj n f p incX) = do
     es <- getElemsIOVector' (IOVector NoConj n f p incX)
     return $ map conjugate es    
@@ -175,15 +177,15 @@ getElemsIOVector' (IOVector NoConj n f p incX) =
 {-# SPECIALIZE INLINE getElemsIOVector' :: IOVector n Double -> IO [Double] #-}
 {-# SPECIALIZE INLINE getElemsIOVector' :: IOVector n (Complex Double) -> IO [Complex Double] #-}
 
-getAssocsIOVector :: (Elem e) => IOVector n e -> IO [(Int,e)]
+getAssocsIOVector :: IOVector n e -> IO [(Int,e)]
 getAssocsIOVector x = liftM2 zip (getIndicesIOVector x) (getElemsIOVector x)
 {-# INLINE getAssocsIOVector #-}
 
-getAssocsIOVector' :: (Elem e) => IOVector n e -> IO [(Int,e)]
+getAssocsIOVector' :: IOVector n e -> IO [(Int,e)]
 getAssocsIOVector' x = liftM2 zip (getIndicesIOVector' x) (getElemsIOVector' x)
 {-# INLINE getAssocsIOVector' #-}
 
-unsafeReadElemIOVector :: (Elem e) => IOVector n e -> Int -> IO e
+unsafeReadElemIOVector :: IOVector n e -> Int -> IO e
 unsafeReadElemIOVector (IOVector Conj   n f p incX) i = 
     liftM conjugate $ unsafeReadElemIOVector (IOVector NoConj n f p incX) i
 unsafeReadElemIOVector (IOVector NoConj _ f p incX) i = do
@@ -197,7 +199,7 @@ canModifyElemIOVector :: IOVector n e -> Int -> IO Bool
 canModifyElemIOVector _ _ = return True
 {-# INLINE canModifyElemIOVector #-}
 
-unsafeWriteElemIOVector :: (Elem e) => IOVector n e -> Int -> e -> IO ()
+unsafeWriteElemIOVector :: IOVector n e -> Int -> e -> IO ()
 unsafeWriteElemIOVector (IOVector c _ f p incX) i e =
     let e' = if c == Conj then conjugate e else e
     in do
@@ -206,7 +208,7 @@ unsafeWriteElemIOVector (IOVector c _ f p incX) i e =
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n Double -> Int -> Double -> IO () #-}
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n (Complex Double) -> Int -> Complex Double -> IO () #-}
 
-unsafeModifyElemIOVector :: (Elem e) => IOVector n e -> Int -> (e -> e) -> IO ()
+unsafeModifyElemIOVector :: IOVector n e -> Int -> (e -> e) -> IO ()
 unsafeModifyElemIOVector (IOVector c _ f p incX) i g =
     let g' = if c == Conj then conjugate . g . conjugate else g
         p' = p `advancePtr` (i*incX)
@@ -217,7 +219,7 @@ unsafeModifyElemIOVector (IOVector c _ f p incX) i g =
 {-# SPECIALIZE INLINE unsafeModifyElemIOVector :: IOVector n Double -> Int -> (Double -> Double) -> IO () #-}
 {-# SPECIALIZE INLINE unsafeModifyElemIOVector :: IOVector n (Complex Double) -> Int -> (Complex Double -> Complex Double) -> IO () #-}
 
-unsafeSwapElemsIOVector :: (Elem e) => IOVector n e -> Int -> Int -> IO ()
+unsafeSwapElemsIOVector :: IOVector n e -> Int -> Int -> IO ()
 unsafeSwapElemsIOVector (IOVector _ _ f p incX) i1 i2 =
     let p1 = p `advancePtr` (i1*incX)
         p2 = p `advancePtr` (i2*incX)
@@ -230,7 +232,7 @@ unsafeSwapElemsIOVector (IOVector _ _ f p incX) i1 i2 =
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n Double -> Int -> Int -> IO () #-}
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n (Complex Double) -> Int -> Int -> IO () #-}
                             
-modifyWithIOVector :: (Elem e) => (e -> e) -> IOVector n e -> IO ()
+modifyWithIOVector :: (e -> e) -> IOVector n e -> IO ()
 modifyWithIOVector g (IOVector c n f p incX) =
     let g'  = if c == Conj then (conjugate . g . conjugate) else g
         end = p `advancePtr` (n*incX)
@@ -243,14 +245,15 @@ modifyWithIOVector g (IOVector c n f p incX) =
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Double -> Double) -> IOVector n Double -> IO () #-}
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Complex Double -> Complex Double) -> IOVector n (Complex Double) -> IO () #-}
 
-setZeroIOVector :: (Elem e) => IOVector n e -> IO ()
+setZeroIOVector :: IOVector n e -> IO ()
 setZeroIOVector x@(IOVector _ n f p incX)
     | incX == 1 = clearArray p n >> touchForeignPtr f
     | otherwise = setConstantIOVector 0 x
 {-# INLINE setZeroIOVector #-}
 
-setConstantIOVector :: (Elem e) => e -> IOVector n e -> IO ()
-setConstantIOVector 0 x | strideIOVector x == 1 = setZeroIOVector x
+setConstantIOVector :: e -> IOVector n e -> IO ()
+setConstantIOVector e x@(IOVector _ _ _ _ _) 
+    | e == 0 && strideIOVector x == 1 = setZeroIOVector x
 setConstantIOVector e (IOVector c n f p incX) =
     let e'   = if c == Conj then conjugate e else e
         end = p `advancePtr` (n*incX)
@@ -286,7 +289,7 @@ instance Shaped IOVector Int where
     bounds = boundsIOVector
     {-# INLINE bounds #-}
 
-instance (Elem e) => ReadTensor IOVector Int e IO where
+instance ReadTensor IOVector Int e IO where
     getSize = getSizeIOVector
     {-# INLINE getSize #-}
     unsafeReadElem = unsafeReadElemIOVector

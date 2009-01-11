@@ -78,9 +78,9 @@ unsafeThawIOBanded :: Banded np e -> IO (IOBanded np e)
 unsafeThawIOBanded (Banded x) = return x
 
 -- | Common functionality for all banded matrix types.
-class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a, Elem e
-      , BaseVector (VectorView a) e, BaseMatrix (MatrixStorage a) e
-      ) => BaseBanded a e where
+class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a,
+        BaseVector (VectorView a), BaseMatrix (MatrixStorage a)
+      ) => BaseBanded a where
     
     -- | Get the number of lower diagonals in the banded matrix.
     numLower :: a (n,p) e -> Int
@@ -150,7 +150,7 @@ class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a, Elem e
 
 
 -- | Banded matrices that can be read in a monad.
-class ( BaseBanded a e, BLAS2 e, ReadTensor a (Int,Int) e m
+class ( BaseBanded a, BLAS2 e, ReadTensor a (Int,Int) e m
       , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
       , MSolve (Tri a) e m
       , ReadVector (VectorView a) e m, ReadMatrix (MatrixStorage a) e m
@@ -284,7 +284,7 @@ unsafeCopyBanded dst src =
 
 -- | Get a view of a diagonal of the banded matrix.  This will fail if
 -- the index is outside of the bandwidth.
-diagViewBanded :: (BaseBanded a e)
+diagViewBanded :: (BaseBanded a)
                => a (n,p) e -> Int -> VectorView a k e
 diagViewBanded a i
     | i < -(numLower a) || i > numUpper a =
@@ -295,14 +295,14 @@ diagViewBanded a i
 
 -- | Get a view into the partial row of the banded matrix, along with the
 -- number of zeros to pad before and after the view.
-rowViewBanded :: (BaseBanded a e) => 
+rowViewBanded :: (BaseBanded a) => 
     a (n,p) e -> Int -> (Int, VectorView a k e, Int)
 rowViewBanded a = checkedRow (shape a) (unsafeRowViewBanded a) 
 {-# INLINE rowViewBanded #-}
 
 -- | Get a view into the partial column of the banded matrix, along with the
 -- number of zeros to pad before and after the view.
-colViewBanded :: (BaseBanded a e) => 
+colViewBanded :: (BaseBanded a) => 
     a (n,p) e -> Int -> (Int, VectorView a k e, Int)
 colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 {-# INLINE colViewBanded #-}
@@ -421,7 +421,7 @@ tbsm' alpha a c b =
         IO.tbsm' alpha (mapTri unsafeBandedToIOBanded a) (unsafeMatrixToIOMatrix c)
 {-# INLINE tbsm' #-}
 
-instance (Elem e) => BaseBanded IOBanded e where
+instance BaseBanded IOBanded where
     numLower = IO.numLowerIOBanded
     {-# INLINE numLower #-}
     numUpper = IO.numUpperIOBanded
@@ -648,7 +648,7 @@ instance MatrixShaped Banded where
     herm (Banded a) = Banded $ IO.hermIOBanded a
     {-# INLINE herm #-}
     
-instance (Elem e) => BaseBanded Banded e where
+instance BaseBanded Banded where
     numLower (Banded a) = IO.numLowerIOBanded a
     {-# INLINE numLower #-}
     numUpper (Banded a) = IO.numUpperIOBanded a

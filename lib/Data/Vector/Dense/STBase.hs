@@ -88,7 +88,7 @@ instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
     shiftBy k (STVector x) = unsafeIOToST $ shiftByIOVector k x
     {-# INLINE shiftBy #-}
 
-instance (Elem e) => BaseVector (STVector s) e where
+instance BaseVector (STVector s) where
     dim (STVector x) = dimIOVector x
     {-# INLINE dim #-}
     stride (STVector x) = strideIOVector x

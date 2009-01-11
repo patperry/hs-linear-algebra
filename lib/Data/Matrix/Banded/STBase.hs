@@ -15,7 +15,7 @@ module Data.Matrix.Banded.STBase
 import Control.Monad
 import Control.Monad.ST
 
-import Data.Elem.BLAS( Elem, BLAS3 )
+import Data.Elem.BLAS
 
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrixBase
@@ -102,7 +102,7 @@ instance (BLAS3 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
     canModifyElem (STBanded a) i = unsafeIOToST $ IO.canModifyElemIOBanded a i
     {-# INLINE canModifyElem #-}
 
-instance (Elem e) => BaseBanded (STBanded s) e where
+instance BaseBanded (STBanded s) where
     numLower (STBanded a) = IO.numLowerIOBanded a
     {-# INLINE numLower #-}
     numUpper (STBanded a) = IO.numUpperIOBanded a

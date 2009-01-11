@@ -69,8 +69,8 @@ unsafeThawIOMatrix :: Matrix np e -> IO (IOMatrix np e)
 unsafeThawIOMatrix (Matrix x) = return x
 
 -- | Common functionality for all dense matrix types.
-class (HasVectorView a, Elem e, MatrixShaped a
-      , BaseVector (VectorView a) e) => BaseMatrix a e where
+class ( HasVectorView a, MatrixShaped a, 
+        BaseVector (VectorView a)) => BaseMatrix a where
       
     -- | Get the leading dimension of the storage of the matrix.    
     ldaMatrix :: a (n,p) e -> Int
@@ -121,7 +121,7 @@ class (HasVectorView a, Elem e, MatrixShaped a
 
 
 -- | Dense matrices that can be read in a monad.
-class (BaseMatrix a e, BLAS3 e, ReadTensor a (Int,Int) e m
+class (BaseMatrix a, BLAS3 e, ReadTensor a (Int,Int) e m
       , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
       , MSolve (Tri a) e m
       , ReadVector (VectorView a) e m) => ReadMatrix a e m where
@@ -333,14 +333,14 @@ unsafeSwapCols a i j =
 
 -- | @submatrixView a ij mn@ returns a view of the submatrix of @a@ with element @(0,0)@
 -- being element @ij@ in @a@, and having shape @mn@.
-submatrixView :: (BaseMatrix a e) => a (n,p) e -> (Int,Int) -> (Int,Int) -> a (n',p') e
+submatrixView :: (BaseMatrix a) => a (n,p) e -> (Int,Int) -> (Int,Int) -> a (n',p') e
 submatrixView a = checkedSubmatrix (shape a) (unsafeSubmatrixView a)
 {-# INLINE submatrixView #-}
 
 -- | Divide the rows of a matrix into two blocks and return views into the
 -- blocks.  The integer argument indicates how many rows should be in the
 -- first block.
-splitRowsAt :: (BaseMatrix a e) =>
+splitRowsAt :: (BaseMatrix a) =>
     Int -> a (n,p) e -> (a (n1,p) e, a (n2,p) e)
 splitRowsAt m1 a = ( submatrixView a (0,0)  (m1,n)
                    , submatrixView a (m1,0) (m2,n)
@@ -350,7 +350,7 @@ splitRowsAt m1 a = ( submatrixView a (0,0)  (m1,n)
     m2    = m - m1
 {-# INLINE splitRowsAt #-}
 
-unsafeSplitRowsAt :: (BaseMatrix a e) =>
+unsafeSplitRowsAt :: (BaseMatrix a) =>
     Int -> a (n,p) e -> (a (n1,p) e, a (n2,p) e)
 unsafeSplitRowsAt m1 a = ( unsafeSubmatrixView a (0,0)  (m1,n)
                          , unsafeSubmatrixView a (m1,0) (m2,n)
@@ -363,7 +363,7 @@ unsafeSplitRowsAt m1 a = ( unsafeSubmatrixView a (0,0)  (m1,n)
 -- | Divide the columns of a matrix into two blocks and return views into the
 -- blocks.  The integer argument indicates how many columns should be in the
 -- first block.
-splitColsAt :: (BaseMatrix a e) =>
+splitColsAt :: (BaseMatrix a) =>
     Int -> a (n,p) e -> (a (n,p1) e, a (n,p2) e)
 splitColsAt n1 a = ( submatrixView a (0,0)  (m,n1)
                    , submatrixView a (0,n1) (m,n2)
@@ -373,7 +373,7 @@ splitColsAt n1 a = ( submatrixView a (0,0)  (m,n1)
     n2    = n - n1
 {-# INLINE splitColsAt #-}
 
-unsafeSplitColsAt :: (BaseMatrix a e) =>
+unsafeSplitColsAt :: (BaseMatrix a) =>
     Int -> a (n,p) e -> (a (n,p1) e, a (n,p2) e)
 unsafeSplitColsAt n1 a = ( unsafeSubmatrixView a (0,0)  (m,n1)
                          , unsafeSubmatrixView a (0,n1) (m,n2)
@@ -384,17 +384,17 @@ unsafeSplitColsAt n1 a = ( unsafeSubmatrixView a (0,0)  (m,n1)
 {-# INLINE unsafeSplitColsAt #-}
 
 -- | Get a list of vector views of the rows of the matrix.
-rowViews :: (BaseMatrix a e) => a (n,p) e -> [VectorView a p e]
+rowViews :: (BaseMatrix a) => a (n,p) e -> [VectorView a p e]
 rowViews a = [ unsafeRowView a i | i <- [0..numRows a - 1] ]
 {-# INLINE rowViews #-}
 
 -- | Get a list of vector views of the columns of the matrix.
-colViews :: (BaseMatrix a e) => a (n,p) e -> [VectorView a n e]
+colViews :: (BaseMatrix a) => a (n,p) e -> [VectorView a n e]
 colViews a = [ unsafeColView a j | j <- [0..numCols a - 1] ]
 {-# INLINE colViews #-}
 
 -- | Get a vector view of the given row in a matrix.
-rowView :: (BaseMatrix a e) => a (n,p) e -> Int -> VectorView a p e
+rowView :: (BaseMatrix a) => a (n,p) e -> Int -> VectorView a p e
 rowView a = checkedRow (shape a) (unsafeRowView a)
 {-# INLINE rowView #-}
 
@@ -404,7 +404,7 @@ unsafeGetRowMatrix a i = newCopyVector (unsafeRowView a i)
 {-# INLINE unsafeGetRowMatrix #-}
 
 -- | Get a vector view of the given column in a matrix.
-colView :: (BaseMatrix a e) => a (n,p) e -> Int -> VectorView a n e
+colView :: (BaseMatrix a) => a (n,p) e -> Int -> VectorView a n e
 colView a = checkedCol (shape a) (unsafeColView a)
 {-# INLINE colView #-}
 
@@ -414,7 +414,7 @@ unsafeGetColMatrix a j = newCopyVector (unsafeColView a j)
 {-# INLINE unsafeGetColMatrix #-}
 
 -- | Get a vector view of the given diagonal in a matrix.
-diagView :: (BaseMatrix a e) => a (n,p) e -> Int -> VectorView a k e
+diagView :: (BaseMatrix a) => a (n,p) e -> Int -> VectorView a k e
 diagView a = checkedDiag (shape a) (unsafeDiagView a)
 {-# INLINE diagView #-}
 
@@ -934,7 +934,7 @@ unsafeDoSApplyMatTriMatrix alpha t b c =
     (u,d,a) = triToBase t
 
 
-toLower :: (BaseMatrix a e) => DiagEnum -> a (m,n) e 
+toLower :: (BaseMatrix a) => DiagEnum -> a (m,n) e 
         -> Either (Tri a (m,m) e) 
                   (Tri a (n,n) e, a (k,n) e)
 toLower d a =
@@ -947,7 +947,7 @@ toLower d a =
     (m,n) = shape a
     k     = m - n
     
-toUpper :: (BaseMatrix a e) => DiagEnum -> a (m,n) e
+toUpper :: (BaseMatrix a) => DiagEnum -> a (m,n) e
         -> Either (Tri a (n,n) e)
                   (Tri a (m,m) e, a (m,k) e)
 toUpper d a =
@@ -1203,8 +1203,8 @@ class (MatrixShaped a, BLAS3 e, Monad m) => MSolve a e m where
 ------------------------------------ Instances ------------------------------
 
 
-instance (Elem e) => BaseMatrix IOMatrix e where
-    ldaMatrix = ldaMatrixIOMatrix
+instance BaseMatrix IOMatrix where
+    ldaMatrix = ldaIOMatrix
     {-# INLINE ldaMatrix #-}
     transEnumMatrix = transEnumIOMatrix
     {-# INLINE transEnumMatrix #-}
@@ -1486,8 +1486,8 @@ instance MatrixShaped Matrix where
 instance HasVectorView Matrix where
     type VectorView Matrix = Vector
     
-instance (Elem e) => BaseMatrix Matrix e where
-    ldaMatrix (Matrix a) = ldaMatrixIOMatrix a
+instance BaseMatrix Matrix where
+    ldaMatrix (Matrix a) = ldaIOMatrix a
     {-# INLINE ldaMatrix #-}
     transEnumMatrix (Matrix a) = transEnumIOMatrix a
     {-# INLINE transEnumMatrix #-}
@@ -1767,7 +1767,7 @@ liftMatrix2 f a b =
         in zipWithM_ f xs ys
 {-# INLINE liftMatrix2 #-}
 
-checkMatrixOp2 :: (BaseMatrix x e, BaseMatrix y f) => 
+checkMatrixOp2 :: (BaseMatrix x, BaseMatrix y) => 
     (x n e -> y n f -> a) ->
         x n e -> y n f -> a
 checkMatrixOp2 f x y = 
@@ -1791,7 +1791,7 @@ unsafeGetBinaryMatrixOp f a b = do
     f c b
     return c
 
-indexOfMatrix :: (BaseMatrix a e) => a (n,p) e -> (Int,Int) -> Int
+indexOfMatrix :: (BaseMatrix a) => a (n,p) e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 
     let (i',j') = case isHermMatrix a of
                         True  -> (j,i)

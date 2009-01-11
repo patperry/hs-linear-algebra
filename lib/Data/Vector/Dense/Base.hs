@@ -58,7 +58,7 @@ unsafeThawIOVector :: Vector n e -> IO (IOVector n e)
 unsafeThawIOVector (Vector x) = return x
 
 -- | Common functionality for all vector types.
-class (Shaped x Int, Elem e) => BaseVector x e where
+class (Shaped x Int) => BaseVector x where
     -- | Get the dimension (length) of the vector.
     dim :: x n e -> Int
     
@@ -89,7 +89,7 @@ class (Shaped x Int, Elem e) => BaseVector x e where
     unsafeIOVectorToVector :: IOVector n e -> x n e
 
 -- | Vectors that can be read in a monad.
-class (BaseVector x e, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where
+class (BaseVector x, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where
     -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
     -- convert the @IO@ action to an action in the monad @m@.  This
     -- operation is /very/ unsafe.
@@ -280,19 +280,19 @@ unsafeSwapVector x y
 
 -- | @subvectorView x o n@ creates a subvector view of @x@ starting at index @o@ 
 -- and having length @n@.
-subvectorView :: (BaseVector x e) => 
+subvectorView :: (BaseVector x) => 
     x n e -> Int -> Int -> x n' e
 subvectorView x = checkedSubvector (dim x) (unsafeSubvectorView x)
 {-# INLINE subvectorView #-}
 
-unsafeSubvectorView :: (BaseVector x e) => 
+unsafeSubvectorView :: (BaseVector x) => 
     x n e -> Int -> Int -> x n' e
 unsafeSubvectorView = unsafeSubvectorViewWithStride 1
 {-# INLINE unsafeSubvectorView #-}
 
 -- | @subvectorViewWithStride s x o n@ creates a subvector view of @x@ starting 
 -- at index @o@, having length @n@ and stride @s@.
-subvectorViewWithStride :: (BaseVector x e) => 
+subvectorViewWithStride :: (BaseVector x) => 
     Int -> x n e -> Int -> Int -> x n' e
 subvectorViewWithStride s x = 
     checkedSubvectorWithStride s (dim x) (unsafeSubvectorViewWithStride s x)
@@ -504,7 +504,7 @@ unsafeGetDot x y =
     vectorCall2 (BLAS.dot (conjEnum x) (conjEnum y)) x y
 {-# INLINE unsafeGetDot #-}
 
-instance (Elem e) => BaseVector IOVector e where
+instance BaseVector IOVector where
     dim = dimIOVector
     {-# INLINE dim #-}
     stride = strideIOVector
@@ -755,7 +755,7 @@ instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
     unsafeReadElem x i = return $ unsafeAt x i
     {-# INLINE unsafeReadElem #-}
     
-instance (Elem e) => BaseVector Vector e where    
+instance BaseVector Vector where    
     dim (Vector x) = dimIOVector x
     {-# INLINE dim #-}
     stride (Vector x) = strideIOVector x
@@ -872,7 +872,7 @@ vectorCall2 f x y =
                f n pX incX pY incY
 {-# INLINE vectorCall2 #-}    
 
-checkVectorOp2 :: (BaseVector x e, BaseVector y f) => 
+checkVectorOp2 :: (BaseVector x, BaseVector y) => 
     (x n e -> y n f -> a) ->
         x n e -> y n f -> a
 checkVectorOp2 f x y = 
