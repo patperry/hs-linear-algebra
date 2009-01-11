@@ -1,5 +1,6 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables #-}
-module STVector ( tests_STVector ) where
+module STVector
+    where
 
 
 import Data.Elem.BLAS

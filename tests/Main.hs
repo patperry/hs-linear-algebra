@@ -3,15 +3,15 @@ import System.Environment
 
 import Driver
 
-import Vector
-import STVector
-import Matrix
-import STMatrix
-import HermMatrix
-import TriMatrix
-import Banded
-import HermBanded
-import TriBanded
+import Vector     ( tests_Vector     )
+import STVector   ( tests_STVector   )
+import Matrix     ( tests_Matrix     )
+import STMatrix   ( tests_STMatrix   )
+import HermMatrix ( tests_HermMatrix )
+import TriMatrix  ( tests_TriMatrix  )
+import Banded     ( tests_Banded     )
+import HermBanded ( tests_HermBanded )
+import TriBanded  ( tests_TriBanded  )
 
 main :: IO ()
 main = do

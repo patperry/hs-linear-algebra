@@ -1,5 +1,6 @@
 
-module TriBanded( tests_TriBanded ) where
+module TriBanded
+    where
 
 import Driver
 

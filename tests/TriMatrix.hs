@@ -7,7 +7,8 @@
 -- Stability  : experimental
 --
 
-module TriMatrix ( tests_TriMatrix ) where
+module TriMatrix
+    where
 
 import Driver
 import Test.Matrix.Tri.Dense

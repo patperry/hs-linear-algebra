@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Vector( tests_Vector ) where
+module Vector
+    where
 
 import Data.Elem.BLAS
 import Data.Vector.Dense

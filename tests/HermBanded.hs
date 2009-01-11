@@ -1,5 +1,6 @@
 
-module HermBanded( tests_HermBanded ) where
+module HermBanded
+    where
 
 import Driver
 

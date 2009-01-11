@@ -1,5 +1,6 @@
 
-module HermMatrix( tests_HermMatrix ) where
+module HermMatrix
+    where
 
 import Driver
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Matrix( tests_Matrix ) where
+module Matrix
+    where
 
 import Driver
 import qualified Data.Array as Array

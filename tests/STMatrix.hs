@@ -1,6 +1,6 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables #-}
-module STMatrix ( tests_STMatrix ) where
-
+module STMatrix
+    where
 
 import Data.Elem.BLAS
 import Data.Matrix.Dense
