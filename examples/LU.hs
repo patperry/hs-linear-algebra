@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module LU ( luFactorize ) where
+module LU ( lu, luFactorize ) where
 
 import Data.Elem.BLAS( BLAS3 )
 
@@ -30,6 +30,7 @@ lu (a :: Matrix (n,p) e) = runST $ do
  - L and U are stored in A, and a list of the row swaps are returned.
  - On failure, the index of the failing column is returned.
  -}      
+{-# INLINE luFactorize #-}
 luFactorize :: (WriteMatrix a e m) => a (n,p) e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
