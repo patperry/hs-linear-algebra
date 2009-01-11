@@ -21,7 +21,8 @@ import System.IO.Unsafe
 import Unsafe.Coerce
 
 import BLAS.Internal( diagLen, diagStart )
-import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, conjugate )
+import Data.Elem.BLAS
+import qualified Data.Elem.BLAS.Base   as BLAS
 import qualified Data.Elem.BLAS.Level1 as BLAS
 import qualified Data.Elem.BLAS.Level2 as BLAS
 

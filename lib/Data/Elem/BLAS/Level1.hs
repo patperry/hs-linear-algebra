@@ -34,8 +34,6 @@ class (Elem a) => BLAS1 a where
     
     scal  :: Int -> a -> Ptr a -> Int -> IO () 
 
-    swap  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    copy  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     axpy  :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
@@ -66,8 +64,6 @@ instance BLAS1 Double where
     nrm2  = dnrm2
     asum  = dasum
     iamax = idamax
-    swap  = dswap
-    copy  = dcopy
     axpy  = daxpy
     scal  = dscal
     rotg  = drotg
@@ -99,8 +95,6 @@ instance BLAS1 (Complex Double) where
     nrm2  = znrm2
     asum  = zasum
     iamax = izamax
-    swap  = zswap
-    copy  = zcopy
     
     axpy n alpha pX incX pY incY = 
         with alpha $ \pAlpha ->

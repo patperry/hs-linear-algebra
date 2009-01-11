@@ -20,6 +20,7 @@ import System.IO.Unsafe
 import BLAS.Internal( diagLen )
 
 import Data.Elem.BLAS
+import qualified Data.Elem.BLAS.Base   as BLAS
 import qualified Data.Elem.BLAS.Level1 as BLAS
 
 import Data.Matrix.Class
@@ -209,7 +210,7 @@ newIOMatrix_ (m,n)
         return $ IOMatrix NoTrans m n f (unsafeForeignPtrToPtr f) (max 1 m)
 {-# INLINE newIOMatrix_ #-}
 
-newCopyIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO (IOMatrix np e)
+newCopyIOMatrix :: (Elem e) => IOMatrix np e -> IO (IOMatrix np e)
 newCopyIOMatrix (IOMatrix h m n f p l) = 
     let (m',n') = if h == ConjTrans then (n,m) else (m,n)
         l'      = max 1 m'

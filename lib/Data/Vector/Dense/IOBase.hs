@@ -20,6 +20,7 @@ import System.IO.Unsafe
 import BLAS.Internal ( clearArray )
 import BLAS.Types( ConjEnum(..), flipConj )
 import Data.Elem.BLAS ( Complex, Elem, BLAS1, conjugate )
+import qualified Data.Elem.BLAS.Base as BLAS
 import qualified Data.Elem.BLAS.Level1 as BLAS
 
 import Data.Tensor.Class
@@ -41,7 +42,7 @@ data IOVector n e =
                {-# UNPACK #-} !Int            -- the stride (in elements, not bytes) between elements.
 
 -- | View an array in memory as a vector.
-vectorViewArray :: (BLAS1 e)
+vectorViewArray :: (Elem e)
                 => ForeignPtr e 
                 -> Int          -- ^ offset
                 -> Int          -- ^ length
@@ -50,7 +51,7 @@ vectorViewArray = vectorViewArrayWithStride 1
 {-# INLINE vectorViewArray #-}
 
 -- | View an array in memory as a vector, with the given stride.
-vectorViewArrayWithStride :: (BLAS1 e)
+vectorViewArrayWithStride :: (Elem e)
                           => Int          -- ^ stride
                           -> ForeignPtr e
                           -> Int          -- ^ offset
@@ -96,7 +97,7 @@ withIOVector (IOVector _ _ f p _) g = do
     return a
 {-# INLINE withIOVector #-}
 
-newIOVector_ :: (BLAS1 e) => Int -> IO (IOVector n e)
+newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
 newIOVector_ n
     | n < 0 = 
         fail $ "Tried to create a vector with `" ++ show n ++ "' elements."
@@ -104,7 +105,7 @@ newIOVector_ n
         arr <- mallocForeignPtrArray n
         return $ IOVector NoConj n arr (unsafeForeignPtrToPtr arr) 1
 
-newCopyIOVector :: (BLAS1 e) => IOVector n e -> IO (IOVector n e)
+newCopyIOVector :: (Elem e) => IOVector n e -> IO (IOVector n e)
 newCopyIOVector (IOVector c n f p incX) = do
     (IOVector _ _ f' p' _) <- newIOVector_ n
     BLAS.copy n p incX p' 1
@@ -276,11 +277,12 @@ scaleByIOVector k (IOVector c n f p incX) =
     in BLAS.scal n k' p incX >> touchForeignPtr f
 {-# INLINE scaleByIOVector #-}
                     
-shiftByIOVector :: (Elem e) => e -> IOVector n e -> IO ()                    
-shiftByIOVector k x | isConjIOVector x = 
-                        shiftByIOVector (conjugate k) (conjIOVector x)
-                    | otherwise = 
-                        modifyWithIOVector (k+) x
+shiftByIOVector :: e -> IOVector n e -> IO ()                    
+shiftByIOVector k x@(IOVector _ _ _ _ _) 
+    | isConjIOVector x = 
+         shiftByIOVector (conjugate k) (conjIOVector x)
+    | otherwise = 
+         modifyWithIOVector (k+) x
 {-# INLINE shiftByIOVector #-}
 
 instance Shaped IOVector Int where

@@ -12,10 +12,12 @@ module Data.Elem.BLAS.Base (
     Elem(..),
     ) where
 
+import Data.Elem.BLAS.Double( dcopy, dswap )
+import Data.Elem.BLAS.Zomplex( zcopy, zswap )
 import Data.AEq
-import Data.Complex             ( Complex(..), magnitude )
+import Data.Complex( Complex(..), magnitude )
 import qualified Data.Complex as Complex
-import Foreign                  ( Storable )
+import Foreign( Storable, Ptr )
 import Foreign.Storable.Complex ()
 
 -- | The base class for elements.
@@ -35,6 +37,10 @@ class (AEq e, Storable e, Fractional e) => Elem e where
     -- | Try to coerce a value to a double.  This will fail unless the
     -- complex part is zero (according to a comparison by @(~==)@).
     maybeToReal :: e -> Maybe Double
+
+    copy :: Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    swap :: Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+
     
 instance Elem Double where
     conjugate   = id
@@ -47,6 +53,10 @@ instance Elem Double where
     {-# INLINE fromReal #-}
     maybeToReal = Just
     {-# INLINE maybeToReal #-}
+    copy = dcopy
+    {-# INLINE copy #-}
+    swap = dswap
+    {-# INLINE swap #-}
     
 instance Elem (Complex Double) where
     conjugate      = Complex.conjugate
@@ -60,3 +70,7 @@ instance Elem (Complex Double) where
     maybeToReal (x :+ y) | y ~== 0   = Just x
                          | otherwise = Nothing
     {-# INLINE maybeToReal #-}
+    copy = zcopy
+    {-# INLINE copy #-}
+    swap = zswap
+    {-# INLINE swap #-}

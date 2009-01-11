@@ -20,7 +20,7 @@ module Data.Elem.BLAS (
     module Data.Complex
     ) where
 
-import Data.Elem.BLAS.Base
+import Data.Elem.BLAS.Base hiding ( copy, swap )
 import Data.Elem.BLAS.Level1( BLAS1 )
 import Data.Elem.BLAS.Level2( BLAS2 )
 import Data.Elem.BLAS.Level3( BLAS3 )
