@@ -54,7 +54,7 @@ matrixViewArray :: (Elem e)
                 -> Int          -- ^ offset
                 -> (Int,Int)    -- ^ shape
                 -> IOMatrix (n,p) e
-matrixViewArray f o (m,n) = matrixViewArrayWithLda m f o (m,n)
+matrixViewArray f o (m,n) = matrixViewArrayWithLda (max 1 m) f o (m,n)
 {-# INLINE matrixViewArray #-}
 
 -- | View an array in memory as a matrix, with the given leading dimension
