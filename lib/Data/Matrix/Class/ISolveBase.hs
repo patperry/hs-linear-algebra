@@ -42,28 +42,32 @@ infixr 7 <\>, <\\>
 -- functions of the type class do not perform any checks on the validity
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
-class (MatrixShaped a, BLAS3 e) => ISolve a e where
-    unsafeSolve :: a (m,n) e -> Vector m e -> Vector n e
+class (MatrixShaped a) => ISolve a where
+    unsafeSolve :: (BLAS3 e) 
+                => a (m,n) e -> Vector m e -> Vector n e
     unsafeSolve = unsafeSSolve 1
     {-# INLINE unsafeSolve #-}
     
-    unsafeSolveMat :: a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+    unsafeSolveMat :: (BLAS3 e) 
+                   => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
     unsafeSolveMat = unsafeSSolveMat 1
     {-# INLINE unsafeSolveMat #-}
 
-    unsafeSSolve :: e -> a (m,n) e -> Vector m e -> Vector n e
+    unsafeSSolve :: (BLAS3 e)
+                 => e -> a (m,n) e -> Vector m e -> Vector n e
     
-    unsafeSSolveMat :: e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+    unsafeSSolveMat :: (BLAS3 e)
+                    => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 
 -- | Solve for a vector.
-(<\>) :: (ISolve a e) => a (m,n) e -> Vector m e -> Vector n e
+(<\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
 (<\>) a y =
     checkMatVecSolv (shape a) (dim y) $
         unsafeSolve a y
 {-# INLINE (<\>) #-}
 
 -- | Solve for a matrix.
-(<\\>) :: (ISolve a e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+(<\\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 (<\\>) a b =
     checkMatMatSolv (shape a) (shape b) $
         unsafeSolveMat a b
@@ -71,7 +75,7 @@ class (MatrixShaped a, BLAS3 e) => ISolve a e where
 
 -- | Solve for a vector and scale.
 -- @ssolve k a y@ is equal to @a \<\\> (k *> y)@ but is often faster.
-ssolve :: (ISolve a e) => e -> a (m,n) e -> Vector m e -> Vector n e
+ssolve :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Vector m e -> Vector n e
 ssolve alpha a y =
     checkMatVecSolv (shape a) (dim y) $
         unsafeSSolve alpha a y
@@ -79,13 +83,13 @@ ssolve alpha a y =
 
 -- | Solve for a matrix and scale.
 -- @ssolveMat k a c@ is equal to @a \<\\\\> (k *> c)@ but is often faster.
-ssolveMat :: (ISolve a e) => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+ssolveMat :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 ssolveMat alpha a b =
     checkMatMatSolv (shape a) (shape b) $
         unsafeSSolveMat alpha a b
 {-# INLINE ssolveMat #-}
 
-instance (BLAS3 e) => ISolve (Tri Matrix) e where
+instance ISolve (Tri Matrix) where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     {-# INLINE unsafeSSolve #-}
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c

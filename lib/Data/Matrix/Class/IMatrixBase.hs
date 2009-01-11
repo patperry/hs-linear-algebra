@@ -35,7 +35,7 @@ module Data.Matrix.Class.IMatrixBase (
     unsafeApplyMat,
     ) where
 
-import Data.Elem.BLAS( BLAS3 )
+import Data.Elem.BLAS
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
@@ -54,73 +54,68 @@ infixr 7 <*>, <**>
 -- | A type class for immutable matrices.  The member functions of the
 -- type class do not perform any checks on the validity of shapes or
 -- indices, so in general their safe counterparts should be preferred.
-class (MatrixShaped a, BLAS3 e) => IMatrix a e where
-    unsafeSApply :: e -> a (m,n) e -> Vector n e -> Vector m e
-    unsafeSApplyMat :: e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+class (MatrixShaped a) => IMatrix a where
+    unsafeSApply :: (BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
+    unsafeSApplyMat :: (BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
-    unsafeRow :: a (m,n) e -> Int -> Vector n e
-    unsafeRow a i = let
-        e = basisVector (numRows a) i
-        in conj $ unsafeApply (herm a) e
+    unsafeRow :: (Elem e) => a (m,n) e -> Int -> Vector n e
+    unsafeRow a = conj . unsafeCol (herm a)
     {-# INLINE unsafeRow #-}
     
-    unsafeCol :: a (m,n) e -> Int -> Vector m e
-    unsafeCol a j = let
-        e = basisVector (numCols a) j
-        in unsafeApply a e
-    {-# INLINE unsafeCol #-}
+    unsafeCol :: (Elem e) => a (m,n) e -> Int -> Vector m e
+
 
 -- | Get the given row in a matrix.
-row :: (IMatrix a e) => a (m,n) e -> Int -> Vector n e
+row :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector n e
 row a = checkedRow (shape a) (unsafeRow a)
 {-# INLINE row #-}
 
 -- | Get the given column in a matrix.
-col :: (IMatrix a e) => a (m,n) e -> Int -> Vector m e
+col :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector m e
 col a = checkedCol (shape a) (unsafeCol a)
 {-# INLINE col #-}
 
 -- | Get a list the row vectors in the matrix.
-rows :: (IMatrix a e) => a (m,n) e -> [Vector n e]
+rows :: (IMatrix a, Elem e) => a (m,n) e -> [Vector n e]
 rows a = [ unsafeRow a i | i <- [0..numRows a - 1] ]
 {-# INLINE rows #-}
 
 -- | Get a list the column vectors in the matrix.
-cols :: (IMatrix a e) => a (m,n) e -> [Vector m e]
+cols :: (IMatrix a, Elem e) => a (m,n) e -> [Vector m e]
 cols a = [ unsafeCol a j | j <- [0..numCols a - 1] ]
 {-# INLINE cols #-}
 
 -- | Matrix multiplication by a vector.
-(<*>) :: (IMatrix a e) => a (m,n) e -> Vector n e -> Vector m e
+(<*>) :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
 (<*>) a x = checkMatVecMult (shape a) (dim x) $ unsafeApply a x
 {-# INLINE (<*>) #-}
 
 -- | Matrix multiplication by a matrix.
-(<**>) :: (IMatrix a e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+(<**>) :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 (<**>) a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMat a b
 {-# INLINE (<**>) #-}
 
 -- | Scale and multiply by a vector.  
 -- @sapply k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
-sapply :: (IMatrix a e) => e -> a (m,n) e -> Vector n e -> Vector m e
+sapply :: (IMatrix a, BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
 sapply k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApply k a x
 {-# INLINE sapply #-}
     
 -- | Scale and multiply by a matrix.
 -- @sapplyMat k a b@ is equal to @a \<**> (k *> b)@, and often it is faster.
-sapplyMat :: (IMatrix a e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
+sapplyMat :: (IMatrix a, BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
 sapplyMat k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMat k a b
 {-# INLINE sapplyMat #-}
 
-unsafeApply :: (IMatrix a e) => a (m,n) e -> Vector n e -> Vector m e
+unsafeApply :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
 unsafeApply = unsafeSApply 1
 {-# INLINE unsafeApply #-}
 
-unsafeApplyMat :: (IMatrix a e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+unsafeApplyMat :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 unsafeApplyMat = unsafeSApplyMat 1
 {-# INLINE unsafeApplyMat #-}
 
-instance (BLAS3 e) => IMatrix Matrix e where
+instance IMatrix Matrix where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     {-# INLINE unsafeSApply #-}    
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
@@ -130,7 +125,7 @@ instance (BLAS3 e) => IMatrix Matrix e where
     unsafeCol                 = unsafeColView
     {-# INLINE unsafeCol #-}
 
-instance (BLAS3 e) => IMatrix (Herm Matrix) e where
+instance IMatrix (Herm Matrix) where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     {-# INLINE unsafeSApply #-}    
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
@@ -140,7 +135,7 @@ instance (BLAS3 e) => IMatrix (Herm Matrix) e where
     unsafeCol a j = runSTVector $ unsafeGetCol a j
     {-# INLINE unsafeCol #-}
 
-instance (BLAS3 e) => IMatrix (Tri Matrix) e where
+instance IMatrix (Tri Matrix) where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     {-# INLINE unsafeSApply #-}
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b

@@ -103,7 +103,7 @@ instance BaseVector (STVector s) where
     unsafeIOVectorToVector = STVector
     {-# INLINE unsafeIOVectorToVector #-}
 
-instance ReadVector (STVector s) e (ST s) where
+instance ReadVector (STVector s) (ST s) where
     unsafePerformIOWithVector (STVector x) f = unsafeIOToST $ f x
     {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (STVector x) = unsafeIOToST $ freezeIOVector x
@@ -111,7 +111,7 @@ instance ReadVector (STVector s) e (ST s) where
     unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
     {-# INLINE unsafeFreezeVector #-}
 
-instance WriteVector (STVector s) e (ST s) where
+instance WriteVector (STVector s) (ST s) where
     newVector_ = liftM STVector . unsafeIOToST . newIOVector_
     {-# INLINE newVector_ #-}
     unsafeConvertIOVector = unsafeIOToST . liftM STVector

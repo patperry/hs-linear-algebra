@@ -244,12 +244,12 @@ newIdentityIOMatrix mn = do
     setIdentityIOMatrix a
     return a
 
-setIdentityIOMatrix :: (Elem e) => IOMatrix np e -> IO ()
-setIdentityIOMatrix a = do
+setIdentityIOMatrix :: IOMatrix np e -> IO ()
+setIdentityIOMatrix a@(IOMatrix _ _ _ _ _ _) = do
     setZeroIOMatrix a
     setConstantIOVector 1 (unsafeDiagViewIOMatrix a 0)
 
-newColsIOMatrix :: (ReadVector x e IO, Elem e)
+newColsIOMatrix :: (ReadVector x IO, Elem e)
                 => (Int,Int) -> [x n e] -> IO (IOMatrix (n,p) e)
 newColsIOMatrix (m,n) cs = do
     a <- newZeroIOMatrix (m,n)
@@ -257,7 +257,7 @@ newColsIOMatrix (m,n) cs = do
         unsafeCopyVector (unsafeColViewIOMatrix a j) c
     return a
 
-newRowsIOMatrix :: (ReadVector x e IO, Elem e) 
+newRowsIOMatrix :: (ReadVector x IO, Elem e) 
                 => (Int,Int) -> [x p e] -> IO (IOMatrix (n,p) e)
 newRowsIOMatrix (m,n) rs = do
     a <- newZeroIOMatrix (m,n)
@@ -265,11 +265,11 @@ newRowsIOMatrix (m,n) rs = do
         unsafeCopyVector (unsafeRowViewIOMatrix a i) r
     return a
 
-newColIOMatrix :: (ReadVector x e IO, Elem e)
+newColIOMatrix :: (ReadVector x IO, Elem e)
                => x n e -> IO (IOMatrix (n,one) e)
 newColIOMatrix x = newColsIOMatrix (dim x,1) [x]
 
-newRowIOMatrix :: (ReadVector x e IO, Elem e)
+newRowIOMatrix :: (ReadVector x IO, Elem e)
                => x p e -> IO (IOMatrix (one,p) e)
 newRowIOMatrix x = newRowsIOMatrix (1,dim x) [x]
 
@@ -285,7 +285,7 @@ newConstantIOMatrix mn e = do
     setConstantIOMatrix e a
     return a
 
-newCopyIOMatrix :: (Elem e) => IOMatrix np e -> IO (IOMatrix np e)
+newCopyIOMatrix :: IOMatrix np e -> IO (IOMatrix np e)
 newCopyIOMatrix (IOMatrix h m n f p l) = 
     let (m',n') = if h == ConjTrans then (n,m) else (m,n)
         l'      = max 1 m'
@@ -303,6 +303,16 @@ newCopyIOMatrix (IOMatrix h m n f p l) =
         touchForeignPtr f
         touchForeignPtr f'
         return (IOMatrix h m n f' p' l')
+
+newCopyIOMatrix' :: IOMatrix (n,p) e -> IO (IOMatrix (n,p) e)
+newCopyIOMatrix' a@(IOMatrix _ _ _ _ _ _) = do
+    b <- newIOMatrix_ (shape a)
+    unsafeCopyIOMatrix b a
+    return b
+
+unsafeCopyIOMatrix :: IOMatrix (n,p) e -> IOMatrix (n,p) e -> IO ()
+unsafeCopyIOMatrix = liftIOMatrix2 unsafeCopyIOVector
+{-# INLINE unsafeCopyIOMatrix #-}
 
 shapeIOMatrix :: IOMatrix np e -> (Int,Int)
 shapeIOMatrix (IOMatrix _ m n _ _ _) = (m,n)

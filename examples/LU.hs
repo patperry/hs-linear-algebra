@@ -31,7 +31,7 @@ lu (a :: Matrix (n,p) e) = runST $ do
  - On failure, the index of the failing column is returned.
  -}      
 {-# INLINE luFactorize #-}
-luFactorize :: (WriteMatrix a e m) => a (n,p) e -> m (Either Int [Int])
+luFactorize :: (WriteMatrix a m) => a (n,p) e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
         let nleft = mn `div` 2

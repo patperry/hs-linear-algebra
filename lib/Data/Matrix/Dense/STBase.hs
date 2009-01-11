@@ -16,8 +16,6 @@ module Data.Matrix.Dense.STBase
 import Control.Monad
 import Control.Monad.ST
 
-import Data.Elem.BLAS
-
 import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
@@ -105,7 +103,7 @@ instance MatrixShaped (STMatrix s) where
     herm (STMatrix a) = STMatrix (herm a)
     {-# INLINE herm #-}
     
-instance (BLAS3 e) => MMatrix (STMatrix s) e (ST s) where
+instance MMatrix (STMatrix s) (ST s) where
     unsafeDoSApplyAdd = gemv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gemm
@@ -119,7 +117,7 @@ instance (BLAS3 e) => MMatrix (STMatrix s) e (ST s) where
     getCols = getColsST
     {-# INLINE getCols #-}
 
-instance (BLAS3 e) => MMatrix (Herm (STMatrix s)) e (ST s) where
+instance MMatrix (Herm (STMatrix s)) (ST s) where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
@@ -128,8 +126,13 @@ instance (BLAS3 e) => MMatrix (Herm (STMatrix s)) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowHermMatrix
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColHermMatrix
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
+
+instance MMatrix (Tri (STMatrix s)) (ST s) where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
@@ -142,8 +145,12 @@ instance (BLAS3 e) => MMatrix (Tri (STMatrix s)) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowTriMatrix
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColTriMatrix
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MSolve  (Tri (STMatrix s)) e (ST s) where
+instance MSolve  (Tri (STMatrix s)) (ST s) where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix
     {-# INLINE unsafeDoSSolve #-}
     unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
@@ -181,7 +188,7 @@ instance BaseMatrix (STMatrix s) where
     unsafeMatrixToIOMatrix (STMatrix a) = a
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
-instance (BLAS3 e) => ReadMatrix (STMatrix s) e (ST s) where
+instance ReadMatrix (STMatrix s) (ST s) where
     unsafePerformIOWithMatrix (STMatrix a) f = unsafeIOToST $ f a
     {-# INLINE unsafePerformIOWithMatrix #-}
     freezeMatrix (STMatrix a) = unsafeIOToST $ freezeIOMatrix a
@@ -189,7 +196,7 @@ instance (BLAS3 e) => ReadMatrix (STMatrix s) e (ST s) where
     unsafeFreezeMatrix (STMatrix a) = unsafeIOToST $ unsafeFreezeIOMatrix a
     {-# INLINE unsafeFreezeMatrix #-}
 
-instance (BLAS3 e) => WriteMatrix (STMatrix s) e (ST s) where
+instance WriteMatrix (STMatrix s) (ST s) where
     newMatrix_ = unsafeIOToST . liftM STMatrix . newIOMatrix_
     {-# INLINE newMatrix_ #-}
     unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix

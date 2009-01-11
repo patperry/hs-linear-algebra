@@ -15,8 +15,6 @@ module Data.Matrix.Banded.STBase
 import Control.Monad
 import Control.Monad.ST
 
-import Data.Elem.BLAS
-
 import Data.Matrix.Class
 import Data.Matrix.Class.MMatrixBase
 import Data.Matrix.Class.MSolveBase
@@ -138,7 +136,7 @@ instance BaseBanded (STBanded s) where
     unsafeBandedToIOBanded (STBanded a) = a
     {-# INLINE unsafeBandedToIOBanded #-}
     
-instance (BLAS3 e) => ReadBanded (STBanded s) e (ST s) where
+instance ReadBanded (STBanded s) (ST s) where
     unsafePerformIOWithBanded (STBanded a) f = unsafeIOToST $ f a
     {-# INLINE unsafePerformIOWithBanded #-}
     freezeBanded (STBanded a) = unsafeIOToST $ freezeIOBanded a
@@ -146,7 +144,7 @@ instance (BLAS3 e) => ReadBanded (STBanded s) e (ST s) where
     unsafeFreezeBanded (STBanded a) = unsafeIOToST $ unsafeFreezeIOBanded a
     {-# INLINE unsafeFreezeBanded #-}
 
-instance (BLAS3 e) => MMatrix (STBanded s) e (ST s) where
+instance MMatrix (STBanded s) (ST s) where
     unsafeDoSApplyAdd    = gbmv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gbmm
@@ -160,7 +158,7 @@ instance (BLAS3 e) => MMatrix (STBanded s) e (ST s) where
     getCols = getColsST
     {-# INLINE getCols #-}
 
-instance (BLAS3 e) => MMatrix (Herm (STBanded s)) e (ST s) where
+instance MMatrix (Herm (STBanded s)) (ST s) where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
@@ -169,8 +167,12 @@ instance (BLAS3 e) => MMatrix (Herm (STBanded s)) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowHermBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColHermBanded
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
+instance MMatrix (Tri (STBanded s)) (ST s) where
     unsafeDoSApply_      = tbmv
     {-# INLINE unsafeDoSApply_ #-}        
     unsafeDoSApplyMat_   = tbmm
@@ -183,8 +185,12 @@ instance (BLAS3 e) => MMatrix (Tri (STBanded s)) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowTriBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColTriBanded
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MSolve (Tri (STBanded s)) e (ST s) where
+instance MSolve (Tri (STBanded s)) (ST s) where
     unsafeDoSSolve_    = tbsv
     {-# INLINE unsafeDoSSolve_ #-}    
     unsafeDoSSolveMat_ = tbsm
@@ -192,4 +198,5 @@ instance (BLAS3 e) => MSolve (Tri (STBanded s)) e (ST s) where
     unsafeDoSSolve     = tbsv'
     {-# INLINE unsafeDoSSolve #-}
     unsafeDoSSolveMat  = tbsm'
-    {-# INLINE unsafeDoSSolveMat #-}    
+    {-# INLINE unsafeDoSSolveMat #-}
+

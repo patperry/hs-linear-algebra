@@ -41,16 +41,17 @@ module Data.Matrix.Class.MSolveBase (
 
     ) where
 
-import Data.Matrix.Class
-import Data.Tensor.Class
 import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv, checkMatVecSolvTo,
     checkMatMatSolvTo, checkSquare )
 
+import Data.Elem.BLAS
+import Data.Matrix.Class
+import Data.Tensor.Class
 import Data.Vector.Dense.Class
 import Data.Matrix.Dense.Base
 
 
-unsafeGetSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+unsafeGetSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     a (k,l) e -> y k e -> m (x l e)
 unsafeGetSolve a y = do
     x <- newVector_ (numCols a)
@@ -58,7 +59,7 @@ unsafeGetSolve a y = do
     return x
 {-# INLINE unsafeGetSolve #-}
     
-unsafeGetSSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+unsafeGetSSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     e -> a (k,l) e -> y k e -> m (x l e)
 unsafeGetSSolve alpha a y = do
     x <- newVector_ (numCols a)
@@ -66,7 +67,7 @@ unsafeGetSSolve alpha a y = do
     return x
 {-# INLINE unsafeGetSSolve #-}
     
-unsafeGetSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+unsafeGetSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     a (r,s) e -> c (r,t) e -> m (b (s,t) e)
 unsafeGetSolveMat a c = do
     b <- newMatrix_ (numCols a, numCols c)
@@ -74,7 +75,7 @@ unsafeGetSolveMat a c = do
     return b
 {-# INLINE unsafeGetSolveMat #-}
 
-unsafeGetSSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+unsafeGetSSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     e -> a (r,s) e -> c (r,t) e -> m (b (s,t) e)                         
 unsafeGetSSolveMat alpha a c = do
     b <- newMatrix_ (numCols a, numCols c)
@@ -83,7 +84,7 @@ unsafeGetSSolveMat alpha a c = do
 {-# INLINE unsafeGetSSolveMat #-}
 
 -- | Return @x@ such that @a x = y@.
-getSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) =>
+getSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) =>
     a (k,l) e -> y k e -> m (x l e)
 getSolve a y = 
     checkMatVecSolv (shape a) (dim y) $
@@ -91,7 +92,7 @@ getSolve a y =
 {-# INLINE getSolve #-}
 
 -- | Return @x@ such that @a x = alpha y@.    
-getSSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+getSSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     e -> a (k,l) e -> y k e -> m (x l e)
 getSSolve alpha a y = 
     checkMatVecSolv (shape a) (dim y) $
@@ -99,7 +100,7 @@ getSSolve alpha a y =
 {-# INLINE getSSolve #-}
 
 -- | Return @b@ such that @a b = c@.
-getSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+getSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     a (r,s) e -> c (r,t) e -> m (b (s,t) e)                     
 getSolveMat a c =
     checkMatMatSolv (shape a) (shape c) $
@@ -107,7 +108,7 @@ getSolveMat a c =
 {-# INLINE getSolveMat #-}
             
 -- | Return @b@ such that @a b = alpha c@.
-getSSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+getSSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     e -> a (r,s) e -> c (r,t) e -> m (b (s,t) e)                 
 getSSolveMat alpha a b =
     checkMatMatSolv (shape a) (shape b) $
@@ -115,7 +116,7 @@ getSSolveMat alpha a b =
 {-# INLINE getSSolveMat #-}
 
 -- | Set @x := a^{-1} y@.
-doSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+doSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     a (r,s) e -> y r e -> x s e -> m ()                 
 doSolve a y x =
     checkMatVecSolvTo (shape a) (dim y) (dim x) $
@@ -123,7 +124,7 @@ doSolve a y x =
 {-# INLINE doSolve #-}
         
 -- | Set @b := a^{-1} c@.
-doSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+doSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()                
 doSolveMat a c b =
     checkMatMatSolvTo (shape a) (shape c) (shape b) $
@@ -131,7 +132,7 @@ doSolveMat a c b =
 {-# INLINE doSolveMat #-}
     
 -- | Set @x := a^{-1} (alpha y)@.    
-doSSolve :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+doSSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     e -> a (k,l) e -> y k e -> x l e -> m ()
 doSSolve alpha a y x =
     checkMatVecSolvTo (shape a) (dim y) (dim x) $
@@ -139,7 +140,7 @@ doSSolve alpha a y x =
 {-# INLINE doSSolve #-}
 
 -- | Set @b := a^{-1} (alpha c)@.
-doSSolveMat :: (MSolve a e m, ReadMatrix c e m, WriteMatrix b e m) => 
+doSSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()                  
 doSSolveMat alpha a c b =
     checkMatMatSolvTo (shape a) (shape c) (shape b) $
@@ -147,7 +148,7 @@ doSSolveMat alpha a c b =
 {-# INLINE doSSolveMat #-}
 
 -- | Set @x := a^{-1} x@.
-doSolve_ :: (MSolve a e m, ReadVector y e m, WriteVector x e m) => 
+doSolve_ :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     a (k,k) e -> x k e -> m ()
 doSolve_ a x =
     checkSquare "doSolve_" (shape a) $
@@ -156,7 +157,7 @@ doSolve_ a x =
 {-# INLINE doSolve_ #-}
 
 -- | Set @x := a^{-1} (alpha x)@.
-doSSolve_ :: (MSolve a e m, WriteVector x e m) => 
+doSSolve_ :: (MSolve a m, WriteVector x m, BLAS3 e) => 
     e -> a (k,k) e -> x k e -> m ()
 doSSolve_ alpha a x =
     checkSquare ("doSSolve_ " ++ show alpha) (shape a) $
@@ -165,7 +166,7 @@ doSSolve_ alpha a x =
 {-# INLINE doSSolve_ #-}
 
 -- | Set @b := a^{-1} b@.
-doSolveMat_ :: (MSolve a e m, WriteMatrix b e m) => 
+doSolveMat_ :: (MSolve a m, WriteMatrix b m, BLAS3 e) => 
     a (k,k) e -> b (k,l) e -> m ()          
 doSolveMat_ a b =
     checkSquare "doSolveMat_" (shape a) $
@@ -174,7 +175,7 @@ doSolveMat_ a b =
 {-# INLINE doSolveMat_ #-}
 
 -- | Set @b := a^{-1} (alpha b)@.
-doSSolveMat_ :: (MSolve a e m, WriteMatrix b e m) =>
+doSSolveMat_ :: (MSolve a m, WriteMatrix b m, BLAS3 e) =>
     e -> a (k,k) e -> b (k,l) e -> m ()          
 doSSolveMat_ alpha a b =
     checkSquare ("doSSolveMat_ " ++ show alpha) (shape a) $

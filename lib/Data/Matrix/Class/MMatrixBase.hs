@@ -63,6 +63,8 @@ module Data.Matrix.Class.MMatrixBase (
 
 import BLAS.Internal( checkSquare, checkMatVecMult, checkMatVecMultAdd,
     checkMatMatMult, checkMatMatMultAdd, checkedRow, checkedCol )
+
+import Data.Elem.BLAS
 import Data.Matrix.Class
 import Data.Tensor.Class
 
@@ -71,27 +73,27 @@ import Data.Matrix.Dense.Base
 
 
 -- | Get the given row in a matrix.
-getRow :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> Int -> m (x l e)
+getRow :: (MMatrix a m, WriteVector x m, Elem e) => a (k,l) e -> Int -> m (x l e)
 getRow a = checkedRow (shape a) (unsafeGetRow a)
 {-# INLINE getRow #-}
 
 -- | Get the given column in a matrix.
-getCol :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> Int -> m (x k e)
+getCol :: (MMatrix a m, WriteVector x m, Elem e) => a (k,l) e -> Int -> m (x k e)
 getCol a = checkedCol (shape a) (unsafeGetCol a)
 {-# INLINE getCol #-}
 
 -- | Get a strict list the row vectors in the matrix.
-getRows' :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> m [x l e]
+getRows' :: (MMatrix a m, WriteVector x m, Elem e) => a (k,l) e -> m [x l e]
 getRows' a = mapM (unsafeGetRow a) [0..numRows a - 1]
 {-# INLINE getRows' #-}
 
 -- | Get a strict list of the column vectors in the matrix.
-getCols' :: (MMatrix a e m, WriteVector x e m) => a (k,l) e -> m [x k e]
+getCols' :: (MMatrix a m, WriteVector x m, Elem e) => a (k,l) e -> m [x k e]
 getCols' a = mapM (unsafeGetCol a) [0..numCols a - 1]
 {-# INLINE getCols' #-}
 
 -- | Scale and apply to a vector
-getSApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+getSApply :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     e -> a (k,l) e -> x l e -> m (y k e)
 getSApply k a x =
     checkMatVecMult (shape a) (dim x) $ 
@@ -99,7 +101,7 @@ getSApply k a x =
 {-# INLINE getSApply #-}
 
 -- | Scale and apply to a matrix
-getSApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+getSApplyMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 getSApplyMat k a b =
     checkMatMatMult (shape a) (shape b) $
@@ -107,7 +109,7 @@ getSApplyMat k a b =
 {-# INLINE getSApplyMat #-}
 
 -- | @y := alpha a x + beta y@    
-doSApplyAdd :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+doSApplyAdd :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 doSApplyAdd alpha a x beta y =
     checkMatVecMultAdd (shape a) (dim x) (dim y) $
@@ -115,7 +117,7 @@ doSApplyAdd alpha a x beta y =
 {-# INLINE doSApplyAdd #-}
 
 -- | @c := alpha a b + beta c@
-doSApplyAddMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+doSApplyAddMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 doSApplyAddMat alpha a b beta c =
     checkMatMatMultAdd (shape a) (shape b) (shape c)
@@ -123,7 +125,7 @@ doSApplyAddMat alpha a b beta c =
 {-# INLINE doSApplyAddMat #-}
 
 -- | Apply to a vector
-getApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+getApply :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     a (k,l) e -> x l e -> m (y k e)
 getApply a x =
     checkMatVecMult (shape a) (dim x) $ do
@@ -131,7 +133,7 @@ getApply a x =
 {-# INLINE getApply #-}
 
 -- | Apply to a matrix
-getApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+getApplyMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 getApplyMat a b =
     checkMatMatMult (shape a) (shape b) $
@@ -139,7 +141,7 @@ getApplyMat a b =
 {-# INLINE getApplyMat #-}
 
 -- | @ x := alpha a x@        
-doSApply_ :: (MMatrix a e m, WriteVector y e m) =>
+doSApply_ :: (MMatrix a m, WriteVector y m, BLAS3 e) =>
     e -> a (n,n) e -> y n e -> m ()
 doSApply_ alpha a x =
     checkSquare ("doSApply_ " ++ show alpha) (shape a) $
@@ -148,7 +150,7 @@ doSApply_ alpha a x =
 {-# INLINE doSApply_ #-}
 
 -- | @ b := alpha a b@
-doSApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
+doSApplyMat_ :: (MMatrix a m, WriteMatrix b m, BLAS3 e) =>
     e -> a (s,s) e -> b (s,t) e -> m ()
 doSApplyMat_ alpha a b =
     checkSquare ("doSApplyMat_ " ++ show alpha) (shape a) $
@@ -156,18 +158,18 @@ doSApplyMat_ alpha a b =
             unsafeDoSApplyMat_ alpha a b
 {-# INLINE doSApplyMat_ #-}
 
-unsafeGetApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+unsafeGetApply :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     a (k,l) e -> x l e -> m (y k e)
 unsafeGetApply = unsafeGetSApply 1
 {-# INLINE unsafeGetApply #-}
 
-unsafeGetApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+unsafeGetApplyMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     a (r,s) e -> b (s,t) e -> m (c (r,t) e)
 unsafeGetApplyMat = unsafeGetSApplyMat 1
 {-# INLINE unsafeGetApplyMat #-}
 
 -- | Apply to a vector and store the result in another vector
-doApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+doApply :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     a (k,l) e -> x l e -> y k e -> m ()
 doApply a x y =
     checkMatVecMultAdd (numRows a, numCols a) (dim x) (dim y) $
@@ -175,25 +177,25 @@ doApply a x y =
 {-# INLINE doApply #-}
 
 -- | Apply to a matrix and store the result in another matrix
-doApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+doApplyMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 doApplyMat a b c =
     checkMatMatMultAdd (shape a) (shape b) (shape c) $
         unsafeDoApplyMat a b c
 {-# INLINE doApplyMat #-}
 
-unsafeDoApply :: (MMatrix a e m, ReadVector x e m, WriteVector y e m) =>
+unsafeDoApply :: (MMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoApply a x y = unsafeDoSApplyAdd 1 a x 0 y
 {-# INLINE unsafeDoApply #-}
 
-unsafeDoApplyMat :: (MMatrix a e m, ReadMatrix b e m, WriteMatrix c e m) =>
+unsafeDoApplyMat :: (MMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
     a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
 unsafeDoApplyMat a b c = unsafeDoSApplyAddMat 1 a b 0 c
 {-# INLINE unsafeDoApplyMat #-}
 
 -- | @x := a x@    
-doApply_ :: (MMatrix a e m, WriteVector y e m) =>
+doApply_ :: (MMatrix a m, WriteVector y m, BLAS3 e) =>
     a (n,n) e -> y n e -> m ()
 doApply_ a x =
     checkSquare "doApply_" (shape a) $
@@ -202,7 +204,7 @@ doApply_ a x =
 {-# INLINE doApply_ #-}
 
 -- | @ b := a b@
-doApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
+doApplyMat_ :: (MMatrix a m, WriteMatrix b m, BLAS3 e) =>
     a (s,s) e -> b (s,t) e -> m ()
 doApplyMat_ a b =
     checkSquare "doApplyMat_" (shape a) $
@@ -210,13 +212,13 @@ doApplyMat_ a b =
             unsafeDoApplyMat_ a b
 {-# INLINE doApplyMat_ #-}
   
-unsafeDoApply_ :: (MMatrix a e m, WriteVector y e m) => 
+unsafeDoApply_ :: (MMatrix a m, WriteVector y m, BLAS3 e) => 
     a (n,n) e -> y n e -> m ()
 unsafeDoApply_ a x =
     unsafeDoSApply_ 1 a x
 {-# INLINE unsafeDoApply_ #-}
 
-unsafeDoApplyMat_ :: (MMatrix a e m, WriteMatrix b e m) =>
+unsafeDoApplyMat_ :: (MMatrix a m, WriteMatrix b m, BLAS3 e) =>
     a (s,s) e -> b (s,t) e -> m ()
 unsafeDoApplyMat_ a b = 
     unsafeDoSApplyMat_ 1 a b

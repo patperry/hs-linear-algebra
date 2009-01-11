@@ -79,9 +79,11 @@ unsafeThawIOBanded :: Banded np e -> IO (IOBanded np e)
 unsafeThawIOBanded (Banded x) = return x
 
 -- | Common functionality for all banded matrix types.
-class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a,
-        BaseVector (VectorView a), BaseMatrix (MatrixStorage a)
-      ) => BaseBanded a where
+class ( MatrixShaped a, 
+        HasVectorView a, 
+        HasMatrixStorage a,
+        BaseVector (VectorView a), 
+        BaseMatrix (MatrixStorage a) ) => BaseBanded a where
     
     -- | Get the number of lower diagonals in the banded matrix.
     numLower :: a (n,p) e -> Int
@@ -151,11 +153,13 @@ class ( MatrixShaped a, HasVectorView a, HasMatrixStorage a,
 
 
 -- | Banded matrices that can be read in a monad.
-class ( BaseBanded a, BLAS2 e, ReadTensor a (Int,Int) m
-      , MMatrix a e m, MMatrix (Herm a) e m, MMatrix (Tri a) e m
-      , MSolve (Tri a) e m
-      , ReadVector (VectorView a) e m, ReadMatrix (MatrixStorage a) e m
-      ) => ReadBanded a e m where
+class ( BaseBanded a, 
+        ReadTensor a (Int,Int) m,
+        MMatrix a m, 
+        MMatrix (Herm a) m, 
+        MMatrix (Tri a) m, MSolve (Tri a) m,
+        ReadVector (VectorView a) m,
+        ReadMatrix (MatrixStorage a) m ) => ReadBanded a m where
 
     -- | Cast the banded matrix to an 'IOBanded', perform an @IO@ action, and
     -- convert the @IO@ action to an action in the monad @m@.  This
@@ -168,14 +172,14 @@ class ( BaseBanded a, BLAS2 e, ReadTensor a (Int,Int) m
     unsafeFreezeBanded :: a (n,p) e -> m (Banded (n,p) e)
 
 -- | Banded matrices that can be created or modified in a monad.
-class ( ReadBanded a e m, WriteTensor a (Int,Int) m
-      , WriteVector (VectorView a) e m
-      , WriteMatrix (MatrixStorage a) e m
-      ) => WriteBanded a e m where
+class ( ReadBanded a m, 
+        WriteTensor a (Int,Int) m,
+        WriteVector (VectorView a) m,
+        WriteMatrix (MatrixStorage a) m ) => WriteBanded a m where
 
     -- | Creates a new banded matrix of the given shape and bandwidths.  
     -- The elements will be uninitialized.
-    newBanded_ :: (Int,Int) -> (Int,Int) -> m (a (n,p) e)
+    newBanded_ :: (Elem e) => (Int,Int) -> (Int,Int) -> m (a (n,p) e)
 
     -- | Unsafely convert an 'IO' action that creates an 'IOBanded' into
     -- an action in @m@ that creates a matrix.
@@ -190,17 +194,17 @@ class ( ReadBanded a e m, WriteTensor a (Int,Int) m
 -- associations.  The indices in the associations list must all fall
 -- in the bandwidth of the matrix.  Unspecified elements will be set
 -- to zero.
-newBanded :: (WriteBanded a e m, Elem e) => 
+newBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
 newBanded = newBandedHelp writeElem
 {-# INLINE newBanded #-}
 
-unsafeNewBanded :: (WriteBanded a e m, Elem e) => 
+unsafeNewBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [((Int,Int), e)] -> m (a (n,p) e)
 unsafeNewBanded = newBandedHelp unsafeWriteElem
 {-# INLINE unsafeNewBanded #-}
 
-newBandedHelp :: (WriteBanded a e m, Elem e) => 
+newBandedHelp :: (WriteBanded a m, Elem e) => 
        (IOBanded (n,p) e -> (Int,Int) -> e -> IO ())
     -> (Int,Int) -> (Int,Int) -> [((Int,Int),e)] -> m (a (n,p) e)
 newBandedHelp set (m,n) (kl,ku) ijes = 
@@ -216,14 +220,14 @@ newBandedHelp set (m,n) (kl,ku) ijes =
 -- to the number of elements in the main diagonal of the matrix.  The 
 -- sub-diagonals are specified first, then the super-diagonals.  In 
 -- subdiagonal @i@, the first @i@ elements of the list are ignored.
-newListsBanded :: (WriteBanded a e m, Elem e) => 
+newListsBanded :: (WriteBanded a m, Elem e) => 
     (Int,Int) -> (Int,Int) -> [[e]] -> m (a (n,p) e)
 newListsBanded (m,n) (kl,ku) xs = do
     a <- newBanded_ (m,n) (kl,ku)
     zipWithM_ (writeDiagElems a) [(negate kl)..ku] xs
     return a
   where
-    writeDiagElems :: (WriteBanded a e m, Elem e) 
+    writeDiagElems :: (WriteBanded a m, Elem e) 
                    => a (n,p) e -> Int -> [e] -> m ()
     writeDiagElems a i es =
         let d   = unsafeDiagViewBanded a i
@@ -233,33 +237,33 @@ newListsBanded (m,n) (kl,ku) xs = do
 {-# INLINE newListsBanded #-}
 
 -- | Create a zero banded matrix with the specified shape and bandwidths.
-newZeroBanded :: (WriteBanded a e m, Elem e) 
+newZeroBanded :: (WriteBanded a m, Elem e) 
               => (Int,Int) -> (Int,Int) -> m (a (n,p) e)
 newZeroBanded mn bw = unsafeConvertIOBanded $
     IO.newZeroIOBanded mn bw
 {-# INLINE newZeroBanded #-}
  
 -- | Create a constant banded matrix of the specified shape and bandwidths.
-newConstantBanded :: (WriteBanded a e m, Elem e) 
+newConstantBanded :: (WriteBanded a m, Elem e) 
                   => (Int,Int) -> (Int,Int) -> e -> m (a (n,p) e)
 newConstantBanded mn bw e = unsafeConvertIOBanded $
     IO.newConstantIOBanded mn bw e
 {-# INLINE newConstantBanded #-}
  
 -- | Set every element of a banded matrix to zero.
-setZeroBanded :: (WriteBanded a e m) => a (n,p) e -> m ()
+setZeroBanded :: (WriteBanded a m) => a (n,p) e -> m ()
 setZeroBanded a =
     unsafePerformIOWithBanded a $ IO.setZeroIOBanded
 {-# INLINE setZeroBanded #-}
  
 -- | Set every element of a banded matrix to a constant.
-setConstantBanded :: (WriteBanded a e m) => e -> a (n,p) e -> m ()
+setConstantBanded :: (WriteBanded a m) => e -> a (n,p) e -> m ()
 setConstantBanded e a =
     unsafePerformIOWithBanded a $ IO.setConstantIOBanded e
 {-# INLINE setConstantBanded #-}
 
 -- | Create a new banded matrix by taking a copy of another one.
-newCopyBanded :: (ReadBanded a e m, WriteBanded b e m)
+newCopyBanded :: (ReadBanded a m, WriteBanded b m)
               => a (n,p) e -> m (b (n,p) e)
 newCopyBanded a = unsafeConvertIOBanded $
     IO.newCopyIOBanded (unsafeBandedToIOBanded a)
@@ -267,7 +271,7 @@ newCopyBanded a = unsafeConvertIOBanded $
 
 -- | Copy the elements of one banded matrix into another.  The two matrices
 -- must have the same shape and badwidths.
-copyBanded :: (WriteBanded b e m, ReadBanded a e m) =>
+copyBanded :: (WriteBanded b m, ReadBanded a m) =>
     b (n,p) e -> a (n,p) e -> m ()
 copyBanded dst src
     | shape dst /= shape src =
@@ -278,7 +282,7 @@ copyBanded dst src
         unsafeCopyBanded dst src
 {-# INLINE copyBanded #-}
 
-unsafeCopyBanded :: (WriteBanded b e m, ReadBanded a e m)
+unsafeCopyBanded :: (WriteBanded b m, ReadBanded a m)
                  => b (n,p) e -> a (n,p) e -> m ()
 unsafeCopyBanded dst src =
     unsafePerformIOWithBanded dst $ \dst' ->
@@ -311,7 +315,7 @@ colViewBanded a = checkedCol (shape a) (unsafeColViewBanded a)
 {-# INLINE colViewBanded #-}
 
 -- | Get a copy of the given diagonal of a banded matrix.
-getDiagBanded :: (ReadBanded a e m, WriteVector y e m) =>
+getDiagBanded :: (ReadBanded a m, WriteVector y m, Elem e) =>
     a (n,p) e -> Int -> m (y k e)
 getDiagBanded a i | i >= -kl && i <= ku =
                        newCopyVector $ diagViewBanded a i
@@ -322,102 +326,126 @@ getDiagBanded a i | i >= -kl && i <= ku =
     (kl,ku) = bandwidths a
 {-# INLINE getDiagBanded #-}
  
-unsafeGetDiagBanded :: (ReadBanded a e m, WriteVector y e m) =>
+unsafeGetDiagBanded :: (ReadBanded a m, WriteVector y m, Elem e) =>
     a (n,p) e -> Int -> m (y k e)
 unsafeGetDiagBanded a i = 
     newCopyVector $ unsafeDiagViewBanded a i
 {-# INLINE unsafeGetDiagBanded #-}
  
-unsafeGetRowBanded :: (ReadBanded a e m, WriteVector y e m) =>
+unsafeGetRowBanded :: (ReadBanded a m, WriteVector y m, Elem e) =>
     a (n,p) e -> Int -> m (y p e)
 unsafeGetRowBanded a i = unsafeConvertIOVector $
     IO.unsafeGetRowIOBanded (unsafeBandedToIOBanded a) i
 {-# INLINE unsafeGetRowBanded #-}
  
-unsafeGetColBanded :: (ReadBanded a e m, WriteVector y e m) =>
+unsafeGetColBanded :: (ReadBanded a m, WriteVector y m, Elem e) =>
     a (n,p) e -> Int -> m (y n e)
 unsafeGetColBanded a i = unsafeConvertIOVector $
     IO.unsafeGetColIOBanded (unsafeBandedToIOBanded a) i
 {-# INLINE unsafeGetColBanded #-}
 
-gbmv :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m, BLAS2 e) =>
+gbmv :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 gbmv alpha a x beta y =
     unsafePerformIOWithVector y $
         IO.gbmv alpha (unsafeBandedToIOBanded a) (unsafeVectorToIOVector x) beta
 {-# INLINE gbmv #-}
 
-gbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m, BLAS2 e) =>
+gbmm :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) =>
     e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 gbmm alpha a b beta c =
     unsafePerformIOWithMatrix c $
         IO.gbmm alpha (unsafeBandedToIOBanded a) (unsafeMatrixToIOMatrix b) beta
 {-# INLINE gbmm #-}
 
-hbmv :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m, BLAS2 e) =>
+unsafeGetColHermBanded :: (ReadBanded a m, WriteVector x m, Elem e)
+                      => Herm a (n,p) e -> Int -> m (x n e)
+unsafeGetColHermBanded a i = unsafeConvertIOVector $
+    IO.unsafeGetColHermIOBanded (mapHerm unsafeBandedToIOBanded a) i
+{-# INLINE unsafeGetColHermBanded #-}
+
+unsafeGetRowHermBanded :: (ReadBanded a m, WriteVector x m, Elem e)
+                      => Herm a (n,p) e -> Int -> m (x p e)
+unsafeGetRowHermBanded a i = unsafeConvertIOVector $
+    IO.unsafeGetRowHermIOBanded (mapHerm unsafeBandedToIOBanded a) i
+{-# INLINE unsafeGetRowHermBanded #-}
+
+hbmv :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> Herm a (k,l) e -> x l e -> e -> y k e -> m ()
 hbmv alpha a x beta y =
     unsafePerformIOWithVector y $
         IO.hbmv alpha (mapHerm unsafeBandedToIOBanded a) (unsafeVectorToIOVector x) beta
 {-# INLINE hbmv #-}
 
-hbmm :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m, BLAS2 e) =>
+hbmm :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) =>
     e -> Herm a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 hbmm alpha a b beta c =
     unsafePerformIOWithMatrix c $
         IO.hbmm alpha (mapHerm unsafeBandedToIOBanded a) (unsafeMatrixToIOMatrix b) beta
 {-# INLINE hbmm #-}
 
-tbmv :: (ReadBanded a e m, WriteVector y e m, BLAS2 e) =>
+unsafeGetColTriBanded :: (ReadBanded a m, WriteVector x m, Elem e)
+                      => Tri a (n,p) e -> Int -> m (x n e)
+unsafeGetColTriBanded a i = unsafeConvertIOVector $
+    IO.unsafeGetColTriIOBanded (mapTri unsafeBandedToIOBanded a) i
+{-# INLINE unsafeGetColTriBanded #-}
+
+unsafeGetRowTriBanded :: (ReadBanded a m, WriteVector x m, Elem e)
+                      => Tri a (n,p) e -> Int -> m (x p e)
+unsafeGetRowTriBanded a i = unsafeConvertIOVector $
+    IO.unsafeGetRowTriIOBanded (mapTri unsafeBandedToIOBanded a) i
+{-# INLINE unsafeGetRowTriBanded #-}
+
+tbmv :: (ReadBanded a m, WriteVector y m, BLAS2 e) =>
     e -> Tri a (k,k) e -> y k e -> m ()
 tbmv alpha a x =
     unsafePerformIOWithVector x $
         IO.tbmv alpha (mapTri unsafeBandedToIOBanded a)
 {-# INLINE tbmv #-}
 
-tbmm :: (ReadBanded a e m, WriteMatrix b e m, BLAS2 e) =>
+tbmm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbmm alpha a b =
     unsafePerformIOWithMatrix b $
         IO.tbmm alpha (mapTri unsafeBandedToIOBanded a)
 {-# INLINE tbmm #-}
 
-tbmv' :: (ReadBanded a e m, ReadVector x e m, WriteVector y e m, BLAS2 e) =>
+tbmv' :: (ReadBanded a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
 tbmv' alpha a x beta y =
     unsafePerformIOWithVector y $
         IO.tbmv' alpha (mapTri unsafeBandedToIOBanded a) (unsafeVectorToIOVector x) beta
 {-# INLINE tbmv' #-}
 
-tbmm' :: (ReadBanded a e m, ReadMatrix b e m, WriteMatrix c e m, BLAS2 e) =>
+tbmm' :: (ReadBanded a m, ReadMatrix b m, WriteMatrix c m, BLAS2 e) =>
     e -> Tri a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
 tbmm' alpha a b beta c =
     unsafePerformIOWithMatrix c $
         IO.tbmm' alpha (mapTri unsafeBandedToIOBanded a) (unsafeMatrixToIOMatrix b) beta
 {-# INLINE tbmm' #-}
 
-tbsv :: (ReadBanded a e m, WriteVector y e m, BLAS2 e) =>
+tbsv :: (ReadBanded a m, WriteVector y m, BLAS2 e) =>
     e -> Tri a (k,k) e -> y k e -> m ()
 tbsv alpha a x =
     unsafePerformIOWithVector x $
         IO.tbmv alpha (mapTri unsafeBandedToIOBanded a)
 {-# INLINE tbsv #-}
 
-tbsm :: (ReadBanded a e m, WriteMatrix b e m, BLAS2 e) =>
+tbsm :: (ReadBanded a m, WriteMatrix b m, BLAS2 e) =>
     e -> Tri a (k,k) e -> b (k,l) e -> m ()
 tbsm alpha a b =
     unsafePerformIOWithMatrix b $
         IO.tbsm alpha (mapTri unsafeBandedToIOBanded a)
 {-# INLINE tbsm #-}
 
-tbsv' :: (ReadBanded a e m, ReadVector y e m, WriteVector x e m, BLAS2 e)
+tbsv' :: (ReadBanded a m, ReadVector y m, WriteVector x m, BLAS2 e)
       => e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 tbsv' alpha a y x = 
     unsafePerformIOWithVector x $
         IO.tbsv' alpha (mapTri unsafeBandedToIOBanded a) (unsafeVectorToIOVector y)
 {-# INLINE tbsv' #-}
 
-tbsm' :: (ReadBanded a e m, ReadMatrix c e m, WriteMatrix b e m, BLAS2 e) 
+tbsm' :: (ReadBanded a m, ReadMatrix c m, WriteMatrix b m, BLAS2 e) 
       => e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 tbsm' alpha a c b =
     unsafePerformIOWithMatrix b $
@@ -454,7 +482,7 @@ instance BaseBanded IOBanded where
     unsafeBandedToIOBanded = id
     {-# INLINE unsafeBandedToIOBanded #-}
 
-instance (BLAS3 e) => ReadBanded IOBanded e IO where
+instance ReadBanded IOBanded IO where
     unsafePerformIOWithBanded a f = f a
     {-# INLINE unsafePerformIOWithBanded #-}
     freezeBanded = freezeIOBanded
@@ -462,7 +490,7 @@ instance (BLAS3 e) => ReadBanded IOBanded e IO where
     unsafeFreezeBanded = unsafeFreezeIOBanded
     {-# INLINE unsafeFreezeBanded #-}
     
-instance (BLAS3 e) => WriteBanded IOBanded e IO where
+instance WriteBanded IOBanded IO where
     newBanded_ = IO.newIOBanded_
     {-# INLINE newBanded_ #-}
     unsafeConvertIOBanded = id
@@ -694,7 +722,7 @@ instance BaseBanded Banded where
     unsafeBandedToIOBanded (Banded a) = a
     {-# INLINE unsafeBandedToIOBanded #-}
 
-instance (BLAS3 e) => ReadBanded Banded e IO where
+instance ReadBanded Banded IO where
     unsafePerformIOWithBanded (Banded a) f = f a
     {-# INLINE unsafePerformIOWithBanded #-}
     freezeBanded (Banded a) = freezeIOBanded a
@@ -702,21 +730,21 @@ instance (BLAS3 e) => ReadBanded Banded e IO where
     unsafeFreezeBanded (Banded a) = unsafeFreezeIOBanded a
     {-# INLINE unsafeFreezeBanded #-}
 
-instance (BLAS3 e) => MMatrix Banded e IO where
+instance MMatrix Banded IO where
     unsafeDoSApplyAdd    = gbmv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gbmm
     {-# INLINE unsafeDoSApplyAddMat #-}
-    unsafeGetRow         = unsafeGetRowBanded
+    unsafeGetRow = unsafeGetRowBanded
     {-# INLINE unsafeGetRow #-}
-    unsafeGetCol         = unsafeGetColBanded
+    unsafeGetCol = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
     getRows = getRowsIO
     {-# INLINE getRows #-}
     getCols = getColsIO
     {-# INLINE getCols #-}
 
-instance (BLAS3 e) => MMatrix (Herm Banded) e IO where
+instance MMatrix (Herm Banded) IO where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
@@ -725,8 +753,12 @@ instance (BLAS3 e) => MMatrix (Herm Banded) e IO where
     {-# INLINE getRows #-}
     getCols = getColsIO
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowHermBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColHermBanded
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MMatrix (Tri Banded) e IO where
+instance MMatrix (Tri Banded) IO where
     unsafeDoSApply_      = tbmv
     {-# INLINE unsafeDoSApply_ #-}        
     unsafeDoSApplyMat_   = tbmm
@@ -739,8 +771,12 @@ instance (BLAS3 e) => MMatrix (Tri Banded) e IO where
     {-# INLINE getRows #-}
     getCols = getColsIO
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowTriBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColTriBanded
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MSolve (Tri Banded) e IO where
+instance MSolve (Tri Banded) IO where
     unsafeDoSSolve_    = tbsv
     {-# INLINE unsafeDoSSolve_ #-}    
     unsafeDoSSolveMat_ = tbsm
@@ -750,7 +786,7 @@ instance (BLAS3 e) => MSolve (Tri Banded) e IO where
     unsafeDoSSolveMat  = tbsm'
     {-# INLINE unsafeDoSSolveMat #-}    
 
-instance (BLAS3 e) => ReadBanded Banded e (ST s) where
+instance ReadBanded Banded (ST s) where
     unsafePerformIOWithBanded (Banded a) f = unsafeIOToST $ f a
     {-# INLINE unsafePerformIOWithBanded #-}
     freezeBanded (Banded a) = unsafeIOToST $ freezeIOBanded a
@@ -758,7 +794,7 @@ instance (BLAS3 e) => ReadBanded Banded e (ST s) where
     unsafeFreezeBanded (Banded a) = unsafeIOToST $ unsafeFreezeIOBanded a
     {-# INLINE unsafeFreezeBanded #-}
 
-instance (BLAS3 e) => MMatrix Banded e (ST s) where
+instance MMatrix Banded (ST s) where
     unsafeDoSApplyAdd    = gbmv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gbmm
@@ -772,7 +808,7 @@ instance (BLAS3 e) => MMatrix Banded e (ST s) where
     getCols = getColsST
     {-# INLINE getCols #-}
 
-instance (BLAS3 e) => MMatrix (Herm Banded) e (ST s) where
+instance MMatrix (Herm Banded) (ST s) where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
@@ -781,8 +817,12 @@ instance (BLAS3 e) => MMatrix (Herm Banded) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
+    unsafeGetRow = unsafeGetRowHermBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColHermBanded
+    {-# INLINE unsafeGetCol #-}
 
-instance (BLAS3 e) => MMatrix (Tri Banded) e (ST s) where
+instance MMatrix (Tri Banded) (ST s) where
     unsafeDoSApply_      = tbmv
     {-# INLINE unsafeDoSApply_ #-}        
     unsafeDoSApplyMat_   = tbmm
@@ -795,8 +835,12 @@ instance (BLAS3 e) => MMatrix (Tri Banded) e (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
-
-instance (BLAS3 e) => MSolve (Tri Banded) e (ST s) where
+    unsafeGetRow = unsafeGetRowTriBanded
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColTriBanded
+    {-# INLINE unsafeGetCol #-}
+    
+instance MSolve (Tri Banded) (ST s) where
     unsafeDoSSolve_    = tbsv
     {-# INLINE unsafeDoSSolve_ #-}    
     unsafeDoSSolveMat_ = tbsm
@@ -806,21 +850,25 @@ instance (BLAS3 e) => MSolve (Tri Banded) e (ST s) where
     unsafeDoSSolveMat  = tbsm'
     {-# INLINE unsafeDoSSolveMat #-}    
 
-instance (BLAS3 e) => IMatrix Banded e where
+instance IMatrix Banded where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
     unsafeRow a i             = runSTVector $ unsafeGetRow a i
     unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS3 e) => IMatrix (Herm Banded) e where
+instance IMatrix (Herm Banded) where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+    unsafeRow a i             = runSTVector $ unsafeGetRow a i
+    unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS3 e) => IMatrix (Tri Banded) e where
+instance IMatrix (Tri Banded) where
     unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
+    unsafeRow a i             = runSTVector $ unsafeGetRow a i
+    unsafeCol a j             = runSTVector $ unsafeGetCol a j
 
-instance (BLAS3 e) => ISolve (Tri Banded) e where
+instance ISolve (Tri Banded) where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
     
