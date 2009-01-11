@@ -10,8 +10,8 @@
 
 module Data.Vector.Dense.ST (
     -- * The @STVector@ data type
-    runSTVector,
     STVector,
+    runSTVector,
     
     -- * Overloaded mutable dense vector interface
     module Data.Vector.Dense.Class
