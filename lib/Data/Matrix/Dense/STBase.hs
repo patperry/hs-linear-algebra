@@ -16,7 +16,7 @@ module Data.Matrix.Dense.STBase
 import Control.Monad
 import Control.Monad.ST
 
-import Data.Elem.BLAS( Elem, BLAS1, BLAS3 )
+import Data.Elem.BLAS
 
 import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
@@ -61,7 +61,7 @@ instance Shaped (STMatrix s) (Int,Int) where
     bounds (STMatrix a) = boundsIOMatrix a
     {-# INLINE bounds #-}
 
-instance (Elem e) => ReadTensor (STMatrix s) (Int,Int) e (ST s) where
+instance ReadTensor (STMatrix s) (Int,Int) (ST s) where
     getSize (STMatrix a) = unsafeIOToST $ getSizeIOMatrix a
     {-# INLINE getSize #-}
     unsafeReadElem (STMatrix a) i = unsafeIOToST $ unsafeReadElemIOMatrix a i
@@ -79,7 +79,7 @@ instance (Elem e) => ReadTensor (STMatrix s) (Int,Int) e (ST s) where
     getAssocs' (STMatrix a) = unsafeIOToST $ getAssocsIOMatrix' a
     {-# INLINE getAssocs' #-}
 
-instance (BLAS1 e) => WriteTensor (STMatrix s) (Int,Int) e (ST s) where
+instance WriteTensor (STMatrix s) (Int,Int) (ST s) where
     getMaxSize (STMatrix a) =  unsafeIOToST $ getMaxSizeIOMatrix a
     {-# INLINE getMaxSize #-}
     setZero (STMatrix a) = unsafeIOToST $ setZeroIOMatrix a

@@ -72,7 +72,7 @@ instance MatrixShaped (STBanded s) where
     herm (STBanded a) = STBanded $ IO.hermIOBanded a
     {-# INLINE herm #-}
 
-instance (BLAS3 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
+instance ReadTensor (STBanded s) (Int,Int) (ST s) where
     getSize (STBanded a) = unsafeIOToST $ IO.getSizeIOBanded a
     {-# INLINE getSize #-}
     getAssocs (STBanded a) = unsafeIOToST $ IO.getAssocsIOBanded a
@@ -90,7 +90,7 @@ instance (BLAS3 e) => ReadTensor (STBanded s) (Int,Int) e (ST s) where
     unsafeReadElem (STBanded a) i = unsafeIOToST $ IO.unsafeReadElemIOBanded a i
     {-# INLINE unsafeReadElem #-}
 
-instance (BLAS3 e) => WriteTensor (STBanded s) (Int,Int) e (ST s) where
+instance WriteTensor (STBanded s) (Int,Int) (ST s) where
     setConstant k (STBanded a) = unsafeIOToST $ IO.setConstantIOBanded k a
     {-# INLINE setConstant #-}
     setZero (STBanded a) = unsafeIOToST $ IO.setZeroIOBanded a

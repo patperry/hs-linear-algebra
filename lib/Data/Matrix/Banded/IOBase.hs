@@ -18,12 +18,12 @@ import Data.List
 import Control.Monad
 import Foreign
 import System.IO.Unsafe
+import Text.Printf
 import Unsafe.Coerce
 
-import BLAS.Internal( diagLen, diagStart )
+import BLAS.Internal( clearArray, diagLen, diagStart )
 import Data.Elem.BLAS
 import qualified Data.Elem.BLAS.Base   as BLAS
-import qualified Data.Elem.BLAS.Level1 as BLAS
 import qualified Data.Elem.BLAS.Level2 as BLAS
 
 import Data.Matrix.Class
@@ -41,7 +41,7 @@ import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
     newCopyMatrix, colViews, scaleByMatrix, unsafeCopyMatrix, 
     unsafeAxpyMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
-import Data.Vector.Dense.Base( ReadVector, WriteVector, coerceVector,
+import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
     stride, conj, isConj, unsafeVectorToIOVector, newListVector,
     newCopyVector, newCopyVector', scaleByVector, doConjVector,
     unsafeCopyVector, unsafeAxpyVector )
@@ -277,8 +277,55 @@ newIOBanded_ (m,n) (kl,ku)
     where
       err s = fail $ "newBanded_ " ++ show (m,n) ++ " " ++ show (kl,ku) ++ ": " ++ s
 
+newIOBanded :: (Elem e) 
+            => (Int,Int)
+            -> (Int,Int)
+            -> [((Int,Int), e)]
+            -> IO (IOBanded (n,p) e)
+newIOBanded (m,n) (kl,ku) ies = do
+    a <- newIOBanded_ (m,n) (kl,ku)
+    withIOBanded a $ \p ->
+        clearArray p ((kl+1+ku)*n)
+    forM_ ies $ \((i,j),e) -> do
+        when (   i < 0 || i >= m
+              || j < 0 || j >= n 
+              || (not $ hasStorageIOBanded a (i,j))) $ error $
+            printf "newBanded (%d,%d) (%d,%d) [ ..., ((%d,%d),_), ... ]: invalid index"
+                   m n kl ku i j
+        unsafeWriteElemIOBanded a (i,j) e
+    return a
 
--- | Create a zero banded matrix of the specified shape and bandwidths.
+unsafeNewIOBanded :: (Elem e) 
+                  => (Int,Int) 
+                  -> (Int,Int) 
+                  -> [((Int,Int), e)] 
+                  -> IO (IOBanded (n,p) e)
+unsafeNewIOBanded (m,n) (kl,ku) ies = do
+    a <- newIOBanded_ (m,n) (kl,ku)
+    withIOBanded a $ \p ->
+        clearArray p ((kl+1+ku)*n)
+    forM_ ies $ \(i,e) ->
+        unsafeWriteElemIOBanded a i e
+    return a
+
+newListsIOBanded :: (Elem e) 
+                 => (Int,Int)
+                 -> (Int,Int)
+                 -> [[e]]
+                 -> IO (IOBanded (n,p) e)
+newListsIOBanded (m,n) (kl,ku) xs = do
+    a <- newIOBanded_ (m,n) (kl,ku)
+    zipWithM_ (writeDiagElems a) [(negate kl)..ku] xs
+    return a
+  where
+    writeDiagElems :: (Elem e) 
+                   => IOBanded (n,p) e -> Int -> [e] -> IO ()
+    writeDiagElems a i es =
+        let d   = unsafeDiagViewIOBanded a i
+            nb  = max 0 (-i)
+            es' = drop nb es
+        in zipWithM_ (unsafeWriteElem d) [0..(dim d - 1)] es'
+
 newZeroIOBanded :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (IOBanded np e)
 newZeroIOBanded mn bw = do
     a <- newIOBanded_ mn bw
@@ -289,7 +336,6 @@ setZeroIOBanded :: IOBanded np e -> IO ()
 setZeroIOBanded a@(IOBanded _ _ _ _ _ _ _ _) = setConstantIOBanded 0 a
 {-# INLINE setZeroIOBanded #-}
 
--- | Create a constant banded matrix of the specified shape and bandwidths.
 newConstantIOBanded :: (Elem e)
                     => (Int,Int) -> (Int,Int) -> e -> IO (IOBanded np e)
 newConstantIOBanded mn bw e = do
@@ -305,8 +351,8 @@ setConstantIOBanded e a@(IOBanded _ _ _ _ _ _ _ _)
         mapM_ (\i -> unsafeWriteElemIOBanded a i e) is
 {-# INLINE setConstantIOBanded #-}
 
-newCopyIOBanded :: (BLAS1 e) => IOBanded np e -> IO (IOBanded np e)
-newCopyIOBanded a 
+newCopyIOBanded :: IOBanded np e -> IO (IOBanded np e)
+newCopyIOBanded a@(IOBanded _ _ _ _ _ _ _ _)
     | isHermIOBanded a =
         liftM hermIOBanded $ newCopyIOBanded (hermIOBanded a)
     | otherwise = do
@@ -314,9 +360,8 @@ newCopyIOBanded a
         unsafeCopyIOBanded a' a
         return a'
 
-unsafeCopyIOBanded :: (BLAS1 e)
-                   => IOBanded mn e -> IOBanded mn e -> IO ()
-unsafeCopyIOBanded dst src
+unsafeCopyIOBanded :: IOBanded mn e -> IOBanded mn e -> IO ()
+unsafeCopyIOBanded dst@(IOBanded _ _ _ _ _ _ _ _) src
     | isHermIOBanded dst = 
         unsafeCopyIOBanded (hermIOBanded dst) 
                            (hermIOBanded src)
@@ -338,12 +383,12 @@ unsafeCopyIOBanded dst src
     ldSrc = ldaIOBanded src
 
     copyBlock pDst pSrc =
-        BLAS.copy (m*n) pSrc 1 pDst 1
+        BLAS.copy NoConj NoConj (m*n) pSrc 1 pDst 1
 
     copyCols pDst pSrc nleft
         | nleft == 0 = return ()
         | otherwise = do
-            BLAS.copy m pSrc 1 pDst 1
+            BLAS.copy NoConj NoConj m pSrc 1 pDst 1
             copyCols (pDst `advancePtr` ldDst) (pSrc `advancePtr` ldSrc) 
                      (nleft-1)
 
@@ -398,16 +443,16 @@ unsafeDiagViewIOBanded a@(IOBanded h m n _ _ fp p ld) d
         in (IOVector NoConj len fp p' inc)
 
 
-unsafeGetRowIOBanded :: (WriteVector y e IO, BLAS1 e) 
+unsafeGetRowIOBanded :: (WriteVector y e IO) 
                      => IOBanded np e -> Int -> IO (y p e)
-unsafeGetRowIOBanded a i =
+unsafeGetRowIOBanded a@(IOBanded _ _ _ _ _ _ _ _) i =
     let (nb,x,na) = unsafeRowViewIOBanded a i
         n = numCols a
     in do
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColIOBanded :: (WriteVector y e IO, BLAS1 e) 
+unsafeGetColIOBanded :: (WriteVector y e IO) 
                      => IOBanded np e -> Int -> IO (y n e)
 unsafeGetColIOBanded a j =
     liftM conj $ unsafeGetRowIOBanded (hermIOBanded a) j
@@ -606,7 +651,7 @@ instance MatrixShaped IOBanded where
     herm = hermIOBanded
     {-# INLINE herm #-}
 
-instance ReadTensor IOBanded (Int,Int) e IO where
+instance ReadTensor IOBanded (Int,Int) IO where
     getSize        = getSizeIOBanded
     {-# INLINE getSize #-}
     getAssocs      = getAssocsIOBanded
@@ -624,7 +669,7 @@ instance ReadTensor IOBanded (Int,Int) e IO where
     unsafeReadElem = unsafeReadElemIOBanded
     {-# INLINE unsafeReadElem #-}
 
-instance (BLAS1 e) => WriteTensor IOBanded (Int,Int) e IO where
+instance WriteTensor IOBanded (Int,Int) IO where
     setConstant     = setConstantIOBanded
     {-# INLINE setConstant #-}
     setZero         = setZeroIOBanded

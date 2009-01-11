@@ -24,12 +24,12 @@ module Data.Tensor.Class.MTensor (
     swapElems,
     ) where
 
-import Data.Elem.BLAS ( Elem, conjugate )
+import Data.Elem.BLAS
 import Data.Ix
 import Data.Tensor.Class
 
 -- | Class for mutable read-only tensors.
-class (Shaped x i, Monad m) => ReadTensor x i e m | x -> i where
+class (Shaped x i, Monad m) => ReadTensor x i m | x -> i where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     
@@ -80,7 +80,7 @@ class (Shaped x i, Monad m) => ReadTensor x i e m | x -> i where
 
 -- | Gets the value at the specified index after checking that the argument
 -- is in bounds.
-readElem :: (ReadTensor x i e m) => x n e -> i -> m e
+readElem :: (ReadTensor x i m) => x n e -> i -> m e
 readElem x i =
     case (inRange b i) of
         False -> 
@@ -94,7 +94,7 @@ readElem x i =
 {-# INLINE readElem #-}
 
 -- | Class for modifiable mutable tensors.
-class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
+class (ReadTensor x i m) => WriteTensor x i m | x -> m where
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize
@@ -136,24 +136,24 @@ class (ReadTensor x i e m) => WriteTensor x i e m | x -> m where
     {-# INLINE unsafeSwapElems #-}
     
     -- | Replace every element with its complex conjugate.
-    doConj :: (Elem e) => x n e -> m ()
+    doConj :: (BLAS1 e) => x n e -> m ()
     doConj = modifyWith conjugate
     {-# INLINE doConj #-}
 
     -- | Scale every element in the vector by the given value.
-    scaleBy :: (Num e) => e -> x n e -> m ()
+    scaleBy :: (BLAS1 e) => e -> x n e -> m ()
     scaleBy 1 = const $ return ()
     scaleBy k = modifyWith (k*)
     {-# INLINE scaleBy #-}
 
     -- | Add a value to every element in a vector.
-    shiftBy :: (Num e) => e -> x n e -> m ()
+    shiftBy :: (BLAS1 e) => e -> x n e -> m ()
     shiftBy 0 = const $ return ()
     shiftBy k = modifyWith (k+)
     {-# INLINE shiftBy #-}
 
 -- | Set the value of the element at the given index.
-writeElem :: (WriteTensor x i e m) => x n e -> i -> e -> m ()
+writeElem :: (WriteTensor x i m) => x n e -> i -> e -> m ()
 writeElem x i e = do
     ok <- canModifyElem x i
     case ok && inRange (bounds x) i of
@@ -168,7 +168,7 @@ writeElem x i e = do
 {-# INLINE writeElem #-}
 
 -- | Update the value of the element at the given index.
-modifyElem :: (WriteTensor x i e m) => x n e -> i -> (e -> e) -> m ()
+modifyElem :: (WriteTensor x i m) => x n e -> i -> (e -> e) -> m ()
 modifyElem x i f = do
     ok <- canModifyElem x i
     case ok of
@@ -183,7 +183,7 @@ modifyElem x i f = do
 {-# INLINE modifyElem #-}
 
 -- | Swap the values stored at two positions in the tensor.
-swapElems :: (WriteTensor x i e m) => x n e -> i -> i -> m ()
+swapElems :: (WriteTensor x i m) => x n e -> i -> i -> m ()
 swapElems x i j
     | not ((inRange (bounds x) i) && (inRange (bounds x) j)) = 
         fail $ "Tried to swap elements `" ++ show i ++ "' and `"

@@ -15,6 +15,7 @@ module Data.Tensor.Class.ITensor (
     ) where
 
 import Data.Tensor.Class
+import Data.Elem.BLAS
 import Data.Ix
 
 
@@ -24,7 +25,7 @@ infixl 5 `shift`
 
 
 -- | A class for immutable tensors.
-class (Shaped x i) => ITensor x i e where
+class (Shaped x i) => ITensor x i where
     -- | Get the numer of elements stored in the tensor.
     size :: x n e -> Int
     
@@ -59,17 +60,17 @@ class (Shaped x i) => ITensor x i e where
     -- unsafeIxMap
     
     -- | Scale every element by the given value.
-    (*>) :: (Num e) => e -> x n e -> x n e
+    (*>) :: (BLAS1 e) => e -> x n e -> x n e
     (*>) k = tmap (k*)
     {-# INLINE (*>) #-}
     
     -- | Add a constant to every element.
-    shift :: (Num e) => e -> x n e -> x n e
+    shift :: (BLAS1 e) => e -> x n e -> x n e
     shift k = tmap (k+)
     {-# INLINE shift #-}
     
 -- | Get the value at the given index.  Range-checks the argument.
-(!) :: (ITensor x i e) => x n e -> i -> e
+(!) :: (ITensor x i) => x n e -> i -> e
 (!) x i =
     case (inRange b i) of
         False -> 

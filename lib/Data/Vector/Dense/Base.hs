@@ -18,7 +18,7 @@ import Data.AEq
 import Foreign
 import Unsafe.Coerce
 
-import BLAS.Internal( checkBinaryOp, clearArray, inlinePerformIO,
+import BLAS.Internal( checkBinaryOp, inlinePerformIO,
     checkedSubvector, checkedSubvectorWithStride, checkVecVecOp )
 import BLAS.Types( ConjEnum(..) )
 
@@ -43,12 +43,12 @@ infixl 7 <.>
 --
 newtype Vector n e = Vector (IOVector n e)
 
-freezeIOVector :: (BLAS1 e) => IOVector n e -> IO (Vector n e)
+freezeIOVector :: IOVector n e -> IO (Vector n e)
 freezeIOVector x = do
     y <- newCopyIOVector x
     return (Vector y)
 
-thawIOVector :: (BLAS1 e) => Vector n e -> IO (IOVector n e)
+thawIOVector :: Vector n e -> IO (IOVector n e)
 thawIOVector (Vector x) =
     newCopyIOVector x
 
@@ -90,7 +90,7 @@ class (Shaped x Int) => BaseVector x where
     unsafeIOVectorToVector :: IOVector n e -> x n e
 
 -- | Vectors that can be read in a monad.
-class (BaseVector x, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m where
+class (BaseVector x, Monad m, ReadTensor x Int m) => ReadVector x e m where
     -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
     -- convert the @IO@ action to an action in the monad @m@.  This
     -- operation is /very/ unsafe.
@@ -102,14 +102,14 @@ class (BaseVector x, BLAS1 e, Monad m, ReadTensor x Int e m) => ReadVector x e m
     unsafeFreezeVector :: x n e -> m (Vector n e)
 
 -- | Vectors that can be created or modified in a monad.
-class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
+class (ReadVector x e m, WriteTensor x Int m) => WriteVector x e m where
     -- | Unsafely convert an 'IO' action that creates an 'IOVector' into
     -- an action in @m@ that creates a vector.
     unsafeConvertIOVector :: IO (IOVector n e) -> m (x n e)
 
     -- | Creates a new vector of the given length.  The elements will be
     -- uninitialized.
-    newVector_ :: Int -> m (x n e)
+    newVector_ :: (Elem e) => Int -> m (x n e)
 
     -- | Convert an immutable vector to a mutable one by taking a complete
     -- copy of it.
@@ -118,50 +118,28 @@ class (ReadVector x e m, WriteTensor x Int e m) => WriteVector x e m where
 
 -- | Creates a new vector with the given association list.  Unspecified
 -- indices will get initialized to zero.
-newVector :: (WriteVector x e m) => Int -> [(Int,e)] -> m (x n e)
-newVector n ies = do
-    x <- newZeroVector n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            forM_ ies $ \(i,e) -> do
-                when (i < 0 || i >= n) $ fail $
-                    "Index `" ++ show i ++ 
-                        "' is invalid for a vector with dimension `" ++ 
-                        show n ++ "'"
-                pokeElemOff p i e
-            return x
+newVector :: (WriteVector x e m, Elem e) => Int -> [(Int,e)] -> m (x n e)
+newVector n ies = 
+    unsafeConvertIOVector $ newIOVector n ies
 {-# INLINE newVector #-}
 
-unsafeNewVector :: (WriteVector x e m) => Int -> [(Int,e)] -> m (x n e)
-unsafeNewVector n ies = do
-    x <- newZeroVector n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            forM_ ies $ \(i,e) ->
-                pokeElemOff p i e
-            return x
+unsafeNewVector :: (WriteVector x e m, Elem e) => Int -> [(Int,e)] -> m (x n e)
+unsafeNewVector n ies = 
+    unsafeConvertIOVector $ unsafeNewIOVector n ies
 {-# INLINE unsafeNewVector #-}
 
 -- | Creates a new vector of the given dimension with the given elements.
 -- If the list has length less than the passed-in dimenson, the tail of
 -- the vector will be uninitialized.
-newListVector :: (WriteVector x e m) => Int -> [e] -> m (x n e)
-newListVector n es = do
-    x <- newVector_ n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            pokeArray p $ take n $ es ++ (repeat 0)
-            return x
+newListVector :: (WriteVector x e m, Elem e) => Int -> [e] -> m (x n e)
+newListVector n es = 
+    unsafeConvertIOVector $ newListIOVector n es
 {-# INLINE newListVector #-}
 
 -- | Create a zero vector of the specified length.
-newZeroVector :: (WriteVector x e m) => Int -> m (x n e)
-newZeroVector n = do
-    x <- newVector_ n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            clearArray p n
-            return x
+newZeroVector :: (WriteVector x e m, Elem e) => Int -> m (x n e)
+newZeroVector n =
+    unsafeConvertIOVector $ newZeroIOVector n
 {-# INLINE newZeroVector #-}
 
 -- | Set every element in the vector to zero.
@@ -171,13 +149,9 @@ setZeroVector x =
 {-# INLINE setZeroVector #-}
 
 -- | Create a vector with every element initialized to the same value.
-newConstantVector :: (WriteVector x e m) => Int -> e -> m (x n e)
-newConstantVector n e = do
-    x <- newVector_ n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            pokeArray p (replicate n e)
-            return x
+newConstantVector :: (WriteVector x e m, Elem e) => Int -> e -> m (x n e)
+newConstantVector n e = 
+    unsafeConvertIOVector $ newConstantIOVector n e
 {-# INLINE newConstantVector #-}
 
 -- | Set every element in the vector to a constant.
@@ -188,57 +162,32 @@ setConstantVector e x =
 
 -- | @newBasisVector n i@ creates a vector of length @n@ that is all zero 
 -- except for at position @i@, where it equal to one.
-newBasisVector :: (WriteVector x e m) => Int -> Int -> m (x n e)
-newBasisVector n i = do
-    x <- newZeroVector n
-    unsafePerformIOWithVector x $ \x' ->
-        withIOVector x' $ \p -> do
-            pokeElemOff p i 1
-            return x
+newBasisVector :: (WriteVector x e m, Elem e) => Int -> Int -> m (x n e)
+newBasisVector n i = unsafeConvertIOVector $
+    newBasisIOVector n i
 {-# INLINE newBasisVector #-}
 
 -- | @setBasis x i@ sets the @i@th coordinate of @x@ to @1@, and all other
 -- coordinates to @0@.  If the vector has been scaled, it is possible that
 -- @readVector x i@ will not return exactly @1@.  See 'setElem'.
 setBasisVector :: (WriteVector x e m) => Int -> x n e -> m ()
-setBasisVector i x
-    | i < 0 || i >= dim x =
-        fail $ "tried to set a vector of dimension `" ++ show (dim x) ++ "'"
-               ++ " to basis vector `" ++ show i ++ "'"
-    | otherwise = do
-        setZeroVector x
-        unsafeWriteElem x i 1 
+setBasisVector i x =
+    unsafePerformIOWithVector x $ setBasisIOVector i
 {-# INLINE setBasisVector #-}
 
 -- | Creates a new vector by copying another one.
 newCopyVector :: (ReadVector x e m, WriteVector y e m) =>
     x n e -> m (y n e)
-newCopyVector x
-    | isConj x =
-        newCopyVector (conj x) >>= return . conj
-    | otherwise = do
-        y <- newVector_ n
-        unsafePerformIOWithVector y $ \y' ->
-            withIOVector (unsafeVectorToIOVector x) $ \pX ->
-                withIOVector y' $ \pY ->
-                    BLAS.copy n pX incX pY 1
-        return y
-  where
-    n    = dim x
-    incX = stride x
+newCopyVector x = unsafeConvertIOVector $
+    newCopyIOVector (unsafeVectorToIOVector x)
 {-# INLINE newCopyVector #-}
 
 -- | Creates a new vector by copying another one.  The returned vector
 -- is gauranteed not to be a view into another vector.  That is, the
 -- returned vector will have @isConj@ to be @False@.
 newCopyVector' :: (ReadVector x e m, WriteVector y e m) => x n e -> m (y n e)
-newCopyVector' x | not (isConj x) = newCopyVector x
-                 | otherwise = do
-                     y <- newCopyVector (conj x)
-                     unsafePerformIOWithVector y $ \y' ->
-                        withIOVector y' $ \pY -> do
-                            BLAS.vconj (dim x) pY 1
-                            return y
+newCopyVector' x = unsafeConvertIOVector $
+    newCopyIOVector' (unsafeVectorToIOVector x)
 {-# INLINE newCopyVector' #-}
 
 -- | @copyVector dst src@ replaces the values in @dst@ with those in
@@ -248,16 +197,11 @@ copyVector :: (WriteVector y e m, ReadVector x e m) =>
 copyVector y x = checkBinaryOp (shape x) (shape y) $ unsafeCopyVector y x
 {-# INLINE copyVector #-}
 
-unsafeCopyVector :: (ReadVector y e m, ReadVector x e m) =>
+unsafeCopyVector :: (WriteVector y e m, ReadVector x e m) =>
     y n e -> x n e -> m ()
-unsafeCopyVector y x
-    | isConj x =
-        unsafeCopyVector (conj y) (conj x)
-    | isConj y = do
-        vectorCall2 BLAS.copy x y
-        vectorCall  BLAS.vconj y
-    | otherwise =
-        vectorCall2 BLAS.copy x y
+unsafeCopyVector y x =
+    unsafePerformIOWithVector y $
+        (`unsafeCopyIOVector` (unsafeVectorToIOVector x))
 {-# INLINE unsafeCopyVector #-}
 
 -- | Swap the values stored in two vectors.
@@ -268,15 +212,9 @@ swapVector x y = checkBinaryOp (shape x) (shape y) $ unsafeSwapVector x y
 
 unsafeSwapVector :: (WriteVector x e m, WriteVector y e m) =>
     x n e -> y n e -> m ()
-unsafeSwapVector x y
-    | isConj x =
-        unsafeSwapVector (conj x) (conj y)
-    | isConj y = do
-        vectorCall2 BLAS.swap x y
-        vectorCall  BLAS.vconj x
-        vectorCall  BLAS.vconj y
-    | otherwise =
-        vectorCall2 BLAS.swap x y
+unsafeSwapVector x y =
+    unsafePerformIOWithVector x $ 
+        (`unsafeSwapIOVector` (unsafeVectorToIOVector y))
 {-# INLINE unsafeSwapVector #-}
 
 -- | @subvectorView x o n@ creates a subvector view of @x@ starting at index @o@ 
@@ -314,26 +252,26 @@ doConjVector x =
 
 -- | Get a new vector by scaling the elements of another vector
 -- by a given value.
-getScaledVector :: (ReadVector x e m, WriteVector y e m) =>
+getScaledVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
     e -> x n e -> m (y n e)
 getScaledVector e = getUnaryVectorOp (scaleByVector e)
 {-# INLINE getScaledVector #-}
 
 -- | Scale every element by the given value.
-scaleByVector :: (WriteVector y e m) => e -> y n e -> m ()
+scaleByVector :: (WriteVector y e m, BLAS1 e) => e -> y n e -> m ()
 scaleByVector k x =
     unsafePerformIOWithVector x $ scaleByIOVector k
 {-# INLINE scaleByVector #-}
 
 -- | Get a new vector by shifting the elements of another vector
 -- by a given value.
-getShiftedVector :: (ReadVector x e m, WriteVector y e m) =>
+getShiftedVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
     e -> x n e -> m (y n e)
 getShiftedVector e = getUnaryVectorOp (shiftByVector e)
 {-# INLINE getShiftedVector #-}
 
 -- | Add the given value to every element.
-shiftByVector :: (WriteVector y e m) => e -> y n e -> m ()
+shiftByVector :: (WriteVector y e m, BLAS1 e) => e -> y n e -> m ()
 shiftByVector k x =
     unsafePerformIOWithVector x $ shiftByIOVector k
 {-# INLINE shiftByVector #-}
@@ -341,24 +279,24 @@ shiftByVector k x =
 -- | @getAddVector x y@ creates a new vector equal to the sum @x+y@.  The 
 -- operands must have the same dimension.
 getAddVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 getAddVector = checkVectorOp2 unsafeGetAddVector
 {-# INLINE getAddVector #-}
 
 unsafeGetAddVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 unsafeGetAddVector = unsafeGetBinaryVectorOp unsafeAddVector
 {-# INLINE unsafeGetAddVector #-}
 
 -- | @addVector y x@ replaces @y@ with @y+x@.
-addVector :: (WriteVector y e m, ReadVector x e m) => 
+addVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 addVector y x = checkBinaryOp (dim y) (dim x) $ unsafeAddVector y x
 {-# INLINE addVector #-}
 
-unsafeAddVector :: (WriteVector y e m, ReadVector x e m) =>
+unsafeAddVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) =>
     y n e -> x n e -> m ()
 unsafeAddVector y x = unsafeAxpyVector 1 x y
 {-# INLINE unsafeAddVector #-}
@@ -366,36 +304,36 @@ unsafeAddVector y x = unsafeAxpyVector 1 x y
 -- | @getSubVector x y@ creates a new tensor equal to the difference @x-y@.  
 -- The operands must have the same dimension.
 getSubVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 getSubVector = checkVectorOp2 unsafeGetSubVector
 {-# INLINE getSubVector #-}
 
 unsafeGetSubVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 unsafeGetSubVector = unsafeGetBinaryVectorOp unsafeSubVector
 {-# INLINE unsafeGetSubVector #-}
 
 -- | @subVector y x@ replaces @y@ with @y-x@.
-subVector :: (WriteVector y e m, ReadVector x e m) => 
+subVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 subVector y x = checkBinaryOp (dim y) (dim x) $ unsafeSubVector y x
 {-# INLINE subVector #-}
 
-unsafeSubVector :: (WriteVector y e m, ReadVector x e m) =>
+unsafeSubVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) =>
     y n e -> x n e -> m ()
 unsafeSubVector y x = unsafeAxpyVector (-1) x y
 {-# INLINE unsafeSubVector #-}
 
 -- | @axpyVector alpha x y@ replaces @y@ with @alpha * x + y@.
-axpyVector :: (ReadVector x e m, WriteVector y e m) =>
+axpyVector :: (ReadVector x e m, WriteVector y e m, BLAS1 e) =>
     e -> x n e -> y n e -> m ()
 axpyVector alpha x y = 
     checkBinaryOp (shape x) (shape y) $ unsafeAxpyVector alpha x y
 {-# INLINE axpyVector #-}
 
-unsafeAxpyVector :: (ReadVector x e m, ReadVector y e m) =>
+unsafeAxpyVector :: (ReadVector x e m, ReadVector y e m, BLAS1 e) =>
     e -> x n e -> y n e -> m ()
 unsafeAxpyVector alpha x y
     | isConj y =
@@ -409,25 +347,25 @@ unsafeAxpyVector alpha x y
 -- | @getMulVector x y@ creates a new vector equal to the elementwise product 
 -- @x*y@.  The operands must have the same dimensino
 getMulVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 getMulVector = checkVectorOp2 unsafeGetMulVector
 {-# INLINE getMulVector #-}
 
 unsafeGetMulVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 unsafeGetMulVector = unsafeGetBinaryVectorOp unsafeMulVector
 {-# INLINE unsafeGetMulVector #-}
 
 -- | @mulVector y x@ replaces @y@ with @y*x@.
-mulVector :: (WriteVector y e m, ReadVector x e m) => 
+mulVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 mulVector y x =
     checkBinaryOp (shape y) (shape x) $ unsafeMulVector y x
 {-# INLINE mulVector #-}
  
-unsafeMulVector :: (WriteVector y e m, ReadVector x e m) =>
+unsafeMulVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) =>
     y n e -> x n e -> m ()
 unsafeMulVector y x
     | isConj y =
@@ -441,25 +379,25 @@ unsafeMulVector y x
 -- | @getDivVector x y@ creates a new vector equal to the elementwise 
 -- ratio @x/y@.  The operands must have the same shape.
 getDivVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 getDivVector = checkVectorOp2 unsafeGetDivVector
 {-# INLINE getDivVector #-}
 
 unsafeGetDivVector :: 
-    (ReadVector x e m, ReadVector y e m, WriteVector z e m) =>
+    (ReadVector x e m, ReadVector y e m, WriteVector z e m, BLAS1 e) =>
     x n e -> y n e -> m (z n e)
 unsafeGetDivVector = unsafeGetBinaryVectorOp unsafeDivVector
 {-# INLINE unsafeGetDivVector #-}
 
 -- | @divVector y x@ replaces @y@ with @y/x@.
-divVector :: (WriteVector y e m, ReadVector x e m) => 
+divVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) => 
     y n e -> x n e -> m ()
 divVector y x =
     checkBinaryOp (shape y) (shape x) $ unsafeDivVector y x
 {-# INLINE divVector #-}
 
-unsafeDivVector :: (WriteVector y e m, ReadVector x e m) =>
+unsafeDivVector :: (WriteVector y e m, ReadVector x e m, BLAS1 e) =>
     y n e -> x n e -> m ()
 unsafeDivVector y x
     | isConj y =
@@ -471,19 +409,19 @@ unsafeDivVector y x
 {-# INLINE unsafeDivVector #-}
 
 -- | Gets the sum of the absolute values of the vector entries.
-getSumAbs :: (ReadVector x e m) => x n e -> m Double
+getSumAbs :: (ReadVector x e m, BLAS1 e) => x n e -> m Double
 getSumAbs = vectorCall BLAS.asum
 {-# INLINE getSumAbs #-}
     
 -- | Gets the 2-norm of a vector.
-getNorm2 :: (ReadVector x e m) => x n e -> m Double
+getNorm2 :: (ReadVector x e m, BLAS1 e) => x n e -> m Double
 getNorm2 = vectorCall BLAS.nrm2
 {-# INLINE getNorm2 #-}
 
 -- | Gets the index and norm of the element with maximum magnitude.  This is 
 -- undefined if any of the elements are @NaN@.  It will throw an exception if 
 -- the dimension of the vector is 0.
-getWhichMaxAbs :: (ReadVector x e m) => x n e -> m (Int, e)
+getWhichMaxAbs :: (ReadVector x e m, BLAS1 e) => x n e -> m (Int, e)
 getWhichMaxAbs x =
     case (dim x) of
         0 -> fail $ "getWhichMaxAbs of an empty vector"
@@ -494,12 +432,12 @@ getWhichMaxAbs x =
 {-# INLINE getWhichMaxAbs #-}
 
 -- | Computes the dot product of two vectors.
-getDot :: (ReadVector x e m, ReadVector y e m) => 
+getDot :: (ReadVector x e m, ReadVector y e m, BLAS1 e) => 
     x n e -> y n e -> m e
 getDot x y = checkVecVecOp "getDot" (dim x) (dim y) $ unsafeGetDot x y
 {-# INLINE getDot #-}
 
-unsafeGetDot :: (ReadVector x e m, ReadVector y e m) => 
+unsafeGetDot :: (ReadVector x e m, ReadVector y e m, BLAS1 e) => 
     x n e -> y n e -> m e
 unsafeGetDot x y =
     vectorCall2 (BLAS.dot (conjEnum x) (conjEnum y)) x y
@@ -521,7 +459,7 @@ instance BaseVector IOVector where
     unsafeIOVectorToVector = id
     {-# INLINE unsafeIOVectorToVector #-}
     
-instance (BLAS1 e) => ReadVector IOVector e IO where
+instance ReadVector IOVector e IO where
     unsafePerformIOWithVector x f = f x
     {-# INLINE unsafePerformIOWithVector #-}
     freezeVector = freezeIOVector
@@ -529,7 +467,7 @@ instance (BLAS1 e) => ReadVector IOVector e IO where
     unsafeFreezeVector = unsafeFreezeIOVector
     {-# INLINE unsafeFreezeVector #-}
 
-instance (BLAS1 e) => WriteVector IOVector e IO where
+instance WriteVector IOVector e IO where
     newVector_ = newIOVector_
     {-# INLINE newVector_ #-}
     unsafeConvertIOVector = id
@@ -543,13 +481,13 @@ instance (BLAS1 e) => WriteVector IOVector e IO where
 -- | Create a vector with the given dimension and elements.  The elements
 -- given in the association list must all have unique indices, otherwise
 -- the result is undefined.
-vector :: (BLAS1 e) => Int -> [(Int, e)] -> Vector n e
+vector :: (Elem e) => Int -> [(Int, e)] -> Vector n e
 vector n ies = unsafePerformIO $
     unsafeFreezeIOVector =<< newVector n ies
 {-# NOINLINE vector #-}
 
 -- Same as 'vector', but does not range-check the indices.
-unsafeVector :: (BLAS1 e) => Int -> [(Int, e)] -> Vector n e
+unsafeVector :: (Elem e) => Int -> [(Int, e)] -> Vector n e
 unsafeVector n ies = unsafePerformIO $
     unsafeFreezeIOVector =<< unsafeNewVector n ies
 {-# NOINLINE unsafeVector #-}
@@ -558,20 +496,20 @@ unsafeVector n ies = unsafePerformIO $
 -- to the values from the list.  @listVector n es@ is equivalent to 
 -- @vector n (zip [0..(n-1)] es)@, except that the result is undefined 
 -- if @length es@ is less than @n@.
-listVector :: (BLAS1 e) => Int -> [e] -> Vector n e
+listVector :: (Elem e) => Int -> [e] -> Vector n e
 listVector n es = Vector $ unsafePerformIO $ newListVector n es
 {-# NOINLINE listVector #-}
 
-replaceVector :: (BLAS1 e) => Vector n e -> [(Int,e)] -> Vector n e
-replaceVector (Vector x) ies =
+replaceVector :: Vector n e -> [(Int,e)] -> Vector n e
+replaceVector (Vector x@(IOVector _ _ _ _ _)) ies =
     unsafePerformIO $ do
         y <- newCopyVector x
         mapM_ (uncurry $ writeElem y) ies
         return (Vector y)
 {-# NOINLINE replaceVector #-}
 
-unsafeReplaceVector :: (BLAS1 e) => Vector n e -> [(Int,e)] -> Vector n e
-unsafeReplaceVector (Vector x) ies =
+unsafeReplaceVector :: Vector n e -> [(Int,e)] -> Vector n e
+unsafeReplaceVector (Vector x@(IOVector _ _ _ _ _)) ies =
     unsafePerformIO $ do
         y <- newCopyVector x
         mapM_ (uncurry $ unsafeWriteElem y) ies
@@ -580,43 +518,43 @@ unsafeReplaceVector (Vector x) ies =
 
 -- | @zeroVector n@ creates a vector of dimension @n@ with all values
 -- set to zero.
-zeroVector :: (BLAS1 e) => Int -> Vector n e
+zeroVector :: (Elem e) => Int -> Vector n e
 zeroVector n = unsafePerformIO $ 
     unsafeFreezeIOVector =<< newZeroVector n
 {-# NOINLINE zeroVector #-}
 
 -- | @constantVector n e@ creates a vector of dimension @n@ with all values
 -- set to @e@.
-constantVector :: (BLAS1 e) => Int -> e -> Vector n e
+constantVector :: (Elem e) => Int -> e -> Vector n e
 constantVector n e = unsafePerformIO $
     unsafeFreezeIOVector =<< newConstantVector n e
 {-# NOINLINE constantVector #-}
 
 -- | @basisVector n i@ creates a vector of dimension @n@ with zeros 
 -- everywhere but position @i@, where there is a one.
-basisVector :: (BLAS1 e) => Int -> Int -> Vector n e
+basisVector :: (Elem e) => Int -> Int -> Vector n e
 basisVector n i = unsafePerformIO $
     unsafeFreezeIOVector =<< newBasisVector n i
 {-# NOINLINE basisVector #-}
 
 -- | @subvector x o n@ creates a subvector of @x@ starting at index @o@ 
 -- and having length @n@.
-subvector :: (BLAS1 e) => Vector n e -> Int -> Int -> Vector n' e
+subvector :: Vector n e -> Int -> Int -> Vector n' e
 subvector = subvectorView
 {-# INLINE subvector #-}
 
-unsafeSubvector :: (BLAS1 e) => Vector n e -> Int -> Int -> Vector n' e
+unsafeSubvector :: Vector n e -> Int -> Int -> Vector n' e
 unsafeSubvector = unsafeSubvectorView
 {-# INLINE unsafeSubvector #-}
 
-unsafeSubvectorWithStride :: (Elem e) =>
+unsafeSubvectorWithStride :: 
     Int -> Vector n e -> Int -> Int -> Vector n' e
 unsafeSubvectorWithStride = unsafeSubvectorViewWithStride
 {-# INLINE unsafeSubvectorWithStride #-}
 
 -- | @subvectorWithStride s x o n@ creates a subvector of @x@ starting 
 -- at index @o@, having length @n@ and stride @s@.
-subvectorWithStride :: (BLAS1 e) =>
+subvectorWithStride ::
     Int -> Vector n e -> Int -> Int -> Vector n' e
 subvectorWithStride = subvectorViewWithStride
 {-# INLINE subvectorWithStride #-}
@@ -629,9 +567,10 @@ indicesVector :: Vector n e -> [Int]
 indicesVector (Vector x) = indicesIOVector x
 {-# INLINE indicesVector #-}
 
-elemsVector :: (Elem e) => Vector n e -> [e]
-elemsVector x | isConj x  = (map conjugate . elemsVector . conj) x
-              | otherwise = case x of { (Vector (IOVector _ n f p incX)) ->
+elemsVector :: Vector n e -> [e]
+elemsVector x@(Vector (IOVector _ _ _ _ _))
+    | isConj x  = (map conjugate . elemsVector . conj) x
+    | otherwise = case x of { (Vector (IOVector _ n f p incX)) ->
     let end = p `advancePtr` (n*incX)
         go p' | p' == end = inlinePerformIO $ do
                                 io <- touchForeignPtr f
@@ -643,27 +582,28 @@ elemsVector x | isConj x  = (map conjugate . elemsVector . conj) x
 {-# SPECIALIZE INLINE elemsVector :: Vector n Double -> [Double] #-}
 {-# SPECIALIZE INLINE elemsVector :: Vector n (Complex Double) -> [Complex Double] #-}
 
-assocsVector :: (Elem e) => Vector n e -> [(Int,e)]
+assocsVector :: Vector n e -> [(Int,e)]
 assocsVector x = zip (indicesVector x) (elemsVector x)
 {-# INLINE assocsVector #-}
 
-unsafeAtVector :: (Elem e) => Vector n e -> Int -> e
-unsafeAtVector x i | isConj x  = conjugate $ unsafeAtVector (conj x) i
-                   | otherwise = case x of { (Vector (IOVector _ _ f p inc)) ->
-    inlinePerformIO $ do
-        e  <- peekElemOff p (i*inc)
-        io <- touchForeignPtr f
-        e `seq` io `seq` return e
-    }
+unsafeAtVector :: Vector n e -> Int -> e
+unsafeAtVector x@(Vector (IOVector _ _ _ _ _)) i 
+    | isConj x  = conjugate $ unsafeAtVector (conj x) i
+    | otherwise = case x of { (Vector (IOVector _ _ f p inc)) ->
+          inlinePerformIO $ do
+              e  <- peekElemOff p (i*inc)
+              io <- touchForeignPtr f
+              e `seq` io `seq` return e }
 {-# INLINE unsafeAtVector #-}
 
-tmapVector :: (BLAS1 e) => (e -> e) -> Vector n e -> Vector n e
-tmapVector f x = listVector (dim x) (map f $ elemsVector x)
+tmapVector :: (e -> e) -> Vector n e -> Vector n e
+tmapVector f x@(Vector (IOVector _ _ _ _ _)) = 
+    listVector (dim x) (map f $ elemsVector x)
 {-# INLINE tmapVector #-}
 
-tzipWithVector :: (BLAS1 e) =>
+tzipWithVector :: 
     (e -> e -> e) -> Vector n e -> Vector n e -> Vector n e
-tzipWithVector f x y
+tzipWithVector f x@(Vector (IOVector _ _ _ _ _)) y
     | dim y /= n =
         error ("tzipWith: vector lengths differ; first has length `" ++
                 show n ++ "' and second has length `" ++
@@ -716,7 +656,7 @@ instance Shaped Vector Int where
     bounds (Vector x) = boundsIOVector x
     {-# INLINE bounds #-}
 
-instance (BLAS1 e) => ITensor Vector Int e where
+instance ITensor Vector Int where
     (//) = replaceVector
     {-# INLINE (//) #-}
     unsafeReplace = unsafeReplaceVector
@@ -738,7 +678,7 @@ instance (BLAS1 e) => ITensor Vector Int e where
     shift = shiftVector
     {-# INLINE shift #-}
 
-instance (BLAS1 e, Monad m) => ReadTensor Vector Int e m where
+instance (Monad m) => ReadTensor Vector Int m where
     getSize = return . size
     {-# INLINE getSize #-}
     getAssocs = return . assocs
@@ -773,7 +713,7 @@ instance BaseVector Vector where
     unsafeIOVectorToVector = Vector
     {-# INLINE unsafeIOVectorToVector #-}
 
-instance (BLAS1 e) => ReadVector Vector e IO where
+instance ReadVector Vector e IO where
     unsafePerformIOWithVector (Vector x) f = f x
     {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (Vector x) = freezeIOVector x
@@ -781,7 +721,7 @@ instance (BLAS1 e) => ReadVector Vector e IO where
     unsafeFreezeVector = return
     {-# INLINE unsafeFreezeVector #-}
 
-instance (BLAS1 e) => ReadVector Vector e (ST s) where
+instance ReadVector Vector e (ST s) where
     unsafePerformIOWithVector (Vector x) f = unsafeIOToST $ f x
     {-# INLINE unsafePerformIOWithVector #-}    
     freezeVector (Vector x) = unsafeIOToST $ freezeIOVector x
@@ -789,21 +729,18 @@ instance (BLAS1 e) => ReadVector Vector e (ST s) where
     unsafeFreezeVector = return
     {-# INLINE unsafeFreezeVector #-}
 
-instance (Elem e, Show e) => Show (Vector n e) where
-    show x
-        | isConj x  = "conj (" ++ show (conj x) ++ ")"
-        | otherwise = "listVector " ++ show (dim x) ++ " " ++ show (elemsVector x)
+instance (Show e) => Show (Vector n e) where
+    show x | isConj x  = "conj (" ++ show (conj x) ++ ")"
+           | otherwise = "listVector " ++ show (dim x) ++ " " ++ show (elemsVector x)
 
-instance (BLAS1 e) => Eq (Vector n e) where
+instance (Eq e) => Eq (Vector n e) where
     (==) = compareVectorWith (==)
 
-instance (BLAS1 e) => AEq (Vector n e) where
+instance (AEq e) => AEq (Vector n e) where
     (===) = compareVectorWith (===)
     (~==) = compareVectorWith (~==)
 
-compareVectorWith :: (Elem e) => 
-    (e -> e -> Bool) -> 
-        Vector n e -> Vector n e -> Bool
+compareVectorWith :: (e -> e -> Bool) -> Vector n e -> Vector n e -> Bool
 compareVectorWith cmp x y
     | isConj x && isConj y =
         compareVectorWith cmp (conj x) (conj y)

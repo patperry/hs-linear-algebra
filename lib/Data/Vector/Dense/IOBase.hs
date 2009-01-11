@@ -16,6 +16,7 @@ module Data.Vector.Dense.IOBase
 import Control.Monad
 import Foreign
 import System.IO.Unsafe
+import Text.Printf
 
 import BLAS.Internal ( clearArray )
 import BLAS.Types( ConjEnum(..), flipConj )
@@ -105,13 +106,89 @@ newIOVector_ n
         arr <- mallocForeignPtrArray n
         return $ IOVector NoConj n arr (unsafeForeignPtrToPtr arr) 1
 
-newCopyIOVector :: (Elem e) => IOVector n e -> IO (IOVector n e)
+newIOVector :: (Elem e) => Int -> [(Int,e)] -> IO (IOVector n e)
+newIOVector n ies = do
+    x <- newZeroIOVector n
+    withIOVector x $ \p -> do
+        forM_ ies $ \(i,e) -> do
+            when (i < 0 || i >= n) $ error $
+                printf "newVector %d [ ..., (%d,_), ... ]: invalid index" n i
+            pokeElemOff p i e
+        return x
+
+unsafeNewIOVector :: (Elem e) => Int -> [(Int,e)] -> IO (IOVector n e)
+unsafeNewIOVector n ies = do
+    x <- newZeroIOVector n
+    withIOVector x $ \p -> do
+        forM_ ies $ \(i,e) ->
+            pokeElemOff p i e
+    return x
+
+newListIOVector :: (Elem e) => Int -> [e] -> IO (IOVector n e)
+newListIOVector n es = do
+    x <- newIOVector_ n
+    withIOVector x $ \p -> do
+        pokeArray p $ take n $ es ++ (repeat 0)
+    return x
+
+newZeroIOVector :: (Elem e) => Int -> IO (IOVector n e)
+newZeroIOVector n = do
+    x <- newIOVector_ n
+    setZeroIOVector x
+    return x
+
+newConstantIOVector :: (Elem e) => Int -> e -> IO (IOVector n e)
+newConstantIOVector n e = do
+    x <- newIOVector_ n
+    setConstantIOVector e x
+    return x
+
+newBasisIOVector :: (Elem e) => Int -> Int -> IO (IOVector n e)
+newBasisIOVector n i = do
+    x <- newZeroIOVector n
+    setBasisIOVector i x
+    return x
+
+setBasisIOVector :: Int -> IOVector n e -> IO ()
+setBasisIOVector i x@(IOVector _ _ _ _ _)
+    | i < 0 || i >= n =
+        error $ printf "setBasisIOVector %d <vector of dim %d>: invalid index" 
+                       i n
+    | otherwise = do
+        setZeroIOVector x
+        unsafeWriteElemIOVector x i 1 
+  where
+    n = dimIOVector x
+
+newCopyIOVector :: IOVector n e -> IO (IOVector n e)
 newCopyIOVector (IOVector c n f p incX) = do
     (IOVector _ _ f' p' _) <- newIOVector_ n
-    BLAS.copy n p incX p' 1
+    BLAS.copy c c n p incX p' 1
     touchForeignPtr f
     touchForeignPtr f'
     return (IOVector c n f' p' 1)
+
+newCopyIOVector' :: IOVector n e -> IO (IOVector n e)
+newCopyIOVector' x@(IOVector _ _ _ _ _) = do
+    y <- newIOVector_ (dimIOVector x)
+    unsafeCopyIOVector y x
+    return y
+
+unsafeCopyIOVector :: IOVector n e -> IOVector n e -> IO ()
+unsafeCopyIOVector (IOVector cy n fy py incy) 
+                   (IOVector cx _ fx px incx) = do
+    BLAS.copy cx cy n px incx py incy
+    touchForeignPtr fx
+    touchForeignPtr fy
+{-# INLINE unsafeCopyIOVector #-}
+
+unsafeSwapIOVector :: IOVector n e -> IOVector n e -> IO ()
+unsafeSwapIOVector (IOVector cx n fx px incx) 
+                   (IOVector cy _ fy py incy) = do
+    BLAS.swap cx cy n px incx py incy
+    touchForeignPtr fx
+    touchForeignPtr fy
+{-# INLINE unsafeSwapIOVector #-}
 
 shapeIOVector :: IOVector n e -> Int
 shapeIOVector = dimIOVector
@@ -265,7 +342,7 @@ setConstantIOVector e (IOVector c n f p incX) =
     in go p
 {-# INLINE setConstantIOVector #-}
 
-doConjIOVector :: (BLAS1 e) => IOVector n e -> IO ()
+doConjIOVector :: IOVector n e -> IO ()
 doConjIOVector (IOVector _ n f p incX) =
     BLAS.vconj n p incX >> touchForeignPtr f
 {-# INLINE doConjIOVector #-}
@@ -291,7 +368,7 @@ instance Shaped IOVector Int where
     bounds = boundsIOVector
     {-# INLINE bounds #-}
 
-instance ReadTensor IOVector Int e IO where
+instance ReadTensor IOVector Int IO where
     getSize = getSizeIOVector
     {-# INLINE getSize #-}
     unsafeReadElem = unsafeReadElemIOVector
@@ -309,7 +386,7 @@ instance ReadTensor IOVector Int e IO where
     getAssocs' = getAssocsIOVector'
     {-# INLINE getAssocs' #-}
 
-instance (BLAS1 e) => WriteTensor IOVector Int e IO where
+instance WriteTensor IOVector Int IO where
     getMaxSize = getMaxSizeIOVector
     {-# INLINE getMaxSize #-}
     setZero = setZeroIOVector

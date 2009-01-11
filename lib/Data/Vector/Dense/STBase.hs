@@ -15,8 +15,6 @@ module Data.Vector.Dense.STBase
 import Control.Monad
 import Control.Monad.ST
 
-import Data.Elem.BLAS( Elem, BLAS1 )
-
 import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
@@ -48,7 +46,7 @@ instance Shaped (STVector s) Int where
     bounds (STVector x) = boundsIOVector x
     {-# INLINE bounds #-}
 
-instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
+instance ReadTensor (STVector s) Int (ST s) where
     getSize (STVector x) = unsafeIOToST $ getSizeIOVector x
     {-# INLINE getSize #-}
     unsafeReadElem (STVector x) i = unsafeIOToST $ unsafeReadElemIOVector x i
@@ -66,7 +64,7 @@ instance (Elem e) => ReadTensor (STVector s) Int e (ST s) where
     getAssocs' (STVector x) = unsafeIOToST $ getAssocsIOVector' x
     {-# INLINE getAssocs' #-}
 
-instance (BLAS1 e) => WriteTensor (STVector s) Int e (ST s) where
+instance WriteTensor (STVector s) Int (ST s) where
     getMaxSize (STVector x) = unsafeIOToST $ getMaxSizeIOVector x
     {-# INLINE getMaxSize #-}
     setZero (STVector x) = unsafeIOToST $ setZeroIOVector x
@@ -105,7 +103,7 @@ instance BaseVector (STVector s) where
     unsafeIOVectorToVector = STVector
     {-# INLINE unsafeIOVectorToVector #-}
 
-instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
+instance ReadVector (STVector s) e (ST s) where
     unsafePerformIOWithVector (STVector x) f = unsafeIOToST $ f x
     {-# INLINE unsafePerformIOWithVector #-}
     freezeVector (STVector x) = unsafeIOToST $ freezeIOVector x
@@ -113,7 +111,7 @@ instance (BLAS1 e) => ReadVector (STVector s) e (ST s) where
     unsafeFreezeVector (STVector x) = unsafeIOToST $ unsafeFreezeIOVector x
     {-# INLINE unsafeFreezeVector #-}
 
-instance (BLAS1 e) => WriteVector (STVector s) e (ST s) where
+instance WriteVector (STVector s) e (ST s) where
     newVector_ = liftM STVector . unsafeIOToST . newIOVector_
     {-# INLINE newVector_ #-}
     unsafeConvertIOVector = unsafeIOToST . liftM STVector

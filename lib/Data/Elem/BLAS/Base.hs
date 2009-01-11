@@ -12,13 +12,18 @@ module Data.Elem.BLAS.Base (
     Elem(..),
     ) where
 
-import Data.Elem.BLAS.Double( dcopy, dswap )
-import Data.Elem.BLAS.Zomplex( zcopy, zswap )
+import Control.Monad
 import Data.AEq
 import Data.Complex( Complex(..), magnitude )
 import qualified Data.Complex as Complex
-import Foreign( Storable, Ptr )
+import Foreign
 import Foreign.Storable.Complex ()
+
+
+import BLAS.Types( ConjEnum(..) )
+import Data.Elem.BLAS.Double( dcopy, dswap, dscal )
+import Data.Elem.BLAS.Zomplex( zcopy, zswap )
+
 
 -- | The base class for elements.
 class (AEq e, Storable e, Fractional e) => Elem e where
@@ -38,8 +43,10 @@ class (AEq e, Storable e, Fractional e) => Elem e where
     -- complex part is zero (according to a comparison by @(~==)@).
     maybeToReal :: e -> Maybe Double
 
-    copy :: Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
-    swap :: Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    copy  :: ConjEnum -> ConjEnum -> Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    swap  :: ConjEnum -> ConjEnum -> Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    vconj :: Int -> Ptr e -> Int -> IO ()
+
 
     
 instance Elem Double where
@@ -53,10 +60,12 @@ instance Elem Double where
     {-# INLINE fromReal #-}
     maybeToReal = Just
     {-# INLINE maybeToReal #-}
-    copy = dcopy
+    copy _ _ = dcopy
     {-# INLINE copy #-}
-    swap = dswap
+    swap _ _ = dswap
     {-# INLINE swap #-}
+    vconj _ _ _ = return ()
+    {-# INLINE vconj #-}
     
 instance Elem (Complex Double) where
     conjugate      = Complex.conjugate
@@ -70,7 +79,23 @@ instance Elem (Complex Double) where
     maybeToReal (x :+ y) | y ~== 0   = Just x
                          | otherwise = Nothing
     {-# INLINE maybeToReal #-}
-    copy = zcopy
+    
+    copy conjX conjY n pX incX pY incY = do
+        zcopy n pX incX pY incY
+        when (conjX /= conjY) $
+            vconj n pY incY
     {-# INLINE copy #-}
-    swap = zswap
+    
+    swap conjX conjY n pX incX pY incY = do
+        zswap n pX incX pY incY
+        when (conjX /= conjY) $ do
+            vconj n pX incX
+            vconj n pY incY
     {-# INLINE swap #-}
+    
+    vconj n pX incX =
+        let pXI   = (castPtr pX) `advancePtr` 1
+            alpha = -1
+            incXI = 2 * incX
+        in dscal n alpha pXI incXI
+    {-# INLINE vconj #-}

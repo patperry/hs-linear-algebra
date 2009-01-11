@@ -39,9 +39,6 @@ class (Elem a) => BLAS1 a where
     rotg  :: Ptr a -> Ptr a -> Ptr a -> Ptr a -> IO ()
     rot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> Double -> Double -> IO ()
 
-    -- | Replaces @y@ with @conj y@.
-    vconj  :: Int -> Ptr a -> Int -> IO ()
-
     -- | Replaces @y@ with @alpha (conj x) + y@
     acxpy :: Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
@@ -68,7 +65,6 @@ instance BLAS1 Double where
     scal  = dscal
     rotg  = drotg
     rot   = drot
-    vconj _ _ _ = return ()
     acxpy = daxpy
     vmul n = dtbmv upper noTrans nonUnit n 0
     vcmul  = vmul
@@ -108,12 +104,6 @@ instance BLAS1 (Complex Double) where
 
     rot = zdrot
 
-    vconj n pX incX =
-        let pXI   = (castPtr pX) `advancePtr` 1
-            alpha = -1
-            incXI = 2 * incX
-        in dscal n alpha pXI incXI
-    
     acxpy n a pX incX pY incY =
         let pXR   = castPtr pX
             pYR   = castPtr pY

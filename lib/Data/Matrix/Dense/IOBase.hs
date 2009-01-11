@@ -29,6 +29,7 @@ import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
 import Data.Vector.Dense.IOBase
+import Data.Vector.Dense.Base
 
 
 -- | Dense matrix in the 'IO' monad.  The type arguments are as follows:
@@ -208,7 +209,81 @@ newIOMatrix_ (m,n)
     | otherwise =  do
         f <- mallocForeignPtrArray (m*n)
         return $ IOMatrix NoTrans m n f (unsafeForeignPtrToPtr f) (max 1 m)
-{-# INLINE newIOMatrix_ #-}
+
+newIOMatrix :: (Elem e) 
+            => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix (n,p) e)
+newIOMatrix (m,n) ies = do
+    a <- newZeroIOMatrix (m,n)
+    withIOMatrix a $ \p ->
+        forM_ ies $ \((i,j),e) -> do
+            when (i < 0 || i >= m || j < 0 || j >= n) $ fail $
+                "Index `" ++ show (i,j) ++ 
+                    "' is invalid for a matrix with shape `" ++ show (m,n) ++
+                    "'"
+            pokeElemOff p (i+j*m) e
+    return a
+    
+unsafeNewIOMatrix :: (Elem e) 
+                  => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix (n,p) e)
+unsafeNewIOMatrix (m,n) ies = do
+    a <- newZeroIOMatrix (m,n)
+    withIOMatrix a $ \p ->
+        forM_ ies $ \((i,j),e) -> do
+            pokeElemOff p (i+j*m) e
+    return a
+
+newListIOMatrix :: (Elem e) => (Int,Int) -> [e] -> IO (IOMatrix (n,p) e)
+newListIOMatrix (m,n) es = do
+    a <- newZeroIOMatrix (m,n)
+    withIOMatrix a $ flip pokeArray (take (m*n) es)
+    return a
+
+newIdentityIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)
+newIdentityIOMatrix mn = do
+    a <- newIOMatrix_ mn
+    setIdentityIOMatrix a
+    return a
+
+setIdentityIOMatrix :: (Elem e) => IOMatrix np e -> IO ()
+setIdentityIOMatrix a = do
+    setZeroIOMatrix a
+    setConstantIOVector 1 (unsafeDiagViewIOMatrix a 0)
+
+newColsIOMatrix :: (ReadVector x e IO, Elem e)
+                => (Int,Int) -> [x n e] -> IO (IOMatrix (n,p) e)
+newColsIOMatrix (m,n) cs = do
+    a <- newZeroIOMatrix (m,n)
+    forM_ (zip [0..(n-1)] cs) $ \(j,c) ->
+        unsafeCopyVector (unsafeColViewIOMatrix a j) c
+    return a
+
+newRowsIOMatrix :: (ReadVector x e IO, Elem e) 
+                => (Int,Int) -> [x p e] -> IO (IOMatrix (n,p) e)
+newRowsIOMatrix (m,n) rs = do
+    a <- newZeroIOMatrix (m,n)
+    forM_ (zip [0..(m-1)] rs) $ \(i,r) ->
+        unsafeCopyVector (unsafeRowViewIOMatrix a i) r
+    return a
+
+newColIOMatrix :: (ReadVector x e IO, Elem e)
+               => x n e -> IO (IOMatrix (n,one) e)
+newColIOMatrix x = newColsIOMatrix (dim x,1) [x]
+
+newRowIOMatrix :: (ReadVector x e IO, Elem e)
+               => x p e -> IO (IOMatrix (one,p) e)
+newRowIOMatrix x = newRowsIOMatrix (1,dim x) [x]
+
+newZeroIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix (n,p) e)
+newZeroIOMatrix mn = do
+    a <- newIOMatrix_ mn
+    setZeroIOMatrix a
+    return a
+
+newConstantIOMatrix :: (Elem e) => (Int,Int) -> e -> IO (IOMatrix (n,p) e)
+newConstantIOMatrix mn e = do
+    a <- newIOMatrix_ mn
+    setConstantIOMatrix e a
+    return a
 
 newCopyIOMatrix :: (Elem e) => IOMatrix np e -> IO (IOMatrix np e)
 newCopyIOMatrix (IOMatrix h m n f p l) = 
@@ -218,17 +293,16 @@ newCopyIOMatrix (IOMatrix h m n f p l) =
         (IOMatrix _ _ _ f' p' _) <- newIOMatrix_ (m',n')
         if l == m'
             then do
-                BLAS.copy (m*n) p 1 p' 1
+                BLAS.copy NoConj NoConj (m*n) p 1 p' 1
             else 
                 let go src dst i | i == n'   = return ()
                                  | otherwise = do
-                        BLAS.copy m' src 1 dst 1
+                        BLAS.copy NoConj NoConj m' src 1 dst 1
                         go (src `advancePtr` l) (dst `advancePtr` l') (i+1)
                 in go p p' 0
         touchForeignPtr f
         touchForeignPtr f'
         return (IOMatrix h m n f' p' l')
-{-# INLINE newCopyIOMatrix #-}
 
 shapeIOMatrix :: IOMatrix np e -> (Int,Int)
 shapeIOMatrix (IOMatrix _ m n _ _ _) = (m,n)
@@ -381,17 +455,36 @@ setConstantIOMatrix :: e -> IOMatrix np e -> IO ()
 setConstantIOMatrix k = liftIOMatrix (setConstantIOVector k)
 {-# INLINE setConstantIOMatrix #-}
 
+getConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO (IOMatrix np e)
+getConjIOMatrix a = do
+    b <- newCopyIOMatrix a 
+    doConjIOMatrix b
+    return b
+
 doConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO ()
 doConjIOMatrix = liftIOMatrix doConjIOVector
 {-# INLINE doConjIOMatrix #-}
 
+getScaledIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
+getScaledIOMatrix e a = do
+    b <- newCopyIOMatrix a
+    scaleByIOMatrix e b
+    return b
+
 scaleByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()
 scaleByIOMatrix k = liftIOMatrix (scaleByIOVector k)
 {-# INLINE scaleByIOMatrix #-}
+
+getShiftedIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
+getShiftedIOMatrix e a = do
+    b <- newCopyIOMatrix a
+    shiftByIOMatrix e b
+    return b
                     
-shiftByIOMatrix :: (Elem e) => e -> IOMatrix np e -> IO ()                    
+shiftByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()                    
 shiftByIOMatrix k = liftIOMatrix (shiftByIOVector k)
 {-# INLINE shiftByIOMatrix #-}
+
 
 instance Shaped IOMatrix (Int,Int) where
     shape = shapeIOMatrix
@@ -399,7 +492,7 @@ instance Shaped IOMatrix (Int,Int) where
     bounds = boundsIOMatrix
     {-# INLINE bounds #-}
 
-instance ReadTensor IOMatrix (Int,Int) e IO where
+instance ReadTensor IOMatrix (Int,Int) IO where
     getSize = getSizeIOMatrix
     {-# INLINE getSize #-}
     unsafeReadElem = unsafeReadElemIOMatrix
@@ -417,7 +510,7 @@ instance ReadTensor IOMatrix (Int,Int) e IO where
     getAssocs' = getAssocsIOMatrix'
     {-# INLINE getAssocs' #-}
 
-instance (BLAS1 e) => WriteTensor IOMatrix (Int,Int) e IO where
+instance WriteTensor IOMatrix (Int,Int) IO where
     getMaxSize = getMaxSizeIOMatrix
     {-# INLINE getMaxSize #-}
     setZero = setZeroIOMatrix
