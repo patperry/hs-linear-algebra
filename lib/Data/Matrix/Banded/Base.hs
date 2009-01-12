@@ -14,7 +14,6 @@ module Data.Matrix.Banded.Base
     where
 
 import Control.Monad
-import Control.Monad.ST
 import Data.AEq
 import Data.Maybe
 import Data.Ix
@@ -41,8 +40,9 @@ import Data.Matrix.Tri
 
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Vector.Dense.Base( BaseVector, ReadVector, WriteVector, Vector(..), 
-    dim, unsafeVectorToIOVector, unsafePerformIOWithVector,
-    unsafeConvertIOVector, newZeroVector, newCopyVector )
+    dim, unsafeIOVectorToVector, unsafeVectorToIOVector,
+    unsafePerformIOWithVector, unsafeConvertIOVector, newZeroVector,
+    newCopyVector )
 import Data.Matrix.Dense.ST( runSTMatrix )
 import Data.Matrix.Dense.Base( BaseMatrix, ReadMatrix, WriteMatrix, Matrix(..),
     unsafeMatrixToIOMatrix, unsafePerformIOWithMatrix )
@@ -722,79 +722,17 @@ instance BaseBanded Banded where
     unsafeBandedToIOBanded (Banded a) = a
     {-# INLINE unsafeBandedToIOBanded #-}
 
-instance ReadBanded Banded IO where
-    unsafePerformIOWithBanded (Banded a) f = f a
+instance (Monad m) => ReadBanded Banded m where
+    unsafePerformIOWithBanded (Banded a) f = 
+        (return . unsafePerformIO . f) a
     {-# INLINE unsafePerformIOWithBanded #-}
-    freezeBanded (Banded a) = freezeIOBanded a
+    freezeBanded (Banded a) = 
+        (return . unsafePerformIO . freezeIOBanded) a
     {-# INLINE freezeBanded #-}
-    unsafeFreezeBanded (Banded a) = unsafeFreezeIOBanded a
+    unsafeFreezeBanded = return . id
     {-# INLINE unsafeFreezeBanded #-}
 
-instance MMatrix Banded IO where
-    unsafeDoSApplyAdd    = gbmv
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = gbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}
-    unsafeGetRow = unsafeGetRowBanded
-    {-# INLINE unsafeGetRow #-}
-    unsafeGetCol = unsafeGetColBanded
-    {-# INLINE unsafeGetCol #-}
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
-
-instance MMatrix (Herm Banded) IO where
-    unsafeDoSApplyAdd    = hbmv
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = hbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}    
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
-    unsafeGetRow = unsafeGetRowHermBanded
-    {-# INLINE unsafeGetRow #-}
-    unsafeGetCol = unsafeGetColHermBanded
-    {-# INLINE unsafeGetCol #-}
-
-instance MMatrix (Tri Banded) IO where
-    unsafeDoSApply_      = tbmv
-    {-# INLINE unsafeDoSApply_ #-}        
-    unsafeDoSApplyMat_   = tbmm
-    {-# INLINE unsafeDoSApplyMat_ #-}    
-    unsafeDoSApplyAdd    = tbmv'
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = tbmm'
-    {-# INLINE unsafeDoSApplyAddMat #-}    
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
-    unsafeGetRow = unsafeGetRowTriBanded
-    {-# INLINE unsafeGetRow #-}
-    unsafeGetCol = unsafeGetColTriBanded
-    {-# INLINE unsafeGetCol #-}
-
-instance MSolve (Tri Banded) IO where
-    unsafeDoSSolve_    = tbsv
-    {-# INLINE unsafeDoSSolve_ #-}    
-    unsafeDoSSolveMat_ = tbsm
-    {-# INLINE unsafeDoSSolveMat_ #-}    
-    unsafeDoSSolve     = tbsv'
-    {-# INLINE unsafeDoSSolve #-}
-    unsafeDoSSolveMat  = tbsm'
-    {-# INLINE unsafeDoSSolveMat #-}    
-
-instance ReadBanded Banded (ST s) where
-    unsafePerformIOWithBanded (Banded a) f = unsafeIOToST $ f a
-    {-# INLINE unsafePerformIOWithBanded #-}
-    freezeBanded (Banded a) = unsafeIOToST $ freezeIOBanded a
-    {-# INLINE freezeBanded #-}
-    unsafeFreezeBanded (Banded a) = unsafeIOToST $ unsafeFreezeIOBanded a
-    {-# INLINE unsafeFreezeBanded #-}
-
-instance MMatrix Banded (ST s) where
+instance (Monad m) => MMatrix Banded m where
     unsafeDoSApplyAdd    = gbmv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gbmm
@@ -803,26 +741,30 @@ instance MMatrix Banded (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
-    getRows = getRowsST
+    getRows =
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
     {-# INLINE getRows #-}
-    getCols = getColsST
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
     {-# INLINE getCols #-}
 
-instance MMatrix (Herm Banded) (ST s) where
+instance (Monad m) => MMatrix (Herm Banded) m where
     unsafeDoSApplyAdd    = hbmv
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = hbmm
     {-# INLINE unsafeDoSApplyAddMat #-}    
-    getRows = getRowsST
+    getRows =
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
     {-# INLINE getRows #-}
-    getCols = getColsST
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
     {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowHermBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColHermBanded
     {-# INLINE unsafeGetCol #-}
 
-instance MMatrix (Tri Banded) (ST s) where
+instance (Monad m) => MMatrix (Tri Banded) m where
     unsafeDoSApply_      = tbmv
     {-# INLINE unsafeDoSApply_ #-}        
     unsafeDoSApplyMat_   = tbmm
@@ -831,16 +773,18 @@ instance MMatrix (Tri Banded) (ST s) where
     {-# INLINE unsafeDoSApplyAdd #-}    
     unsafeDoSApplyAddMat = tbmm'
     {-# INLINE unsafeDoSApplyAddMat #-}    
-    getRows = getRowsST
+    getRows =
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
     {-# INLINE getRows #-}
-    getCols = getColsST
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
     {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowTriBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColTriBanded
     {-# INLINE unsafeGetCol #-}
     
-instance MSolve (Tri Banded) (ST s) where
+instance (Monad m) => MSolve (Tri Banded) m where
     unsafeDoSSolve_    = tbsv
     {-# INLINE unsafeDoSSolve_ #-}    
     unsafeDoSSolveMat_ = tbsm
@@ -851,24 +795,37 @@ instance MSolve (Tri Banded) (ST s) where
     {-# INLINE unsafeDoSSolveMat #-}    
 
 instance IMatrix Banded where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApply alpha a x = runSTVector $ unsafeGetSApply    alpha a x
+    {-# INLINE unsafeSApply #-}
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
-    unsafeRow a i             = runSTVector $ unsafeGetRow a i
-    unsafeCol a j             = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeSApplyMat #-}
+    unsafeRow a i = runSTVector $ unsafeGetRow a i
+    {-# INLINE unsafeRow #-}
+    unsafeCol a j = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeCol #-}
 
 instance IMatrix (Herm Banded) where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApply alpha a x = runSTVector $ unsafeGetSApply    alpha a x
+    {-# INLINE unsafeSApply #-}
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
-    unsafeRow a i             = runSTVector $ unsafeGetRow a i
-    unsafeCol a j             = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeSApplyMat #-}
+    unsafeRow a i = runSTVector $ unsafeGetRow a i
+    {-# INLINE unsafeRow #-}
+    unsafeCol a j = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeCol #-}
 
 instance IMatrix (Tri Banded) where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
+    unsafeSApply alpha a x = runSTVector $ unsafeGetSApply    alpha a x
+    {-# INLINE unsafeSApply #-}
     unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
-    unsafeRow a i             = runSTVector $ unsafeGetRow a i
-    unsafeCol a j             = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeSApplyMat #-}
+    unsafeRow a i = runSTVector $ unsafeGetRow a i
+    {-# INLINE unsafeRow #-}
+    unsafeCol a j = runSTVector $ unsafeGetCol a j
+    {-# INLINE unsafeCol #-}
 
 instance ISolve (Tri Banded) where
     unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
+    {-# NOINLINE unsafeSSolve #-}
     unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
-    
+    {-# NOINLINE unsafeSSolveMat #-}

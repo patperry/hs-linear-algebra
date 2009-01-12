@@ -247,7 +247,8 @@ unsafeWriteElemIOBanded a@(IOBanded _ _ _ _ _ _ _ _) ij e =
 modifyWithIOBanded :: (e -> e) -> IOBanded np e -> IO ()
 modifyWithIOBanded f a = do
     ies <- getAssocsIOBanded a
-    mapM_ (\(i,e) -> unsafeWriteElemIOBanded a i (f e)) ies
+    forM_ ies $ \(i,e) -> do
+         unsafeWriteElemIOBanded a i (f e)
 
 canModifyElemIOBanded :: IOBanded np e -> (Int,Int) -> IO Bool
 canModifyElemIOBanded a ij = return $ hasStorageIOBanded a ij

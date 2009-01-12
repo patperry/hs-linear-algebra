@@ -11,7 +11,6 @@
 
 module Data.Vector.Dense.STBase
     where
-
 import Control.Monad
 import Control.Monad.ST
 
@@ -39,6 +38,7 @@ newtype STVector s n e = STVector (IOVector n e)
 runSTVector :: (forall s . ST s (STVector s n e)) -> Vector n e
 runSTVector mx = 
     runST $ mx >>= \(STVector x) -> return (Vector x)
+{-# INLINE runSTVector #-}
 
 instance Shaped (STVector s) Int where
     shape (STVector x) = shapeIOVector x
@@ -114,9 +114,9 @@ instance ReadVector (STVector s) (ST s) where
 instance WriteVector (STVector s) (ST s) where
     newVector_ = liftM STVector . unsafeIOToST . newIOVector_
     {-# INLINE newVector_ #-}
-    unsafeConvertIOVector = unsafeIOToST . liftM STVector
-    {-# NOINLINE unsafeConvertIOVector #-}
     thawVector = liftM STVector . unsafeIOToST . thawIOVector
     {-# INLINE thawVector #-}
     unsafeThawVector = liftM STVector . unsafeIOToST . unsafeThawIOVector
     {-# INLINE unsafeThawVector #-}
+    unsafeConvertIOVector = unsafeIOToST . liftM STVector
+    {-# INLINE unsafeConvertIOVector #-}

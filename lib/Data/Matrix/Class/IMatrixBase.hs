@@ -39,31 +39,12 @@ import Data.Elem.BLAS
 import BLAS.Internal ( checkedRow, checkedCol, checkMatVecMult, 
     checkMatMatMult )
 
-import Data.Matrix.Class
 import Data.Tensor.Class
 
 import Data.Vector.Dense
-import Data.Vector.Dense.ST( runSTVector )
-import Data.Matrix.Herm
-import Data.Matrix.TriBase
 import Data.Matrix.Dense.Base
-import Data.Matrix.Dense.ST( runSTMatrix )
 
 infixr 7 <*>, <**>
-
--- | A type class for immutable matrices.  The member functions of the
--- type class do not perform any checks on the validity of shapes or
--- indices, so in general their safe counterparts should be preferred.
-class (MatrixShaped a) => IMatrix a where
-    unsafeSApply :: (BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
-    unsafeSApplyMat :: (BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-
-    unsafeRow :: (Elem e) => a (m,n) e -> Int -> Vector n e
-    unsafeRow a = conj . unsafeCol (herm a)
-    {-# INLINE unsafeRow #-}
-    
-    unsafeCol :: (Elem e) => a (m,n) e -> Int -> Vector m e
-
 
 -- | Get the given row in a matrix.
 row :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector n e
@@ -74,16 +55,6 @@ row a = checkedRow (shape a) (unsafeRow a)
 col :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector m e
 col a = checkedCol (shape a) (unsafeCol a)
 {-# INLINE col #-}
-
--- | Get a list the row vectors in the matrix.
-rows :: (IMatrix a, Elem e) => a (m,n) e -> [Vector n e]
-rows a = [ unsafeRow a i | i <- [0..numRows a - 1] ]
-{-# INLINE rows #-}
-
--- | Get a list the column vectors in the matrix.
-cols :: (IMatrix a, Elem e) => a (m,n) e -> [Vector m e]
-cols a = [ unsafeCol a j | j <- [0..numCols a - 1] ]
-{-# INLINE cols #-}
 
 -- | Matrix multiplication by a vector.
 (<*>) :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
@@ -114,36 +85,6 @@ unsafeApply = unsafeSApply 1
 unsafeApplyMat :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 unsafeApplyMat = unsafeSApplyMat 1
 {-# INLINE unsafeApplyMat #-}
-
-instance IMatrix Matrix where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
-    {-# INLINE unsafeSApply #-}    
-    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
-    {-# INLINE unsafeSApplyMat #-}   
-    unsafeRow                 = unsafeRowView
-    {-# INLINE unsafeRow #-}   
-    unsafeCol                 = unsafeColView
-    {-# INLINE unsafeCol #-}
-
-instance IMatrix (Herm Matrix) where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
-    {-# INLINE unsafeSApply #-}    
-    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b    
-    {-# INLINE unsafeSApplyMat #-}   
-    unsafeRow a i = runSTVector $ unsafeGetRow a i
-    {-# INLINE unsafeRow #-}
-    unsafeCol a j = runSTVector $ unsafeGetCol a j
-    {-# INLINE unsafeCol #-}
-
-instance IMatrix (Tri Matrix) where
-    unsafeSApply alpha a x    = runSTVector $ unsafeGetSApply    alpha a x
-    {-# INLINE unsafeSApply #-}
-    unsafeSApplyMat alpha a b = runSTMatrix $ unsafeGetSApplyMat alpha a b
-    {-# INLINE unsafeSApplyMat #-}   
-    unsafeRow a i = runSTVector $ unsafeGetRow a i
-    {-# INLINE unsafeRow #-}
-    unsafeCol a j = runSTVector $ unsafeGetCol a j
-    {-# INLINE unsafeCol #-}
 
 {-# RULES
 "scale.apply/sapply"       forall k a x. a <*>  (k *> x) = sapply k a x

@@ -58,18 +58,18 @@ class (Elem a) => BLAS1 a where
 
 instance BLAS1 Double where
     dot _ _ = ddot
-    nrm2  = dnrm2
-    asum  = dasum
-    iamax = idamax
-    axpy  = daxpy
-    scal  = dscal
-    rotg  = drotg
-    rot   = drot
-    acxpy = daxpy
-    vmul n = dtbmv upper noTrans nonUnit n 0
-    vcmul  = vmul
-    vdiv n = dtbsv upper noTrans nonUnit n 0
-    vcdiv  = vdiv
+    nrm2    = dnrm2
+    asum    = dasum
+    iamax   = idamax
+    axpy    = daxpy
+    scal    = dscal
+    rotg    = drotg
+    rot     = drot
+    acxpy   = daxpy
+    vmul n  = dtbmv upper noTrans nonUnit n 0
+    vcmul   = vmul
+    vdiv n  = dtbsv upper noTrans nonUnit n 0
+    vcdiv   = vdiv
 
 instance BLAS1 (Complex Double) where
     dot conjX conjY n pX incX pY incY =
@@ -113,27 +113,24 @@ instance BLAS1 (Complex Double) where
             incY' = 2 * incY
         in case a of
             (ra :+  0) -> do
-                daxpy n ( ra) pXR incX' pYR incY'
-                daxpy n (-ra) pXI incX' pYI incY'
+                io <- daxpy n ( ra) pXR incX' pYR incY'
+                io `seq` daxpy n (-ra) pXI incX' pYI incY'
             (0  :+ ia) -> do
-                daxpy n ( ia) pXR incX' pYI incY'
-                daxpy n ( ia) pXI incX' pYR incY'
+                io <- daxpy n ( ia) pXR incX' pYI incY'
+                io `seq` daxpy n ( ia) pXI incX' pYR incY'
             _ -> go n pX pY
         where
-            go n' pX' pY'
-                | n' `seq` pX' `seq` pY' `seq` False = undefined
-                | n' <= 0 =
-                    return ()
-                | otherwise = do
-                    x <- peek pX'
-                    y <- peek pY'
-                    poke pY' (a * (conjugate x) + y)
-                    
-                    let n''  = n' - 1
-                        pX'' = pX' `advancePtr` incX
-                        pY'' = pY' `advancePtr` incY
-                        
-                    go n'' pX'' pY''
+            go n' pX' pY' | n' <= 0 = return ()
+                          | otherwise = do
+                                x  <- peek pX'
+                                y  <- peek pY'
+                                io <- poke pY' (a * (conjugate x) + y)
+                                
+                                let n''  = n' - 1
+                                    pX'' = pX' `advancePtr` incX
+                                    pY'' = pY' `advancePtr` incY
+                                    
+                                io `seq` go n'' pX'' pY''
         
     vmul n  = ztbmv upper noTrans   nonUnit n 0
     vcmul n = ztbmv upper conjTrans nonUnit n 0
