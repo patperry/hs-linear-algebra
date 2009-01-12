@@ -201,10 +201,10 @@ liftIOMatrix2 f a b =
 -- matrix.
 withIOMatrix :: IOMatrix (n,p) e -> (Ptr e -> IO a) -> IO a
 withIOMatrix (IOMatrix _ _ _ f p _) g = do
-    a  <- g p
+    a <- g p
     touchForeignPtr f
-    return $! a
-{-# NOINLINE withIOMatrix #-}
+    return a
+{-# INLINE withIOMatrix #-}
 
 -- | Create a new matrix of given shape, but do not initialize the elements.
 newIOMatrix_ :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)
@@ -430,9 +430,9 @@ getAssocsIOMatrix' a = do
 unsafeReadElemIOMatrix :: IOMatrix np e -> (Int,Int) -> IO e
 unsafeReadElemIOMatrix (IOMatrix h _ _ f p l) (i,j)
     | h == ConjTrans = do
-        e <- liftM conjugate $ peekElemOff p (i*l+j)
+        e <- peekElemOff p (i*l+j)
         touchForeignPtr f
-        return e
+        return $! conjugate e
     | otherwise = do
         e <- peekElemOff p (i+j*l)
         touchForeignPtr f

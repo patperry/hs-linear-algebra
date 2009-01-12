@@ -588,8 +588,8 @@ elemsVector x@(Vector (IOVector _ _ _ _ _))
     | otherwise = case x of { (Vector (IOVector _ n f p incX)) ->
     let end = p `advancePtr` (n*incX)
         go p' | p' == end = inlinePerformIO $ do
-                                io <- touchForeignPtr f
-                                io `seq` return []
+                                touchForeignPtr f
+                                return []
               | otherwise = let e  = inlinePerformIO (peek p')
                                 es = go (p' `advancePtr` incX)
                             in e `seq` (e:es)
@@ -721,7 +721,9 @@ instance BaseVector Vector where
     {-# INLINE unsafeIOVectorToVector #-}
 
 instance (Monad m) => ReadVector Vector m where
-    unsafePerformIOWithVector (Vector x) f = (return . unsafePerformIO) $ f x
+    unsafePerformIOWithVector (Vector x) f = (return . unsafePerformIO) $ do
+        r <- f x
+        return $! r
     {-# INLINE unsafePerformIOWithVector #-}    
     freezeVector (Vector x) = (return . unsafePerformIO) $ freezeIOVector x
     {-# INLINE freezeVector #-}

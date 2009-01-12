@@ -95,8 +95,8 @@ withIOVector :: IOVector n e -> (Ptr e -> IO a) -> IO a
 withIOVector (IOVector _ _ f p _) g = do
     a <- g p
     touchForeignPtr f
-    return $! a
-{-# NOINLINE withIOVector #-}
+    return a
+{-# INLINE withIOVector #-}
 
 newIOVector_ :: (Elem e) => Int -> IO (IOVector n e)
 newIOVector_ n
@@ -185,7 +185,8 @@ unsafeCopyIOVector (IOVector cy n fy py incy)
                    (IOVector cx _ fx px incx) = do
     io <- BLAS.copy cx cy n px incx py incy
     touchForeignPtr fx
-    io `seq` touchForeignPtr fy
+    touchForeignPtr fy
+    return io
 {-# INLINE unsafeCopyIOVector #-}
 
 unsafeSwapIOVector :: IOVector n e -> IOVector n e -> IO ()
@@ -193,7 +194,8 @@ unsafeSwapIOVector (IOVector cx n fx px incx)
                    (IOVector cy _ fy py incy) = do
     io <- BLAS.swap cx cy n px incx py incy
     touchForeignPtr fx
-    io `seq` touchForeignPtr fy
+    touchForeignPtr fy
+    return io
 {-# INLINE unsafeSwapIOVector #-}
 
 shapeIOVector :: IOVector n e -> Int
@@ -287,8 +289,9 @@ unsafeWriteElemIOVector :: IOVector n e -> Int -> e -> IO ()
 unsafeWriteElemIOVector (IOVector c _ f p incX) i e =
     let e' = if c == Conj then conjugate e else e
     in do
-        pokeElemOff p (i*incX) e'
+        io <- pokeElemOff p (i*incX) e'
         touchForeignPtr f
+        return io
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n Double -> Int -> Double -> IO () #-}
 {-# SPECIALIZE INLINE unsafeWriteElemIOVector :: IOVector n (Complex Double) -> Int -> Complex Double -> IO () #-}
 
@@ -298,8 +301,9 @@ unsafeModifyElemIOVector (IOVector c _ f p incX) i g =
         p' = p `advancePtr` (i*incX)
     in do
         e  <- peek p'
-        poke p' (g' e)
+        io <- poke p' (g' e)
         touchForeignPtr f
+        return io
 {-# SPECIALIZE INLINE unsafeModifyElemIOVector :: IOVector n Double -> Int -> (Double -> Double) -> IO () #-}
 {-# SPECIALIZE INLINE unsafeModifyElemIOVector :: IOVector n (Complex Double) -> Int -> (Complex Double -> Complex Double) -> IO () #-}
 
@@ -310,9 +314,10 @@ unsafeSwapElemsIOVector (IOVector _ _ f p incX) i1 i2 =
     in do
         e1  <- peek p1
         e2  <- peek p2
-        poke p2 e1
-        poke p1 e2
+        io1 <- poke p2 e1
+        io2 <- poke p1 e2
         touchForeignPtr f
+        io1 `seq` return io2
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n Double -> Int -> Int -> IO () #-}
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n (Complex Double) -> Int -> Int -> IO () #-}
                             
@@ -333,7 +338,8 @@ setZeroIOVector :: IOVector n e -> IO ()
 setZeroIOVector x@(IOVector _ n f p incX)
     | incX == 1 = do
         io <- clearArray p n
-        io `seq` touchForeignPtr f
+        touchForeignPtr f
+        return io
     | otherwise = 
         setConstantIOVector 0 x
 {-# INLINE setZeroIOVector #-}
@@ -354,7 +360,8 @@ setConstantIOVector e (IOVector c n f p incX) =
 doConjIOVector :: IOVector n e -> IO ()
 doConjIOVector (IOVector _ n f p incX) = do
     io <- BLAS.vconj n p incX
-    io `seq` touchForeignPtr f
+    touchForeignPtr f
+    return io
 {-# INLINE doConjIOVector #-}
 
 scaleByIOVector :: (BLAS1 e) => e -> IOVector n e -> IO ()
@@ -363,7 +370,8 @@ scaleByIOVector k (IOVector c n f p incX) =
     let k' = if c == Conj then conjugate k else k
     in do
         io <- BLAS.scal n k' p incX
-        io `seq` touchForeignPtr f
+        touchForeignPtr f
+        return io
 {-# INLINE scaleByIOVector #-}
                     
 shiftByIOVector :: e -> IOVector n e -> IO ()                    
