@@ -193,8 +193,8 @@ liftIOMatrix2 f a b =
                 ++ " shape mismatch") (show $ shape a) (show $ shape b)
         in go (vecsA a) (vecsB b)
         
-    rowViews c = [ unsafeRowViewIOMatrix c i | i <- [ 0..numRows c ] ]
-    colViews c = [ unsafeColViewIOMatrix c j | j <- [ 0..numCols c ] ]
+    rowViews c = [ unsafeRowViewIOMatrix c i | i <- [ 0..numRows c - 1] ]
+    colViews c = [ unsafeColViewIOMatrix c j | j <- [ 0..numCols c - 1] ]
 {-# INLINE liftIOMatrix2 #-}
 
 -- | Perform an 'IO' action with a pointer to the first element of the
