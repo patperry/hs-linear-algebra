@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Tensor.Class.MTensor
@@ -29,7 +29,7 @@ import Data.Ix
 import Data.Tensor.Class
 
 -- | Class for mutable read-only tensors.
-class (Shaped x i, Monad m) => ReadTensor x i m | x -> i where
+class (Shaped x i, Monad m) => ReadTensor x i m where
     -- | Get the number of elements stored in the tensor.
     getSize :: x n e -> m Int
     
@@ -94,7 +94,7 @@ readElem x i =
 {-# INLINE readElem #-}
 
 -- | Class for modifiable mutable tensors.
-class (ReadTensor x i m) => WriteTensor x i m | x -> m where
+class (ReadTensor x i m) => WriteTensor x i m where
     -- | Get the maximum number of elements that can be stored in the tensor.
     getMaxSize :: x n e -> m Int
     getMaxSize = getSize
