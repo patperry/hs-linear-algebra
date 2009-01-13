@@ -135,6 +135,34 @@ class (ReadTensor x i m) => WriteTensor x i m where
         unsafeWriteElem x i f
     {-# INLINE unsafeSwapElems #-}
     
+    -- | Set all of the elements of the tensor.  It almost equivalent to:
+    --
+    -- @
+    --     setElems x es = do
+    --          is <- getIndices x
+    --          zipWithM_ (unsafeWriteElem x) is es
+    -- @
+    --
+    -- execpt that it will call 'fail' if the input list does not have size
+    -- equal to the size of the tensor.
+    setElems :: x n e -> [e] -> m ()
+    setElems x = 
+        let go _ []     []     = return ()
+            go n (i:is) (e:es) = unsafeWriteElem x i e >> go (n+1) is es
+            go n []     _      = 
+                   fail $ "setElems <tensor of size " ++ show n ++ ">"
+                        ++ " <list of length at least " ++ show (n+1) ++ ">:"
+                        ++ " too many elements given."
+            go n _      []     = do
+                   s <- getSize x
+                   fail $ "setElems <tensor of size " ++ show s ++ ">"
+                        ++ " <list of length " ++ show n ++ ">:"
+                        ++ " not enough elements given."
+        in \es -> do
+            is <- getIndices x
+            go 0 is es
+    {-# INLINE setElems #-}
+    
     -- | Replace every element with its complex conjugate.
     doConj :: (BLAS1 e) => x n e -> m ()
     doConj = modifyWith conjugate
