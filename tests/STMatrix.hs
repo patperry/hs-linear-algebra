@@ -30,18 +30,18 @@ getSize_S a = ( size a, a )
 prop_GetSize = getSize `implements` getSize_S
 
 readElem_S a ij = ( a!ij, a )
-prop_ReadElem (Index2 ij mn) =
+prop_ReadElem (Index2 mn ij) =
     implementsFor mn (`readElem` ij) (`readElem_S` ij)
 
 canModifyElem_S a ij = ( True, a )
 prop_CanModifyElem ij = (`canModifyElem` ij) `implements` (`canModifyElem_S` ij)
 
 writeElem_S a ij e = ( (), a // [(ij,e)] )
-prop_WriteElem (Index2 ij mn) e =
+prop_WriteElem (Index2 mn ij) e =
     implementsFor mn (\a -> writeElem a ij e) (\a -> writeElem_S a ij e)
 
 modifyElem_S a ij f = writeElem_S a ij $ f (a!ij)
-prop_ModifyElem (Index2 ij mn) f =
+prop_ModifyElem (Index2 mn ij) f =
     implementsFor mn (\a -> modifyElem a ij f) (\a -> modifyElem_S a ij f)
 
 getIndices_S a = ( indices a, a )

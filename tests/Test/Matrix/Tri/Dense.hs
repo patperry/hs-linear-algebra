@@ -36,7 +36,7 @@ triMatrix :: (TestElem e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix (m
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
-        es <- Test.elements (m*n)
+        es <- Test.elems (m*n)
         let a  = matrix (m,n) $ zip ijs es
             a' = case d of
                     NonUnit -> a
@@ -64,7 +64,7 @@ instance (TestElem e) => Arbitrary (TriMatrix m n e) where
         (m,n) <- Test.shape
         a <- triMatrix u d (m,n)
         
-        junk <- Test.elements (m*n)
+        junk <- Test.elems (m*n)
         let ijs = [ (i,j) | i <- [0..(m-1)]
                           , j <- [0..(n-1)]
                           , (not . (isTriIndex u d)) (i,j) ]
@@ -116,7 +116,7 @@ data TriMatrixSV m n e =
                 (Vector m e) 
     deriving Show
     
-instance (TestElem e) => Arbitrary (TriMatrixSV m n e) where
+instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSV m n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)
@@ -134,7 +134,7 @@ data TriMatrixSM m k n e =
                 (Matrix (m,n) e) 
     deriving Show
     
-instance (TestElem e) => Arbitrary (TriMatrixSM m k n e) where
+instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSM m k n e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)

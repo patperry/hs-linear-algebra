@@ -39,7 +39,7 @@ prop_dim (x :: V) =
     dim x == length (elems x)
 prop_bounds (x :: V) =
     bounds x == (0, dim x - 1)
-prop_at (Index i n) =
+prop_at (Index n i) =
     forAll (Test.vector n) $ \(x :: V) -> 
         (x!i) === ((elems x) !! i)
 
@@ -88,10 +88,10 @@ prop_constantVector_dim (Nat n) e =
 prop_constantVector_elems (Nat n) (e :: E) =
     elems (constantVector n e :: V) === replicate n e
 
-prop_basisVector_dim (Index i n) =
+prop_basisVector_dim (Index n i) =
     dim (basisVector n i :: V) == n
     
-prop_basisVector_elems (Index i n) =
+prop_basisVector_elems (Index n i) =
     elems (basisVector n i :: V) == (replicate i 0) ++ [1] ++ (replicate (n-i-1) 0)
 
 

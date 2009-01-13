@@ -2,13 +2,15 @@
 module Driver (
     E,
     
-    Natural(..),
+    Nat(..),
+    Nat2(..),
+    Pos(..),
+    Pos2(..),
     Index(..),
-    Assocs(..),
-    
-    Natural2(..),
     Index2(..),
+    Assocs(..),
     Assocs2(..),
+    BandedAssocs(..),
     
     module Control.Arrow,
     module Control.Monad,
@@ -56,6 +58,8 @@ import Test.Matrix.Dense()
 import Test.Matrix.Banded()
 
 import Test.QuickCheck hiding ( vector )
+import Test.QuickCheck.BLAS( Nat(..), Nat2(..), Pos(..), Pos2(..), 
+    Index(..), Index2(..), Assocs(..), Assocs2(..), BandedAssocs(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Text.Printf
@@ -68,61 +72,6 @@ type E = Complex Double
 field = "Double"
 type E = Double
 #endif
-
-newtype Natural = Nat Int deriving (Eq,Show)
-instance Arbitrary Natural where
-    arbitrary = do
-        n <- arbitrary
-        return $ Nat (abs n)
-        
-    coarbitrary = undefined
-
-newtype Natural2 = Nat2 (Int,Int) deriving (Eq,Show)
-instance Arbitrary Natural2 where
-    arbitrary = liftM Nat2 Test.shape
-    coarbitrary = undefined
-
-data Index = Index Int Int deriving (Eq,Show)
-instance Arbitrary Index where
-    arbitrary = do
-        n <- arbitrary
-        i <- choose (0, abs n)
-        return $ Index i (abs n + 1)
-        
-    coarbitrary = undefined
-
-data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
-instance Arbitrary Index2 where
-    arbitrary = do
-        (m',n') <- Test.shape
-        i <- choose (0,m')
-        j <- choose (0,n')
-        return $ Index2 (i,j) (m'+1,n'+1)
-    
-    coarbitrary = undefined
-
-data Assocs = Assocs Int [(Int,E)] deriving (Eq,Show)
-instance Arbitrary Assocs where
-    arbitrary = do
-        (Nat n) <- arbitrary
-        (Nat s) <- if n == 0 then return (Nat 0) else arbitrary
-        ies <- replicateM s $ liftM2 (,) (choose (0,n-1)) arbitrary
-        return $ Assocs n ies
-        
-    coarbitrary = undefined
-
-data Assocs2 = Assocs2 (Int,Int) [((Int,Int),E)] deriving (Eq,Show)
-instance Arbitrary Assocs2 where
-    arbitrary = do
-        (Nat2 (m,n)) <- arbitrary
-        (Nat s) <- if m == 0 || n == 0 then return (Nat 0) else arbitrary
-        ijes <- replicateM s $ liftM2 (,) (liftM2 (,) (choose (0,m-1)) 
-                                                      (choose (0,n-1)))
-                                          arbitrary
-        return $ Assocs2 (m,n) ijes
-        
-    coarbitrary = undefined
-
 
 ------------------------------------------------------------------------
 --

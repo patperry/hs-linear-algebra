@@ -27,14 +27,14 @@ import qualified Test.QuickCheck.BLAS as Test
 import Data.Vector.Dense ( Vector )
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Banded
-import Data.Elem.BLAS ( BLAS1, BLAS3 )
+import Data.Elem.BLAS ( Elem, BLAS1, BLAS3 )
 
 import Data.Matrix.Tri ( Tri, triFromBase )
 import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
 import Unsafe.Coerce
 
-listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded :: (Elem e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
 listsFromBanded a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
@@ -53,13 +53,13 @@ listsFromBanded a = ( (m,n)
 triBanded :: (TestElem e) => UpLoEnum -> DiagEnum -> Int -> Int -> Gen (Banded (n,n) e)
 triBanded Upper NonUnit n k = do
     a <- triBanded Upper Unit n k
-    d <- Test.elements n
+    d <- Test.elems n
     let (_,_,(_:ds)) = listsFromBanded a
     return $ listsBanded (n,n) (0,k) (d:ds)
 
 triBanded Lower NonUnit n k = do
     a <- triBanded Lower Unit n k
-    d <- Test.elements n
+    d <- Test.elems n
     let (_,_,ds) = listsFromBanded a
         ds' = (init ds) ++ [d]
     return $ listsBanded (n,n) (k,0) ds'
@@ -71,7 +71,7 @@ triBanded Upper Unit n k = do
     a <- triBanded Upper Unit n (k-1)
     let (_,_,ds) = listsFromBanded a
     
-    d <- Test.elements (n-k) >>= \xs -> return $ xs ++ replicate k 0
+    d <- Test.elems (n-k) >>= \xs -> return $ xs ++ replicate k 0
     
     return $ listsBanded (n,n) (0,k) $ ds ++ [d]
     
@@ -79,7 +79,7 @@ triBanded Lower Unit n k = do
     a <- triBanded Lower Unit n (k-1)
     let (_,_,ds) = listsFromBanded a
 
-    d <- Test.elements (n-k) >>= \xs -> return $ replicate k 0 ++ xs
+    d <- Test.elems (n-k) >>= \xs -> return $ replicate k 0 ++ xs
     
     return $ listsBanded (n,n) (k,0) $ [d] ++ ds
     
@@ -96,8 +96,8 @@ instance (TestElem e) => Arbitrary (TriBanded n e) where
         a <- triBanded u d n k
 
         l    <- if n == 0 then return 0 else choose (0,n-1)
-        junk <- replicateM l $ Test.elements n
-        diagJunk <- Test.elements n
+        junk <- replicateM l $ Test.elems n
+        diagJunk <- Test.elems n
         let (_,_,ds) = listsFromBanded a
             t = triFromBase u d $ case (u,d) of 
                     (Upper,NonUnit) -> 
@@ -128,7 +128,7 @@ instance (TestElem e) => Arbitrary (TriBandedMV n e) where
 data TriBandedMM m n e = 
     TriBandedMM (Tri Banded (m,m) e) (Banded (m,m) e) (Matrix (m,n) e) deriving Show
 
-instance (TestElem e) => Arbitrary (TriBandedMM m n e) where
+instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedMM m n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         (_,n) <- Test.shape
@@ -140,7 +140,7 @@ instance (TestElem e) => Arbitrary (TriBandedMM m n e) where
 data TriBandedSV n e = 
     TriBandedSV (Tri Banded (n,n) e) (Vector n e) deriving (Show)
     
-instance (TestElem e) => Arbitrary (TriBandedSV n e) where
+instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedSV n e) where
     arbitrary = do
         (TriBanded t a) <- arbitrary
         if any (== 0) (elems $ diagBanded a 0)
@@ -157,7 +157,7 @@ data TriBandedSM m n e =
     TriBandedSM (Tri Banded (m,m) e) (Matrix (m,n) e) 
     deriving (Show)
     
-instance (TestElem e) => Arbitrary (TriBandedSM m n e) where
+instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedSM m n e) where
     arbitrary = do
         (TriBandedSV t _) <- arbitrary
         (_,n) <- Test.shape

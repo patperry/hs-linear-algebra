@@ -17,28 +17,58 @@ module Test.QuickCheck.BLAS (
     TestElem(..),
     
     -- * Generating random objects
+    -- ** Shapes
+    dim,
+    shape,
+
+    -- ** Indices
+    index,
+    index2,
+    
     -- ** Elements
-    elements,
-    realElements,
+    elem,
+    realElem,
+    elems,
+    realElems,
+    
+    -- ** Association lists
+    assocs,
+    assocs2,
+    bandedAssocs,
     
     -- ** Vectors
-    dim,
-    index,
     vector,
     
     -- ** Dense matrices
-    shape,
-    index2,
     matrix,
+    hermMatrix,
+    triMatrix,
 
     -- ** Banded matrices
     bandwidths,
     banded,
     bandedWith,
+    hermBanded,
+    triBanded,
+    
+    -- * Convenience types
+    Nat(..),
+    Nat2(..),
+    Pos(..),
+    Pos2(..),
+    Index(..),
+    Index2(..),
+    Assocs(..),
+    Assocs2(..),
+    BandedAssocs(..),
+    
     ) where
 
+import Prelude hiding ( elem )
+
+import BLAS.Types( UpLoEnum(..), DiagEnum(..) )
 import Control.Monad
-import Data.Maybe( fromJust )
+import Data.Maybe( fromJust, mapMaybe )
 
 import Test.QuickCheck hiding ( vector, elements )
 import qualified Test.QuickCheck as QC
@@ -47,10 +77,12 @@ import Data.Vector.Dense( Vector, listVector, subvectorWithStride,
     conj )
 import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix )
 import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
+import Data.Matrix.Herm
+import Data.Matrix.Tri
 import Data.Elem.BLAS
 
 -- | Element types that can be tested with QuickCheck properties.
-class (BLAS3 e, Arbitrary e) => TestElem e where
+class (Elem e, Arbitrary e) => TestElem e where
     -- | Inicates whether or not the value should be used in tests.  For
     -- 'Double's, @isTestElemElem e@ is defined as 
     -- @not (isNaN e || isInfinite e || isDenormalized e)@.
@@ -69,19 +101,25 @@ instance Arbitrary (Complex Double) where
 instance TestElem (Complex Double) where
     isTestElemElem (x :+ y) = isTestElemElem x && isTestElemElem y
     {-# INLINE isTestElemElem #-}
-    
+
+-- | Generate a random element.
+elem :: (TestElem e) => Gen e
+elem = do
+    e <- arbitrary
+    if isTestElemElem e then return e
+                        else elem
+
+-- | Generate a random element that has no imaginary part.
+realElem :: (TestElem e) => Gen e
+realElem = liftM fromReal elem
+
 -- | Generate a list of elements suitable for testing with.
-elements :: (TestElem e) => Int -> Gen [e]
-elements n = do
-    es <- liftM (filter isTestElemElem) $ QC.vector n
-    let n' = length es
-    if n' < n
-        then liftM (es ++) $ elements (n-n')
-        else return es
+elems :: (TestElem e) => Int -> Gen [e]
+elems n = replicateM n elem
 
 -- | Generate a list of elements for testing that have no imaginary part.
-realElements :: (TestElem e) => Int -> Gen [e]
-realElements n = liftM (map fromReal) $ elements n
+realElems :: (TestElem e) => Int -> Gen [e]
+realElems n = replicateM n realElem
 
 -- | Get an appropriate dimension for a random vector
 dim :: Gen Int
@@ -119,7 +157,7 @@ instance (TestElem e) => Arbitrary (SubVector n e) where
 
 rawVector :: (TestElem e) => Int -> Gen (Vector n e)
 rawVector n = do
-    es <- elements n
+    es <- elems n
     return $ listVector n es
 
 conjVector :: (TestElem e) => Int -> Gen (Vector n e)
@@ -159,9 +197,24 @@ matrix mn = frequency [ (3, rawMatrix mn)
                                  return $ submatrix a ij mn)
                       ]
 
+-- | Generate a triangular dense matrix.
+triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix (n,p) e)
+triMatrix mn = do
+    a <- matrix mn
+    u <- QC.elements [ Lower, Upper  ]
+    d <- QC.elements [ Unit, NonUnit ]
+    return $ Tri u d a
+    
+-- | Generate a Hermitian dense matrix.
+hermMatrix :: (TestElem e) => Int -> Gen (Herm Matrix (n,n) e)
+hermMatrix n = do
+    a <- matrix (n,n)
+    u <- QC.elements [ Lower, Upper ]
+    return $ Herm u a
+
 rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 rawMatrix (m,n) = do
-    es <- elements (m*n)
+    es <- elems (m*n)
     return $ listMatrix (m,n) es
 
 hermedMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
@@ -214,6 +267,23 @@ bandedWith lu mn = frequency [ (3, rawBanded mn lu)
                              , (2, hermedBanded mn lu)
                              ]
 
+-- | Generate a triangular banded matrix.
+triBanded :: (TestElem e) => Int -> Gen (Tri Banded (n,n) e)
+triBanded n = do
+    a <- banded (n,n)
+    u <- QC.elements [ Lower, Upper  ]
+    d <- QC.elements [ Unit, NonUnit ]
+    return $ Tri u d a
+    
+-- | Generate a Hermitian banded matrix.
+hermBanded :: (TestElem e) => Int -> Gen (Herm Banded (n,n) e)
+hermBanded n = do
+    a <- banded (n,n)
+    u <- QC.elements [ Lower, Upper ]
+    return $ Herm u a
+
+
+
 rawBanded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
 rawBanded (m,n) (kl,ku) = 
@@ -231,5 +301,119 @@ hermedBanded (m,n) (kl,ku) = do
     x <- rawBanded (n,m) (ku,kl)
     return $ herm x
 
+-- | Generate an associations list for a vector of the given dimension.
+assocs :: (TestElem e) => Int -> Gen [(Int,e)]
+assocs n | n == 0    = return []
+         | otherwise = do
+    (Nat l) <- arbitrary
+    is <- replicateM l $ index n
+    es <- elems l
+    return $ zip is es
+    
+-- | Generate an associations list for a matrix of the given shape.
+assocs2 :: (TestElem e) => (Int,Int) -> Gen [((Int,Int),e)]
+assocs2 (m,n) | m*n == 0  = return []
+              | otherwise = do
+    (Nat l) <- arbitrary
+    is <- replicateM l $ index2 (m,n)
+    es <- elems l
+    return $ zip is es
 
+-- | Generate an associations list for a banded matrix of the given shape
+-- and bandwidths.
+bandedAssocs :: (TestElem e) => (Int,Int) -> (Int,Int) -> Gen [((Int,Int),e)]
+bandedAssocs (m,n) (kl,ku) | m*n == 0  = return []
+                           | otherwise = do
+    (Nat l) <- arbitrary
+    ijs     <- replicateM l $ index2 (kl+1+ku,n)
+    let ijs' = mapMaybe (\(i,j) -> let i' = i - j - ku in
+                                   if 0 <= i' && i' < m then Just (i',j)
+                                                        else Nothing    ) ijs
+    es      <- replicateM l elem
+    return $ zip ijs' es
 
+-- | A non-negative integer.
+newtype Nat = Nat Int deriving (Eq,Show)
+instance Arbitrary Nat where
+    arbitrary           = liftM Nat dim
+    coarbitrary (Nat n) = coarbitrary n
+
+-- | A pair of non-negative integers
+newtype Nat2 = Nat2 (Int,Int) deriving (Eq,Show)
+instance Arbitrary Nat2 where
+    arbitrary            = liftM Nat2 shape
+    coarbitrary (Nat2 n) = coarbitrary n
+
+-- | A positive integer.
+newtype Pos = Pos Int deriving (Eq,Show)
+instance Arbitrary Pos where
+    arbitrary           = liftM (Pos . (1+)) dim
+    coarbitrary (Pos n) = coarbitrary n
+
+-- | A pair of positive integers
+newtype Pos2 = Pos2 (Int,Int) deriving (Eq,Show)
+instance Arbitrary Pos2 where
+    arbitrary = do
+        (m,n) <- shape
+        return $ Pos2 (m+1,n+1)
+        
+    coarbitrary (Pos2 mn) =
+        coarbitrary mn
+
+-- | A dimension and a valid index for it.
+data Index = Index Int Int deriving (Eq,Show)
+instance Arbitrary Index where
+    arbitrary = do
+        n <- dim
+        let n' = n+1
+        i <- index n'
+        return $ Index n' i
+        
+    coarbitrary (Index n i) = 
+        coarbitrary (n,i)
+
+-- | A shape and a valid index for it.
+data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
+instance Arbitrary Index2 where
+    arbitrary = do
+        (m,n) <- shape
+        let mn' = (m+1,n+1)
+        ij <- index2 mn'
+        return $ Index2 mn' ij
+        
+    coarbitrary (Index2 mn ij) = 
+        coarbitrary (mn,ij)
+
+-- | A dimension and an associations list.
+data Assocs e = Assocs Int [(Int,e)] deriving (Eq,Show)
+instance (TestElem e) => Arbitrary (Assocs e) where
+    arbitrary = do
+        n   <- dim
+        ies <- assocs n
+        return $ Assocs n ies
+        
+    coarbitrary (Assocs n ies) =
+        coarbitrary (n,ies)
+        
+-- | A shape and an associations list.
+data Assocs2 e = Assocs2 (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
+instance (TestElem e) => Arbitrary (Assocs2 e) where
+    arbitrary = do
+        n    <- shape
+        ies  <- assocs2 n
+        return $ Assocs2 n ies
+        
+    coarbitrary (Assocs2 n ies) =
+        coarbitrary (n,ies)
+        
+-- | A shape, bandwidths, and an associations list.
+data BandedAssocs e = BandedAssocs (Int,Int) (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
+instance (TestElem e) => Arbitrary (BandedAssocs e) where
+    arbitrary = do
+        mn  <- shape
+        bw  <- bandwidths mn
+        ies <- bandedAssocs mn bw
+        return $ BandedAssocs mn bw ies
+        
+    coarbitrary (BandedAssocs mn bw ies) =
+        coarbitrary (mn,bw,ies)

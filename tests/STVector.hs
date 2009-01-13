@@ -38,18 +38,18 @@ getSize_S x = ( length x, x )
 prop_GetSize = getSize `implements` getSize_S
 
 readElem_S x i = ( x !! i, x )
-prop_ReadElem (Index i n) =
+prop_ReadElem (Index n i) =
     implementsFor n (`readElem` i) (`readElem_S` i)
 
 canModifyElem_S x i = ( True, x )
 prop_CanModifyElem i = (`canModifyElem` i) `implements` (`canModifyElem_S` i)
 
 writeElem_S x i e = ( (), take i x ++ [e] ++ drop (i+1) x )
-prop_WriteElem (Index i n) e =
+prop_WriteElem (Index n i) e =
     implementsFor n (\x -> writeElem x i e) (\x -> writeElem_S x i e)
 
 modifyElem_S x i f = writeElem_S x i $ f (x!!i)
-prop_ModifyElem (Index i n) f =
+prop_ModifyElem (Index n i) f =
     implementsFor n (\x -> modifyElem x i f) (\x -> modifyElem_S x i f)
 
 getIndices_S x = ( [0..(length x - 1)], x )
@@ -98,11 +98,11 @@ setConstant_S e x = ( (), newConstantVector_S (length x) e )
 prop_SetConstant e = setConstant e `implements` setConstant_S e
 
 newBasisVector_S n i = replicate i 0 ++ [1] ++ replicate (n-i-1) 0
-prop_NewBasisVector (Index i n) = 
+prop_NewBasisVector (Index n i) = 
     newBasisVector n i `equivalent` newBasisVector_S n i
 
 setBasisVector_S i x = ( (), newBasisVector_S (length x) i )
-prop_SetBasisVector (Index i n) = 
+prop_SetBasisVector (Index n i) = 
     implementsFor n (setBasisVector i) (setBasisVector_S i)
 
 

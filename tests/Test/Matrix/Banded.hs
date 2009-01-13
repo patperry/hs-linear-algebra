@@ -74,7 +74,7 @@ instance (TestElem e) => Arbitrary (ListsBanded e) where
                       endPad   = max (m-n+i) 0
                       len      = m - (beginPad+endPad)
                   in do
-                      xs <- Test.elements len
+                      xs <- Test.elems len
                       return $ replicate beginPad 0 ++ xs ++ replicate endPad 0
          
         return $ ListsBanded (m,n) (kl,ku) ds

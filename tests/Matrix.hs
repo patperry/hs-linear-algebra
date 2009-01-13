@@ -11,7 +11,7 @@ import Data.Matrix.Dense
 import Data.Vector.Dense
 
 import Test.Matrix.Dense hiding ( matrix )
-        
+import qualified Test.QuickCheck.BLAS as Test
 
 type V = Vector Int E
 type M = Matrix (Int,Int) E
@@ -46,22 +46,22 @@ prop_identityMatrix_shape (Nat2 mn) =
     shape (identityMatrix mn :: M) == mn
 prop_identityMatrix_diag (Nat2 (m,n)) =
     diag (identityMatrix (m,n) :: M) 0 === (constantVector (min m n) 1)
-prop_identityMatrix_row (Index i m) (Index _ n) =
+prop_identityMatrix_row (Index m i) (Index _ n) =
     if i < min m n 
         then row (identityMatrix (m,n) :: M) i === basisVector n i
         else row (identityMatrix (m,n) :: M) i === zeroVector n
-prop_identityMatrix_col (Index _ m) (Index j n) =
+prop_identityMatrix_col (Pos m) (Index n j) =
     if j < min m n
         then col (identityMatrix (m,n) :: M) j === basisVector m j
         else col (identityMatrix (m,n) :: M) j === zeroVector m
 
-prop_replace_elems (a :: M) (Assocs2 _ ijes) =
-    let ijes' = filter (\((i,j),_) -> i < numRows a && j < numCols a) ijes
-        a'   = a // ijes'
-        mn   = (numRows a - 1, numCols a - 1)
-    in and $ zipWith (\(ij1,e1) (ij2,e2) -> (ij1 == ij2) && (e1 === e2))
-                     (sortBy (comparing fst) $ assocs a')
-                     (Array.assocs $ (Array.//) (Array.array ((0,0),mn) $ assocs a) ijes')
+prop_replace_elems (a :: M) =
+    forAll (Test.assocs2 (shape a)) $ \ies ->
+        let a' = a // ies
+            mn = (numRows a - 1, numCols a - 1)
+        in sortBy (comparing fst) (assocs a')
+           ===
+           (Array.assocs $ (Array.//) (Array.array ((0,0),mn) $ assocs a) ies)
 
 
 prop_submatrix_shape (SubMatrix a ij mn) =

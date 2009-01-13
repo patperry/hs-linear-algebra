@@ -27,7 +27,7 @@ import Data.Matrix.Banded
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Herm
 
-listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded :: (Elem e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
 listsFromBanded a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
@@ -57,13 +57,13 @@ hermBanded n k
     | k < 0 = 
         error $ "hermBanded: k must be non-negative"
     | k == 0 = do
-        d <- Test.realElements n
+        d <- Test.realElems n
         return $ listsBanded (n,n) (0,0) [d]
     | otherwise = do
         a <- hermBanded n (k-1)
         let (_,_,ds) = listsFromBanded a
         
-        d <- Test.elements (n-k)
+        d <- Test.elems (n-k)
         let d'  = map conjugate d
             pad = replicate k 0
             ds' = [pad ++ d] ++ ds ++ [d' ++ pad]
@@ -83,7 +83,7 @@ instance (TestElem e) => Arbitrary (HermBanded n e) where
             
         a <- hermBanded n k
             
-        junk <- replicateM l $ Test.elements n
+        junk <- replicateM l $ Test.elems n
         let (_,_,ds) = listsFromBanded a
             (u ,b ) = (Upper, listsBanded (n,n) (l,k) $ junk ++ (drop k ds))
             (u',b') = (Lower, listsBanded (n,n) (k,l) $ (take (k+1) ds) ++ junk)

@@ -20,20 +20,23 @@ import Test.QuickCheck hiding ( Test.vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
-import Data.Elem.BLAS ( BLAS3 )
+import Data.Elem.BLAS ( Elem )
 
-import Data.Vector.Dense hiding ( Test.vector )
-import Data.Matrix.Dense hiding ( Test.matrix )
+import Data.Vector.Dense hiding ( vector )
+import Data.Matrix.Dense hiding ( matrix )
+import Data.Matrix.Dense.ST
 import Data.Matrix.Herm
 
-
-
-hermMatrix :: (TestElem e) => Int -> Gen (Matrix (n,n) e)
-hermMatrix n  = do
+hermRawMatrix :: (TestElem e) => Int -> Gen (Matrix (n,n) e)
+hermRawMatrix n = do
     a <- Test.matrix (n,n)
-    let h = (a + herm a)
-    elements [ h, herm h ]
-
+    d <- Test.realElems n
+    return $ runSTMatrix $ do
+        h <- unsafeThawMatrix a
+        sequence_ [ writeElem h (i,j) (a!(j,i)) 
+                  | i <- [ 0..n-1 ], j <- [ 0..i-1 ] ]
+        setElems (diagView h 0) d
+        return h
 
 data HermMatrix n e = 
     HermMatrix (Herm Matrix (n,n) e)
@@ -43,9 +46,9 @@ data HermMatrix n e =
 instance (TestElem e) => Arbitrary (HermMatrix n e) where
     arbitrary = do
         n <- liftM fst Test.shape
-        a <- hermMatrix n
+        a <- hermRawMatrix n
         
-        junk <- Test.elements (n*n)
+        junk <- Test.elems (n*n)
         let (u ,b ) = (Upper, a // zip (filter (uncurry (>)) $ indices a) junk)
             (u',b') = (Lower, a // zip (filter (uncurry (<)) $ indices a) junk)
 
