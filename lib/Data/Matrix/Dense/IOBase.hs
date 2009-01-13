@@ -1,5 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeFamilies, 
-        Rank2Types, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts,
+        TypeFamilies, Rank2Types, GADTs #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
