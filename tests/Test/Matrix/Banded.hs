@@ -35,7 +35,7 @@ import Data.Elem.BLAS ( Elem, BLAS3 )
 
 banded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
-banded = Test.banded
+banded mn lu = Test.bandedWith lu mn
 
 instance (TestElem e) => Arbitrary (Banded (m,n) e) where
     arbitrary = do

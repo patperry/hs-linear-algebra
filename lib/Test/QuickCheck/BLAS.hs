@@ -23,15 +23,18 @@ module Test.QuickCheck.BLAS (
     
     -- ** Vectors
     dim,
+    index,
     vector,
     
     -- ** Dense matrices
     shape,
+    index2,
     matrix,
 
     -- ** Banded matrices
     bandwidths,
     banded,
+    bandedWith,
     ) where
 
 import Control.Monad
@@ -83,6 +86,14 @@ realElements n = liftM (map fromReal) $ elements n
 -- | Get an appropriate dimension for a random vector
 dim :: Gen Int
 dim = liftM abs arbitrary
+
+-- | Given a dimension generate a valid index.  The dimension must be positive.
+index :: Int -> Gen Int
+index n | n <= 0 = 
+            error $  "index " ++ (show n) ++ ":"
+                  ++ " dimension must be positive (QuickCheck error)"
+        | otherwise =
+            choose (0,n-1)
 
 -- | Generate a random vector of the given size.
 vector :: (TestElem e) => Int -> Gen (Vector n e)
@@ -136,8 +147,12 @@ shape = sized $ \s ->
     let s' = (ceiling . sqrt) (fromIntegral s :: Double)
     in liftM2 (,) (choose (0,s')) (choose (0,1+s'))
 
+-- | Given a shape generate a valid index.  The shape must be have nonzero size.
+index2 :: (Int,Int) -> Gen (Int,Int)
+index2 (m,n) = liftM2 (,) (index m) (index n)
+
 -- | Generate a random matrix of the given shape.
-matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
+matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (n,p) e)
 matrix mn = frequency [ (3, rawMatrix mn)  
                       , (2, hermedMatrix mn)
                       , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
@@ -186,15 +201,21 @@ bandwidth n = if n == 0 then return 0 else choose (0,n-1)
 bandwidths :: (Int,Int) -> Gen (Int,Int)
 bandwidths (m,n) = liftM2 (,) (bandwidth m) (bandwidth n)
 
--- | Generate a random banded matrix.
-banded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
-banded mn lu = frequency [ (3, rawBanded mn lu)  
-                         , (2, hermedBanded mn lu)
-                         ]
+-- | Generate a random banded matrix of the given shape.
+banded :: (TestElem e) => (Int,Int) -> Gen (Banded (n,p) e)
+banded mn = do
+    lu <- bandwidths mn
+    bandedWith lu mn
+
+-- | Generate a random banded matrix with the given bandwidths.
+bandedWith :: (TestElem e) 
+           => (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
+bandedWith lu mn = frequency [ (3, rawBanded mn lu)  
+                             , (2, hermedBanded mn lu)
+                             ]
 
 rawBanded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
+    (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
 rawBanded (m,n) (kl,ku) = 
     let bw = kl+ku+1
     in do
@@ -205,7 +226,7 @@ rawBanded (m,n) (kl,ku) =
         return $ fromJust (maybeBandedFromMatrixStorage (m,n) (kl,ku) a)
 
 hermedBanded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
+    (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
 hermedBanded (m,n) (kl,ku) = do
     x <- rawBanded (n,m) (ku,kl)
     return $ herm x
