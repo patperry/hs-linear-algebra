@@ -5,17 +5,14 @@ import Driver
 
 import Vector     ( tests_Vector     )
 import STVector   ( tests_STVector   )
-{-
 import Matrix     ( tests_Matrix     )
 import STMatrix   ( tests_STMatrix   )
--}
-{-
 import HermMatrix ( tests_HermMatrix )
 import TriMatrix  ( tests_TriMatrix  )
 import Banded     ( tests_Banded     )
 import HermBanded ( tests_HermBanded )
 import TriBanded  ( tests_TriBanded  )
--}
+
 
 main :: IO ()
 main = do
@@ -40,11 +37,11 @@ main = do
 
     tests = [ ("Vector"      , tests_Vector)
             , ("STVector"    , tests_STVector)
-            {-, ("Matrix"      , tests_Matrix)
-            , ("STMatrix"    , tests_STMatrix) -}{-
+            , ("Matrix"      , tests_Matrix)
+            , ("STMatrix"    , tests_STMatrix)
             , ("Herm Matrix" , tests_HermMatrix)
             , ("Tri Matrix"  , tests_TriMatrix)
             , ("Banded"      , tests_Banded)
             , ("Herm Banded" , tests_HermBanded)
-            , ("Tri Banded"  , tests_TriBanded)-}
+            , ("Tri Banded"  , tests_TriBanded)
             ]
