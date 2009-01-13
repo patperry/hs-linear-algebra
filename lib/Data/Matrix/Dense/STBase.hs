@@ -131,7 +131,6 @@ instance MMatrix (Herm (STMatrix s)) (ST s) where
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
 
-
 instance MMatrix (Tri (STMatrix s)) (ST s) where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
     {-# INLINE unsafeDoSApplyAdd #-}
@@ -150,7 +149,7 @@ instance MMatrix (Tri (STMatrix s)) (ST s) where
     unsafeGetCol = unsafeGetColTriMatrix
     {-# INLINE unsafeGetCol #-}
 
-instance MSolve  (Tri (STMatrix s)) (ST s) where
+instance MSolve (Tri (STMatrix s)) (ST s) where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix
     {-# INLINE unsafeDoSSolve #-}
     unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
