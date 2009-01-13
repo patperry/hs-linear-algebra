@@ -16,7 +16,9 @@ module Driver (
     module Control.Monad,
     module Control.Monad.ST,
     
-    module Data.AEq,
+    AEq,
+    (===),
+    (~==),
     module Data.Function,
     module Data.Ix,
     module Data.List,
@@ -41,7 +43,8 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.ST
 
-import Data.AEq
+import Data.AEq( AEq )
+import qualified Data.AEq as AEq
 import Data.Complex
 import Data.Ix
 import Data.Function
@@ -72,6 +75,15 @@ type E = Complex Double
 field = "Double"
 type E = Double
 #endif
+
+infix 4 ===, ~==
+
+x === y | (AEq.===) x y = True
+        | otherwise = trace (printf "expected `%s', but got `%s'" (show y) (show x)) False
+
+x ~== y | (AEq.~==) x y = True
+        | otherwise = trace (printf "expected `%s', but got `%s'" (show y) (show x)) False
+
 
 ------------------------------------------------------------------------
 --
