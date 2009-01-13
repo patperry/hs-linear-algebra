@@ -46,7 +46,7 @@ newtype STMatrix s np e = STMatrix (IOMatrix np e)
 -- an immutable matrix for later perusal. This function avoids copying
 -- the matrix before returning it - it uses unsafeFreezeMatrix internally,
 -- but this wrapper is a safe interface to that function. 
-runSTMatrix :: (forall s . ST s (STMatrix s n e)) -> Matrix n e
+runSTMatrix :: (forall s . ST s (STMatrix s (n,p) e)) -> Matrix (n,p) e
 runSTMatrix mx = 
     runST $ mx >>= \(STMatrix x) -> return (Matrix x)
 
@@ -126,8 +126,6 @@ instance MMatrix (Herm (STMatrix s)) (ST s) where
     {-# INLINE getRows #-}
     getCols = getColsST
     {-# INLINE getCols #-}
-    unsafeGetRow = unsafeGetRowHermMatrix
-    {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
 

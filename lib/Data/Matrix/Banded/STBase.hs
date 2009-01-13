@@ -50,7 +50,7 @@ newtype STBanded s np e = STBanded (IOBanded np e)
 -- an immutable one for later perusal. This function avoids copying
 -- the matrix before returning it - it uses unsafeFreezeBanded internally,
 -- but this wrapper is a safe interface to that function. 
-runSTBanded :: (forall s . ST s (STBanded s n e)) -> Banded n e
+runSTBanded :: (forall s . ST s (STBanded s (n,p) e)) -> Banded (n,p) e
 runSTBanded mx = 
     runST $ mx >>= \(STBanded x) -> return (Banded x)
 
@@ -143,6 +143,17 @@ instance ReadBanded (STBanded s) (ST s) where
     {-# INLINE freezeBanded #-}
     unsafeFreezeBanded (STBanded a) = unsafeIOToST $ unsafeFreezeIOBanded a
     {-# INLINE unsafeFreezeBanded #-}
+
+instance WriteBanded (STBanded s) (ST s) where
+    newBanded_ mn bw = unsafeIOToST $ liftM STBanded $ IO.newIOBanded_ mn bw
+    {-# INLINE newBanded_ #-}
+    thawBanded = unsafeIOToST . liftM STBanded . thawIOBanded
+    {-# INLINE thawBanded #-}
+    unsafeThawBanded = unsafeIOToST . liftM STBanded . unsafeThawIOBanded
+    {-# INLINE unsafeThawBanded #-}
+    unsafeConvertIOBanded ioa = unsafeIOToST $ liftM STBanded ioa
+    {-# INLINE unsafeConvertIOBanded #-}
+        
 
 instance MMatrix (STBanded s) (ST s) where
     unsafeDoSApplyAdd    = gbmv
