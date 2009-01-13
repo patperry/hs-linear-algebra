@@ -75,8 +75,12 @@ import qualified Test.QuickCheck as QC
 
 import Data.Vector.Dense( Vector, listVector, subvectorWithStride,
     conj )
-import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix )
+import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
+import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
+    unsafeThawMatrix )
 import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
+import Data.Matrix.Banded.ST( runSTBanded, unsafeThawBanded, 
+    diagViewBanded )
 import Data.Matrix.Herm
 import Data.Matrix.Tri
 import Data.Elem.BLAS
@@ -209,8 +213,13 @@ triMatrix mn = do
 hermMatrix :: (TestElem e) => Int -> Gen (Herm Matrix (n,n) e)
 hermMatrix n = do
     a <- matrix (n,n)
+    d <- realElems n
+    let a' = runSTMatrix $ do
+                 ma <- unsafeThawMatrix a
+                 setElems (diagView ma 0) d
+                 return ma
     u <- QC.elements [ Lower, Upper ]
-    return $ Herm u a
+    return $ Herm u a'
 
 rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
 rawMatrix (m,n) = do
@@ -279,10 +288,13 @@ triBanded n = do
 hermBanded :: (TestElem e) => Int -> Gen (Herm Banded (n,n) e)
 hermBanded n = do
     a <- banded (n,n)
+    d <- realElems n
+    let a' = runSTBanded $ do
+                 ma <- unsafeThawBanded a
+                 setElems (diagViewBanded ma 0) d
+                 return ma
     u <- QC.elements [ Lower, Upper ]
-    return $ Herm u a
-
-
+    return $ Herm u a'    
 
 rawBanded :: (TestElem e) => 
     (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
