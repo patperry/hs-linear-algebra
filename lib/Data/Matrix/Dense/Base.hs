@@ -135,15 +135,15 @@ class ( BaseMatrix a,
         MSolve (Tri a) m,
         ReadVector (VectorView a) m ) => ReadMatrix a m where
 
-    -- | Cast the matrix to an 'IOMatrix', perform an @IO@ action, and
-    -- convert the @IO@ action to an action in the monad @m@.  This
-    -- operation is /very/ unsafe.
-    unsafePerformIOWithMatrix :: a (n,p) e -> (IOMatrix (n,p) e -> IO r) -> m r
-
     -- | Convert a mutable matrix to an immutable one by taking a complete
     -- copy of it.
     freezeMatrix :: a (n,p) e -> m (Matrix (n,p) e)
     unsafeFreezeMatrix :: a (n,p) e -> m (Matrix (n,p) e)
+
+    -- | Cast the matrix to an 'IOMatrix', perform an @IO@ action, and
+    -- convert the @IO@ action to an action in the monad @m@.
+    unsafePerformIOWithMatrix :: a (n,p) e -> (IOMatrix (n,p) e -> IO r) -> m r
+
 
 -- | Dense matrices that can be created or modified in a monad.
 class ( ReadMatrix a m, 
@@ -154,14 +154,15 @@ class ( ReadMatrix a m,
     -- uninitialized.
     newMatrix_ :: (Elem e) => (Int,Int) -> m (a (n,p) e)
 
-    -- | Unsafely convert an 'IO' action that creates an 'IOMatrix' into
-    -- an action in @m@ that creates a matrix.
-    unsafeConvertIOMatrix :: IO (IOMatrix (n,p) e) -> m (a (n,p) e)
-
     -- | Convert an immutable matrix to a mutable one by taking a complete
     -- copy of it.
     thawMatrix :: Matrix (n,p) e -> m (a (n,p) e)
     unsafeThawMatrix :: Matrix (n,p) e -> m (a (n,p) e)
+
+    -- | Unsafely convert an 'IO' action that creates an 'IOMatrix' into
+    -- an action in @m@ that creates a matrix.
+    unsafeConvertIOMatrix :: IO (IOMatrix (n,p) e) -> m (a (n,p) e)
+
 
 -- | Creates a new matrix with the given association list.  Unspecified
 -- indices will get initialized to zero.
@@ -570,48 +571,48 @@ class (MatrixShaped a, Monad m) => MMatrix a m where
         e -> a (k,l) e -> x l e -> m (y k e)
     unsafeGetSApply alpha a x = do
         y  <- newVector_ (numRows a)
-        io <- unsafeDoSApplyAdd alpha a x 0 y
-        io `seq` return y
+        unsafeDoSApplyAdd alpha a x 0 y
+        return y
     {-# INLINE unsafeGetSApply #-}
 
     unsafeGetSApplyMat :: (ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
         e -> a (r,s) e -> b (s,t) e -> m (c (r,t) e)
     unsafeGetSApplyMat alpha a b = do
         c  <- newMatrix_ (numRows a, numCols b)
-        io <- unsafeDoSApplyAddMat alpha a b 0 c
-        io `seq` return c
+        unsafeDoSApplyAddMat alpha a b 0 c
+        return c
     {-# INLINE unsafeGetSApplyMat #-}
 
     unsafeDoSApplyAdd :: (ReadVector x m, WriteVector y m, BLAS3 e) =>
         e -> a (k,l) e -> x l e -> e -> y k e -> m ()
     unsafeDoSApplyAdd alpha a x beta (y :: y k e) = do
         (y' :: y k e) <- unsafeGetSApply alpha a x
-        io <- scaleByVector beta y
-        io `seq` unsafeAxpyVector 1 y' y
+        scaleByVector beta y
+        unsafeAxpyVector 1 y' y
     {-# INLINE unsafeDoSApplyAdd #-}
 
     unsafeDoSApplyAddMat :: (ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
         e -> a (r,s) e -> b (s,t) e -> e -> c (r,t) e -> m ()
     unsafeDoSApplyAddMat alpha a b beta (c :: c (r,t) e) = do
         (c' :: c (r,t) e) <- unsafeGetSApplyMat alpha a b
-        io <- scaleByMatrix beta c
-        io `seq` unsafeAxpyMatrix 1 c' c
+        scaleByMatrix beta c
+        unsafeAxpyMatrix 1 c' c
     {-# INLINE unsafeDoSApplyAddMat #-}
 
     unsafeDoSApply_ :: (WriteVector y m, BLAS3 e) =>
         e -> a (n,n) e -> y n e -> m ()
     unsafeDoSApply_ alpha a (x :: y n e) = do
         (y :: y n e) <- newVector_ (dim x)
-        io <- unsafeDoSApplyAdd alpha a x 0 y
-        io `seq` unsafeCopyVector x y
+        unsafeDoSApplyAdd alpha a x 0 y
+        unsafeCopyVector x y
     {-# INLINE unsafeDoSApply_ #-}
 
     unsafeDoSApplyMat_ :: (WriteMatrix b m, BLAS3 e) =>
         e -> a (k,k) e -> b (k,l) e -> m ()
     unsafeDoSApplyMat_ alpha a (b :: b (k,l) e) = do
         (c :: b (k,l) e) <- newMatrix_ (shape b)
-        io <- unsafeDoSApplyAddMat alpha a b 0 c
-        io `seq` unsafeCopyMatrix b c
+        unsafeDoSApplyAddMat alpha a b 0 c
+        unsafeCopyMatrix b c
     {-# INLINE unsafeDoSApplyMat_ #-}
 
     unsafeGetCol :: (WriteVector x m, Elem e) => a (k,l) e -> Int -> m (x k e)
@@ -700,9 +701,9 @@ gemv alpha a x beta y
                 BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
     
     | (isConj y && otherwise) || isConj x = do
-        io1 <- doConjVector y
-        io2 <- gemv alpha a x beta (conj y)
-        io1 `seq` io2 `seq` doConjVector y
+        doConjVector y
+        gemv alpha a x beta (conj y)
+        doConjVector y
         
     | otherwise =
         let transA = transEnumMatrix a
@@ -764,9 +765,9 @@ hemv alpha h (x :: x k e) beta (y :: y k e)
     | numRows h == 0 =
         return ()
     | isConj y = do
-        io1 <- doConjVector y
-        io2 <- hemv alpha h x beta (conj y)
-        io1 `seq` io2 `seq` doConjVector y
+        doConjVector y
+        hemv alpha h x beta (conj y)
+        doConjVector y
     | isConj x = do
         (x' :: y k e) <- newCopyVector' x
         hemv alpha h x' beta y
@@ -837,9 +838,9 @@ unsafeDoSApplyAddTriMatrix alpha t x beta (y :: y k e) =
         then unsafeDoSApplyTriMatrix alpha t x y
         else do
             (y' :: y k e) <- newCopyVector y
-            io1 <- unsafeDoSApplyTriMatrix alpha t x y'
-            io2 <- scaleByVector beta y
-            io1 `seq` io2 `seq` unsafeAxpyVector 1 y' y
+            unsafeDoSApplyTriMatrix alpha t x y'
+            scaleByVector beta y
+            unsafeAxpyVector 1 y' y
 {-# INLINE unsafeDoSApplyAddTriMatrix #-}
 
 unsafeDoSApplyAddMatTriMatrix :: (ReadMatrix a m,
@@ -850,9 +851,9 @@ unsafeDoSApplyAddMatTriMatrix alpha t b beta (c :: c (r,t) e) =
         then unsafeDoSApplyMatTriMatrix alpha t b c
         else do
             (c' :: c (r,t) e) <- newCopyMatrix c
-            io1 <- unsafeDoSApplyMatTriMatrix alpha t b c'
-            io2 <- scaleByMatrix beta c
-            io1 `seq` io2 `seq` unsafeAxpyMatrix 1 c' c
+            unsafeDoSApplyMatTriMatrix alpha t b c'
+            scaleByMatrix beta c
+            unsafeAxpyMatrix 1 c' c
 {-# INLINE unsafeDoSApplyAddMatTriMatrix #-}
 
 unsafeDoSApplyTriMatrix :: (ReadMatrix a m,
@@ -861,27 +862,27 @@ unsafeDoSApplyTriMatrix :: (ReadMatrix a m,
 unsafeDoSApplyTriMatrix alpha t x y =
     case (u, toLower d a, toUpper d a) of
         (Lower,Left t',_) -> do
-            io1 <- unsafeCopyVector y (coerceVector x)
-            io1 `seq` trmv alpha t' y
+            unsafeCopyVector y (coerceVector x)
+            trmv alpha t' y
             
         (Lower,Right (t',r),_) -> do
             let y1 = unsafeSubvectorView y 0            (numRows t')
                 y2 = unsafeSubvectorView y (numRows t') (numRows r)
-            io1 <- unsafeCopyVector y1 x
-            io2 <- trmv alpha t' y1
-            io1 `seq` io2 `seq` unsafeDoSApplyAdd alpha r x 0 y2
+            unsafeCopyVector y1 x
+            trmv alpha t' y1
+            unsafeDoSApplyAdd alpha r x 0 y2
             
         (Upper,_,Left t') -> do
-            io1 <- unsafeCopyVector (coerceVector y) x
-            io1 `seq` trmv alpha t' (coerceVector y)
+            unsafeCopyVector (coerceVector y) x
+            trmv alpha t' (coerceVector y)
 
         (Upper,_,Right (t',r)) ->
             let x1 = unsafeSubvectorView x 0            (numCols t')
                 x2 = unsafeSubvectorView x (numCols t') (numCols r)
             in do
-                io1 <- unsafeCopyVector y x1
-                io2 <- trmv alpha t' y
-                io1 `seq` io2 `seq` unsafeDoSApplyAdd alpha r x2 1 y
+                unsafeCopyVector y x1
+                trmv alpha t' y
+                unsafeDoSApplyAdd alpha r x2 1 y
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSApplyTriMatrix #-}
@@ -892,27 +893,27 @@ unsafeDoSApplyMatTriMatrix :: (ReadMatrix a m,
 unsafeDoSApplyMatTriMatrix alpha t b c =
     case (u, toLower d a, toUpper d a) of
         (Lower,Left t',_) -> do
-            io1 <- unsafeCopyMatrix c (coerceMatrix b)
-            io1 `seq` trmm alpha t' c
+            unsafeCopyMatrix c (coerceMatrix b)
+            trmm alpha t' c
             
         (Lower,Right (t',r),_) -> do
             let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
                 c2 = unsafeSubmatrixView c (numRows t',0) (numRows r ,numCols c)
-            io1 <- unsafeCopyMatrix c1 b
-            io2 <- trmm alpha t' c1
-            io1 `seq` io2 `seq` unsafeDoSApplyAddMat alpha r b 0 c2
+            unsafeCopyMatrix c1 b
+            trmm alpha t' c1
+            unsafeDoSApplyAddMat alpha r b 0 c2
             
         (Upper,_,Left t') -> do
-            io1 <- unsafeCopyMatrix (coerceMatrix c) b
-            io1 `seq` trmm alpha t' (coerceMatrix c)
+            unsafeCopyMatrix (coerceMatrix c) b
+            trmm alpha t' (coerceMatrix c)
 
         (Upper,_,Right (t',r)) ->
             let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
                 b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
             in do
-                io1 <- unsafeCopyMatrix c b1
-                io2 <- trmm alpha t' c
-                io1 `seq` io2 `seq` unsafeDoSApplyAddMat alpha r b2 1 c
+                unsafeCopyMatrix c b1
+                trmm alpha t' c
+                unsafeDoSApplyAddMat alpha r b2 1 c
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSApplyMatTriMatrix #-}
@@ -991,10 +992,10 @@ trmv alpha t x
             ldA       = ldaMatrix a
             incX      = stride x
         in do
-            io1 <- when (alpha /= 1) $ scaleByVector alpha x
+            when (alpha /= 1) $ scaleByVector alpha x
             withMatrixPtr a   $ \pA ->
                 withVectorPtrIO x $ \pX -> do
-                   io1 `seq` BLAS.trmv uploA transA diagA n pA ldA pX incX
+                    BLAS.trmv uploA transA diagA n pA ldA pX incX
   where 
     withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
     withVectorPtrIO = withIOVector . unsafeVectorToIOVector
@@ -1031,25 +1032,25 @@ unsafeDoSSolveTriMatrix :: (ReadMatrix a m,
 unsafeDoSSolveTriMatrix alpha t y x =
     case (u, toLower d a, toUpper d a) of
         (Lower,Left t',_) -> do
-            io <- unsafeCopyVector x (coerceVector y)
-            io `seq` trsv alpha t' (coerceVector x)
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' (coerceVector x)
             
         (Lower,Right (t',_),_) -> do
             let y1 = unsafeSubvectorView y 0            (numRows t')
-            io <- unsafeCopyVector x y1
-            io `seq` trsv alpha t' x
+            unsafeCopyVector x y1
+            trsv alpha t' x
             
         (Upper,_,Left t') -> do
-            io <- unsafeCopyVector x (coerceVector y)
-            io `seq` trsv alpha t' x
+            unsafeCopyVector x (coerceVector y)
+            trsv alpha t' x
 
         (Upper,_,Right (t',r)) ->
             let x1 = unsafeSubvectorView x 0            (numCols t')
                 x2 = unsafeSubvectorView x (numCols t') (numCols r)
             in do
-                io1 <- unsafeCopyVector x1 y
-                io2 <- trsv alpha t' x1
-                io1 `seq` io2 `seq` setZeroVector x2
+                unsafeCopyVector x1 y
+                trsv alpha t' x1
+                setZeroVector x2
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSSolveTriMatrix #-}
@@ -1060,25 +1061,25 @@ unsafeDoSSolveMatTriMatrix :: (ReadMatrix a m,
 unsafeDoSSolveMatTriMatrix alpha t c b =
     case (u, toLower d a, toUpper d a) of
         (Lower,Left t',_) -> do
-            io <- unsafeCopyMatrix b (coerceMatrix c)
-            io `seq` trsm alpha t' (coerceMatrix b)
+            unsafeCopyMatrix b (coerceMatrix c)
+            trsm alpha t' (coerceMatrix b)
             
         (Lower,Right (t',_),_) -> do
             let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
-            io <- unsafeCopyMatrix b c1
-            io `seq` trsm alpha t' b
+            unsafeCopyMatrix b c1
+            trsm alpha t' b
             
         (Upper,_,Left t') -> do
-            io <- unsafeCopyMatrix (coerceMatrix b) c
-            io `seq` trsm alpha t' (coerceMatrix b)
+            unsafeCopyMatrix (coerceMatrix b) c
+            trsm alpha t' (coerceMatrix b)
 
         (Upper,_,Right (t',r)) ->
             let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
                 b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
             in do
-                io1 <- unsafeCopyMatrix b1 c
-                io2 <- trsm alpha t' b1
-                io1 `seq` io2 `seq` setZeroMatrix b2
+                unsafeCopyMatrix b1 c
+                trsm alpha t' b1
+                setZeroMatrix b2
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSSolveMatTriMatrix #-}
@@ -1115,10 +1116,10 @@ trsv alpha t x
             ldA       = ldaMatrix a
             incX      = stride x
         in do
-            io1 <- when (alpha /= 1) $ scaleByVector alpha x
+            when (alpha /= 1) $ scaleByVector alpha x
             withMatrixPtr   a $ \pA ->
                 withVectorPtrIO x $ \pX ->
-                    io1 `seq` BLAS.trsv uploA transA diagA n pA ldA pX incX
+                    BLAS.trsv uploA transA diagA n pA ldA pX incX
   where 
     withVectorPtrIO = withIOVector . unsafeVectorToIOVector
     withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
@@ -1169,15 +1170,15 @@ class (MatrixShaped a, Monad m) => MSolve a m where
     unsafeDoSSolve :: (ReadVector y m, WriteVector x m, BLAS3 e) =>
         e -> a (k,l) e -> y k e -> x l e -> m ()
     unsafeDoSSolve alpha a y x = do
-        io <- unsafeDoSolve a y x
-        io `seq` scaleByVector alpha x
+        unsafeDoSolve a y x
+        scaleByVector alpha x
     {-# INLINE unsafeDoSSolve #-}        
     
     unsafeDoSSolveMat :: (ReadMatrix c m, WriteMatrix b m, BLAS3 e) =>
         e -> a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
     unsafeDoSSolveMat alpha a c b = do
-        io <- unsafeDoSolveMat a c b
-        io `seq` scaleByMatrix alpha b
+        unsafeDoSolveMat a c b
+        scaleByMatrix alpha b
     {-# INLINE unsafeDoSSolveMat #-}
 
     unsafeDoSolve_ :: (WriteVector x m, BLAS3 e) => a (k,k) e -> x k e -> m ()
@@ -1186,8 +1187,8 @@ class (MatrixShaped a, Monad m) => MSolve a m where
 
     unsafeDoSSolve_ :: (WriteVector x m, BLAS3 e) => e -> a (k,k) e -> x k e -> m ()
     unsafeDoSSolve_ alpha a x = do
-        io <- scaleByVector alpha x
-        io `seq` unsafeDoSolve_ a x
+        scaleByVector alpha x
+        unsafeDoSolve_ a x
     {-# INLINE unsafeDoSSolve_ #-}        
         
     unsafeDoSolveMat_ :: (WriteMatrix b m, BLAS3 e) => a (k,k) e -> b (k,l) e -> m ()
@@ -1196,8 +1197,8 @@ class (MatrixShaped a, Monad m) => MSolve a m where
         
     unsafeDoSSolveMat_ :: (WriteMatrix b m, BLAS3 e) => e -> a (k,k) e -> b (k,l) e -> m ()
     unsafeDoSSolveMat_ alpha a b = do
-        io <- scaleByMatrix alpha b
-        io `seq` unsafeDoSolveMat_ a b
+        scaleByMatrix alpha b
+        unsafeDoSolveMat_ a b
     {-# INLINE unsafeDoSSolveMat_ #-}
 
 ------------------------------------ Instances ------------------------------
@@ -1286,22 +1287,22 @@ instance MSolve  (Tri IOMatrix) IO where
     {-# INLINE unsafeDoSSolveMat_ #-}
 
 instance ReadMatrix IOMatrix IO where
-    unsafePerformIOWithMatrix a f = f a
-    {-# INLINE unsafePerformIOWithMatrix #-}
     freezeMatrix = freezeIOMatrix
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix = unsafeFreezeIOMatrix
     {-# INLINE unsafeFreezeMatrix #-}
+    unsafePerformIOWithMatrix a f = f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
 
 instance WriteMatrix IOMatrix IO where
     newMatrix_ = newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    unsafeConvertIOMatrix = id
-    {-# INLINE unsafeConvertIOMatrix #-}
     thawMatrix = thawIOMatrix
     {-# INLINE thawMatrix #-}
     unsafeThawMatrix = unsafeThawIOMatrix
     {-# INLINE unsafeThawMatrix #-}
+    unsafeConvertIOMatrix = id
+    {-# INLINE unsafeConvertIOMatrix #-}
 
 -- | A type class for immutable matrices.  The member functions of the
 -- type class do not perform any checks on the validity of shapes or
@@ -1351,27 +1352,27 @@ replaceMatrix (Matrix a@(IOMatrix _ m n _ _ _)) ies =
             when (i < 0 || i >= m || j < 0 || j >= n) $ error $ printf
                 ("(//) <matrix of shape (%d,%d)> [ ..., ((%d,%d),_), ... ]:"
                 ++ "invalid index") m n i j 
-            io1 <- unsafeWriteElemIOMatrix b (i,j) e
-            io1 `seq` go b ies'
+            unsafeWriteElemIOMatrix b (i,j) e
+            go b ies'
         go _ [] = return ()
     in
     unsafePerformIO $ do
         b  <- newCopyIOMatrix a
-        io <- go b ies
-        io `seq` return (Matrix b)
+        go b ies
+        return (Matrix b)
 {-# INLINE replaceMatrix #-}
 
 unsafeReplaceMatrix :: Matrix np e -> [((Int,Int),e)] -> Matrix np e
 unsafeReplaceMatrix (Matrix a@(IOMatrix _ _ _ _ _ _)) ies =
     let go b (((i,j),e):ies') = do
-            io1 <- unsafeWriteElemIOMatrix b (i,j) e
-            io1 `seq` go b ies'
+            unsafeWriteElemIOMatrix b (i,j) e
+            go b ies'
         go _ [] = return ()
     in
     unsafePerformIO $ do
         b  <- newCopyIOMatrix a
-        io <- go b ies
-        io `seq` return (Matrix b)
+        go b ies
+        return (Matrix b)
 {-# INLINE unsafeReplaceMatrix #-}
 
 -- | Create a matrix of the given shape from a list of rows
@@ -1553,15 +1554,21 @@ instance BaseMatrix Matrix where
     unsafeMatrixToIOMatrix (Matrix a) = a
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
-instance (Monad m) => ReadMatrix Matrix m where
-    unsafePerformIOWithMatrix (Matrix a) f = 
-        (return . unsafePerformIO . f) a
-    {-# INLINE unsafePerformIOWithMatrix #-}
-    freezeMatrix (Matrix a) = 
-        (return . unsafePerformIO . freezeIOMatrix) a
+instance ReadMatrix Matrix IO where
+    freezeMatrix (Matrix a) = freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix = return . id
     {-# INLINE unsafeFreezeMatrix #-}
+    unsafePerformIOWithMatrix (Matrix a) f = f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
+
+instance ReadMatrix Matrix (ST s) where
+    freezeMatrix (Matrix a) = (unsafeIOToST . freezeIOMatrix) a
+    {-# INLINE freezeMatrix #-}
+    unsafeFreezeMatrix = return . id
+    {-# INLINE unsafeFreezeMatrix #-}
+    unsafePerformIOWithMatrix (Matrix a) f = (unsafeIOToST . f) a
+    {-# INLINE unsafePerformIOWithMatrix #-}
 
 instance ITensor Matrix (Int,Int) where
     size (Matrix a) = sizeIOMatrix a
@@ -1645,7 +1652,7 @@ instance IMatrix (Tri Matrix) where
         unsafeFreezeIOVector =<< unsafeGetCol a j
     {-# INLINE unsafeCol #-}
 
-instance (Monad m) => MMatrix Matrix m where
+instance MMatrix Matrix IO where
     unsafeDoSApplyAdd = gemv
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = gemm
@@ -1661,7 +1668,23 @@ instance (Monad m) => MMatrix Matrix m where
         return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols    
     {-# INLINE getCols #-}
 
-instance (Monad m) => MMatrix (Herm Matrix) m where
+instance MMatrix Matrix (ST s) where
+    unsafeDoSApplyAdd = gemv
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = gemm
+    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeGetRow = unsafeGetRowMatrix
+    {-# INLINE unsafeGetRow #-}
+    unsafeGetCol = unsafeGetColMatrix
+    {-# INLINE unsafeGetCol #-}
+    getRows = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows
+    {-# INLINE getRows #-}
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols    
+    {-# INLINE getCols #-}
+
+instance MMatrix (Herm Matrix) IO where
     unsafeDoSApplyAdd = hemv'
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = hemm'
@@ -1677,7 +1700,23 @@ instance (Monad m) => MMatrix (Herm Matrix) m where
     unsafeGetRow = unsafeGetRowHermMatrix
     {-# INLINE unsafeGetRow #-}
 
-instance (Monad m) => MMatrix (Tri Matrix) m where
+instance MMatrix (Herm Matrix) (ST s) where
+    unsafeDoSApplyAdd = hemv'
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = hemm'
+    {-# INLINE unsafeDoSApplyAddMat #-}    
+    getRows = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . rows
+    {-# INLINE getRows #-}
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . cols    
+    {-# INLINE getCols #-}
+    unsafeGetCol = unsafeGetColHermMatrix
+    {-# INLINE unsafeGetCol #-}
+    unsafeGetRow = unsafeGetRowHermMatrix
+    {-# INLINE unsafeGetRow #-}
+
+instance MMatrix (Tri Matrix) IO where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
     {-# INLINE unsafeDoSApplyAdd #-}
     unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
@@ -1697,7 +1736,37 @@ instance (Monad m) => MMatrix (Tri Matrix) m where
     unsafeGetRow = unsafeGetRowTriMatrix
     {-# INLINE unsafeGetRow #-}
 
-instance (Monad m) => MSolve (Tri Matrix) m where
+instance MMatrix (Tri Matrix) (ST s) where
+    unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
+    {-# INLINE unsafeDoSApplyAdd #-}
+    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
+    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeDoSApply_ = trmv
+    {-# INLINE unsafeDoSApply_ #-}
+    unsafeDoSApplyMat_ = trmm
+    {-# INLINE unsafeDoSApplyMat_ #-}
+    getRows = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . rows
+    {-# INLINE getRows #-}
+    getCols = 
+        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . cols    
+    {-# INLINE getCols #-}
+    unsafeGetCol = unsafeGetColTriMatrix
+    {-# INLINE unsafeGetCol #-}
+    unsafeGetRow = unsafeGetRowTriMatrix
+    {-# INLINE unsafeGetRow #-}
+
+instance MSolve (Tri Matrix) IO where
+    unsafeDoSSolve = unsafeDoSSolveTriMatrix
+    {-# INLINE unsafeDoSSolve #-}
+    unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
+    {-# INLINE unsafeDoSSolveMat #-}    
+    unsafeDoSSolve_ = trsv
+    {-# INLINE unsafeDoSSolve_ #-}
+    unsafeDoSSolveMat_ = trsm
+    {-# INLINE unsafeDoSSolveMat_ #-}
+
+instance MSolve (Tri Matrix) (ST s) where
     unsafeDoSSolve = unsafeDoSSolveTriMatrix
     {-# INLINE unsafeDoSSolve #-}
     unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
@@ -1806,8 +1875,8 @@ liftMatrix f a =
             let xs = case isHermMatrix a of
                           True ->  rowViews (coerceMatrix a)
                           False -> colViews (coerceMatrix a)
-                go (y:ys) = do io <- f y
-                               io `seq` go ys
+                go (y:ys) = do f y
+                               go ys
                 go []     = return ()
             in go xs
 {-# INLINE liftMatrix #-}
@@ -1829,8 +1898,8 @@ liftMatrix2 f a b =
                                       else colViews . coerceMatrix
             vecsB = if isHermMatrix a then rowViews . coerceMatrix
                                       else colViews . coerceMatrix
-            go (x:xs) (y:ys) = do io <- f x y
-                                  io `seq` go xs ys
+            go (x:xs) (y:ys) = do f x y
+                                  go xs ys
             go []     []     = return ()
             go _      _      = error $ printf 
                 ("liftMatrix2 <matrix of shape %s> <matrix of shape %s>:"
@@ -1849,8 +1918,8 @@ getUnaryMatrixOp :: (ReadMatrix a m, WriteMatrix b m) =>
     (b (n,p) e -> m ()) -> a (n,p) e -> m (b (n,p) e)
 getUnaryMatrixOp f a = do
     b  <- newCopyMatrix a
-    io <- f b
-    io `seq` return b
+    f b
+    return b
 {-# INLINE getUnaryMatrixOp #-}
 
 unsafeGetBinaryMatrixOp :: 
@@ -1859,8 +1928,8 @@ unsafeGetBinaryMatrixOp ::
         a (n,p) e -> b (n,p) f -> m (c (n,p) e)
 unsafeGetBinaryMatrixOp f a b = do
     c  <- newCopyMatrix a
-    io <- f c b
-    io `seq` return c
+    f c b
+    return c
 
 indexOfMatrix :: (BaseMatrix a) => a (n,p) e -> (Int,Int) -> Int
 indexOfMatrix a (i,j) = 

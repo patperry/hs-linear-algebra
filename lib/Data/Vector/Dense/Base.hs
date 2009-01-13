@@ -13,6 +13,7 @@ module Data.Vector.Dense.Base
     where
 
 import Control.Monad
+import Control.Monad.ST
 import Data.AEq
 import Foreign
 import Text.Printf
@@ -93,15 +94,14 @@ class (Shaped x Int) => BaseVector x where
 
 -- | Vectors that can be read in a monad.
 class (BaseVector x, Monad m, ReadTensor x Int m) => ReadVector x m where
-    -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
-    -- convert the @IO@ action to an action in the monad @m@.  This
-    -- operation is /very/ unsafe.
-    unsafePerformIOWithVector :: x n e -> (IOVector n e -> IO a) -> m a
-
     -- | Convert a mutable vector to an immutable one by taking a complete
     -- copy of it.
     freezeVector :: x n e -> m (Vector n e)
     unsafeFreezeVector :: x n e -> m (Vector n e)
+
+    -- | Cast the vector to an 'IOVector', perform an @IO@ action, and
+    -- convert the @IO@ action to an action in the monad @m@.
+    unsafePerformIOWithVector :: x n e -> (IOVector n e -> IO a) -> m a
 
 
 -- | Vectors that can be created or modified in a monad.
@@ -118,6 +118,8 @@ class (ReadVector x m, WriteTensor x Int m) => WriteVector x m where
     -- | Unsafely convert an 'IO' action that creates an 'IOVector' into
     -- an action in @m@ that creates a vector.
     unsafeConvertIOVector :: IO (IOVector n e) -> m (x n e)
+
+
 
 
 -- | Creates a new vector with the given association list.  Unspecified
@@ -337,7 +339,7 @@ axpyVector alpha x y =
     checkBinaryOp (shape x) (shape y) $ unsafeAxpyVector alpha x y
 {-# INLINE axpyVector #-}
 
-unsafeAxpyVector :: (ReadVector x m, ReadVector y m, BLAS1 e) =>
+unsafeAxpyVector :: (ReadVector x m, WriteVector y m, BLAS1 e) =>
     e -> x n e -> y n e -> m ()
 unsafeAxpyVector alpha x y
     | isConj y =
@@ -464,12 +466,12 @@ instance BaseVector IOVector where
     {-# INLINE unsafeIOVectorToVector #-}
     
 instance ReadVector IOVector IO where
-    unsafePerformIOWithVector x f = f x
-    {-# INLINE unsafePerformIOWithVector #-}
     freezeVector = freezeIOVector
     {-# INLINE freezeVector #-}
     unsafeFreezeVector = unsafeFreezeIOVector
     {-# INLINE unsafeFreezeVector #-}
+    unsafePerformIOWithVector x f = f x
+    {-# INLINE unsafePerformIOWithVector #-}
 
 instance WriteVector IOVector IO where
     newVector_ = newIOVector_
@@ -510,25 +512,25 @@ replaceVector (Vector x@(IOVector _ n _ _ _)) ies =
               when (i < 0 || i >= n) $ error $ printf
                   "(//) <vector of dim %d> [ ..., (%d,_), ... ]: invalid index"
                   n i
-              io <- unsafeWriteElemIOVector y i e
-              io `seq` go y ies'
+              unsafeWriteElemIOVector y i e
+              go y ies'
         go _ [] = return ()
     in unsafePerformIO $ do
         y  <- newCopyIOVector x
-        io <- go y ies
-        io `seq` unsafeFreezeIOVector y
+        go y ies
+        unsafeFreezeIOVector y
 {-# INLINE replaceVector #-}
 
 unsafeReplaceVector :: Vector n e -> [(Int,e)] -> Vector n e
 unsafeReplaceVector (Vector x@(IOVector _ _ _ _ _)) ies =
     let go y ((i,e):ies') = do
-              io <- unsafeWriteElemIOVector y i e
-              io `seq` go y ies'
+              unsafeWriteElemIOVector y i e
+              go y ies'
         go _ [] = return ()
     in unsafePerformIO $ do
         y  <- newCopyIOVector x
-        io <- go y ies
-        io `seq` unsafeFreezeIOVector y
+        go y ies
+        unsafeFreezeIOVector y
 {-# INLINE unsafeReplaceVector #-}
 
 -- | @zeroVector n@ creates a vector of dimension @n@ with all values
@@ -720,13 +722,22 @@ instance BaseVector Vector where
     unsafeIOVectorToVector = Vector
     {-# INLINE unsafeIOVectorToVector #-}
 
-instance (Monad m) => ReadVector Vector m where
-    unsafePerformIOWithVector (Vector x) f = (return . unsafePerformIO) $ f x
-    {-# INLINE unsafePerformIOWithVector #-}    
-    freezeVector (Vector x) = (return . unsafePerformIO) $ freezeIOVector x
+instance ReadVector Vector IO where
+    freezeVector (Vector x) = freezeIOVector x
     {-# INLINE freezeVector #-}
     unsafeFreezeVector = return
     {-# INLINE unsafeFreezeVector #-}
+    unsafePerformIOWithVector (Vector x) f = f x
+    {-# INLINE unsafePerformIOWithVector #-}
+
+instance ReadVector Vector (ST s) where
+    freezeVector (Vector x) = (unsafeIOToST . freezeIOVector) x
+    {-# INLINE freezeVector #-}
+    unsafeFreezeVector = return
+    {-# INLINE unsafeFreezeVector #-}
+    unsafePerformIOWithVector (Vector x) f = (unsafeIOToST . f) x
+    {-# INLINE unsafePerformIOWithVector #-}
+    
 
 instance (Show e) => Show (Vector n e) where
     show x | isConj x  = "conj (" ++ show (conj x) ++ ")"
@@ -824,8 +835,8 @@ vectorCall2 :: (ReadVector x m, ReadVector y m)
             => (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
             -> x n e -> y n' f -> m a
 vectorCall2 f x y =
-    unsafePerformIOWithVector x $ \x' ->
-        let y'   = unsafeVectorToIOVector y
+    unsafePerformIOWithVector y $ \y' ->
+        let x'   = unsafeVectorToIOVector x
             n    = dimIOVector x'
             incX = strideIOVector x'
             incY = strideIOVector y'
@@ -845,8 +856,8 @@ getUnaryVectorOp :: (ReadVector x m, WriteVector y m) =>
     (y n e -> m ()) -> x n e -> m (y n e)
 getUnaryVectorOp f x = do
     y  <- newCopyVector x
-    io <- f y
-    io `seq` return y
+    f y
+    return y
 {-# INLINE getUnaryVectorOp #-}
 
 unsafeGetBinaryVectorOp :: 
@@ -855,6 +866,6 @@ unsafeGetBinaryVectorOp ::
         x n e -> y n e -> m (z n e)
 unsafeGetBinaryVectorOp f x y = do
     z  <- newCopyVector x
-    io <- f z y
-    io `seq` return z
+    f z y
+    return z
 {-# INLINE unsafeGetBinaryVectorOp #-}

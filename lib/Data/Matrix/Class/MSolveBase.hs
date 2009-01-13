@@ -55,32 +55,32 @@ unsafeGetSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) =>
     a (k,l) e -> y k e -> m (x l e)
 unsafeGetSolve a y = do
     x  <- newVector_ (numCols a)
-    io <- unsafeDoSolve a y x
-    io `seq` return x
+    unsafeDoSolve a y x
+    return x
 {-# INLINE unsafeGetSolve #-}
     
 unsafeGetSSolve :: (MSolve a m, ReadVector y m, WriteVector x m, BLAS3 e) => 
     e -> a (k,l) e -> y k e -> m (x l e)
 unsafeGetSSolve alpha a y = do
     x  <- newVector_ (numCols a)
-    io <- unsafeDoSSolve alpha a y x
-    io `seq` return x
+    unsafeDoSSolve alpha a y x
+    return x
 {-# INLINE unsafeGetSSolve #-}
     
 unsafeGetSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     a (r,s) e -> c (r,t) e -> m (b (s,t) e)
 unsafeGetSolveMat a c = do
     b  <- newMatrix_ (numCols a, numCols c)
-    io <- unsafeDoSolveMat a c b
-    io `seq` return b
+    unsafeDoSolveMat a c b
+    return b
 {-# INLINE unsafeGetSolveMat #-}
 
 unsafeGetSSolveMat :: (MSolve a m, ReadMatrix c m, WriteMatrix b m, BLAS3 e) => 
     e -> a (r,s) e -> c (r,t) e -> m (b (s,t) e)                         
 unsafeGetSSolveMat alpha a c = do
     b  <- newMatrix_ (numCols a, numCols c)
-    io <- unsafeDoSSolveMat alpha a c b
-    io `seq` return b
+    unsafeDoSSolveMat alpha a c b
+    return b
 {-# INLINE unsafeGetSSolveMat #-}
 
 -- | Return @x@ such that @a x = y@.

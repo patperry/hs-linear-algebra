@@ -113,24 +113,24 @@ instance BLAS1 (Complex Double) where
             incY' = 2 * incY
         in case a of
             (ra :+  0) -> do
-                io <- daxpy n ( ra) pXR incX' pYR incY'
-                io `seq` daxpy n (-ra) pXI incX' pYI incY'
+                daxpy n ( ra) pXR incX' pYR incY'
+                daxpy n (-ra) pXI incX' pYI incY'
             (0  :+ ia) -> do
-                io <- daxpy n ( ia) pXR incX' pYI incY'
-                io `seq` daxpy n ( ia) pXI incX' pYR incY'
+                daxpy n ( ia) pXR incX' pYI incY'
+                daxpy n ( ia) pXI incX' pYR incY'
             _ -> go n pX pY
         where
             go n' pX' pY' | n' <= 0 = return ()
                           | otherwise = do
                                 x  <- peek pX'
                                 y  <- peek pY'
-                                io <- poke pY' (a * (conjugate x) + y)
+                                poke pY' (a * (conjugate x) + y)
                                 
                                 let n''  = n' - 1
                                     pX'' = pX' `advancePtr` incX
                                     pY'' = pY' `advancePtr` incY
                                     
-                                io `seq` go n'' pX'' pY''
+                                go n'' pX'' pY''
         
     vmul n  = ztbmv upper noTrans   nonUnit n 0
     vcmul n = ztbmv upper conjTrans nonUnit n 0

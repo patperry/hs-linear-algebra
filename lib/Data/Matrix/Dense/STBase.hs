@@ -188,20 +188,20 @@ instance BaseMatrix (STMatrix s) where
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
 instance ReadMatrix (STMatrix s) (ST s) where
-    unsafePerformIOWithMatrix (STMatrix a) f = unsafeIOToST $ f a
-    {-# INLINE unsafePerformIOWithMatrix #-}
     freezeMatrix (STMatrix a) = unsafeIOToST $ freezeIOMatrix a
     {-# INLINE freezeMatrix #-}
     unsafeFreezeMatrix (STMatrix a) = unsafeIOToST $ unsafeFreezeIOMatrix a
     {-# INLINE unsafeFreezeMatrix #-}
+    unsafePerformIOWithMatrix (STMatrix a) f = unsafeIOToST $ f a
+    {-# INLINE unsafePerformIOWithMatrix #-}
 
 instance WriteMatrix (STMatrix s) (ST s) where
     newMatrix_ = unsafeIOToST . liftM STMatrix . newIOMatrix_
     {-# INLINE newMatrix_ #-}
-    unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix
-    {-# INLINE unsafeConvertIOMatrix #-}
     thawMatrix = unsafeIOToST . liftM STMatrix . thawIOMatrix
     {-# INLINE thawMatrix #-}
     unsafeThawMatrix = unsafeIOToST . liftM STMatrix . unsafeThawIOMatrix
     {-# INLINE unsafeThawMatrix #-}
+    unsafeConvertIOMatrix = unsafeIOToST . liftM STMatrix
+    {-# INLINE unsafeConvertIOMatrix #-}
     

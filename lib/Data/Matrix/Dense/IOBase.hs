@@ -166,8 +166,8 @@ liftIOMatrix g (IOMatrix h m n f p l)
             end     = p `advancePtr` (n'*l)
             go p' | p' == end = return ()
                   | otherwise = do
-                      io <- g (IOVector c m' f p' 1)
-                      io `seq` go (p' `advancePtr` l)
+                      g (IOVector c m' f p' 1)
+                      go (p' `advancePtr` l)
         in go p
 
 liftIOMatrix2 :: (forall k. IOVector k e -> IOVector k f -> IO ())
@@ -185,8 +185,8 @@ liftIOMatrix2 f a b =
                                         else colViews
             vecsB = if isHermIOMatrix a then rowViews
                                         else colViews
-            go (x:xs) (y:ys) = do io <- f x y
-                                  io `seq` go xs ys
+            go (x:xs) (y:ys) = do f x y
+                                  go xs ys
             go []     []     = return ()
             go _      _      = error $ printf 
                 ("liftMatrix2 <matrix of shape %s> <matrix of shape %s>:"
@@ -224,43 +224,42 @@ newIOMatrix (m,n) ies =
                 error $ ( printf 
                     "newMatrix (%d,%d) [ ..., ((%d,%d),_), ... ]: invalid index"
                     m n i j )
-            io <- pokeElemOff p (i+j*m) e
-            io `seq` go p ies'
+            pokeElemOff p (i+j*m) e
+            go p ies'
         go _ [] = return ()
     in do
         a  <- newZeroIOMatrix (m,n)
-        io <- withIOMatrix a $ \p -> go p ies
-        io `seq` return a
+        withIOMatrix a $ \p -> go p ies
+        return a
     
 unsafeNewIOMatrix :: (Elem e) 
                   => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix (n,p) e)
 unsafeNewIOMatrix (m,n) ies =
     let go p (((i,j),e):ies') = do
-            io <- pokeElemOff p (i+j*m) e
-            io `seq` go p ies'
+            pokeElemOff p (i+j*m) e
+            go p ies'
         go _ [] = return ()
     in do
         a  <- newZeroIOMatrix (m,n)
-        io <- withIOMatrix a $ \p -> go p ies
-        io `seq` return a
+        withIOMatrix a $ \p -> go p ies
+        return a
 
 newListIOMatrix :: (Elem e) => (Int,Int) -> [e] -> IO (IOMatrix (n,p) e)
 newListIOMatrix (m,n) es = do
     a  <- newZeroIOMatrix (m,n)
-    io <- withIOMatrix a $ flip pokeArray (take (m*n) es)
-    io `seq` return a
+    withIOMatrix a $ flip pokeArray (take (m*n) es)
+    return a
 
 newIdentityIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)
 newIdentityIOMatrix mn = do
     a  <- newIOMatrix_ mn
-    io <- setIdentityIOMatrix a
-    io `seq` return a
+    setIdentityIOMatrix a
+    return a
 
 setIdentityIOMatrix :: IOMatrix np e -> IO ()
 setIdentityIOMatrix a@(IOMatrix _ _ _ _ _ _) = do
-    io1 <- setZeroIOMatrix a
-    io2 <- setConstantIOVector 1 (unsafeDiagViewIOMatrix a 0)
-    io1 `seq` return io2
+    setZeroIOMatrix a
+    setConstantIOVector 1 (unsafeDiagViewIOMatrix a 0)
 
 newColsIOMatrix :: (ReadVector x IO, Elem e)
                 => (Int,Int) -> [x n e] -> IO (IOMatrix (n,p) e)
@@ -275,12 +274,12 @@ newColsIOMatrix (m,n) cs =
                 m n j
         go _ _ []      = return ()
         go a j (c:cs') = do
-             io <- unsafeCopyVector (unsafeColViewIOMatrix a j) c
-             io `seq` go a (j+1) cs'
+             unsafeCopyVector (unsafeColViewIOMatrix a j) c
+             go a (j+1) cs'
     in do
         a  <- newZeroIOMatrix (m,n)
-        io <- go a 0 cs
-        io `seq` return a
+        go a 0 cs
+        return a
 
 newRowsIOMatrix :: (ReadVector x IO, Elem e) 
                 => (Int,Int) -> [x p e] -> IO (IOMatrix (n,p) e)
@@ -295,12 +294,12 @@ newRowsIOMatrix (m,n) rs =
                 m n i
         go _ _ []      = return ()
         go a i (r:rs') = do
-             io <- unsafeCopyVector (unsafeRowViewIOMatrix a i) r
-             io `seq` go a (i+1) rs'
+             unsafeCopyVector (unsafeRowViewIOMatrix a i) r
+             go a (i+1) rs'
     in do
         a  <- newZeroIOMatrix (m,n)
-        io <- go a 0 rs
-        io `seq` return a
+        go a 0 rs
+        return a
 
 newColIOMatrix :: (ReadVector x IO, Elem e)
                => x n e -> IO (IOMatrix (n,one) e)
@@ -313,14 +312,14 @@ newRowIOMatrix x = newRowsIOMatrix (1,dim x) [x]
 newZeroIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix (n,p) e)
 newZeroIOMatrix mn = do
     a  <- newIOMatrix_ mn
-    io <- setZeroIOMatrix a
-    io `seq` return a
+    setZeroIOMatrix a
+    return a
 
 newConstantIOMatrix :: (Elem e) => (Int,Int) -> e -> IO (IOMatrix (n,p) e)
 newConstantIOMatrix mn e = do
     a  <- newIOMatrix_ mn
-    io <- setConstantIOMatrix e a
-    io `seq` return a
+    setConstantIOMatrix e a
+    return a
 
 newCopyIOMatrix :: IOMatrix np e -> IO (IOMatrix np e)
 newCopyIOMatrix a@(IOMatrix h m n _ _ _) =
@@ -328,15 +327,15 @@ newCopyIOMatrix a@(IOMatrix h m n _ _ _) =
     in do
         b <- newIOMatrix_ (m',n')
         let b' = if h == ConjTrans then hermIOMatrix b else b
-        io <- unsafeCopyIOMatrix b' a
-        io `seq` return b'
+        unsafeCopyIOMatrix b' a
+        return b'
 {-# INLINE newCopyIOMatrix #-}
 
 newCopyIOMatrix' :: IOMatrix np e -> IO (IOMatrix np e)
 newCopyIOMatrix' a@(IOMatrix _ m n _ _ _) = do
     b  <- newIOMatrix_ (m,n)
-    io <- unsafeCopyIOMatrix b a
-    io `seq` return b
+    unsafeCopyIOMatrix b a
+    return b
 {-# INLINE newCopyIOMatrix' #-}
 
 unsafeCopyIOMatrix :: IOMatrix np e -> IOMatrix np e -> IO ()
@@ -479,10 +478,9 @@ unsafeSwapElemsIOMatrix (IOMatrix h _ _ f p l) (i1,j1) (i2,j2) =
     in do
         e1  <- peek p1
         e2  <- peek p2
-        io1 <- poke p2 e1
-        io2 <- poke p1 e2
+        poke p2 e1
+        poke p1 e2
         touchForeignPtr f
-        io1 `seq` return io2
 {-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix n Double -> (Int,Int) -> (Int,Int) -> IO () #-}
 {-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix n (Complex Double) -> (Int,Int) -> (Int,Int) -> IO () #-}
 
@@ -499,8 +497,8 @@ setConstantIOMatrix k = liftIOMatrix (setConstantIOVector k)
 getConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO (IOMatrix np e)
 getConjIOMatrix a = do
     b  <- newCopyIOMatrix a 
-    io <- doConjIOMatrix b
-    io `seq` return b
+    doConjIOMatrix b
+    return b
 
 doConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO ()
 doConjIOMatrix = liftIOMatrix doConjIOVector
@@ -508,8 +506,8 @@ doConjIOMatrix = liftIOMatrix doConjIOVector
 getScaledIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
 getScaledIOMatrix e a = do
     b  <- newCopyIOMatrix a
-    io <- scaleByIOMatrix e b
-    io `seq` return b
+    scaleByIOMatrix e b
+    return b
 
 scaleByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()
 scaleByIOMatrix k = liftIOMatrix (scaleByIOVector k)
@@ -517,8 +515,8 @@ scaleByIOMatrix k = liftIOMatrix (scaleByIOVector k)
 getShiftedIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
 getShiftedIOMatrix e a = do
     b  <- newCopyIOMatrix a
-    io <- shiftByIOMatrix e b
-    io `seq` return b
+    shiftByIOMatrix e b
+    return b
                     
 shiftByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()                    
 shiftByIOMatrix k = liftIOMatrix (shiftByIOVector k)

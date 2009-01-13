@@ -81,16 +81,15 @@ instance Elem (Complex Double) where
     {-# INLINE maybeToReal #-}
     
     copy conjX conjY n pX incX pY incY = do
-        io <- zcopy n pX incX pY incY
-        io `seq` when (conjX /= conjY) $ 
-                     vconj n pY incY
+        zcopy n pX incX pY incY
+        when (conjX /= conjY) $ vconj n pY incY
     {-# INLINE copy #-}
     
     swap conjX conjY n pX incX pY incY = do
-        io <- zswap n pX incX pY incY
-        io `seq` when (conjX /= conjY) $ do
-                     io1 <- vconj n pX incX
-                     io1 `seq` vconj n pY incY
+        zswap n pX incX pY incY
+        when (conjX /= conjY) $ do
+            vconj n pX incX
+            vconj n pY incY
     {-# INLINE swap #-}
     
     vconj n pX incX =

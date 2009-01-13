@@ -111,49 +111,49 @@ newIOVector n ies =
     let go p ((i,e):ies') = do
             when (i < 0 || i >= n) $ error $
                 printf "newVector %d [ ..., (%d,_), ... ]: invalid index" n i
-            io <- pokeElemOff p i e
-            io `seq` go p ies'
+            pokeElemOff p i e
+            go p ies'
         go _ [] = return ()
     in do
         x  <- newZeroIOVector n
-        io <- withIOVector x $ \p -> go p ies
-        io `seq` return x
+        withIOVector x $ \p -> go p ies
+        return x
 
 unsafeNewIOVector :: (Elem e) => Int -> [(Int,e)] -> IO (IOVector n e)
 unsafeNewIOVector n ies =
     let go p ((i,e):ies') = do
-            io <- pokeElemOff p i e
-            io `seq` go p ies'
+            pokeElemOff p i e
+            go p ies'
         go _ [] = return ()
     in do
         x  <- newZeroIOVector n
-        io <- withIOVector x $ \p -> go p ies
-        io `seq` return x
+        withIOVector x $ \p -> go p ies
+        return x
 
 newListIOVector :: (Elem e) => Int -> [e] -> IO (IOVector n e)
 newListIOVector n es = do
     x  <- newIOVector_ n
-    io <- withIOVector x $ \p -> do
-              pokeArray p $ take n $ es ++ (repeat 0)
-    io `seq` return x
+    withIOVector x $ \p -> do
+        pokeArray p $ take n $ es ++ (repeat 0)
+    return x
 
 newZeroIOVector :: (Elem e) => Int -> IO (IOVector n e)
 newZeroIOVector n = do
     x  <- newIOVector_ n
-    io <- setZeroIOVector x
-    io `seq` return x
+    setZeroIOVector x
+    return x
 
 newConstantIOVector :: (Elem e) => Int -> e -> IO (IOVector n e)
 newConstantIOVector n e = do
     x  <- newIOVector_ n
-    io <- setConstantIOVector e x
-    io `seq` return x
+    setConstantIOVector e x
+    return x
 
 newBasisIOVector :: (Elem e) => Int -> Int -> IO (IOVector n e)
 newBasisIOVector n i = do
     x  <- newZeroIOVector n
-    io <- setBasisIOVector i x
-    io `seq` return x
+    setBasisIOVector i x
+    return x
 
 setBasisIOVector :: Int -> IOVector n e -> IO ()
 setBasisIOVector i x@(IOVector _ _ _ _ _)
@@ -161,24 +161,24 @@ setBasisIOVector i x@(IOVector _ _ _ _ _)
         error $ printf "setBasisIOVector %d <vector of dim %d>: invalid index" 
                        i n
     | otherwise = do
-        io <- setZeroIOVector x
-        io `seq` unsafeWriteElemIOVector x i 1 
+        setZeroIOVector x
+        unsafeWriteElemIOVector x i 1 
   where
     n = dimIOVector x
 
 newCopyIOVector :: IOVector n e -> IO (IOVector n e)
 newCopyIOVector (IOVector c n f p incX) = do
     (IOVector _ _ f' p' _) <- newIOVector_ n
-    io <- BLAS.copy c c n p incX p' 1
+    BLAS.copy c c n p incX p' 1
     touchForeignPtr f
     touchForeignPtr f'
-    io `seq` return (IOVector c n f' p' 1)
+    return (IOVector c n f' p' 1)
 
 newCopyIOVector' :: IOVector n e -> IO (IOVector n e)
 newCopyIOVector' x@(IOVector _ _ _ _ _) = do
     y  <- newIOVector_ (dimIOVector x)
-    io <- unsafeCopyIOVector y x
-    io `seq` return y
+    unsafeCopyIOVector y x
+    return y
 
 unsafeCopyIOVector :: IOVector n e -> IOVector n e -> IO ()
 unsafeCopyIOVector (IOVector cy n fy py incy) 
@@ -314,10 +314,9 @@ unsafeSwapElemsIOVector (IOVector _ _ f p incX) i1 i2 =
     in do
         e1  <- peek p1
         e2  <- peek p2
-        io1 <- poke p2 e1
-        io2 <- poke p1 e2
+        poke p2 e1
+        poke p1 e2
         touchForeignPtr f
-        io1 `seq` return io2
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n Double -> Int -> Int -> IO () #-}
 {-# SPECIALIZE INLINE unsafeSwapElemsIOVector :: IOVector n (Complex Double) -> Int -> Int -> IO () #-}
                             
@@ -328,8 +327,8 @@ modifyWithIOVector g (IOVector c n f p incX) =
         go p' | p' == end = touchForeignPtr f
               | otherwise = do
                    e  <- peek p'
-                   io <- poke p' (g' e)
-                   io `seq` go (p' `advancePtr` incX)
+                   poke p' (g' e)
+                   go (p' `advancePtr` incX)
     in go p
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Double -> Double) -> IOVector n Double -> IO () #-}
 {-# SPECIALIZE INLINE modifyWithIOVector :: (Complex Double -> Complex Double) -> IOVector n (Complex Double) -> IO () #-}
@@ -352,8 +351,8 @@ setConstantIOVector e (IOVector c n f p incX) =
         end = p `advancePtr` (n*incX)
         go p' | p' == end = touchForeignPtr f
               | otherwise = do
-                   io <- poke p' e'
-                   io `seq` go (p' `advancePtr` incX)
+                   poke p' e'
+                   go (p' `advancePtr` incX)
     in go p
 {-# INLINE setConstantIOVector #-}
 
