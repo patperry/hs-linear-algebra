@@ -749,15 +749,18 @@ gemm alpha a b beta c
 
 unsafeGetColHermMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
                        => Herm a (n,p) e -> Int -> m (x n e)
-unsafeGetColHermMatrix = 
-    error "TODO: unsafeGetColHermMatrix is not implemented"
+unsafeGetColHermMatrix (Herm l a) i =
+    let a' = coerceMatrix a
+        n  = numRows a'
+        r  = unsafeRowView a' i
+        c  = unsafeColView a' i 
+        (r',c') = case l of { Lower -> (c,r) ; Upper -> (conj r, conj c) }
+    in do
+        x <- newVector_ n
+        unsafeCopyVector (subvectorView x 0 i)     (conj $ subvectorView c' 0 i)
+        unsafeCopyVector (subvectorView x i (n-i)) (subvectorView r' i (n-i))
+        return x
 {-# INLINE unsafeGetColHermMatrix #-}
-
-unsafeGetRowHermMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
-                       => Herm a (n,p) e -> Int -> m (x p e)
-unsafeGetRowHermMatrix = 
-    error "TODO: unsafeGetRowHermMatrix is not implemented"
-{-# INLINE unsafeGetRowHermMatrix #-}
 
 hemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
@@ -1255,8 +1258,6 @@ instance MMatrix (Herm IOMatrix) IO where
     {-# INLINE getCols #-}
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
-    unsafeGetRow = unsafeGetRowHermMatrix
-    {-# INLINE unsafeGetRow #-}
     
 instance MMatrix (Tri IOMatrix) IO where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
@@ -1697,8 +1698,6 @@ instance MMatrix (Herm Matrix) IO where
     {-# INLINE getCols #-}
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
-    unsafeGetRow = unsafeGetRowHermMatrix
-    {-# INLINE unsafeGetRow #-}
 
 instance MMatrix (Herm Matrix) (ST s) where
     unsafeDoSApplyAdd = hemv'
@@ -1713,8 +1712,6 @@ instance MMatrix (Herm Matrix) (ST s) where
     {-# INLINE getCols #-}
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
-    unsafeGetRow = unsafeGetRowHermMatrix
-    {-# INLINE unsafeGetRow #-}
 
 instance MMatrix (Tri Matrix) IO where
     unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
