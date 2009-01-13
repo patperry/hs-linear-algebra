@@ -721,9 +721,7 @@ instance BaseVector Vector where
     {-# INLINE unsafeIOVectorToVector #-}
 
 instance (Monad m) => ReadVector Vector m where
-    unsafePerformIOWithVector (Vector x) f = (return . unsafePerformIO) $ do
-        r <- f x
-        return $! r
+    unsafePerformIOWithVector (Vector x) f = (return . unsafePerformIO) $ f x
     {-# INLINE unsafePerformIOWithVector #-}    
     freezeVector (Vector x) = (return . unsafePerformIO) $ freezeIOVector x
     {-# INLINE freezeVector #-}
