@@ -1,5 +1,5 @@
 name:            blas
-version:         0.7.5
+version:         0.7.6
 homepage:        http://github.com/patperry/blas
 synopsis:        Bindings to the BLAS library
 description:

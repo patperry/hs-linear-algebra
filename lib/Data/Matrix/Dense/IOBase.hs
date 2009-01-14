@@ -202,8 +202,8 @@ liftIOMatrix2 f a b =
             ys = vecsB b
         in zipWithM_ f xs ys
         
-    rowViews c = [ unsafeRowViewIOMatrix c i | i <- [ 0..numRows c ] ]
-    colViews c = [ unsafeColViewIOMatrix c j | j <- [ 0..numCols c ] ]
+    rowViews c = [ unsafeRowViewIOMatrix c i | i <- [ 0..numRows c - 1 ] ]
+    colViews c = [ unsafeColViewIOMatrix c j | j <- [ 0..numCols c - 1 ] ]
 
 -- | Perform an 'IO' action with a pointer to the first element of the
 -- matrix.
