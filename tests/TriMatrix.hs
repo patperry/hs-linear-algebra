@@ -12,21 +12,23 @@ module TriMatrix
 
 import Driver
 import Test.Matrix.Tri.Dense
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Vector.Dense
 import Data.Matrix.Dense
 import Data.Matrix.Tri
 
-
-{-
-isUndefR x = isNaN x || isInfinite x
-isUndefC (x :+ y) = isUndefR x || isUndefR y
--}
-        
 type V = Vector Int E
 type M = Matrix (Int,Int) E
 type TM = Tri Matrix (Int,Int) E
 
+prop_tri_col (Index2 (m,n) (_,j)) =
+    forAll (Test.triMatrix (m,n)) $ \(a :: TM) ->
+        col a j ~== a <*> basisVector n j
+
+prop_tri_row (Index2 (m,n) (i,_)) =
+    forAll (Test.triMatrix (m,n)) $ \(a :: TM) ->
+        row a i ~== conj (herm a <*> basisVector m i)
 
 prop_tri_apply (TriMatrixMV (t :: TM) a x) =
     t <*> x ~== a <*> x
@@ -56,7 +58,9 @@ prop_tri_ssolveMat k (TriMatrixSM (t :: TM) b) =
 
 
 tests_TriMatrix =
-    [ ("tri apply"             , mytest prop_tri_apply)
+    [ ("tri col"               , mytest prop_tri_col)
+    , ("tri row"               , mytest prop_tri_row)
+    , ("tri apply"             , mytest prop_tri_apply)
     , ("tri sapply"            , mytest prop_tri_sapply)
     , ("tri applyMat"          , mytest prop_tri_applyMat)
     , ("tri sapplyMat"         , mytest prop_tri_sapplyMat)

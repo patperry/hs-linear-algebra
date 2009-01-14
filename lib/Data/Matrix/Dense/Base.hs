@@ -951,14 +951,58 @@ toUpper d a =
 
 unsafeGetColTriMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
                        => Tri a (n,p) e -> Int -> m (x n e)
-unsafeGetColTriMatrix =
-    error "TODO: unsafeGetColTriMatrix is not implemented"
+unsafeGetColTriMatrix a@(Tri Upper _ _) j = 
+    liftM conj $ unsafeGetRowTriMatrix (herm a) j
+
+unsafeGetColTriMatrix (Tri Lower Unit a) j = do
+    x <- newVector_ m
+    setZeroVector (unsafeSubvectorView x 0 j)
+    unsafeWriteElem x j 1
+    unsafeCopyVector (unsafeSubvectorView x (j+1) (m-j-1))
+                     (unsafeSubvectorView c (j+1) (m-j-1))
+    return x
+  where
+    m = numRows a
+    c = unsafeColView a j
+    
+unsafeGetColTriMatrix (Tri Lower NonUnit a) j = do
+    x <- newVector_ m
+    setZeroVector (unsafeSubvectorView x 0 j)
+    unsafeCopyVector (unsafeSubvectorView x j (m-j))
+                     (unsafeSubvectorView c j (m-j))
+    return x
+  where
+    m = numRows a
+    c = unsafeColView a j
 {-# INLINE unsafeGetColTriMatrix #-}
 
 unsafeGetRowTriMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
-                       => Tri a (n,p) e -> Int -> m (x p e)
-unsafeGetRowTriMatrix =
-    error "TODO: unsafeGetRowTriMatrix is not implemented"
+                      => Tri a (n,p) e -> Int -> m (x p e)
+unsafeGetRowTriMatrix a@(Tri Upper _ _) i = 
+    liftM conj $ unsafeGetColTriMatrix (herm a) i
+    
+unsafeGetRowTriMatrix (Tri Lower Unit a) i = do
+    x <- newVector_ n
+    unsafeCopyVector (unsafeSubvectorView x 0 $ i)
+                     (unsafeSubvectorView r 0 $ i)
+    when (i < n) $ do
+        unsafeWriteElem x i 1
+        setZeroVector (unsafeSubvectorView x (i+1) (n-i-1))
+    return x
+  where
+    n = numCols a
+    r = unsafeRowView a i
+
+unsafeGetRowTriMatrix (Tri Lower NonUnit a) i = do
+    x <- newVector_ n
+    unsafeCopyVector (unsafeSubvectorView x 0 $ i+1)
+                     (unsafeSubvectorView r 0 $ i+1)
+    when (i < n) $ do
+        setZeroVector (unsafeSubvectorView x (i+1) (n-i-1))
+    return x
+  where
+    n = numCols a
+    r = unsafeRowView a i
 {-# INLINE unsafeGetRowTriMatrix #-}
 
 trmv :: (ReadMatrix a m, WriteVector y m, BLAS3 e) =>

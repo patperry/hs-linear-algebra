@@ -203,9 +203,11 @@ matrix mn = frequency [ (3, rawMatrix mn)
 
 -- | Generate a triangular dense matrix.
 triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix (n,p) e)
-triMatrix mn = do
-    a <- matrix mn
-    u <- QC.elements [ Lower, Upper  ]
+triMatrix (m,n) = do
+    a <- matrix (m,n)
+    u <- if m > n then return Lower
+                  else if m < n then return Upper
+                                else QC.elements [ Lower, Upper ]
     d <- QC.elements [ Unit, NonUnit ]
     return $ Tri u d a
     
