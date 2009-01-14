@@ -1,3 +1,13 @@
+Changes in 0.8:
+
+* Use GADTs to and remove the element type from the typeclasses.  This
+  makes the function signatures a lot nicer to read and write.
+  
+* Put structural operations ( swap, copy, vconj ) in Elem.  This removes the
+  BLAS1 constraint from the structural functions like getRow.
+  
+* Fix a very serious memory-trashing bug.
+
 Changes in 0.7.5:
 
 * Export all unsafe functions in Unsafe.BLAS.

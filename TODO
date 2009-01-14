@@ -24,6 +24,9 @@ Small projects
   in R, and have determined this isn't a bug.  Ideally, we should only
   test with well-conditioned systems. 
 
+* Implement `unsafeGetRow`/`unsafeGetCol` functions for Herm Banded or for
+  Tri Banded (Herm Banded will be easier).
+
 * Put better checks in swapElem for WriteTensor.
 
 * Better error reporting.  Change the "check" functions in BLAS.Internal
@@ -83,10 +86,6 @@ Medium projects
   Windows.  See if it is possible to build the library on windows.  If
   not, figure out how to do so.  This may involve using something other
   than autoconf on windows.
-
-* Provide custum `unsafeGetRow`/`unsafeGetCol` functions for Herm Matrix,
-  Tri Matrix, etc. rather than using matrix multiplication, which is what
-  the default instance does.
 
 * Provide Read/Write Tensor instances for Herm Matrix, Tri Matrix, 
   Herm Banded, etc.
