@@ -1,6 +1,6 @@
 
 AC_PREREQ(2.61)
-AC_INIT([Haskell blas], [0.7], [patperry@stanford.edu])
+AC_INIT([Haskell blas], [0.8], [patperry@stanford.edu])
 AC_CONFIG_SRCDIR([blas.cabal])
 
 AC_CONFIG_HEADERS([cbits/config.h])
