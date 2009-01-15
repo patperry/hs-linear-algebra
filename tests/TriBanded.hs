@@ -39,10 +39,10 @@ prop_herm_tri_compose (TriBandedMM (t :: TB) a b) =
     herm t <**> b ~== herm a <**> b
 
 prop_scale_tri_compose k (TriBandedMM (t :: TB) a b) =
-    sapplyMat k t b ~== sapplyMat k a b
+    sapplyMatrix k t b ~== sapplyMatrix k a b
 
 prop_scale_herm_tri_compose k (TriBandedMM (t :: TB) a b) =
-    sapplyMat k (herm t) b ~== sapplyMat k (herm a) b
+    sapplyMatrix k (herm t) b ~== sapplyMatrix k (herm a) b
 
 
 prop_tri_solve (TriBandedSV (t :: TB) y) =
@@ -52,12 +52,12 @@ prop_tri_solve (TriBandedSV (t :: TB) y) =
 prop_tri_ssolve k (TriBandedSV (t :: TB) y) =
     ssolve k t y ~== t <\> (k*>y)
 
-prop_tri_solveMat (TriBandedSM (t :: TB) c) =
+prop_tri_solveMatrix (TriBandedSM (t :: TB) c) =
     let b = t <\\> c
     in t <**> b ~== c
 
-prop_tri_ssolveMat k (TriBandedSM (t :: TB) c) =
-    ssolveMat k t c ~== t <\\> (k*>c)
+prop_tri_ssolveMatrix k (TriBandedSM (t :: TB) c) =
+    ssolveMatrix k t c ~== t <\\> (k*>c)
 
 tests_TriBanded =
     [ ("tri apply"             , mytest prop_tri_apply)
@@ -71,8 +71,8 @@ tests_TriBanded =
     , ("scale herm tri compose", mytest prop_scale_herm_tri_compose)
     
     , ("tri solve"             , mytest prop_tri_solve)
-    , ("tri solveMat"          , mytest prop_tri_solveMat)
+    , ("tri solveMatrix"          , mytest prop_tri_solveMatrix)
     , ("tri ssolve"            , mytest prop_tri_ssolve)
-    , ("tri ssolveMat"         , mytest prop_tri_ssolveMat)
+    , ("tri ssolveMatrix"         , mytest prop_tri_ssolveMatrix)
 
     ]

@@ -16,20 +16,20 @@ module Data.Matrix.Class.MSolve (
     MSolve,
 
     -- * Solving linear systems
-    getSolve,
-    getSolveMat,
-    getSSolve,
-    getSSolveMat,
+    getSolveVector,
+    getSolveMatrix,
+    getSSolveVector,
+    getSSolveMatrix,
     
     -- * In-place operations
-    doSolve,
-    doSolveMat,
-    doSSolve,
-    doSSolveMat,
-    doSolve_,
-    doSolveMat_,
-    doSSolve_,
-    doSSolveMat_,
+    doSolveVector,
+    doSolveMatrix,
+    doSSolveVector,
+    doSSolveMatrix,
+    doSolveVector_,
+    doSolveMatrix_,
+    doSSolveVector_,
+    doSSolveMatrix_,
 
     ) where
 

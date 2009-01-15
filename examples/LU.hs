@@ -41,8 +41,8 @@ luFactorize a
         in luFactorize a_1 >>=
                either (return . Left) (\pivots -> do
                    zipWithM_ (swapRows a_2) [0..] pivots
-                   doSolveMat_ (lowerU a11) a12
-                   doSApplyAddMat (-1) a21 a12 1 a22
+                   doSolveMatrix_ (lowerU a11) a12
+                   doSApplyAddMatrix (-1) a21 a12 1 a22
                    luFactorize a22 >>=
                        either (return . Left . (nleft+)) (\pivots' -> do
                            zipWithM_ (swapRows a21) [0..] pivots'

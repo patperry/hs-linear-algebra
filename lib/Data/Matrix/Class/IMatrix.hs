@@ -22,10 +22,10 @@ module Data.Matrix.Class.IMatrix (
     cols,
 
     -- * Multiplication
-    (<*>),
-    (<**>),
-    sapply,
-    sapplyMat,
+    applyVector,
+    applyMatrix,
+    sapplyVector,
+    sapplyMatrix,
     ) where
 
 import Data.Matrix.Class.IMatrixBase

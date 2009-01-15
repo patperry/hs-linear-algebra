@@ -156,10 +156,10 @@ instance WriteBanded (STBanded s) (ST s) where
         
 
 instance MMatrix (STBanded s) (ST s) where
-    unsafeDoSApplyAdd    = gbmv
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = gbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeDoSApplyAddVector    = gbmv
+    {-# INLINE unsafeDoSApplyAddVector #-}
+    unsafeDoSApplyAddMatrix = gbmm
+    {-# INLINE unsafeDoSApplyAddMatrix #-}
     unsafeGetRow         = unsafeGetRowBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
@@ -170,10 +170,10 @@ instance MMatrix (STBanded s) (ST s) where
     {-# INLINE getCols #-}
 
 instance MMatrix (Herm (STBanded s)) (ST s) where
-    unsafeDoSApplyAdd    = hbmv
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = hbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}    
+    unsafeDoSApplyAddVector    = hbmv
+    {-# INLINE unsafeDoSApplyAddVector #-}    
+    unsafeDoSApplyAddMatrix = hbmm
+    {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsST
     {-# INLINE getRows #-}
     getCols = getColsST
@@ -184,14 +184,14 @@ instance MMatrix (Herm (STBanded s)) (ST s) where
     {-# INLINE unsafeGetCol #-}
 
 instance MMatrix (Tri (STBanded s)) (ST s) where
-    unsafeDoSApply_      = tbmv
-    {-# INLINE unsafeDoSApply_ #-}        
-    unsafeDoSApplyMat_   = tbmm
-    {-# INLINE unsafeDoSApplyMat_ #-}    
-    unsafeDoSApplyAdd    = tbmv'
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = tbmm'
-    {-# INLINE unsafeDoSApplyAddMat #-}    
+    unsafeDoSApplyVector_       = tbmv
+    {-# INLINE unsafeDoSApplyVector_  #-}        
+    unsafeDoSApplyMatrix_   = tbmm
+    {-# INLINE unsafeDoSApplyMatrix_ #-}    
+    unsafeDoSApplyAddVector    = tbmv'
+    {-# INLINE unsafeDoSApplyAddVector #-}    
+    unsafeDoSApplyAddMatrix = tbmm'
+    {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsST
     {-# INLINE getRows #-}
     getCols = getColsST
@@ -202,12 +202,12 @@ instance MMatrix (Tri (STBanded s)) (ST s) where
     {-# INLINE unsafeGetCol #-}
 
 instance MSolve (Tri (STBanded s)) (ST s) where
-    unsafeDoSSolve_    = tbsv
-    {-# INLINE unsafeDoSSolve_ #-}    
-    unsafeDoSSolveMat_ = tbsm
-    {-# INLINE unsafeDoSSolveMat_ #-}    
-    unsafeDoSSolve     = tbsv'
-    {-# INLINE unsafeDoSSolve #-}
-    unsafeDoSSolveMat  = tbsm'
-    {-# INLINE unsafeDoSSolveMat #-}
+    unsafeDoSSolveVector_    = tbsv
+    {-# INLINE unsafeDoSSolveVector_ #-}    
+    unsafeDoSSolveMatrix_ = tbsm
+    {-# INLINE unsafeDoSSolveMatrix_ #-}    
+    unsafeDoSSolveVector     = tbsv'
+    {-# INLINE unsafeDoSSolveVector #-}
+    unsafeDoSSolveMatrix  = tbsm'
+    {-# INLINE unsafeDoSSolveMatrix #-}
 

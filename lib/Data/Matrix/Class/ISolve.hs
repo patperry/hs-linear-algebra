@@ -16,10 +16,10 @@ module Data.Matrix.Class.ISolve (
     ISolve,
     
     -- * Solving linear systems
-    (<\>),
-    (<\\>),
-    ssolve,
-    ssolveMat,
+    solveVector,
+    solveMatrix,
+    ssolveVector,
+    ssolveMatrix,
     
     ) where
 

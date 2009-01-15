@@ -36,11 +36,11 @@ prop_tri_apply (TriMatrixMV (t :: TM) a x) =
 prop_tri_sapply k (TriMatrixMV (t :: TM) a x) =
     sapply k t x ~== sapply k a x
 
-prop_tri_applyMat (TriMatrixMM (t :: TM) a b) =
+prop_tri_applyMatrix (TriMatrixMM (t :: TM) a b) =
     t <**> b ~== a <**> b
 
-prop_tri_sapplyMat k (TriMatrixMM (t :: TM) a b) =
-    sapplyMat k t b ~== sapplyMat k a b
+prop_tri_sapplyMatrix k (TriMatrixMM (t :: TM) a b) =
+    sapplyMatrix k t b ~== sapplyMatrix k a b
 
 prop_tri_solve (TriMatrixSV (t :: TM) y) =
     let x = t <\> y
@@ -49,12 +49,12 @@ prop_tri_solve (TriMatrixSV (t :: TM) y) =
 prop_tri_ssolve k (TriMatrixSV (t :: TM) y) =
     ssolve k t y ~== t <\> (k *> y)
 
-prop_tri_solveMat (TriMatrixSM (t :: TM) b) =
+prop_tri_solveMatrix (TriMatrixSM (t :: TM) b) =
     let a = t <\\> b
     in t <**> a ~== b
 
-prop_tri_ssolveMat k (TriMatrixSM (t :: TM) b) =
-    ssolveMat k t b ~== t <\\> (k *> b)
+prop_tri_ssolveMatrix k (TriMatrixSM (t :: TM) b) =
+    ssolveMatrix k t b ~== t <\\> (k *> b)
 
 
 tests_TriMatrix =
@@ -62,11 +62,11 @@ tests_TriMatrix =
     , ("tri row"               , mytest prop_tri_row)
     , ("tri apply"             , mytest prop_tri_apply)
     , ("tri sapply"            , mytest prop_tri_sapply)
-    , ("tri applyMat"          , mytest prop_tri_applyMat)
-    , ("tri sapplyMat"         , mytest prop_tri_sapplyMat)
+    , ("tri applyMatrix"          , mytest prop_tri_applyMatrix)
+    , ("tri sapplyMatrix"         , mytest prop_tri_sapplyMatrix)
 
     , ("tri solve"             , mytest prop_tri_solve)
     , ("tri ssolve"            , mytest prop_tri_ssolve)
-    , ("tri solveMat"          , mytest prop_tri_solveMat)
-    , ("tri ssolveMat"         , mytest prop_tri_ssolveMat)
+    , ("tri solveMatrix"          , mytest prop_tri_solveMatrix)
+    , ("tri ssolveMatrix"         , mytest prop_tri_ssolveMatrix)
     ]

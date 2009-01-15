@@ -104,10 +104,10 @@ instance MatrixShaped (STMatrix s) where
     {-# INLINE herm #-}
     
 instance MMatrix (STMatrix s) (ST s) where
-    unsafeDoSApplyAdd = gemv
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = gemm
-    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeDoSApplyAddVector = gemv
+    {-# INLINE unsafeDoSApplyAddVector #-}
+    unsafeDoSApplyAddMatrix = gemm
+    {-# INLINE unsafeDoSApplyAddMatrix #-}
     unsafeGetRow = unsafeGetRowMatrix
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColMatrix
@@ -118,10 +118,10 @@ instance MMatrix (STMatrix s) (ST s) where
     {-# INLINE getCols #-}
 
 instance MMatrix (Herm (STMatrix s)) (ST s) where
-    unsafeDoSApplyAdd = hemv'
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = hemm'
-    {-# INLINE unsafeDoSApplyAddMat #-}    
+    unsafeDoSApplyAddVector = hemv'
+    {-# INLINE unsafeDoSApplyAddVector #-}
+    unsafeDoSApplyAddMatrix = hemm'
+    {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsST
     {-# INLINE getRows #-}
     getCols = getColsST
@@ -130,14 +130,14 @@ instance MMatrix (Herm (STMatrix s)) (ST s) where
     {-# INLINE unsafeGetCol #-}
 
 instance MMatrix (Tri (STMatrix s)) (ST s) where
-    unsafeDoSApplyAdd = unsafeDoSApplyAddTriMatrix
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = unsafeDoSApplyAddMatTriMatrix
-    {-# INLINE unsafeDoSApplyAddMat #-}
-    unsafeDoSApply_ = trmv
-    {-# INLINE unsafeDoSApply_ #-}
-    unsafeDoSApplyMat_ = trmm
-    {-# INLINE unsafeDoSApplyMat_ #-}
+    unsafeDoSApplyAddVector = unsafeDoSApplyAddVectorTriMatrix
+    {-# INLINE unsafeDoSApplyAddVector #-}
+    unsafeDoSApplyAddMatrix = unsafeDoSApplyAddMatrixTriMatrix
+    {-# INLINE unsafeDoSApplyAddMatrix #-}
+    unsafeDoSApplyVector_  = trmv
+    {-# INLINE unsafeDoSApplyVector_  #-}
+    unsafeDoSApplyMatrix_ = trmm
+    {-# INLINE unsafeDoSApplyMatrix_ #-}
     getRows = getRowsST
     {-# INLINE getRows #-}
     getCols = getColsST
@@ -148,14 +148,14 @@ instance MMatrix (Tri (STMatrix s)) (ST s) where
     {-# INLINE unsafeGetCol #-}
 
 instance MSolve (Tri (STMatrix s)) (ST s) where
-    unsafeDoSSolve = unsafeDoSSolveTriMatrix
-    {-# INLINE unsafeDoSSolve #-}
-    unsafeDoSSolveMat = unsafeDoSSolveMatTriMatrix
-    {-# INLINE unsafeDoSSolveMat #-}    
-    unsafeDoSSolve_ = trsv
-    {-# INLINE unsafeDoSSolve_ #-}
-    unsafeDoSSolveMat_ = trsm
-    {-# INLINE unsafeDoSSolveMat_ #-}
+    unsafeDoSSolveVector = unsafeDoSSolveTriMatrix
+    {-# INLINE unsafeDoSSolveVector #-}
+    unsafeDoSSolveMatrix = unsafeDoSSolveMatrixTriMatrix
+    {-# INLINE unsafeDoSSolveMatrix #-}    
+    unsafeDoSSolveVector_ = trsv
+    {-# INLINE unsafeDoSSolveVector_ #-}
+    unsafeDoSSolveMatrix_ = trsm
+    {-# INLINE unsafeDoSSolveMatrix_ #-}
 
 instance BaseMatrix (STMatrix s) where
     ldaMatrix (STMatrix a) = ldaIOMatrix a

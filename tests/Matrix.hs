@@ -155,21 +155,21 @@ prop_apply_scale k (MatrixMV (a :: M) x) =
 prop_apply_linear (MatrixMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
-prop_applyMat_id_right (a :: M) =
+prop_applyMatrix_id_right (a :: M) =
     let n = numCols a
     in a <**> (identityMatrix (n,n) :: M) ~== a
-prop_applyMat_id_left (a :: M) =
+prop_applyMatrix_id_left (a :: M) =
     let m = numRows a
     in (identityMatrix (m,m) :: M) <**> a ~== a
-prop_applyMat_scale_left (MatrixMM (a:: M) b) k =
+prop_applyMatrix_scale_left (MatrixMM (a:: M) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
-prop_applyMat_scale_right (MatrixMM (a:: M) b) k =
+prop_applyMatrix_scale_right (MatrixMM (a:: M) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
-prop_applyMat_linear (MatrixMMPair (a :: M) b c) =
+prop_applyMatrix_linear (MatrixMMPair (a :: M) b c) =
     a <**> (b + c) ~== a <**> b + a <**> c
-prop_applyMat_herm (MatrixMM (a :: M) b) =
+prop_applyMatrix_herm (MatrixMM (a :: M) b) =
     herm b <**> herm a ~== herm (a <**> b)
-prop_applyMat_cols (MatrixMM (a :: M) b) =
+prop_applyMatrix_cols (MatrixMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
 
 prop_shift k (a :: M) =
@@ -258,13 +258,13 @@ tests_Matrix =
     , ("apply scale"           , mytest prop_apply_scale)
     , ("apply linear"          , mytest prop_apply_linear)
     
-    , ("applyMat id left"       , mytest prop_applyMat_id_left)
-    , ("applyMat id right"      , mytest prop_applyMat_id_right)
-    , ("applyMat scale left"    , mytest prop_applyMat_scale_left)
-    , ("applyMat scale right"   , mytest prop_applyMat_scale_right)
-    , ("applyMat linear"        , mytest prop_applyMat_linear)
-    , ("applyMat herm"          , mytest prop_applyMat_herm)
-    , ("applyMat cols"          , mytest prop_applyMat_cols)
+    , ("applyMatrix id left"       , mytest prop_applyMatrix_id_left)
+    , ("applyMatrix id right"      , mytest prop_applyMatrix_id_right)
+    , ("applyMatrix scale left"    , mytest prop_applyMatrix_scale_left)
+    , ("applyMatrix scale right"   , mytest prop_applyMatrix_scale_right)
+    , ("applyMatrix linear"        , mytest prop_applyMatrix_linear)
+    , ("applyMatrix herm"          , mytest prop_applyMatrix_herm)
+    , ("applyMatrix cols"          , mytest prop_applyMatrix_cols)
     , ("shift"                 , mytest prop_shift)
     , ("scale"                 , mytest prop_scale)
     

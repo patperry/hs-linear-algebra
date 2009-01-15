@@ -704,10 +704,10 @@ instance WriteTensor IOBanded (Int,Int) IO where
     {-# INLINE canModifyElem #-}
 
 instance MMatrix IOBanded IO where
-    unsafeDoSApplyAdd    = gbmv
-    {-# INLINE unsafeDoSApplyAdd #-}
-    unsafeDoSApplyAddMat = gbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}
+    unsafeDoSApplyAddVector    = gbmv
+    {-# INLINE unsafeDoSApplyAddVector #-}
+    unsafeDoSApplyAddMatrix = gbmm
+    {-# INLINE unsafeDoSApplyAddMatrix #-}
     unsafeGetRow         = unsafeGetRowIOBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColIOBanded
@@ -718,10 +718,10 @@ instance MMatrix IOBanded IO where
     {-# INLINE getCols #-}
 
 instance MMatrix (Herm IOBanded) IO where
-    unsafeDoSApplyAdd    = hbmv
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = hbmm
-    {-# INLINE unsafeDoSApplyAddMat #-}    
+    unsafeDoSApplyAddVector    = hbmv
+    {-# INLINE unsafeDoSApplyAddVector #-}    
+    unsafeDoSApplyAddMatrix = hbmm
+    {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsIO
     {-# INLINE getRows #-}
     getCols = getColsIO
@@ -732,14 +732,14 @@ instance MMatrix (Herm IOBanded) IO where
     {-# INLINE unsafeGetCol #-}
 
 instance MMatrix (Tri IOBanded) IO where
-    unsafeDoSApply_      = tbmv
-    {-# INLINE unsafeDoSApply_ #-}        
-    unsafeDoSApplyMat_   = tbmm
-    {-# INLINE unsafeDoSApplyMat_ #-}    
-    unsafeDoSApplyAdd    = tbmv'
-    {-# INLINE unsafeDoSApplyAdd #-}    
-    unsafeDoSApplyAddMat = tbmm'
-    {-# INLINE unsafeDoSApplyAddMat #-}    
+    unsafeDoSApplyVector_       = tbmv
+    {-# INLINE unsafeDoSApplyVector_  #-}        
+    unsafeDoSApplyMatrix_   = tbmm
+    {-# INLINE unsafeDoSApplyMatrix_ #-}    
+    unsafeDoSApplyAddVector    = tbmv'
+    {-# INLINE unsafeDoSApplyAddVector #-}    
+    unsafeDoSApplyAddMatrix = tbmm'
+    {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsIO
     {-# INLINE getRows #-}
     getCols = getColsIO
@@ -750,11 +750,11 @@ instance MMatrix (Tri IOBanded) IO where
     {-# INLINE unsafeGetCol #-}
 
 instance MSolve (Tri IOBanded) IO where
-    unsafeDoSSolve_    = tbsv
-    {-# INLINE unsafeDoSSolve_ #-}    
-    unsafeDoSSolveMat_ = tbsm
-    {-# INLINE unsafeDoSSolveMat_ #-}    
-    unsafeDoSSolve     = tbsv'
-    {-# INLINE unsafeDoSSolve #-}
-    unsafeDoSSolveMat  = tbsm'
-    {-# INLINE unsafeDoSSolveMat #-}    
+    unsafeDoSSolveVector_    = tbsv
+    {-# INLINE unsafeDoSSolveVector_ #-}    
+    unsafeDoSSolveMatrix_ = tbsm
+    {-# INLINE unsafeDoSSolveMatrix_ #-}    
+    unsafeDoSSolveVector     = tbsv'
+    {-# INLINE unsafeDoSSolveVector #-}
+    unsafeDoSSolveMatrix  = tbsm'
+    {-# INLINE unsafeDoSSolveMatrix #-}    

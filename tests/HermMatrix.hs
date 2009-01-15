@@ -32,13 +32,13 @@ prop_herm_sapply k (HermMatrixMV (h :: HM) a x) =
 prop_herm_herm_apply (HermMatrixMV (h :: HM) a x) =
     herm h <*> x ~== h <*> x
 
-prop_herm_applyMat (HermMatrixMM (h :: HM) a b) =
+prop_herm_applyMatrix (HermMatrixMM (h :: HM) a b) =
     h <**> b ~== a <**> b
 
-prop_herm_sapplyMat k (HermMatrixMM (h :: HM) a b) =
-    sapplyMat k h b ~== sapplyMat k a b
+prop_herm_sapplyMatrix k (HermMatrixMM (h :: HM) a b) =
+    sapplyMatrix k h b ~== sapplyMatrix k a b
 
-prop_herm_herm_applyMat (HermMatrixMM (h :: HM) _ b) =
+prop_herm_herm_applyMatrix (HermMatrixMM (h :: HM) _ b) =
     herm h <**> b ~== h <**> b
 
 tests_HermMatrix =
@@ -48,7 +48,7 @@ tests_HermMatrix =
     , ("herm sapply"           , mytest prop_herm_sapply)
     , ("herm herm apply"       , mytest prop_herm_herm_apply)
 
-    , ("herm applyMat"         , mytest prop_herm_applyMat)
-    , ("herm sapplyMat"        , mytest prop_herm_sapplyMat)
-    , ("herm herm applyMat"    , mytest prop_herm_herm_applyMat)
+    , ("herm applyMatrix"         , mytest prop_herm_applyMatrix)
+    , ("herm sapplyMatrix"        , mytest prop_herm_sapplyMatrix)
+    , ("herm herm applyMatrix"    , mytest prop_herm_herm_applyMatrix)
     ]

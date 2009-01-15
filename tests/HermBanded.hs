@@ -24,13 +24,13 @@ prop_herm_sapply k (HermBandedMV (h :: HB) a x) =
 prop_herm_herm_apply (HermBandedMV (h :: HB) a x) =
     herm h <*> x ~== h <*> x
 
-prop_herm_applyMat (HermBandedMM (h :: HB) a b) =
+prop_herm_applyMatrix (HermBandedMM (h :: HB) a b) =
     h <**> b ~== a <**> b
 
-prop_herm_sapplyMat k (HermBandedMM (h :: HB) a b) =
-    sapplyMat k h b ~== sapplyMat k a b
+prop_herm_sapplyMatrix k (HermBandedMM (h :: HB) a b) =
+    sapplyMatrix k h b ~== sapplyMatrix k a b
 
-prop_herm_herm_applyMat (HermBandedMM (h :: HB) _ b) =
+prop_herm_herm_applyMatrix (HermBandedMM (h :: HB) _ b) =
     herm h <**> b ~== h <**> b
 
 
@@ -39,7 +39,7 @@ tests_HermBanded =
     , ("herm sapply"           , mytest prop_herm_sapply)
     , ("herm herm apply"       , mytest prop_herm_herm_apply)
 
-    , ("herm applyMat"         , mytest prop_herm_applyMat)
-    , ("herm sapplyMat"        , mytest prop_herm_sapplyMat)
-    , ("herm herm applyMat"    , mytest prop_herm_herm_applyMat)
+    , ("herm applyMatrix"         , mytest prop_herm_applyMatrix)
+    , ("herm sapplyMatrix"        , mytest prop_herm_sapplyMatrix)
+    , ("herm herm applyMatrix"    , mytest prop_herm_herm_applyMatrix)
     ]

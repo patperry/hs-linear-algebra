@@ -18,10 +18,10 @@ module Data.Matrix.Class.ISolveBase (
     ISolve(..),
     
     -- * Solving linear systems
-    (<\>),
-    (<\\>),
-    ssolve,
-    ssolveMat,
+    solveVector,
+    solveMatrix,
+    ssolveVector,
+    ssolveMatrix,
     
     ) where
 
@@ -30,72 +30,65 @@ import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
 import Data.Matrix.Class
 import Data.Matrix.Class.MSolveBase
 
-import Data.Vector.Dense ( Vector, dim, (*>) )
+import Data.Vector.Dense ( Vector, dim )
 import Data.Vector.Dense.ST ( runSTVector )
 import Data.Matrix.Dense ( Matrix, shape )
 import Data.Matrix.Dense.ST ( runSTMatrix )
 import Data.Matrix.TriBase
-
-infixr 7 <\>, <\\>
 
 -- | A type class for immutable matrices with inverses.  The member
 -- functions of the type class do not perform any checks on the validity
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
 class (MatrixShaped a) => ISolve a where
-    unsafeSolve :: (BLAS3 e) 
-                => a (m,n) e -> Vector m e -> Vector n e
-    unsafeSolve = unsafeSSolve 1
-    {-# INLINE unsafeSolve #-}
+    unsafeSolveVector :: (BLAS3 e) 
+                   => a (m,n) e -> Vector m e -> Vector n e
+    unsafeSolveVector = unsafeSSolveVector 1
+    {-# INLINE unsafeSolveVector #-}
     
-    unsafeSolveMat :: (BLAS3 e) 
+    unsafeSolveMatrix :: (BLAS3 e) 
                    => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
-    unsafeSolveMat = unsafeSSolveMat 1
-    {-# INLINE unsafeSolveMat #-}
+    unsafeSolveMatrix = unsafeSSolveMatrix 1
+    {-# INLINE unsafeSolveMatrix #-}
 
-    unsafeSSolve :: (BLAS3 e)
-                 => e -> a (m,n) e -> Vector m e -> Vector n e
+    unsafeSSolveVector :: (BLAS3 e)
+                    => e -> a (m,n) e -> Vector m e -> Vector n e
     
-    unsafeSSolveMat :: (BLAS3 e)
+    unsafeSSolveMatrix :: (BLAS3 e)
                     => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 
--- | Solve for a vector.
-(<\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
-(<\>) a y =
+-- | SolveVector for a vector.
+solveVector :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
+solveVector a y =
     checkMatVecSolv (shape a) (dim y) $
-        unsafeSolve a y
-{-# INLINE (<\>) #-}
+        unsafeSolveVector a y
+{-# INLINE solveVector #-}
 
--- | Solve for a matrix.
-(<\\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
-(<\\>) a b =
+-- | SolveVector for a matrix.
+solveMatrix :: (ISolve a, BLAS3 e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+solveMatrix a b =
     checkMatMatSolv (shape a) (shape b) $
-        unsafeSolveMat a b
-{-# INLINE (<\\>) #-}
+        unsafeSolveMatrix a b
+{-# INLINE solveMatrix #-}
 
--- | Solve for a vector and scale.
--- @ssolve k a y@ is equal to @a \<\\> (k *> y)@ but is often faster.
-ssolve :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Vector m e -> Vector n e
-ssolve alpha a y =
+-- | SolveVector for a vector and scale.
+-- @ssolveVector k a y@ is equal to @a `solveVector` (k *> y)@ but is often faster.
+ssolveVector :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Vector m e -> Vector n e
+ssolveVector alpha a y =
     checkMatVecSolv (shape a) (dim y) $
-        unsafeSSolve alpha a y
-{-# INLINE ssolve #-}
+        unsafeSSolveVector alpha a y
+{-# INLINE ssolveVector #-}
 
--- | Solve for a matrix and scale.
--- @ssolveMat k a c@ is equal to @a \<\\\\> (k *> c)@ but is often faster.
-ssolveMat :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
-ssolveMat alpha a b =
+-- | SolveVector for a matrix and scale.
+-- @ssolveMatrix k a c@ is equal to @a `solveMatrix` (k *> c)@ but is often faster.
+ssolveMatrix :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+ssolveMatrix alpha a b =
     checkMatMatSolv (shape a) (shape b) $
-        unsafeSSolveMat alpha a b
-{-# INLINE ssolveMat #-}
+        unsafeSSolveMatrix alpha a b
+{-# INLINE ssolveMatrix #-}
 
 instance ISolve (Tri Matrix) where
-    unsafeSSolve    alpha a y = runSTVector $ unsafeGetSSolve    alpha a y
-    {-# INLINE unsafeSSolve #-}
-    unsafeSSolveMat alpha a c = runSTMatrix $ unsafeGetSSolveMat alpha a c
-    {-# INLINE unsafeSSolveMat #-}
-
-{-# RULES
-"scale.solve/ssolve"       forall k a y. a <\>  (k *> y) = ssolve k a y
-"scale.solveMat/ssolveMat" forall k a c. a <\\> (k *> c) = ssolveMat k a c
-  #-}
+    unsafeSSolveVector alpha a y = runSTVector $ unsafeGetSSolveVector alpha a y
+    {-# INLINE unsafeSSolveVector #-}
+    unsafeSSolveMatrix alpha a c = runSTMatrix $ unsafeGetSSolveMatrix alpha a c
+    {-# INLINE unsafeSSolveMatrix #-}

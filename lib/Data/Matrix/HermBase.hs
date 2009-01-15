@@ -35,7 +35,7 @@ data Herm a nn e = Herm UpLoEnum (a nn e)
 coerceHerm :: Herm a mn e -> Herm a mn' e
 coerceHerm = unsafeCoerce
 
--- | Apply a function to the unerlying matrix.
+-- | ApplyVector a function to the unerlying matrix.
 mapHerm :: (a nn e -> b nn' e) -> Herm a nn e -> Herm b nn' e
 mapHerm f (Herm u a) = Herm u $ f a
 

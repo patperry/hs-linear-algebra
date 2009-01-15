@@ -53,7 +53,7 @@ class (Shaped x i) => ITensor x i where
 
     -- accum :: (e -> e' -> e) -> x e -> [(i,e')] -> x e
     
-    -- | Apply a function elementwise to a tensor.
+    -- | ApplyVector a function elementwise to a tensor.
     tmap :: (e -> e) -> x n e -> x n e
     
     -- ixmap :: i -> (i -> i) -> x e -> x e

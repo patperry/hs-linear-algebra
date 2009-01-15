@@ -155,13 +155,13 @@ prop_apply_scale k (BandedMV (a :: B) x) =
 prop_apply_linear (BandedMVPair (a :: B) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 
-prop_applyMat_scale_left (BandedMM (a:: B) b) k =
+prop_applyMatrix_scale_left (BandedMM (a:: B) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
-prop_applyMat_scale_right (BandedMM (a:: B) b) k =
+prop_applyMatrix_scale_right (BandedMM (a:: B) b) k =
     (k *> a) <**> b ~== k *> (a <**> b)
-prop_applyMat_linear (BandedMMPair (a :: B) b c) =
+prop_applyMatrix_linear (BandedMMPair (a :: B) b c) =
     (a <**> (b + c) ~== a <**> b + a <**> c)
-prop_applyMat_cols (BandedMM (a :: B) b) =
+prop_applyMatrix_cols (BandedMM (a :: B) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
 
 prop_scale k (a :: B) =
@@ -218,10 +218,10 @@ tests_Banded =
     , ("apply scale"           , mytest prop_apply_scale)
     , ("apply linear"          , mytest prop_apply_linear)
     
-    , ("applyMat scale left"   , mytest prop_applyMat_scale_left)
-    , ("applyMat scale right"  , mytest prop_applyMat_scale_right)
-    , ("applyMat linear"       , mytest prop_applyMat_linear)
-    , ("applyMat cols"         , mytest prop_applyMat_cols)
+    , ("applyMatrix scale left"   , mytest prop_applyMatrix_scale_left)
+    , ("applyMatrix scale right"  , mytest prop_applyMatrix_scale_right)
+    , ("applyMatrix linear"       , mytest prop_applyMatrix_linear)
+    , ("applyMatrix cols"         , mytest prop_applyMatrix_cols)
     
     , ("scale"                 , mytest prop_scale)
     

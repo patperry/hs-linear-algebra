@@ -25,22 +25,22 @@ module Data.Matrix.Class.MMatrix (
     getCols',
     
     -- * Matrix and vector multiplication
-    getApply,
-    getSApply,
+    getApplyVector,
+    getSApplyVector,
     
-    getApplyMat,
-    getSApplyMat,
+    getApplyMatrix,
+    getSApplyMatrix,
 
     -- * In-place multiplication
-    doApply,
-    doSApplyAdd,
-    doApply_,
-    doSApply_,
+    doApplyVector,
+    doSApplyAddVector,
+    doApplyVector_,
+    doSApplyVector_,
     
-    doApplyMat,
-    doSApplyAddMat,
-    doApplyMat_,
-    doSApplyMat_,
+    doApplyMatrix,
+    doSApplyAddMatrix,
+    doApplyMatrix_,
+    doSApplyMatrix_,
     ) where
 
 import Data.Matrix.Class.MMatrixBase

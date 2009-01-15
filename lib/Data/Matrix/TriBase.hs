@@ -36,7 +36,7 @@ data Tri a np e = Tri UpLoEnum DiagEnum (a np e)
 coerceTri :: Tri a np e -> Tri a np' e
 coerceTri = unsafeCoerce
 
--- | Apply a function to the base matrix.
+-- | ApplyVector a function to the base matrix.
 mapTri :: (a np e -> b np' e) -> Tri a np e -> Tri b np' e
 mapTri f (Tri u d a) = Tri u d $ f a
 

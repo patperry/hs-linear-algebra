@@ -25,14 +25,14 @@ module Data.Matrix.Class.IMatrixBase (
     cols,
 
     -- * Multiplication
-    (<*>),
-    (<**>),
-    sapply,
-    sapplyMat,
+    applyVector,
+    applyMatrix,
+    sapplyVector,
+    sapplyMatrix,
     
     -- * Unsafe operations
-    unsafeApply,
-    unsafeApplyMat,
+    unsafeApplyVector,
+    unsafeApplyMatrix,
     ) where
 
 import Data.Elem.BLAS
@@ -43,8 +43,6 @@ import Data.Tensor.Class
 
 import Data.Vector.Dense
 import Data.Matrix.Dense.Base
-
-infixr 7 <*>, <**>
 
 -- | Get the given row in a matrix.
 row :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector n e
@@ -57,36 +55,31 @@ col a = checkedCol (shape a) (unsafeCol a)
 {-# INLINE col #-}
 
 -- | Matrix multiplication by a vector.
-(<*>) :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
-(<*>) a x = checkMatVecMult (shape a) (dim x) $ unsafeApply a x
-{-# INLINE (<*>) #-}
+applyVector :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+applyVector a x = checkMatVecMult (shape a) (dim x) $ unsafeApplyVector a x
+{-# INLINE applyVector #-}
 
 -- | Matrix multiplication by a matrix.
-(<**>) :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-(<**>) a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMat a b
-{-# INLINE (<**>) #-}
+applyMatrix :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+applyMatrix a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMatrix a b
+{-# INLINE applyMatrix #-}
 
 -- | Scale and multiply by a vector.  
--- @sapply k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
-sapply :: (IMatrix a, BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
-sapply k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApply k a x
-{-# INLINE sapply #-}
+-- @sapplyVector k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
+sapplyVector :: (IMatrix a, BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
+sapplyVector k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApplyVector k a x
+{-# INLINE sapplyVector #-}
     
 -- | Scale and multiply by a matrix.
--- @sapplyMat k a b@ is equal to @a \<**> (k *> b)@, and often it is faster.
-sapplyMat :: (IMatrix a, BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
-sapplyMat k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMat k a b
-{-# INLINE sapplyMat #-}
+-- @sapplyMatrix k a b@ is equal to @a \<**> (k *> b)@, and often it is faster.
+sapplyMatrix :: (IMatrix a, BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e    
+sapplyMatrix k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMatrix k a b
+{-# INLINE sapplyMatrix #-}
 
-unsafeApply :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
-unsafeApply = unsafeSApply 1
-{-# INLINE unsafeApply #-}
+unsafeApplyVector :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+unsafeApplyVector = unsafeSApplyVector 1
+{-# INLINE unsafeApplyVector #-}
 
-unsafeApplyMat :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
-unsafeApplyMat = unsafeSApplyMat 1
-{-# INLINE unsafeApplyMat #-}
-
-{-# RULES
-"scale.apply/sapply"       forall k a x. a <*>  (k *> x) = sapply k a x
-"scale.applyMat/sapplyMat" forall k a b. a <**> (k *> b) = sapplyMat k a b
-  #-}
+unsafeApplyMatrix :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+unsafeApplyMatrix = unsafeSApplyMatrix 1
+{-# INLINE unsafeApplyMatrix #-}
