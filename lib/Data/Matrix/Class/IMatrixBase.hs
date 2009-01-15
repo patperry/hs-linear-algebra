@@ -18,6 +18,10 @@ module Data.Matrix.Class.IMatrixBase (
     -- * The IMatrix type class
     IMatrix(..),
 
+    -- * Operators
+    (<*>),
+    (<**>),
+
     -- * Rows and columns
     row,
     col,
@@ -83,3 +87,18 @@ unsafeApplyVector = unsafeSApplyVector 1
 unsafeApplyMatrix :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 unsafeApplyMatrix = unsafeSApplyMatrix 1
 {-# INLINE unsafeApplyMatrix #-}
+
+-- | Operator form of matrix multiplication by a vector.
+(<*>) :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+(<*>) = applyVector
+{-# INLINE (<*>) #-}
+
+-- | Operator form of matrix multiplication by a matrix.
+(<**>) :: (IMatrix a, BLAS3 e) => a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
+(<**>) = applyMatrix
+{-# INLINE (<**>) #-}
+
+{-# RULES
+"scale.apply/sapply" forall k a x. a <*> (k *> x) = sapplyVector k a x
+"scale.applyMat/sapplyMat" forall k a b. a <**> (k *> b) = sapplyMatrix k a b
+ #-}

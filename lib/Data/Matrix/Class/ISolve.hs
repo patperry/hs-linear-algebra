@@ -15,6 +15,10 @@ module Data.Matrix.Class.ISolve (
     -- * The ISolve type class
     ISolve,
     
+    -- * Operators
+    (<\>),
+    (<\\>),
+    
     -- * Solving linear systems
     solveVector,
     solveMatrix,

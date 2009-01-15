@@ -19,7 +19,7 @@ prop_herm_apply (HermBandedMV (h :: HB) a x) =
     h <*> x ~== a <*> x
 
 prop_herm_sapply k (HermBandedMV (h :: HB) a x) =
-    sapply k h x ~== sapply k a x
+    sapplyVector k h x ~== sapplyVector k a x
 
 prop_herm_herm_apply (HermBandedMV (h :: HB) a x) =
     herm h <*> x ~== h <*> x

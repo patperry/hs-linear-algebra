@@ -15,6 +15,10 @@ module Data.Matrix.Class.IMatrix (
     -- * The IMatrix type class
     IMatrix,
 
+    -- * Operators
+    (<*>),
+    (<**>),
+
     -- * Rows and columns
     row,
     col,

@@ -17,6 +17,10 @@ module Data.Matrix.Class.ISolveBase (
     -- * The IMatrix type class
     ISolve(..),
     
+    -- * Operators
+    (<\>),
+    (<\\>),
+    
     -- * Solving linear systems
     solveVector,
     solveMatrix,
@@ -30,11 +34,15 @@ import BLAS.Internal ( checkMatVecSolv, checkMatMatSolv )
 import Data.Matrix.Class
 import Data.Matrix.Class.MSolveBase
 
+import Data.Tensor.Class.ITensor( (*>) )
 import Data.Vector.Dense ( Vector, dim )
 import Data.Vector.Dense.ST ( runSTVector )
 import Data.Matrix.Dense ( Matrix, shape )
 import Data.Matrix.Dense.ST ( runSTMatrix )
 import Data.Matrix.TriBase
+
+infixr 7 <\>, <\\>
+
 
 -- | A type class for immutable matrices with inverses.  The member
 -- functions of the type class do not perform any checks on the validity
@@ -57,21 +65,21 @@ class (MatrixShaped a) => ISolve a where
     unsafeSSolveMatrix :: (BLAS3 e)
                     => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 
--- | SolveVector for a vector.
+-- | Solve for a vector.
 solveVector :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
 solveVector a y =
     checkMatVecSolv (shape a) (dim y) $
         unsafeSolveVector a y
 {-# INLINE solveVector #-}
 
--- | SolveVector for a matrix.
+-- | Solve for a matrix.
 solveMatrix :: (ISolve a, BLAS3 e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 solveMatrix a b =
     checkMatMatSolv (shape a) (shape b) $
         unsafeSolveMatrix a b
 {-# INLINE solveMatrix #-}
 
--- | SolveVector for a vector and scale.
+-- | Solve for a vector and scale.
 -- @ssolveVector k a y@ is equal to @a `solveVector` (k *> y)@ but is often faster.
 ssolveVector :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Vector m e -> Vector n e
 ssolveVector alpha a y =
@@ -79,7 +87,7 @@ ssolveVector alpha a y =
         unsafeSSolveVector alpha a y
 {-# INLINE ssolveVector #-}
 
--- | SolveVector for a matrix and scale.
+-- | Solve for a matrix and scale.
 -- @ssolveMatrix k a c@ is equal to @a `solveMatrix` (k *> c)@ but is often faster.
 ssolveMatrix :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 ssolveMatrix alpha a b =
@@ -92,3 +100,18 @@ instance ISolve (Tri Matrix) where
     {-# INLINE unsafeSSolveVector #-}
     unsafeSSolveMatrix alpha a c = runSTMatrix $ unsafeGetSSolveMatrix alpha a c
     {-# INLINE unsafeSSolveMatrix #-}
+
+-- | Operator form of solving for a vector.
+(<\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
+(<\>) = solveVector
+{-# INLINE (<\>) #-}
+
+-- | Operator form of solving for a matrix.
+(<\\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
+(<\\>) = solveMatrix
+{-# INLINE (<\\>) #-}
+
+{-# RULES
+"scale.solve/ssolveVector"       forall k a y. a <\>  (k *> y) = ssolveVector k a y
+"scale.solveMatrix/ssolveMatrix" forall k a c. a <\\> (k *> c) = ssolveMatrix k a c
+ #-}

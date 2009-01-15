@@ -34,7 +34,7 @@ prop_tri_apply (TriMatrixMV (t :: TM) a x) =
     t <*> x ~== a <*> x
 
 prop_tri_sapply k (TriMatrixMV (t :: TM) a x) =
-    sapply k t x ~== sapply k a x
+    sapplyVector k t x ~== sapplyVector k a x
 
 prop_tri_applyMatrix (TriMatrixMM (t :: TM) a b) =
     t <**> b ~== a <**> b
@@ -47,7 +47,7 @@ prop_tri_solve (TriMatrixSV (t :: TM) y) =
     in t <*> x ~== y
 
 prop_tri_ssolve k (TriMatrixSV (t :: TM) y) =
-    ssolve k t y ~== t <\> (k *> y)
+    ssolveVector k t y ~== t <\> (k *> y)
 
 prop_tri_solveMatrix (TriMatrixSM (t :: TM) b) =
     let a = t <\\> b

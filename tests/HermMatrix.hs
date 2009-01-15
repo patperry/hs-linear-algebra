@@ -27,7 +27,7 @@ prop_herm_apply (HermMatrixMV (h :: HM) a x) =
     h <*> x ~== a <*> x
 
 prop_herm_sapply k (HermMatrixMV (h :: HM) a x) =
-    sapply k h x ~== sapply k a x
+    sapplyVector k h x ~== sapplyVector k a x
 
 prop_herm_herm_apply (HermMatrixMV (h :: HM) a x) =
     herm h <*> x ~== h <*> x

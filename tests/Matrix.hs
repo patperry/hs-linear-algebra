@@ -151,7 +151,7 @@ prop_apply_basis (MatrixAt (a :: M) (_,j)) =
 prop_apply_herm_basis (MatrixAt (a :: M) (i,_)) =
     (herm a) <*> (basisVector (numRows a) i :: V) ~== conj (row a i)
 prop_apply_scale k (MatrixMV (a :: M) x) =
-    sapply k a x ~== k *> (a <*> x)
+    sapplyVector k a x ~== k *> (a <*> x)
 prop_apply_linear (MatrixMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 

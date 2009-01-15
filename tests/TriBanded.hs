@@ -26,10 +26,10 @@ prop_herm_tri_apply (TriBandedMV (t :: TB) a x) =
     herm t <*> x ~== herm a <*> x
 
 prop_scale_tri_apply k (TriBandedMV (t :: TB) a x) =
-    sapply k t x ~== sapply k a x
+    sapplyVector k t x ~== sapplyVector k a x
 
 prop_scale_herm_tri_apply k (TriBandedMV (t :: TB) a x) =
-    sapply k (herm t) x ~== sapply k (herm a) x
+    sapplyVector k (herm t) x ~== sapplyVector k (herm a) x
 
 
 prop_tri_compose (TriBandedMM (t :: TB) a b) =
@@ -50,7 +50,7 @@ prop_tri_solve (TriBandedSV (t :: TB) y) =
     in t <*> x ~== y
 
 prop_tri_ssolve k (TriBandedSV (t :: TB) y) =
-    ssolve k t y ~== t <\> (k*>y)
+    ssolveVector k t y ~== t <\> (k*>y)
 
 prop_tri_solveMatrix (TriBandedSM (t :: TB) c) =
     let b = t <\\> c
