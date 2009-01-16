@@ -21,7 +21,6 @@ lu (a :: Matrix (n,p) e) = runST $ do
             return $ Right (a',pivots)
             )
 
-
 {-
  - Recursive LU factorization with row pivoting.  Takes a matrix
  - A and factors it as P A = L U, where P is a permutation matrix, 
@@ -31,7 +30,7 @@ lu (a :: Matrix (n,p) e) = runST $ do
  - On failure, the index of the failing column is returned.
  -}      
 {-# INLINE luFactorize #-}
-luFactorize :: (WriteMatrix a m) => a (n,p) e -> m (Either Int [Int])
+luFactorize :: (WriteMatrix a m, BLAS3 e) => a (n,p) e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
         let nleft = mn `div` 2
