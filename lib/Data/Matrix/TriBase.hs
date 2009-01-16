@@ -14,9 +14,9 @@ module Data.Matrix.TriBase
 
 import Unsafe.Coerce
 
+import BLAS.Internal( checkFat, checkTall )
 import Data.Matrix.Class
 import Data.Tensor.Class
-import BLAS.Types ( UpLoEnum(..), DiagEnum(..), flipUpLo )
 
 -- | A triangular or trapezoidal view of an underlying matrix.  The view 
 -- can either be of the upper or lower triangular part of the matrix, and
@@ -50,19 +50,19 @@ triToBase (Tri u d a) = (u,d,a)
 
 -- | Get a lower triangular view of a matrix.
 lower :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-lower = Tri Lower NonUnit
+lower a = checkTall "lower" (shape a) $ Tri Lower NonUnit a
 
 -- | Get a lower triangular view of a matrix, with unit diagonal.
 lowerU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-lowerU = Tri Lower Unit
+lowerU a = checkTall "lowerU" (shape a) $ Tri Lower Unit a
 
 -- | Get an upper triangular view of a matrix.
 upper :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-upper = Tri Upper NonUnit
+upper a = checkFat "upper" (shape a) $ Tri Upper NonUnit a
 
 -- | Get an upper triangular view of a matrix, with unit diagonal.
 upperU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-upperU = Tri Upper Unit
+upperU a = checkFat "upperU" (shape a) $ Tri Upper Unit a
 
       
 instance (MatrixShaped a) => Shaped (Tri a) (Int,Int) where
@@ -78,15 +78,10 @@ instance (MatrixShaped a) => MatrixShaped (Tri a) where
 
 instance (Show (a (n,p) e), MatrixShaped a) => Show (Tri a (n,p) e) where
     show (Tri u d a) =
-        constructor ++ suffix ++ " (" ++ show a ++ ")"
+        constructor ++ " (" ++ show a ++ ")"
         where
           constructor = case (u,d) of
               (Lower, NonUnit) -> "lower"
               (Lower, Unit   ) -> "lowerU"
               (Upper, NonUnit) -> "upper"
               (Upper, Unit   ) -> "upperU"
-
-          suffix = case undefined of
-                       _ | isSquare a -> ""
-                       _ | isFat a    -> "Fat"
-                       _              -> "Tall"
