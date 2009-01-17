@@ -95,6 +95,8 @@ module Unsafe.BLAS (
     ISolve(..),
     MMatrix(..),
     MSolve(..),
+    unsafeGetSSolveVector,
+    unsafeGetSSolveMatrix,
 
     ) where
 
