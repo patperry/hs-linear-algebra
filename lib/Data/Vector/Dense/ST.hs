@@ -17,5 +17,5 @@ module Data.Vector.Dense.ST (
     module Data.Vector.Dense.Class
     ) where
 
-import Data.Vector.Dense.STBase( STVector, runSTVector )
+import Data.Vector.Dense.Base( STVector, runSTVector )
 import Data.Vector.Dense.Class

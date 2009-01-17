@@ -40,12 +40,12 @@ import Data.Tensor.Class.MTensor
 import Data.Matrix.Dense.IOBase( IOMatrix(..) )
 import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
     newCopyMatrix, colViews, scaleByMatrix, unsafeCopyMatrix, 
-    unsafeAxpyMatrix )
+    unsafeAxpyMatrix, unsafeMatrixToIOMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
 import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
     stride, conj, isConj, unsafeVectorToIOVector, newListVector,
     newCopyVector, newCopyVector', scaleByVector, doConjVector,
-    unsafeCopyVector, unsafeAxpyVector )
+    unsafeCopyVector, unsafeAxpyVector, unsafeConvertIOVector )
 
 -- | Banded matrix in the 'IO' monad.  The type arguments are as follows:
 --
@@ -445,8 +445,7 @@ unsafeDiagViewIOBanded a@(IOBanded h m n _ _ fp p ld) d
         in (IOVector NoConj len fp p' inc)
 
 
-unsafeGetRowIOBanded :: (WriteVector y IO) 
-                     => IOBanded np e -> Int -> IO (y p e)
+unsafeGetRowIOBanded :: IOBanded np e -> Int -> IO (IOVector p e)
 unsafeGetRowIOBanded a@(IOBanded _ _ _ _ _ _ _ _) i =
     let (nb,x,na) = unsafeRowViewIOBanded a i
         n = numCols a
@@ -454,8 +453,7 @@ unsafeGetRowIOBanded a@(IOBanded _ _ _ _ _ _ _ _) i =
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColIOBanded :: (WriteVector y IO) 
-                     => IOBanded np e -> Int -> IO (y n e)
+unsafeGetColIOBanded :: IOBanded np e -> Int -> IO (IOVector n e)
 unsafeGetColIOBanded a j =
     liftM conj $ unsafeGetRowIOBanded (hermIOBanded a) j
 
@@ -506,9 +504,9 @@ unsafeGetRowHermIOBanded :: (WriteVector y IO, Elem e)
 unsafeGetRowHermIOBanded =
     error "TODO: unsafeGetRowHermIOBanded is not implemented"
 
-hbmv :: (ReadVector x IO, WriteVector y IO, BLAS2 e) => 
-    e -> Herm IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
-hbmv alpha h (x :: x p e) beta (y :: y n e)
+hbmv :: (ReadVector x IO, BLAS2 e) => 
+    e -> Herm IOBanded (n,p) e -> x p e -> e -> IOVector n e -> IO ()
+hbmv alpha h (x :: x p e) beta y
     | numRows h == 0 =
         return ()
     | isConj y = do
@@ -540,8 +538,8 @@ hbmv alpha h (x :: x p e) beta (y :: y n e)
             withIOVector (unsafeVectorToIOVector y) $ \pY -> do
                 BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
 
-hbmm :: (ReadMatrix b IO, WriteMatrix c IO, BLAS2 e) => 
-    e -> Herm IOBanded (n,p) e -> b (p,q) e -> e -> c (n,q) e -> IO ()
+hbmm :: (ReadMatrix b IO, BLAS2 e) => 
+    e -> Herm IOBanded (n,p) e -> b (p,q) e -> e -> IOMatrix (n,q) e -> IO ()
 hbmm alpha h b beta c =
     zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
 
@@ -708,9 +706,9 @@ instance MMatrix IOBanded IO where
     {-# INLINE unsafeDoSApplyAddVector #-}
     unsafeDoSApplyAddMatrix = gbmm
     {-# INLINE unsafeDoSApplyAddMatrix #-}
-    unsafeGetRow         = unsafeGetRowIOBanded
+    unsafeGetRow a i = unsafeConvertIOVector $ unsafeGetRowIOBanded a i
     {-# INLINE unsafeGetRow #-}
-    unsafeGetCol         = unsafeGetColIOBanded
+    unsafeGetCol a j = unsafeConvertIOVector $ unsafeGetColIOBanded a j
     {-# INLINE unsafeGetCol #-}
     getRows = getRowsIO
     {-# INLINE getRows #-}
@@ -718,9 +716,11 @@ instance MMatrix IOBanded IO where
     {-# INLINE getCols #-}
 
 instance MMatrix (Herm IOBanded) IO where
-    unsafeDoSApplyAddVector    = hbmv
+    unsafeDoSApplyAddVector alpha a x beta y = 
+        hbmv alpha a x beta (unsafeVectorToIOVector y)
     {-# INLINE unsafeDoSApplyAddVector #-}    
-    unsafeDoSApplyAddMatrix = hbmm
+    unsafeDoSApplyAddMatrix alpha a b beta c = 
+        hbmm alpha a b beta (unsafeMatrixToIOMatrix c)
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
     getRows = getRowsIO
     {-# INLINE getRows #-}

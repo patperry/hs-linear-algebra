@@ -9,6 +9,8 @@ Changes in 0.8:
 * Allowing reading from immutable types in arbitrary monads.
   
 * Add binding to "ger".
+
+* Add functional dependency m -> a in Write{Vector,Matrix,Banded} a m
   
 Changes in 0.7.6:
 

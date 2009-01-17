@@ -19,4 +19,4 @@ module Data.Matrix.Dense.ST (
     ) where
 
 import Data.Matrix.Dense.Class
-import Data.Matrix.Dense.STBase
+import Data.Matrix.Dense.Base

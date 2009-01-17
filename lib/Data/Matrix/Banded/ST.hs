@@ -18,5 +18,5 @@ module Data.Matrix.Banded.ST (
     module Data.Matrix.Banded.Class,
     ) where
 
-import Data.Matrix.Banded.STBase
+import Data.Matrix.Banded.Base
 import Data.Matrix.Banded.Class

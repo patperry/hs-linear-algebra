@@ -106,15 +106,12 @@ library
                         Data.Matrix.Class.MSolveBase
                         Data.Matrix.Banded.Base
                         Data.Matrix.Banded.IOBase
-                        Data.Matrix.Banded.STBase
                         Data.Matrix.Dense.Base
                         Data.Matrix.Dense.IOBase
-                        Data.Matrix.Dense.STBase
                         Data.Matrix.HermBase
                         Data.Matrix.TriBase
                         Data.Vector.Dense.Base
                         Data.Vector.Dense.IOBase
-                        Data.Vector.Dense.STBase
     
     includes:           cbits/config.h
                         cbits/BLAS.h
