@@ -19,6 +19,7 @@ module Unsafe.BLAS (
     -- * Vector functions
     IOVector(..),
     unsafeIOVectorToVector,
+    unsafePerformIOWithVector,
     unsafeVector,
     unsafeSubvector,
     unsafeSubvectorWithStride,
@@ -43,6 +44,7 @@ module Unsafe.BLAS (
     -- * Matrix functions
     IOMatrix(..),
     unsafeIOMatrixToMatrix,
+    unsafePerformIOWithMatrix,
     
     unsafeSubmatrixView,
     unsafeDiagView,
@@ -72,6 +74,7 @@ module Unsafe.BLAS (
     -- * Banded functions
     IOBanded(..),
     unsafeIOBandedToBanded,
+    unsafePerformIOWithBanded,
     
     unsafeDiagViewBanded,
     unsafeRowViewBanded,
