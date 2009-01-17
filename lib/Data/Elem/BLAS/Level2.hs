@@ -14,10 +14,11 @@ module Data.Elem.BLAS.Level2
     where
      
 import Data.Complex 
-import Foreign ( Ptr, with )   
+import Foreign ( Ptr, with, mallocForeignPtrArray, withForeignPtr )   
 
 import BLAS.Types
 import BLAS.CTypes
+import Data.Elem.BLAS.Base( copy )
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Double 
 import Data.Elem.BLAS.Zomplex
@@ -32,8 +33,7 @@ class (BLAS1 a) => BLAS2 a where
     tbsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     hemv :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     hbmv :: UpLoEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    geru :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    gerc :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    ger  :: ConjEnum -> ConjEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     her  :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     her2 :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
@@ -46,8 +46,10 @@ instance BLAS2 Double where
     tbsv u t d = dtbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     hemv u = dsymv (cblasUpLo u)
     hbmv u = dsbmv (cblasUpLo u)
-    geru = dger
-    gerc = dger
+    ger _ _ NoTrans m n alpha pX incX pY incY pA ldA = 
+        dger m n alpha pX incX pY incY pA ldA
+    ger _ _ ConjTrans m n alpha pX incX pY incY pA ldA = 
+        dger m n alpha pY incY pX incX pA ldA
     her  u = dsyr  (cblasUpLo u)
     her2 u = dsyr2 (cblasUpLo u)
     
@@ -73,13 +75,22 @@ instance BLAS2 (Complex Double) where
         with alpha $ \pAlpha -> with beta $ \pBeta -> 
             zhbmv (cblasUpLo uplo) n k pAlpha pA ldA pX incX pBeta pY incY
 
-    geru m n alpha pX incX pY incY pA ldA = 
-        with alpha $ \pAlpha -> 
+    ger conjX conjY ConjTrans m n alpha pX incX pY incY pA ldA =
+        ger conjY conjX NoTrans m n (conjugate alpha) pY incY pX incX pA ldA
+        
+    ger NoConj Conj NoTrans m n alpha pX incX pY incY pA ldA = 
+        with alpha $ \pAlpha ->
             zgeru m n pAlpha pX incX pY incY pA ldA
-
-    gerc m n alpha pX incX pY incY pA ldA = 
-        with alpha $ \pAlpha -> 
+            
+    ger NoConj NoConj NoTrans m n alpha pX incX pY incY pA ldA = 
+        with alpha $ \pAlpha ->
             zgerc m n pAlpha pX incX pY incY pA ldA
+            
+    ger Conj conjY NoTrans m n alpha pX incX pY incY pA ldA = do
+        fX' <- mallocForeignPtrArray m
+        withForeignPtr fX' $ \pX' -> do
+            copy Conj NoConj m pX incX pX' 1
+            ger NoConj conjY NoTrans m n alpha pX' 1 pY incY pA ldA
 
     her uplo n alpha pX incX pA ldA = 
         with alpha $ \pAlpha -> 

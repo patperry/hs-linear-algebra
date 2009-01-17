@@ -95,6 +95,9 @@ module Data.Matrix.Dense.Class (
     axpyMatrix,
     mulMatrix,
     divMatrix,
+    
+    -- ** Low rank updates
+    rank1UpdateMatrix,
 
     -- * Conversions between mutable and immutable matrices
     freezeMatrix,

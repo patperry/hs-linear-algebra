@@ -23,6 +23,7 @@ import BLAS.Internal( diagLen )
 import Data.Elem.BLAS
 import qualified Data.Elem.BLAS.Base   as BLAS
 import qualified Data.Elem.BLAS.Level1 as BLAS
+import qualified Data.Elem.BLAS.Level2 as BLAS
 
 import Data.Matrix.Class
 
@@ -521,6 +522,17 @@ getShiftedIOMatrix e a = do
 shiftByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()                    
 shiftByIOMatrix k = liftIOMatrix (shiftByIOVector k)
 
+unsafeRank1UpdateIOMatrix :: (ReadVector x IO, ReadVector y IO, BLAS2 e) 
+                          => IOMatrix (n,p) e -> e -> x n e -> y p e -> IO ()
+unsafeRank1UpdateIOMatrix (IOMatrix h m n fA pA ldA) alpha x y =
+    let (m',n') = if h == ConjTrans then (n,m) else (m,n)
+        (IOVector conjX _ fX pX incX) = unsafeVectorToIOVector x
+        (IOVector conjY _ fY pY incY) = unsafeVectorToIOVector y
+    in do
+        BLAS.ger conjX conjY h m' n' alpha pX incX pY incY pA ldA
+        touchForeignPtr fX
+        touchForeignPtr fY
+        touchForeignPtr fA
 
 instance Shaped IOMatrix (Int,Int) where
     shape = shapeIOMatrix

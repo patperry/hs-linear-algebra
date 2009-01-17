@@ -70,6 +70,7 @@ module Unsafe.BLAS (
     unsafeSubMatrix,
     unsafeMulMatrix,
     unsafeDivMatrix,
+    unsafeRank1UpdateMatrix,
     
     -- * Banded functions
     IOBanded(..),

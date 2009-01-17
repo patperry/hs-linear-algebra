@@ -3,6 +3,7 @@ module STMatrix
     where
 
 import Data.Elem.BLAS
+import Data.Vector.Dense
 import Data.Matrix.Dense
 import Data.Matrix.Dense.ST
 
@@ -130,6 +131,14 @@ prop_ShiftBy k = shiftBy k `implements` shiftBy_S k
 modifyWith_S f x = ( (), tmap f x )
 prop_ModifyWith f = modifyWith f `implements` modifyWith_S f
 
+rank1UpdateMatrix_S a alpha x y = 
+    let a' = a + matrixFromCol x <**> matrixFromRow (alpha *> (conj y))
+    in ( (), a')
+prop_Rank1UpdateMatrix alpha x y =
+    implementsFor (dim x, dim y)
+        (\a -> rank1UpdateMatrix   a alpha x y) 
+        (\a -> rank1UpdateMatrix_S a alpha x y)     
+
 getConjMatrix_S x = ( tmap conjugate x, x )
 prop_GetConjMatrix = 
     (\x -> getConjMatrix x >>= abstract) `implements` getConjMatrix_S
@@ -175,7 +184,6 @@ prop_GetMulMatrix =
 getDivMatrix_S x y = ( x / y, x, y )
 prop_GetDivMatrix =
     (\x y -> getDivMatrix x y >>= abstract) `implements2` getDivMatrix_S
-
 
 ------------------------------------------------------------------------
 -- 
@@ -340,6 +348,7 @@ tests_STMatrix =
     , ("scaleBy", mytest prop_ScaleBy)
     , ("shiftBy", mytest prop_ShiftBy)
     , ("modifyWith", mytest prop_ModifyWith)
+    , ("rank1UpdateMatrix", mytest prop_Rank1UpdateMatrix)
     
     , ("getConjMatrix", mytest prop_GetConjMatrix)
     , ("getScaledMatrix", mytest prop_GetScaledMatrix)

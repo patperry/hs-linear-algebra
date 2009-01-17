@@ -6,6 +6,8 @@ Changes in 0.8:
 * Put structural operations ( swap, copy, vconj ) in Elem.  This removes the
   BLAS1 constraint from the structural functions like getRow.
   
+* Add binding to "ger".
+  
 Changes in 0.7.6:
 
 * Fix a memory-trashing segfault.

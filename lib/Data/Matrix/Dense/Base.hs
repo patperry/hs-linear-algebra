@@ -24,7 +24,7 @@ import Unsafe.Coerce
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
     checkedRow, checkedCol, inlinePerformIO )
 
-import Data.Elem.BLAS( Elem, BLAS1, BLAS3, conjugate )
+import Data.Elem.BLAS( Elem, BLAS1, BLAS2, BLAS3, conjugate )
 import qualified Data.Elem.BLAS.Level1 as BLAS
 import qualified Data.Elem.BLAS.Level2 as BLAS
 import qualified Data.Elem.BLAS.Level3 as BLAS
@@ -673,6 +673,29 @@ getRowsST :: (MMatrix a (ST s), WriteVector x (ST s), Elem e)
           => a (k,l) e -> ST s [x l e]
 getRowsST = getRowsM unsafeInterleaveST
 {-# INLINE getRowsST #-}
+
+-- | Rank 1 update to a matrix.  Sets @a := a + alpha x y^H@.
+rank1UpdateMatrix :: 
+    (WriteMatrix a m, ReadVector x m, ReadVector y m, BLAS2 e) 
+    => a (n,p) e -> e -> x n e -> y p e -> m ()
+rank1UpdateMatrix a alpha x y
+    | shape a /= (dim x, dim y) =
+        error $ printf ("rank1UpdateMatrix <matrix of shape %s> _"
+                       ++ " <vector of dim %d> <vector of dim %d>:"
+                       ++ " dimension mismatch.")
+                       (show $ shape a) (dim x) (dim y)
+    | otherwise =
+        unsafeRank1UpdateMatrix a alpha x y
+{-# INLINE rank1UpdateMatrix #-}
+
+unsafeRank1UpdateMatrix :: 
+    (WriteMatrix a m, ReadVector x m, ReadVector y m, BLAS2 e) 
+    => a (n,p) e -> e -> x n e -> y p e -> m ()
+unsafeRank1UpdateMatrix a alpha x y =
+    unsafePerformIOWithMatrix a $ \a' ->
+        unsafeRank1UpdateIOMatrix a' alpha (unsafeVectorToIOVector x)
+                                           (unsafeVectorToIOVector y)
+{-# INLINE unsafeRank1UpdateMatrix #-}
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
 gemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>

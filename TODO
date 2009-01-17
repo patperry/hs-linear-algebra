@@ -78,9 +78,10 @@ Medium projects
   use STMatrix and STVector.  I suggest stealing "Mondaic.hs" from
   QuickCheck2 for this purpose.  
 
-* There do not yet exist bindings for `ger`, `syr`, etc.  Add them.  The
+* There do not yet exist bindings for `syr/her`, etc.  Add them.  The
   bindings should only be for mutable types, and should have names like
-  `rank1UpdateMatrix`, `rankKUpdateHermMatrix`, etc.
+  `rank1UpdateMatrix`, `rankKUpdateHermMatrix`, etc.  Look at how `ger` is
+  implemented and follow the same pattern.
 
 * I haven't really tested it, but probably the library doesn't build on
   Windows.  See if it is possible to build the library on windows.  If
