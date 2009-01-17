@@ -132,5 +132,5 @@ library
                         ScopedTypeVariables,
                         TypeFamilies
                          
-    build-depends:      base, ieee, storable-complex, QuickCheck >= 1.2,
-                        QuickCheck < 2
+    build-depends:      base, ieee, monad-interleave, storable-complex,
+                        QuickCheck >= 1.2, QuickCheck < 2

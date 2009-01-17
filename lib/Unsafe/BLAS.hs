@@ -91,13 +91,9 @@ module Unsafe.BLAS (
     unsafeDiagBanded,
     
     -- * Matrix type classes
-    IMatrix( ),
-    ISolve( ),
+    IMatrix(..),
+    ISolve(..),
     MMatrix(..),
-    getRowsIO,
-    getRowsST,
-    getColsIO,
-    getColsST,
     MSolve(..),
 
     ) where

@@ -14,6 +14,7 @@ module Data.Matrix.Banded.Base
     where
 
 import Control.Monad
+import Control.Monad.Interleave
 import Control.Monad.ST
 import Data.AEq
 import Data.Maybe
@@ -41,9 +42,8 @@ import Data.Matrix.Tri
 
 import Data.Vector.Dense.ST( runSTVector )
 import Data.Vector.Dense.Base( BaseVector, ReadVector, WriteVector, Vector(..),
-    STVector(..), dim, unsafeIOVectorToVector, unsafeVectorToIOVector,
-    unsafePerformIOWithVector, unsafeConvertIOVector, newZeroVector,
-    newCopyVector )
+    STVector(..), dim, unsafeVectorToIOVector, unsafePerformIOWithVector,
+    unsafeConvertIOVector, newZeroVector, newCopyVector )
 import Data.Matrix.Dense.ST( runSTMatrix )
 import Data.Matrix.Dense.Base( BaseMatrix, ReadMatrix, WriteMatrix, Matrix(..),
     STMatrix(..), unsafeMatrixToIOMatrix, unsafePerformIOWithMatrix )
@@ -154,7 +154,8 @@ class ( MatrixShaped a,
 
 
 -- | Banded matrices that can be read in a monad.
-class ( BaseBanded a, 
+class ( BaseBanded a,
+        MonadInterleave m,
         ReadTensor a (Int,Int) m,
         MMatrix a m, 
         MMatrix (Herm a) m, 
@@ -726,7 +727,7 @@ instance BaseBanded Banded where
 -- The NOINLINE pragmas and the strictness annotations here are *really*
 -- important.  Otherwise, the compiler might think that certain actions
 -- don't need to be run.
-instance (Monad m) => ReadBanded Banded m where
+instance (MonadInterleave m) => ReadBanded Banded m where
     freezeBanded (Banded a) = return $! unsafePerformIO $ freezeIOBanded a
     {-# NOINLINE freezeBanded #-}
     unsafeFreezeBanded = return . id
@@ -734,7 +735,7 @@ instance (Monad m) => ReadBanded Banded m where
     unsafePerformIOWithBanded (Banded a) f = return $! unsafePerformIO $ f a
     {-# NOINLINE unsafePerformIOWithBanded #-}
 
-instance (Monad m) => MMatrix Banded m where
+instance (MonadInterleave m) => MMatrix Banded m where
     unsafeDoSApplyAddVector    = gbmv
     {-# INLINE unsafeDoSApplyAddVector #-}
     unsafeDoSApplyAddMatrix = gbmm
@@ -743,30 +744,18 @@ instance (Monad m) => MMatrix Banded m where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
-    getRows =
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
-    {-# INLINE getCols #-}
 
-instance (Monad m) => MMatrix (Herm Banded) m where
+instance (MonadInterleave m) => MMatrix (Herm Banded) m where
     unsafeDoSApplyAddVector    = hbmv
     {-# INLINE unsafeDoSApplyAddVector #-}    
     unsafeDoSApplyAddMatrix = hbmm
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows =
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowHermBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColHermBanded
     {-# INLINE unsafeGetCol #-}
 
-instance (Monad m) => MMatrix (Tri Banded) m where
+instance (MonadInterleave m) => MMatrix (Tri Banded) m where
     unsafeDoSApplyVector_       = tbmv
     {-# INLINE unsafeDoSApplyVector_  #-}        
     unsafeDoSApplyMatrix_   = tbmm
@@ -775,18 +764,12 @@ instance (Monad m) => MMatrix (Tri Banded) m where
     {-# INLINE unsafeDoSApplyAddVector #-}    
     unsafeDoSApplyAddMatrix = tbmm'
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows =
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows    
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowTriBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColTriBanded
     {-# INLINE unsafeGetCol #-}
 
-instance (Monad m) => MSolve (Tri Banded) m where
+instance (MonadInterleave m) => MSolve (Tri Banded) m where
     unsafeDoSSolveVector_    = tbsv
     {-# INLINE unsafeDoSSolveVector_ #-}    
     unsafeDoSSolveMatrix_ = tbsm
@@ -964,20 +947,12 @@ instance MMatrix (STBanded s) (ST s) where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol         = unsafeGetColBanded
     {-# INLINE unsafeGetCol #-}
-    getRows = getRowsST
-    {-# INLINE getRows #-}
-    getCols = getColsST
-    {-# INLINE getCols #-}
 
 instance MMatrix (Herm (STBanded s)) (ST s) where
     unsafeDoSApplyAddVector    = hbmv
     {-# INLINE unsafeDoSApplyAddVector #-}    
     unsafeDoSApplyAddMatrix = hbmm
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows = getRowsST
-    {-# INLINE getRows #-}
-    getCols = getColsST
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowHermBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColHermBanded
@@ -992,10 +967,6 @@ instance MMatrix (Tri (STBanded s)) (ST s) where
     {-# INLINE unsafeDoSApplyAddVector #-}    
     unsafeDoSApplyAddMatrix = tbmm'
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows = getRowsST
-    {-# INLINE getRows #-}
-    getCols = getColsST
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowTriBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColTriBanded

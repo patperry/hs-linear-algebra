@@ -710,10 +710,6 @@ instance MMatrix IOBanded IO where
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol a j = unsafeConvertIOVector $ unsafeGetColIOBanded a j
     {-# INLINE unsafeGetCol #-}
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
 
 instance MMatrix (Herm IOBanded) IO where
     unsafeDoSApplyAddVector alpha a x beta y = 
@@ -722,10 +718,6 @@ instance MMatrix (Herm IOBanded) IO where
     unsafeDoSApplyAddMatrix alpha a b beta c = 
         hbmm alpha a b beta (unsafeMatrixToIOMatrix c)
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowHermIOBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColHermIOBanded
@@ -740,10 +732,6 @@ instance MMatrix (Tri IOBanded) IO where
     {-# INLINE unsafeDoSApplyAddVector #-}    
     unsafeDoSApplyAddMatrix = tbmm'
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows = getRowsIO
-    {-# INLINE getRows #-}
-    getCols = getColsIO
-    {-# INLINE getCols #-}
     unsafeGetRow = unsafeGetRowTriIOBanded
     {-# INLINE unsafeGetRow #-}
     unsafeGetCol = unsafeGetColTriIOBanded

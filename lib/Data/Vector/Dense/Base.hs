@@ -14,6 +14,7 @@ module Data.Vector.Dense.Base
     where
 
 import Control.Monad
+import Control.Monad.Interleave
 import Control.Monad.ST
 import Data.AEq
 import Foreign
@@ -94,7 +95,7 @@ class (Shaped x Int) => BaseVector x where
 
 
 -- | Vectors that can be read in a monad.
-class (BaseVector x, Monad m, ReadTensor x Int m) => ReadVector x m where
+class (BaseVector x, MonadInterleave m, ReadTensor x Int m) => ReadVector x m where
     -- | Convert a mutable vector to an immutable one by taking a complete
     -- copy of it.
     freezeVector :: x n e -> m (Vector n e)
@@ -726,7 +727,7 @@ instance BaseVector Vector where
 -- The NOINLINE pragmas and the strictness annotations here are *really*
 -- important.  Otherwise, the compiler might think that certain actions
 -- don't need to be run.
-instance (Monad m) => ReadVector Vector m where
+instance (MonadInterleave m) => ReadVector Vector m where
     freezeVector (Vector x) = return $! unsafePerformIO $ freezeIOVector x
     {-# NOINLINE freezeVector #-}
     unsafeFreezeVector = return
