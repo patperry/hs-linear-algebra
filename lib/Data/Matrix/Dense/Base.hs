@@ -1599,21 +1599,16 @@ instance BaseMatrix Matrix where
     unsafeMatrixToIOMatrix (Matrix a) = a
     {-# INLINE unsafeMatrixToIOMatrix #-}
 
-instance ReadMatrix Matrix IO where
-    freezeMatrix (Matrix a) = freezeIOMatrix a
-    {-# INLINE freezeMatrix #-}
+-- The NOINLINE pragmas and the strictness annotations here are *really*
+-- important.  Otherwise, the compiler might think that certain actions
+-- don't need to be run.
+instance (Monad m) => ReadMatrix Matrix m where
+    freezeMatrix (Matrix a) = return $! unsafePerformIO $ freezeIOMatrix a
+    {-# NOINLINE freezeMatrix #-}
     unsafeFreezeMatrix = return . id
     {-# INLINE unsafeFreezeMatrix #-}
-    unsafePerformIOWithMatrix (Matrix a) f = f a
-    {-# INLINE unsafePerformIOWithMatrix #-}
-
-instance ReadMatrix Matrix (ST s) where
-    freezeMatrix (Matrix a) = (unsafeIOToST . freezeIOMatrix) a
-    {-# INLINE freezeMatrix #-}
-    unsafeFreezeMatrix = return . id
-    {-# INLINE unsafeFreezeMatrix #-}
-    unsafePerformIOWithMatrix (Matrix a) f = (unsafeIOToST . f) a
-    {-# INLINE unsafePerformIOWithMatrix #-}
+    unsafePerformIOWithMatrix (Matrix a) f = return $! unsafePerformIO $ f a
+    {-# NOINLINE unsafePerformIOWithMatrix #-}
 
 instance ITensor Matrix (Int,Int) where
     size (Matrix a) = sizeIOMatrix a
@@ -1697,7 +1692,7 @@ instance IMatrix (Tri Matrix) where
         unsafeFreezeIOVector =<< unsafeGetCol a j
     {-# INLINE unsafeCol #-}
 
-instance MMatrix Matrix IO where
+instance (Monad m) => MMatrix Matrix m where
     unsafeDoSApplyAddVector = gemv
     {-# INLINE unsafeDoSApplyAddVector #-}
     unsafeDoSApplyAddMatrix = gemm
@@ -1713,23 +1708,7 @@ instance MMatrix Matrix IO where
         return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols    
     {-# INLINE getCols #-}
 
-instance MMatrix Matrix (ST s) where
-    unsafeDoSApplyAddVector = gemv
-    {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = gemm
-    {-# INLINE unsafeDoSApplyAddMatrix #-}
-    unsafeGetRow = unsafeGetRowMatrix
-    {-# INLINE unsafeGetRow #-}
-    unsafeGetCol = unsafeGetColMatrix
-    {-# INLINE unsafeGetCol #-}
-    getRows = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . rows
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector ) . cols    
-    {-# INLINE getCols #-}
-
-instance MMatrix (Herm Matrix) IO where
+instance (Monad m) => MMatrix (Herm Matrix) m where
     unsafeDoSApplyAddVector = hemv'
     {-# INLINE unsafeDoSApplyAddVector #-}
     unsafeDoSApplyAddMatrix = hemm'
@@ -1743,21 +1722,7 @@ instance MMatrix (Herm Matrix) IO where
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
 
-instance MMatrix (Herm Matrix) (ST s) where
-    unsafeDoSApplyAddVector = hemv'
-    {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = hemm'
-    {-# INLINE unsafeDoSApplyAddMatrix #-}    
-    getRows = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . rows
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . cols    
-    {-# INLINE getCols #-}
-    unsafeGetCol = unsafeGetColHermMatrix
-    {-# INLINE unsafeGetCol #-}
-
-instance MMatrix (Tri Matrix) IO where
+instance (Monad m) => MMatrix (Tri Matrix) m where
     unsafeDoSApplyAddVector = unsafeDoSApplyAddVectorTriMatrix
     {-# INLINE unsafeDoSApplyAddVector #-}
     unsafeDoSApplyAddMatrix = unsafeDoSApplyAddMatrixTriMatrix
@@ -1777,37 +1742,7 @@ instance MMatrix (Tri Matrix) IO where
     unsafeGetRow = unsafeGetRowTriMatrix
     {-# INLINE unsafeGetRow #-}
 
-instance MMatrix (Tri Matrix) (ST s) where
-    unsafeDoSApplyAddVector = unsafeDoSApplyAddVectorTriMatrix
-    {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = unsafeDoSApplyAddMatrixTriMatrix
-    {-# INLINE unsafeDoSApplyAddMatrix #-}
-    unsafeDoSApplyVector_  = trmv
-    {-# INLINE unsafeDoSApplyVector_  #-}
-    unsafeDoSApplyMatrix_ = trmm
-    {-# INLINE unsafeDoSApplyMatrix_ #-}
-    getRows = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . rows
-    {-# INLINE getRows #-}
-    getCols = 
-        return . map (unsafeIOVectorToVector . unsafeVectorToIOVector) . cols    
-    {-# INLINE getCols #-}
-    unsafeGetCol = unsafeGetColTriMatrix
-    {-# INLINE unsafeGetCol #-}
-    unsafeGetRow = unsafeGetRowTriMatrix
-    {-# INLINE unsafeGetRow #-}
-
-instance MSolve (Tri Matrix) IO where
-    unsafeDoSSolveVector = unsafeDoSSolveTriMatrix
-    {-# INLINE unsafeDoSSolveVector #-}
-    unsafeDoSSolveMatrix = unsafeDoSSolveMatrixTriMatrix
-    {-# INLINE unsafeDoSSolveMatrix #-}    
-    unsafeDoSSolveVector_ = trsv
-    {-# INLINE unsafeDoSSolveVector_ #-}
-    unsafeDoSSolveMatrix_ = trsm
-    {-# INLINE unsafeDoSSolveMatrix_ #-}
-
-instance MSolve (Tri Matrix) (ST s) where
+instance (Monad m) => MSolve (Tri Matrix) m where
     unsafeDoSSolveVector = unsafeDoSSolveTriMatrix
     {-# INLINE unsafeDoSSolveVector #-}
     unsafeDoSSolveMatrix = unsafeDoSSolveMatrixTriMatrix

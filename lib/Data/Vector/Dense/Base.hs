@@ -13,7 +13,6 @@ module Data.Vector.Dense.Base
     where
 
 import Control.Monad
-import Control.Monad.ST
 import Data.AEq
 import Foreign
 import Text.Printf
@@ -722,22 +721,16 @@ instance BaseVector Vector where
     unsafeIOVectorToVector = Vector
     {-# INLINE unsafeIOVectorToVector #-}
 
-instance ReadVector Vector IO where
-    freezeVector (Vector x) = freezeIOVector x
-    {-# INLINE freezeVector #-}
+-- The NOINLINE pragmas and the strictness annotations here are *really*
+-- important.  Otherwise, the compiler might think that certain actions
+-- don't need to be run.
+instance (Monad m) => ReadVector Vector m where
+    freezeVector (Vector x) = return $! unsafePerformIO $ freezeIOVector x
+    {-# NOINLINE freezeVector #-}
     unsafeFreezeVector = return
     {-# INLINE unsafeFreezeVector #-}
-    unsafePerformIOWithVector (Vector x) f = f x
-    {-# INLINE unsafePerformIOWithVector #-}
-
-instance ReadVector Vector (ST s) where
-    freezeVector (Vector x) = (unsafeIOToST . freezeIOVector) x
-    {-# INLINE freezeVector #-}
-    unsafeFreezeVector = return
-    {-# INLINE unsafeFreezeVector #-}
-    unsafePerformIOWithVector (Vector x) f = (unsafeIOToST . f) x
-    {-# INLINE unsafePerformIOWithVector #-}
-    
+    unsafePerformIOWithVector (Vector x) f = return $! unsafePerformIO $ f x
+    {-# NOINLINE unsafePerformIOWithVector #-}
 
 instance (Show e) => Show (Vector n e) where
     show x | isConj x  = "conj (" ++ show (conj x) ++ ")"
