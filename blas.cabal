@@ -40,6 +40,7 @@ extra-source-files:     NEWS README TODO configure.ac configure
                         tests/Test/Matrix/Tri/Dense.hs
                         tests/Main.hs
                         tests/Driver.hs
+                        tests/Monadic.hs
                         tests/Vector.hs
                         tests/STVector.hs
                         tests/Matrix.hs

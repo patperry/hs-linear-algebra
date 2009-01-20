@@ -4,11 +4,14 @@ module Matrix
     where
 
 import Driver
+import Monadic
 import qualified Data.Array as Array
 
 import Data.Elem.BLAS
 import Data.Matrix.Dense
+import Data.Matrix.Dense.ST
 import Data.Vector.Dense
+import Data.Vector.Dense.ST
 
 import Test.Matrix.Dense hiding ( matrix )
 import qualified Test.QuickCheck.BLAS as Test
@@ -154,6 +157,12 @@ prop_apply_scale k (MatrixMV (a :: M) x) =
     sapplyVector k a x ~== k *> (a <*> x)
 prop_apply_linear (MatrixMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
+prop_doSapplyAddVector alpha beta (MatrixMV (a ::M) x) = monadicST $ do
+    forAllM (Test.vector (numRows a)) $ \y -> do
+        y'  <- run $ unsafeThawVector y
+        y'' <- run $ freezeVector y'
+        run $ doSApplyAddVector alpha a x beta y'
+        assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
 
 prop_applyMatrix_id_right (a :: M) =
     let n = numCols a
@@ -171,6 +180,12 @@ prop_applyMatrix_herm (MatrixMM (a :: M) b) =
     herm b <**> herm a ~== herm (a <**> b)
 prop_applyMatrix_cols (MatrixMM (a :: M) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
+prop_doSapplyAddMatrix alpha beta (MatrixMM (a ::M) b) = monadicST $ do
+    forAllM (Test.matrix (numRows a, numCols b)) $ \c -> do
+        c'  <- run $ unsafeThawMatrix c
+        c'' <- run $ freezeMatrix c'
+        run $ doSApplyAddMatrix alpha a b beta c'
+        assert $ c ~== a <**> (alpha *> b) + (beta *> c'')
 
 prop_shift k (a :: M) =
     shift k a ~== a + constantMatrix (shape a) k
@@ -257,6 +272,7 @@ tests_Matrix =
     , ("apply herm basis"      , mytest prop_apply_herm_basis)
     , ("apply scale"           , mytest prop_apply_scale)
     , ("apply linear"          , mytest prop_apply_linear)
+    , ("doSApplyAddVector"     , mytest prop_doSapplyAddVector)
     
     , ("applyMatrix id left"       , mytest prop_applyMatrix_id_left)
     , ("applyMatrix id right"      , mytest prop_applyMatrix_id_right)
@@ -265,6 +281,7 @@ tests_Matrix =
     , ("applyMatrix linear"        , mytest prop_applyMatrix_linear)
     , ("applyMatrix herm"          , mytest prop_applyMatrix_herm)
     , ("applyMatrix cols"          , mytest prop_applyMatrix_cols)
+    , ("doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)    
     , ("shift"                 , mytest prop_shift)
     , ("scale"                 , mytest prop_scale)
     
