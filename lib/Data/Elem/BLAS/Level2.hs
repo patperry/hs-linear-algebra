@@ -18,14 +18,14 @@ import Foreign ( Ptr, with, mallocForeignPtrArray, withForeignPtr )
 
 import BLAS.Types
 import BLAS.CTypes
-import Data.Elem.BLAS.Base( copy )
+import Data.Elem.BLAS.Base( copy, vconj )
 import Data.Elem.BLAS.Level1
 import Data.Elem.BLAS.Double 
 import Data.Elem.BLAS.Zomplex
    
 -- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where
-    gemv :: TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gemv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: TransEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     trmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
@@ -38,7 +38,8 @@ class (BLAS1 a) => BLAS2 a where
     her2 :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 instance BLAS2 Double where
-    gemv t = dgemv (cblasTrans t)
+    gemv t _ _ = dgemv (cblasTrans t)
+    
     gbmv t = dgbmv (cblasTrans t)
     trmv u t d = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
@@ -54,9 +55,20 @@ instance BLAS2 Double where
     her2 u = dsyr2 (cblasUpLo u)
     
 instance BLAS2 (Complex Double) where
-    gemv transA m n alpha pA ldA pX incX beta pY incY =
-        with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zgemv (cblasTrans transA) m n pAlpha pA ldA pX incX pBeta pY incY
+    gemv transA conjX conjY m n alpha pA ldA pX incX beta pY incY =
+        case (conjX,conjY) of
+            (NoConj,NoConj) ->
+                with alpha $ \pAlpha -> with beta $ \pBeta ->
+                    zgemv (cblasTrans transA) m n pAlpha pA ldA pX incX pBeta pY incY
+            (Conj,Conj) ->
+                with (conjugate alpha) $ \pAlpha -> with (conjugate beta) $ \pBeta -> do
+                    zgemm (cblasTrans NoTrans) (cblasTrans $ flipTrans transA) 1 m' n' pAlpha pX incX pA ldA pBeta pY incY
+            _ -> do
+                vconj m' pY incY
+                gemv transA conjX (flipConj conjY) m n alpha pA ldA pX incX beta pY incY
+                vconj m' pY incY
+      where
+        (m',n') = if transA == ConjTrans then (n,m) else (m,n)
     
     gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY =
         with alpha $ \pAlpha -> with beta $ \pBeta ->

@@ -680,53 +680,24 @@ unsafeRank1UpdateMatrix a alpha x y =
 {-# INLINE unsafeRank1UpdateMatrix #-}
 
 -- | @gemv alpha a x beta y@ replaces @y := alpha a * x + beta y@.
-gemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
+gemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> a (k,l) e -> x l e -> e -> y k e -> m ()
 gemv alpha a x beta y
-    | numRows a == 0 || numCols a == 0 =
+    | n == 0 =
         scaleByVector beta y
-        
-    | isConj y && (isConj x || stride x == 1) =
-        let transA = if isConj x then NoTrans else ConjTrans
-            transB = transEnumMatrix (herm a)
-            m      = 1
-            n      = dim y
-            k      = dim x
-            ldA    = stride x
-            ldB    = ldaMatrix a
-            ldC    = stride y
-            alpha' = conjugate alpha
-            beta'  = conjugate beta
-            x'     = unsafeVectorToIOVector x
-            y'     = unsafeVectorToIOVector y
-        in 
-            withMatrixPtr a $ \pB ->
-            withIOVector x' $ \pA ->
-            withIOVector y' $ \pC ->
-                BLAS.gemm transA transB m n k alpha' pA ldA pB ldB beta' pC ldC
-    
-    | (isConj y && otherwise) || isConj x = do
-        doConjVector y
-        gemv alpha a x beta (conj y)
-        doConjVector y
-        
     | otherwise =
-        let transA = transEnumMatrix a
-            (m,n)  = case (isHermMatrix a) of
-                         False -> shape a
-                         True  -> (flipShape . shape) a
-            ldA    = ldaMatrix a
-            incX   = stride x
-            incY   = stride y
-            x'     = unsafeVectorToIOVector x
-            y'     = unsafeVectorToIOVector y
-        in 
-            withMatrixPtr a   $ \pA ->
-            withIOVector x' $ \pX ->
-            withIOVector y' $ \pY -> do
-                BLAS.gemv transA m n alpha pA ldA pX incX beta pY incY
-  where 
-    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+        let (m',n') = if isHermMatrix a then (n,m) else (m,n)
+            ldA     = ldaMatrix a
+            incX    = stride x
+            incY    = stride y
+        in unsafePerformIOWithVector y $ \y' ->
+           withIOMatrix (unsafeMatrixToIOMatrix a) $ \pA ->
+           withIOVector (unsafeVectorToIOVector x) $ \pX ->
+           withIOVector y' $ \pY ->
+               BLAS.gemv (transEnumMatrix a) (conjEnum x) (conjEnum y) m' n' 
+                         alpha pA ldA pX incX beta pY incY
+  where
+    (m,n) = shape a
 {-# INLINE gemv #-}
 
 -- | @gemm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
