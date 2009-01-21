@@ -245,7 +245,7 @@ checkMatVecSolvTo mn m n
             (show mn) m
     | snd mn /= n =
         error $ printf
-            ("Tried to store a vector of dimension `%d' in a vector of dimension `%d'")
+            ("Tried to store a vector of dimension `%s' in a vector of dimension `%d'")
             (show $ snd mn) n
     | otherwise = id
 
