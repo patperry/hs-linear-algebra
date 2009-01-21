@@ -784,7 +784,7 @@ hemm alpha h b beta c
       (u,a) = hermToBase h
 {-# INLINE hemm #-}
 
-hemv' :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
+hemv' :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> Herm a (r,s) e -> x s e -> e -> y r e -> m ()
 hemv' alpha a x beta y = 
     hemv alpha (coerceHerm a) x beta (coerceVector y)
@@ -797,7 +797,7 @@ hemm' alpha a b beta c =
 {-# INLINE hemm' #-}
 
 unsafeDoSApplyAddVectorTriMatrix :: (ReadMatrix a m,
-    ReadVector x m, WriteVector y m, BLAS3 e) =>
+    ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> Tri a (k,l) e -> x l e -> e -> y k e -> m ()
 unsafeDoSApplyAddVectorTriMatrix alpha t x beta (y :: y k e) =
     if beta == 0
@@ -823,7 +823,7 @@ unsafeDoSApplyAddMatrixTriMatrix alpha t b beta (c :: c (r,t) e) =
 {-# INLINE unsafeDoSApplyAddMatrixTriMatrix #-}
 
 unsafeDoSApplyTriMatrix :: (ReadMatrix a m,
-    ReadVector x m, WriteVector y m, BLAS3 e) =>
+    ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> Tri a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoSApplyTriMatrix alpha t x y =
     case (u, toLower d a, toUpper d a) of
@@ -836,7 +836,7 @@ unsafeDoSApplyTriMatrix alpha t x y =
                 y2 = unsafeSubvectorView y (numRows t') (numRows r)
             unsafeCopyVector y1 x
             trmv alpha t' y1
-            unsafeDoSApplyAddVector alpha r x 0 y2
+            gemv alpha r x 0 y2
             
         (Upper,_,Left t') -> do
             unsafeCopyVector (coerceVector y) x
@@ -848,7 +848,7 @@ unsafeDoSApplyTriMatrix alpha t x y =
             in do
                 unsafeCopyVector y x1
                 trmv alpha t' y
-                unsafeDoSApplyAddVector alpha r x2 1 y
+                gemv alpha r x2 1 y
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSApplyTriMatrix #-}
@@ -867,7 +867,7 @@ unsafeDoSApplyMatrixTriMatrix alpha t b c =
                 c2 = unsafeSubmatrixView c (numRows t',0) (numRows r ,numCols c)
             unsafeCopyMatrix c1 b
             trmm alpha t' c1
-            unsafeDoSApplyAddMatrix alpha r b 0 c2
+            gemm alpha r b 0 c2
             
         (Upper,_,Left t') -> do
             unsafeCopyMatrix (coerceMatrix c) b
@@ -879,7 +879,7 @@ unsafeDoSApplyMatrixTriMatrix alpha t b c =
             in do
                 unsafeCopyMatrix c b1
                 trmm alpha t' c
-                unsafeDoSApplyAddMatrix alpha r b2 1 c
+                gemm alpha r b2 1 c
   where
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSApplyMatrixTriMatrix #-}
@@ -968,47 +968,20 @@ unsafeGetRowTriMatrix (Tri Lower NonUnit a) i = do
     r = unsafeRowView a i
 {-# INLINE unsafeGetRowTriMatrix #-}
 
-trmv :: (ReadMatrix a m, WriteVector y m, BLAS3 e) =>
+trmv :: (ReadMatrix a m, WriteVector y m, BLAS2 e) =>
     e -> Tri a (k,k) e -> y n e -> m ()
-trmv alpha t x 
-    | dim x == 0 = 
-        return ()
-        
-    | isConj x =
-        let (u,d,a) = triToBase t
-            side    = RightSide
-            (h,u')  = if isHermMatrix a then (NoTrans  , flipUpLo u) 
-                                        else (ConjTrans, u)
-            uploA   = u'
-            transA  = h
-            diagA   = d
-            m       = 1
-            n       = dim x
-            alpha'  = conjugate alpha
-            ldA     = ldaMatrix a
-            ldB     = stride x
-        in 
-            withMatrixPtr   a $ \pA ->
-            withVectorPtrIO x $ \pB ->
-                BLAS.trmm side uploA transA diagA m n alpha' pA ldA pB ldB
-
-    | otherwise =
-        let (u,d,a)   = triToBase t
-            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
-                                            else (NoTrans  , u)
-            uploA     = u'
-            diagA     = d
-            n         = dim x
-            ldA       = ldaMatrix a
-            incX      = stride x
-        in do
-            when (alpha /= 1) $ scaleByVector alpha x
-            withMatrixPtr a   $ \pA ->
-                withVectorPtrIO x $ \pX -> do
-                    BLAS.trmv uploA transA diagA n pA ldA pX incX
-  where 
-    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
-    withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+trmv alpha t x =
+    let (u,d,a)      = triToBase t
+        (trans,uplo) = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                         else (NoTrans  , u)
+        n            = dim x
+        ldA          = ldaMatrix a
+        incX         = stride x
+        in unsafePerformIOWithVector x $ \x' ->
+           withIOMatrix (unsafeMatrixToIOMatrix a) $ \pA ->
+           withIOVector x' $ \pX -> do
+               when (alpha /= 1) $ scaleByVector alpha x'
+               BLAS.trmv uplo trans d (conjEnum x) n pA ldA pX incX
 {-# INLINE trmv #-}
 
 trmm :: (ReadMatrix a m, WriteMatrix b m, BLAS3 e) =>

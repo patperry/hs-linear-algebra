@@ -27,7 +27,7 @@ import Data.Elem.BLAS.Zomplex
 class (BLAS1 a) => BLAS2 a where
     gemv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: TransEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trmv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     trsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
@@ -41,7 +41,7 @@ instance BLAS2 Double where
     gemv t _ _ = dgemv (cblasTrans t)
     
     gbmv t = dgbmv (cblasTrans t)
-    trmv u t d = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
+    trmv u t d _ = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     trsv u t d = dtrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbsv u t d = dtbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
@@ -74,7 +74,13 @@ instance BLAS2 (Complex Double) where
         with alpha $ \pAlpha -> with beta $ \pBeta ->
             zgbmv (cblasTrans transA) m n kl ku pAlpha pA ldA pX incX pBeta pY incY
 
-    trmv u t d = ztrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
+    trmv u t d conjX n pA ldA pX incX
+        | conjX == Conj =
+            with 1 $ \pAlpha ->
+                ztrmm (cblasSide RightSide) (cblasUpLo u) (cblasTrans $ flipTrans t) (cblasDiag d) 1 n pAlpha pA ldA pX incX
+        | otherwise =
+            ztrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
+            
     tbmv u t d = ztbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     trsv u t d = ztrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbsv u t d = ztbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
