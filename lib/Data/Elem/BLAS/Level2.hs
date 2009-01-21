@@ -31,7 +31,7 @@ class (BLAS1 a) => BLAS2 a where
     tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     trsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    hemv :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hemv :: UpLoEnum -> ConjEnum -> ConjEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     hbmv :: UpLoEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     ger  :: ConjEnum -> ConjEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     her  :: UpLoEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
@@ -45,7 +45,7 @@ instance BLAS2 Double where
     tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     trsv u t d = dtrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbsv u t d = dtbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    hemv u = dsymv (cblasUpLo u)
+    hemv u _ _ = dsymv (cblasUpLo u)
     hbmv u = dsbmv (cblasUpLo u)
     ger _ _ NoTrans m n alpha pX incX pY incY pA ldA = 
         dger m n alpha pX incX pY incY pA ldA
@@ -79,9 +79,19 @@ instance BLAS2 (Complex Double) where
     trsv u t d = ztrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbsv u t d = ztbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     
-    hemv uplo n alpha pA ldA pX incX beta pY incY =
-        with alpha $ \pAlpha -> with beta $ \pBeta -> 
-            zhemv (cblasUpLo uplo) n pAlpha pA ldA pX incX pBeta pY incY
+    hemv uplo conjX conjY n alpha pA ldA pX incX beta pY incY
+        | conjX == Conj = do
+            fX' <- mallocForeignPtrArray n
+            withForeignPtr fX' $ \pX' -> do
+                copy Conj NoConj n pX incX pX' 1
+                hemv uplo NoConj conjY n alpha pA ldA pX' 1 beta pY incY
+        | conjY == Conj = do
+            vconj n pY incY
+            hemv uplo conjX NoConj n alpha pA ldA pX incX beta pY incY
+            vconj n pY incY
+        | otherwise =
+            with alpha $ \pAlpha -> with beta $ \pBeta -> 
+                zhemv (cblasUpLo uplo) n pAlpha pA ldA pX incX pBeta pY incY
     
     hbmv uplo n k alpha pA ldA pX incX beta pY incY =
         with alpha $ \pAlpha -> with beta $ \pBeta -> 

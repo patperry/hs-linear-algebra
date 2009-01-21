@@ -738,37 +738,23 @@ unsafeGetColHermMatrix (Herm l a) i =
         return x
 {-# INLINE unsafeGetColHermMatrix #-}
 
-hemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS3 e) =>
+hemv :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
     e -> Herm a (k,k) e -> x k e -> e -> y k e -> m ()
-hemv alpha h (x :: x k e) beta (y :: y k e)
-    | numRows h == 0 =
-        return ()
-    | isConj y = do
-        doConjVector y
-        hemv alpha h x beta (conj y)
-        doConjVector y
-    | isConj x = do
-        (x' :: y k e) <- newCopyVector' x
-        hemv alpha h x' beta y
-    | otherwise =
-        let (u,a) = hermToBase h
-            n     = numCols a
-            u'    = case isHermMatrix a of
-                        True  -> flipUpLo u
-                        False -> u
-            uploA = u'
-            ldA   = ldaMatrix a
-            incX  = stride x
-            incY  = stride y
-            x'    = unsafeVectorToIOVector x
-            y'    = unsafeVectorToIOVector y
-        in 
-            withMatrixPtr a   $ \pA ->
-            withIOVector x' $ \pX ->
-            withIOVector y' $ \pY ->
-                BLAS.hemv uploA n alpha pA ldA pX incX beta pY incY
-  where 
-    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+hemv alpha h x beta y =
+    let (u,a) = hermToBase h
+        n     = numCols a
+        uplo  = case isHermMatrix a of
+                    True  -> flipUpLo u
+                    False -> u
+        ldA   = ldaMatrix a
+        incX  = stride x
+        incY  = stride y
+    in unsafePerformIOWithVector y $ \y' ->
+       withIOMatrix (unsafeMatrixToIOMatrix a) $ \pA ->
+       withIOVector (unsafeVectorToIOVector x) $ \pX ->
+       withIOVector y' $ \pY ->
+           BLAS.hemv uplo (conjEnum x) (conjEnum y) n
+                     alpha pA ldA pX incX beta pY incY
 {-# INLINE hemv #-}
 
 hemm :: (ReadMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
@@ -784,6 +770,7 @@ hemm alpha h b beta c
                           then (RightSide, flipUpLo u, n, m)
                           else (LeftSide,  u,          m, n)
             uploA   = u'
+            (alpha',beta') = if isHermMatrix c then (conjugate alpha, conjugate beta) else (alpha,beta)
             ldA     = ldaMatrix a
             ldB     = ldaMatrix b
             ldC     = ldaMatrix c
@@ -791,7 +778,7 @@ hemm alpha h b beta c
             withMatrixPtr   a $ \pA ->
             withIOMatrix (unsafeMatrixToIOMatrix b) $ \pB ->
             withIOMatrix (unsafeMatrixToIOMatrix c) $ \pC ->
-                BLAS.hemm side uploA m' n' alpha pA ldA pB ldB beta pC ldC
+                BLAS.hemm side uploA m' n' alpha' pA ldA pB ldB beta' pC ldC
     where
       withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
       (u,a) = hermToBase h
