@@ -43,9 +43,10 @@ import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
     unsafeAxpyMatrix, unsafeMatrixToIOMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
 import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
-    stride, conj, isConj, unsafeVectorToIOVector, newListVector,
+    stride, conj, isConj, conjEnum, unsafeVectorToIOVector, newListVector,
     newCopyVector, newCopyVector', scaleByVector, doConjVector,
-    unsafeCopyVector, unsafeAxpyVector, unsafeConvertIOVector )
+    unsafeCopyVector, unsafeAxpyVector, unsafeConvertIOVector,
+    unsafePerformIOWithVector )
 
 -- | Banded matrix in the 'IO' monad.  The type arguments are as follows:
 --
@@ -461,31 +462,25 @@ unsafeGetColIOBanded a j =
 gbmv :: (ReadVector x IO, WriteVector y IO, BLAS2 e)
      => e -> IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
 gbmv alpha a (x :: x p e) beta y
-    | numRows a == 0 || numCols a == 0 =
+    | n == 0 =
         scaleByVector beta y
-    | isConj x = do
-        x' <- newCopyVector' x :: IO (IOVector p e) 
-        gbmv alpha a x' beta y
-    | isConj y = do
-        doConjVector y
-        gbmv alpha a x beta (conj y)
-        doConjVector y
     | otherwise =
         let transA = transEnumIOBanded a
-            (m,n)  = case (isHermIOBanded a) of
-                         False -> shape a
-                         True  -> (flipShape . shape) a
-            (kl,ku) = case (isHermIOBanded a) of
-                          False -> (numLowerIOBanded a, numUpperIOBanded a)
-                          True  -> (numUpperIOBanded a, numLowerIOBanded a)
+            (m',n',kl',ku') = if isHermIOBanded a
+                                   then (n,m,ku,kl) else (m,n,kl,ku)
             ldA    = ldaIOBanded a
             incX   = stride x
             incY   = stride y
-        in
-            withIOBanded a   $ \pA ->
-            withIOVector (unsafeVectorToIOVector x) $ \pX ->
-            withIOVector (unsafeVectorToIOVector y) $ \pY -> do
-                BLAS.gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY
+        in unsafePerformIOWithVector y $ \y' ->
+           withIOBanded a $ \pA ->
+           withIOVector (unsafeVectorToIOVector x) $ \pX ->
+           withIOVector y' $ \pY ->
+                BLAS.gbmv transA (conjEnum x) (conjEnum y) 
+                          m' n' kl' ku' alpha pA ldA pX incX beta pY incY
+  where
+    (m,n)   = shape a
+    (kl,ku) = bandwidthsIOBanded a
+
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (ReadMatrix b IO, WriteMatrix c IO, BLAS2 e)

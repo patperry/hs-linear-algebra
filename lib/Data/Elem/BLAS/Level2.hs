@@ -26,7 +26,7 @@ import Data.Elem.BLAS.Zomplex
 -- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where
     gemv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    gbmv :: TransEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gbmv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     trmv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     trsv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
@@ -39,8 +39,7 @@ class (BLAS1 a) => BLAS2 a where
 
 instance BLAS2 Double where
     gemv t _ _ = dgemv (cblasTrans t)
-    
-    gbmv t = dgbmv (cblasTrans t)
+    gbmv t _ _ = dgbmv (cblasTrans t)
     trmv u t d _ = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     trsv u t d _ = dtrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
@@ -70,9 +69,21 @@ instance BLAS2 (Complex Double) where
       where
         (m',n') = if transA == ConjTrans then (n,m) else (m,n)
     
-    gbmv transA m n kl ku alpha pA ldA pX incX beta pY incY =
-        with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zgbmv (cblasTrans transA) m n kl ku pAlpha pA ldA pX incX pBeta pY incY
+    gbmv transA conjX conjY m n kl ku alpha pA ldA pX incX beta pY incY
+        | conjX == Conj = do
+            fX' <- mallocForeignPtrArray n'
+            withForeignPtr fX' $ \pX' -> do
+                copy Conj NoConj n' pX incX pX' 1
+                gbmv transA NoConj conjY m n kl ku alpha pA ldA pX' 1 beta pY incY
+        | conjY == Conj = do
+            vconj m' pY incY
+            gbmv transA conjX NoConj m n kl ku alpha pA ldA pX incX beta pY incY            
+            vconj m' pY incY
+        | otherwise =
+             with alpha $ \pAlpha -> with beta $ \pBeta ->
+                 zgbmv (cblasTrans transA) m n kl ku pAlpha pA ldA pX incX pBeta pY incY
+      where
+        (m',n') = if transA == ConjTrans then (n,m) else (m,n)
 
     trmv u t d conjX n pA ldA pX incX
         | conjX == Conj =
