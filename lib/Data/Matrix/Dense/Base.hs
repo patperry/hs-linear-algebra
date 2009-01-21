@@ -1010,7 +1010,7 @@ trmm alpha t b =
 {-# INLINE trmm #-}
   
 unsafeDoSSolveTriMatrix :: (ReadMatrix a m,
-    ReadVector y m, WriteVector x m, BLAS3 e) =>
+    ReadVector y m, WriteVector x m, BLAS2 e) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriMatrix alpha t y x =
     case (u, toLower d a, toUpper d a) of
@@ -1067,45 +1067,20 @@ unsafeDoSSolveMatrixTriMatrix alpha t c b =
     (u,d,a) = triToBase t
 {-# INLINE unsafeDoSSolveMatrixTriMatrix #-}
 
-trsv :: (ReadMatrix a m, WriteVector y m, BLAS3 e) =>
+trsv :: (ReadMatrix a m, WriteVector y m, BLAS2 e) =>
     e -> Tri a (k,k) e -> y n e -> m ()
-trsv alpha t x
-    | dim x == 0 = return ()
-
-    | isConj x =
-        let (u,d,a) = triToBase t
-            side    = RightSide
-            (h,u')  = if isHermMatrix a then (NoTrans, flipUpLo u) else (ConjTrans, u)
-            uploA   = u'
-            transA  = h
-            diagA   = d
-            m       = 1
-            n       = dim x
-            alpha'  = conjugate alpha
-            ldA     = ldaMatrix a
-            ldB     = stride x
-        in 
-            withMatrixPtr   a $ \pA ->
-            withVectorPtrIO x $ \pB ->
-                BLAS.trsm side uploA transA diagA m n alpha' pA ldA pB ldB
-
-    | otherwise =
-        let (u,d,a) = triToBase t
-            (transA,u') = if isHermMatrix a then (ConjTrans, flipUpLo u) 
-                                            else (NoTrans  , u)
-            uploA     = u'
-            diagA     = d
-            n         = dim x
-            ldA       = ldaMatrix a
-            incX      = stride x
-        in do
-            when (alpha /= 1) $ scaleByVector alpha x
-            withMatrixPtr   a $ \pA ->
-                withVectorPtrIO x $ \pX ->
-                    BLAS.trsv uploA transA diagA n pA ldA pX incX
-  where 
-    withVectorPtrIO = withIOVector . unsafeVectorToIOVector
-    withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
+trsv alpha t x =
+    let (u,d,a)      = triToBase t
+        (trans,uplo) = if isHermMatrix a then (ConjTrans, flipUpLo u) 
+                                         else (NoTrans  , u)
+        n            = dim x
+        ldA          = ldaMatrix a
+        incX         = stride x
+        in unsafePerformIOWithVector x $ \x' ->
+           withIOMatrix (unsafeMatrixToIOMatrix a) $ \pA ->
+           withIOVector x' $ \pX -> do
+               when (alpha /= 1) $ scaleByVector alpha x'
+               BLAS.trsv uplo trans d (conjEnum x) n pA ldA pX incX
 {-# INLINE trsv #-}
 
 trsm :: (ReadMatrix a m, WriteMatrix b m, BLAS3 e) =>
