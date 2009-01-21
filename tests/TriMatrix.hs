@@ -46,6 +46,12 @@ prop_doSapplyAddVector alpha beta (TriMatrixMV (a :: TM) _ x) = monadicST $ do
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
 
+prop_doSSolveVector alpha (TriMatrixSV (a :: TM) x) = monadicST $ do
+    forAllM (Test.vector (numCols a)) $ \y -> do
+        y'  <- run $ unsafeThawVector y
+        run $ doSSolveVector alpha a x y'
+        assert $ y ~== a <\> (alpha *> x)
+
 prop_tri_applyMatrix (TriMatrixMM (t :: TM) a b) =
     t <**> b ~== a <**> b
 
@@ -73,6 +79,11 @@ prop_tri_solveMatrix (TriMatrixSM (t :: TM) b) =
 prop_tri_ssolveMatrix k (TriMatrixSM (t :: TM) b) =
     ssolveMatrix k t b ~== t <\\> (k *> b)
 
+prop_doSSolveMatrix alpha (TriMatrixSM (a :: TM) b) = monadicST $ do
+    forAllM (Test.matrix (numCols a, numCols b)) $ \c -> do
+        c'  <- run $ unsafeThawMatrix c
+        run $ doSSolveMatrix alpha a b c'
+        assert $ c ~== a <\\> (alpha *> b)
 
 tests_TriMatrix =
     [ ("tri col"               , mytest prop_tri_col)
@@ -86,6 +97,8 @@ tests_TriMatrix =
 
     , ("tri solve"             , mytest prop_tri_solve)
     , ("tri ssolve"            , mytest prop_tri_ssolve)
+    , ("tri doSSolveVector"     , mytest prop_doSSolveVector)        
     , ("tri solveMatrix"          , mytest prop_tri_solveMatrix)
     , ("tri ssolveMatrix"         , mytest prop_tri_ssolveMatrix)
+    , ("tri doSSolveMatrix"     , mytest prop_doSSolveMatrix)            
     ]
