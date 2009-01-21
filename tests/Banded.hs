@@ -10,10 +10,14 @@
 module Banded( tests_Banded ) where
 
 import Driver
+import Monadic
+import qualified Test.QuickCheck.BLAS as Test
 
 import Data.Elem.BLAS
 import Data.Vector.Dense 
+import Data.Vector.Dense.ST
 import Data.Matrix.Dense ( Matrix, identityMatrix )
+import Data.Matrix.Dense.ST
 import Data.Matrix.Banded
 
 import Test.Matrix.Banded hiding ( banded )
@@ -154,6 +158,12 @@ prop_apply_scale k (BandedMV (a :: B) x) =
     a <*> (k *> x) ~== k *> (a <*> x)
 prop_apply_linear (BandedMVPair (a :: B) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
+prop_doSapplyAddVector alpha beta (BandedMV (a :: B) x) = monadicST $ do
+    forAllM (Test.vector (numRows a)) $ \y -> do
+        y'  <- run $ unsafeThawVector y
+        y'' <- run $ freezeVector y'
+        run $ doSApplyAddVector alpha a x beta y'
+        assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
 
 prop_applyMatrix_scale_left (BandedMM (a:: B) b) k =
     a <**> (k *> b) ~== k *> (a <**> b)    
@@ -163,6 +173,12 @@ prop_applyMatrix_linear (BandedMMPair (a :: B) b c) =
     (a <**> (b + c) ~== a <**> b + a <**> c)
 prop_applyMatrix_cols (BandedMM (a :: B) b) =
     cols (a <**> b) ~== map (a <*> ) (cols b)
+prop_doSapplyAddMatrix alpha beta (BandedMM (a :: B) b) = monadicST $ do
+    forAllM (Test.matrix (numRows a, numCols b)) $ \c -> do
+        c'  <- run $ unsafeThawMatrix c
+        c'' <- run $ freezeMatrix c'
+        run $ doSApplyAddMatrix alpha a b beta c'
+        assert $ c ~== a <**> (alpha *> b) + (beta *> c'')
 
 prop_scale k (a :: B) =
     k *> a ~== tmap (\e -> e * k) a
@@ -217,11 +233,13 @@ tests_Banded =
     , ("apply herm basis"      , mytest prop_apply_herm_basis)
     , ("apply scale"           , mytest prop_apply_scale)
     , ("apply linear"          , mytest prop_apply_linear)
+    , ("doSApplyAddVector"     , mytest prop_doSapplyAddVector)
     
     , ("applyMatrix scale left"   , mytest prop_applyMatrix_scale_left)
     , ("applyMatrix scale right"  , mytest prop_applyMatrix_scale_right)
     , ("applyMatrix linear"       , mytest prop_applyMatrix_linear)
     , ("applyMatrix cols"         , mytest prop_applyMatrix_cols)
+    , ("doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)    
     
     , ("scale"                 , mytest prop_scale)
     
