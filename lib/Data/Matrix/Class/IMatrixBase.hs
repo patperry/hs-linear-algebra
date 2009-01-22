@@ -59,7 +59,7 @@ col a = checkedCol (shape a) (unsafeCol a)
 {-# INLINE col #-}
 
 -- | Matrix multiplication by a vector.
-applyVector :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+applyVector :: (IMatrix a, BLAS2 e) => a (m,n) e -> Vector n e -> Vector m e
 applyVector a x = checkMatVecMult (shape a) (dim x) $ unsafeApplyVector a x
 {-# INLINE applyVector #-}
 
@@ -70,7 +70,7 @@ applyMatrix a b = checkMatMatMult (shape a) (shape b) $ unsafeApplyMatrix a b
 
 -- | Scale and multiply by a vector.  
 -- @sapplyVector k a x@ is equal to @a \<*> (k *> x)@, and often it is faster.
-sapplyVector :: (IMatrix a, BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
+sapplyVector :: (IMatrix a, BLAS2 e) => e -> a (m,n) e -> Vector n e -> Vector m e
 sapplyVector k a x = checkMatVecMult (shape a) (dim x) $ unsafeSApplyVector k a x
 {-# INLINE sapplyVector #-}
     
@@ -80,7 +80,7 @@ sapplyMatrix :: (IMatrix a, BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matr
 sapplyMatrix k a b = checkMatMatMult (shape a) (shape b) $ unsafeSApplyMatrix k a b
 {-# INLINE sapplyMatrix #-}
 
-unsafeApplyVector :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+unsafeApplyVector :: (IMatrix a, BLAS2 e) => a (m,n) e -> Vector n e -> Vector m e
 unsafeApplyVector = unsafeSApplyVector 1
 {-# INLINE unsafeApplyVector #-}
 
@@ -89,7 +89,7 @@ unsafeApplyMatrix = unsafeSApplyMatrix 1
 {-# INLINE unsafeApplyMatrix #-}
 
 -- | Operator form of matrix multiplication by a vector.
-(<*>) :: (IMatrix a, BLAS3 e) => a (m,n) e -> Vector n e -> Vector m e
+(<*>) :: (IMatrix a, BLAS2 e) => a (m,n) e -> Vector n e -> Vector m e
 (<*>) = applyVector
 {-# INLINE (<*>) #-}
 

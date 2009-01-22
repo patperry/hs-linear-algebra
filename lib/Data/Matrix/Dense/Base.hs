@@ -576,7 +576,7 @@ unsafeGetDivMatrix = unsafeGetBinaryMatrixOp unsafeDivMatrix
 --    @unsafeDoSApply{Vector,Matrix}_@
 --
 class (MatrixShaped a, MonadInterleave m) => MMatrix a m where
-    unsafeGetSApplyVector :: (ReadVector x m, WriteVector y m, BLAS3 e) =>
+    unsafeGetSApplyVector :: (ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> a (n,p) e -> x p e -> m (y n e)
     unsafeGetSApplyVector alpha a x = do
         y  <- newVector_ (numRows a)
@@ -592,7 +592,7 @@ class (MatrixShaped a, MonadInterleave m) => MMatrix a m where
         return c
     {-# INLINE unsafeGetSApplyMatrix #-}
 
-    unsafeDoSApplyAddVector :: (ReadVector x m, WriteVector y m, BLAS3 e) =>
+    unsafeDoSApplyAddVector :: (ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> a (n,p) e -> x p e -> e -> y n e -> m ()
     unsafeDoSApplyAddVector alpha a x beta (y :: y k e) = do
         (y' :: y k e) <- unsafeGetSApplyVector alpha a x
@@ -608,7 +608,7 @@ class (MatrixShaped a, MonadInterleave m) => MMatrix a m where
         unsafeAxpyMatrix 1 c' c
     {-# INLINE unsafeDoSApplyAddMatrix #-}
 
-    unsafeDoSApplyVector_ :: (WriteVector y m, BLAS3 e) =>
+    unsafeDoSApplyVector_ :: (WriteVector y m, BLAS2 e) =>
         e -> a (n,n) e -> y n e -> m ()
     unsafeDoSApplyVector_ alpha a (x :: y n e) = do
         y <- newVector_ (dim x)
@@ -1115,7 +1115,7 @@ trsm alpha t b =
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
 class (MatrixShaped a, Monad m) => MSolve a m where
-    unsafeDoSolveVector :: (ReadVector y m, WriteVector x m, BLAS3 e) =>
+    unsafeDoSolveVector :: (ReadVector y m, WriteVector x m, BLAS2 e) =>
         a (n,p) e -> y n e -> x p e -> m ()
     unsafeDoSolveVector = unsafeDoSSolveVector 1
     {-# INLINE unsafeDoSolveVector #-}
@@ -1125,7 +1125,7 @@ class (MatrixShaped a, Monad m) => MSolve a m where
     unsafeDoSolveMatrix = unsafeDoSSolveMatrix 1
     {-# INLINE unsafeDoSolveMatrix #-}    
     
-    unsafeDoSSolveVector :: (ReadVector y m, WriteVector x m, BLAS3 e) =>
+    unsafeDoSSolveVector :: (ReadVector y m, WriteVector x m, BLAS2 e) =>
         e -> a (n,p) e -> y n e -> x p e -> m ()
     unsafeDoSSolveVector alpha a y x = do
         unsafeDoSolveVector a y x
@@ -1139,11 +1139,11 @@ class (MatrixShaped a, Monad m) => MSolve a m where
         scaleByMatrix alpha b
     {-# INLINE unsafeDoSSolveMatrix #-}
 
-    unsafeDoSolveVector_ :: (WriteVector x m, BLAS3 e) => a (n,n) e -> x n e -> m ()
+    unsafeDoSolveVector_ :: (WriteVector x m, BLAS2 e) => a (n,n) e -> x n e -> m ()
     unsafeDoSolveVector_ = unsafeDoSSolveVector_ 1
     {-# INLINE unsafeDoSolveVector_ #-}
 
-    unsafeDoSSolveVector_ :: (WriteVector x m, BLAS3 e) => e -> a (n,n) e -> x n e -> m ()
+    unsafeDoSSolveVector_ :: (WriteVector x m, BLAS2 e) => e -> a (n,n) e -> x n e -> m ()
     unsafeDoSSolveVector_ alpha a x = do
         scaleByVector alpha x
         unsafeDoSolveVector_ a x
@@ -1252,7 +1252,7 @@ instance WriteMatrix IOMatrix IO where
 -- type class do not perform any checks on the validity of shapes or
 -- indices, so in general their safe counterparts should be preferred.
 class (MatrixShaped a) => IMatrix a where
-    unsafeSApplyVector :: (BLAS3 e) => e -> a (m,n) e -> Vector n e -> Vector m e
+    unsafeSApplyVector :: (BLAS2 e) => e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMatrix :: (BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
     unsafeRow :: (Elem e) => a (m,n) e -> Int -> Vector n e

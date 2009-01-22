@@ -49,7 +49,7 @@ infixr 7 <\>, <\\>
 -- of shapes or indices, so in general their safe counterparts should be
 -- preferred.
 class (MatrixShaped a) => ISolve a where
-    unsafeSolveVector :: (BLAS3 e) 
+    unsafeSolveVector :: (BLAS2 e) 
                    => a (m,n) e -> Vector m e -> Vector n e
     unsafeSolveVector = unsafeSSolveVector 1
     {-# INLINE unsafeSolveVector #-}
@@ -59,14 +59,14 @@ class (MatrixShaped a) => ISolve a where
     unsafeSolveMatrix = unsafeSSolveMatrix 1
     {-# INLINE unsafeSolveMatrix #-}
 
-    unsafeSSolveVector :: (BLAS3 e)
+    unsafeSSolveVector :: (BLAS2 e)
                     => e -> a (m,n) e -> Vector m e -> Vector n e
     
     unsafeSSolveMatrix :: (BLAS3 e)
                     => e -> a (m,n) e -> Matrix (m,k) e -> Matrix (n,k) e
 
 -- | Solve for a vector.
-solveVector :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
+solveVector :: (ISolve a, BLAS2 e) => a (m,n) e -> Vector m e -> Vector n e
 solveVector a y =
     checkMatVecSolv (shape a) (dim y) $
         unsafeSolveVector a y
@@ -81,7 +81,7 @@ solveMatrix a b =
 
 -- | Solve for a vector and scale.
 -- @ssolveVector k a y@ is equal to @a `solveVector` (k *> y)@ but is often faster.
-ssolveVector :: (ISolve a, BLAS3 e) => e -> a (m,n) e -> Vector m e -> Vector n e
+ssolveVector :: (ISolve a, BLAS2 e) => e -> a (m,n) e -> Vector m e -> Vector n e
 ssolveVector alpha a y =
     checkMatVecSolv (shape a) (dim y) $
         unsafeSSolveVector alpha a y
@@ -102,7 +102,7 @@ instance ISolve (Tri Matrix) where
     {-# INLINE unsafeSSolveMatrix #-}
 
 -- | Operator form of solving for a vector.
-(<\>) :: (ISolve a, BLAS3 e) => a (m,n) e -> Vector m e -> Vector n e
+(<\>) :: (ISolve a, BLAS2 e) => a (m,n) e -> Vector m e -> Vector n e
 (<\>) = solveVector
 {-# INLINE (<\>) #-}
 
