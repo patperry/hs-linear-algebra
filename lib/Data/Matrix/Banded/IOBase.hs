@@ -43,10 +43,9 @@ import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
     unsafeAxpyMatrix, unsafeMatrixToIOMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
 import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
-    stride, conj, isConj, conjEnum, unsafeVectorToIOVector, newListVector,
-    newCopyVector, scaleByVector, doConjVector,
-    unsafeCopyVector, unsafeAxpyVector, unsafeConvertIOVector,
-    unsafePerformIOWithVector )
+    stride, conj, conjEnum, unsafeVectorToIOVector, newListVector,
+    newCopyVector, scaleByVector,unsafeCopyVector, unsafeAxpyVector,
+    unsafeConvertIOVector, unsafePerformIOWithVector )
 
 -- | Banded matrix in the 'IO' monad.  The type arguments are as follows:
 --
@@ -590,31 +589,26 @@ tbmm' alpha a (b :: b (s,t) e) beta (c :: c (r,t) e)
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
 tbsv :: (WriteVector y IO, BLAS2 e) => 
-    e -> Tri IOBanded (k,k) e -> y n e -> IO ()
-tbsv alpha t x | isConj x = do
-    doConjVector x
-    tbsv alpha t (conj x)
-    doConjVector x
-tbsv alpha t x = 
+    e -> Tri IOBanded (n,n) e -> y n e -> IO ()
+tbsv alpha t x =
     let (u,d,a) = triToBase t
-        (transA,u') = if isHermIOBanded a then (ConjTrans, flipUpLo u)
-                                          else (NoTrans  , u)
-        uploA     = u'
+        (transA,uploA) 
+                  = if isHermIOBanded a then (ConjTrans, flipUpLo u) 
+                                        else (NoTrans  , u)
         diagA     = d
         n         = numCols a
         k         = case u of Upper -> numUpperIOBanded a 
-                              Lower -> numLowerIOBanded a        
+                              Lower -> numLowerIOBanded a
         ldA       = ldaIOBanded a
         incX      = stride x
-        withPtrA  = case u' of 
+        withPtrA  = case uploA of 
                         Upper -> withIOBanded a
                         Lower -> withIOBandedElem a (0,0)
-    in do
-        scaleByVector alpha x
-        withPtrA $ \pA ->
-            withVectorPtrIO x $ \pX -> do
-                BLAS.tbsv uploA transA diagA n k pA ldA pX incX
-  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+    in unsafePerformIOWithVector x $ \x' ->
+       withPtrA $ \pA ->
+       withIOVector x' $ \pX -> do
+           scaleByVector alpha x
+           BLAS.tbsv uploA transA diagA (conjEnum x) n k pA ldA pX incX
 
 tbsm :: (WriteMatrix b IO, BLAS2 e) => 
     e -> Tri IOBanded (k,k) e -> b (k,l) e -> IO ()
