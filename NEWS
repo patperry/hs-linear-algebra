@@ -12,6 +12,12 @@ Changes in 0.8:
 
 * Add functional dependency m -> a in Write{Vector,Matrix,Banded} a m
   
+* Add test coverage for all code paths in matrix multiplication and solve
+  routines.  Fix bugs in bindings to gemv and hemm.
+  
+* Specialize multiplication and solve routines for Doubles so that they
+  ignore complex conjugacy information.
+  
 Changes in 0.7.6:
 
 * Fix a memory-trashing segfault.
