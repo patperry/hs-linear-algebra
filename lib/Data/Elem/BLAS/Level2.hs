@@ -28,7 +28,7 @@ class (BLAS1 a) => BLAS2 a where
     gemv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: TransEnum -> ConjEnum -> ConjEnum -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     trmv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbmv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     trsv :: UpLoEnum -> TransEnum -> DiagEnum -> ConjEnum -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     tbsv :: UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     hemv :: UpLoEnum -> ConjEnum -> ConjEnum -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
@@ -41,7 +41,7 @@ instance BLAS2 Double where
     gemv t _ _ = dgemv (cblasTrans t)
     gbmv t _ _ = dgbmv (cblasTrans t)
     trmv u t d _ = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
+    tbmv u t d _ = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     trsv u t d _ = dtrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     tbsv u t d = dtbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
     hemv u _ _ = dsymv (cblasUpLo u)
@@ -92,7 +92,13 @@ instance BLAS2 (Complex Double) where
         | otherwise =
             ztrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
             
-    tbmv u t d = ztbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
+    tbmv u t d conjX n k pA ldA pX incX
+        | conjX == Conj = do
+            vconj n pX incX
+            tbmv u t d NoConj n k pA ldA pX incX
+            vconj n pX incX
+        | otherwise =
+            ztbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n k pA ldA pX incX
 
     trsv u t d conjX n pA ldA pX incX
         | conjX == Conj =

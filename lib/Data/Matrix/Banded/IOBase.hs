@@ -540,32 +540,25 @@ unsafeGetRowTriIOBanded =
 
 tbmv :: (WriteVector y IO, BLAS2 e) => 
     e -> Tri IOBanded (n,n) e -> y n e -> IO ()
-tbmv alpha t x | isConj x = do
-    doConjVector x
-    tbmv alpha t (conj x)
-    doConjVector x
-
 tbmv alpha t x =
     let (u,d,a) = triToBase t
-        (transA,u') 
+        (transA,uploA) 
                   = if isHermIOBanded a then (ConjTrans, flipUpLo u) 
                                         else (NoTrans  , u)
-        uploA     = u'
         diagA     = d
         n         = numCols a
         k         = case u of Upper -> numUpperIOBanded a 
                               Lower -> numLowerIOBanded a
         ldA       = ldaIOBanded a
         incX      = stride x
-        withPtrA  = case u' of 
+        withPtrA  = case uploA of 
                         Upper -> withIOBanded a
                         Lower -> withIOBandedElem a (0,0)
-    in do
-        scaleByVector alpha x
-        withPtrA $ \pA ->
-            withVectorPtrIO x $ \pX -> do
-                BLAS.tbmv uploA transA diagA n k pA ldA pX incX
-  where withVectorPtrIO = withIOVector . unsafeVectorToIOVector
+    in unsafePerformIOWithVector x $ \x' ->
+       withPtrA $ \pA ->
+       withIOVector x' $ \pX -> do
+           scaleByVector alpha x
+           BLAS.tbmv uploA transA diagA (conjEnum x) n k pA ldA pX incX
 
 tbmm :: (WriteMatrix b IO, BLAS2 e) =>
     e -> Tri IOBanded (n,n) e -> b (n,p) e -> IO ()
