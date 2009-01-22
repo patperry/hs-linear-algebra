@@ -70,14 +70,6 @@ Small projects
 Medium projects
 ---------------
 
-* Looking at the HPC output, there are a few important code paths that 
-  aren't getting covered by the tests.  Specifically in the following 
-  functions: gemm, hemv, hemm, hbmm, trmv, trmm, etc.  These functions
-  are in Data.Matrix.Banded.IOBase and Data.Matrix.Dense.Base.
-  It is impossible to test these code paths using pure code.  You need to
-  use STMatrix and STVector.  I suggest stealing "Mondaic.hs" from
-  QuickCheck2 for this purpose.  
-
 * There do not yet exist bindings for `syr/her`, etc.  Add them.  The
   bindings should only be for mutable types, and should have names like
   `rank1UpdateMatrix`, `rankKUpdateHermMatrix`, etc.  Look at how `ger` is
@@ -96,8 +88,6 @@ Medium projects
 
 * Add getDenseMatrix/toDenseMatrix to MMatrix/IMatrix.  Ideally put in
   customized versions for all 6 matrix types.
-
-* Optimization: Add `isRealType :: e -> Bool` and specilize hemm.
 
 * Add functions for arithmetic on banded matrices, and provide a `Num`
   instance for Banded.
