@@ -44,7 +44,7 @@ import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
 import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
     stride, conj, isConj, conjEnum, unsafeVectorToIOVector, newListVector,
-    newCopyVector, newCopyVector', scaleByVector, doConjVector,
+    newCopyVector, scaleByVector, doConjVector,
     unsafeCopyVector, unsafeAxpyVector, unsafeConvertIOVector,
     unsafePerformIOWithVector )
 
@@ -501,37 +501,27 @@ unsafeGetRowHermIOBanded =
 
 hbmv :: (ReadVector x IO, BLAS2 e) => 
     e -> Herm IOBanded (n,p) e -> x p e -> e -> IOVector n e -> IO ()
-hbmv alpha h (x :: x p e) beta y
-    | numRows h == 0 =
-        return ()
-    | isConj y = do
-        doConjVector y
-        hbmv alpha h x beta (conj y)
-        doConjVector y
-    | isConj x = do
-        (x' :: IOVector p e) <- newCopyVector' x
-        hbmv alpha h x' beta y
-    | otherwise =
-        let (u,a) = hermToBase (coerceHerm h)
-            n     = numCols a
-            k     = case u of 
-                        Upper -> numUpperIOBanded a
-                        Lower -> numLowerIOBanded a      
-            u'    = case (isHermIOBanded a) of
-                        True  -> flipUpLo u
-                        False -> u
-            uploA = u'
-            ldA   = ldaIOBanded a
-            incX  = stride x
-            incY  = stride y
-            withPtrA 
-                  = case u' of Upper -> withIOBanded a
-                               Lower -> withIOBandedElem a (0,0)
-        in
-            withPtrA $ \pA ->
-            withIOVector (unsafeVectorToIOVector x) $ \pX ->
-            withIOVector (unsafeVectorToIOVector y) $ \pY -> do
-                BLAS.hbmv uploA n k alpha pA ldA pX incX beta pY incY
+hbmv alpha h x beta y =
+    let (u,a) = hermToBase (coerceHerm h)
+        n     = numCols a
+        k     = case u of 
+                    Upper -> numUpperIOBanded a
+                    Lower -> numLowerIOBanded a      
+        uplo  = case (isHermIOBanded a) of
+                    True  -> flipUpLo u
+                    False -> u
+        ldA   = ldaIOBanded a
+        incX  = stride x
+        incY  = stride y
+        withPtrA 
+              = case uplo of Upper -> withIOBanded a
+                             Lower -> withIOBandedElem a (0,0)
+    in unsafePerformIOWithVector y $ \y' ->
+       withPtrA $ \pA ->
+       withIOVector (unsafeVectorToIOVector x) $ \pX ->
+       withIOVector y' $ \pY ->
+            BLAS.hbmv uplo (conjEnum x) (conjEnum y) 
+                      n k alpha pA ldA pX incX beta pY incY
 
 hbmm :: (ReadMatrix b IO, BLAS2 e) => 
     e -> Herm IOBanded (n,p) e -> b (p,q) e -> e -> IOMatrix (n,q) e -> IO ()
