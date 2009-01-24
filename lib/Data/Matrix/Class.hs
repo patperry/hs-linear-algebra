@@ -15,13 +15,16 @@
 
 module Data.Matrix.Class (
     -- * Matrix shape
-    MatrixShaped(..),
+    MatrixShaped,
     numRows,
     numCols,
     isSquare,
     isFat,
     isTall,
     flipShape,
+    
+    -- * Hermitian transpose
+    HasHerm(..),
 
     -- * Associated types for matrices
     HasVectorView(..),
@@ -51,7 +54,10 @@ class HasMatrixStorage (a :: * -> * -> *) where
     type MatrixStorage a :: * -> * -> *
 
 -- | A base class for objects shaped like matrices.
-class (Shaped a (Int,Int)) => MatrixShaped a where
+class (Shaped a (Int,Int)) => MatrixShaped a
+    
+-- | A class for objects with a hermitian transpose
+class (MatrixShaped a) => HasHerm a where
     -- | Creates a new matrix view that conjugates and transposes the 
     -- given matrix.
     herm :: a (m,n) e -> a (n,m) e

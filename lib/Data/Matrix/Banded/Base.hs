@@ -81,6 +81,7 @@ unsafeThawIOBanded (Banded x) = return x
 
 -- | Common functionality for all banded matrix types.
 class ( MatrixShaped a, 
+        HasHerm a,
         HasVectorView a, 
         HasMatrixStorage a,
         BaseVector (VectorView a), 
@@ -687,9 +688,11 @@ instance Shaped Banded (Int,Int) where
     {-# INLINE bounds #-}
 
 instance MatrixShaped Banded where
+
+instance HasHerm Banded where
     herm (Banded a) = Banded $ IO.hermIOBanded a
     {-# INLINE herm #-}
-    
+        
 instance BaseBanded Banded where
     numLower (Banded a) = IO.numLowerIOBanded a
     {-# INLINE numLower #-}
@@ -850,6 +853,8 @@ instance Shaped (STBanded s) (Int,Int) where
     {-# INLINE bounds #-}
 
 instance MatrixShaped (STBanded s) where
+
+instance HasHerm (STBanded s) where
     herm (STBanded a) = STBanded $ IO.hermIOBanded a
     {-# INLINE herm #-}
 

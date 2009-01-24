@@ -64,6 +64,8 @@ instance (MatrixShaped a) => Shaped (Herm a) (Int,Int) where
     {-# INLINE bounds #-}
       
 instance (MatrixShaped a) => MatrixShaped (Herm a) where
+
+instance (HasHerm a) => HasHerm (Herm a) where
     herm = coerceHerm
     {-# INLINE herm #-}
     

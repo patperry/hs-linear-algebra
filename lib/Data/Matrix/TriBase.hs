@@ -71,6 +71,8 @@ instance (MatrixShaped a) => Shaped (Tri a) (Int,Int) where
     {-# INLINE bounds #-}
     
 instance (MatrixShaped a) => MatrixShaped (Tri a) where
+
+instance (HasHerm a) => HasHerm (Tri a) where
     herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
     {-# INLINE herm #-}
 

@@ -77,6 +77,7 @@ unsafeThawIOMatrix (Matrix x) = return x
 -- | Common functionality for all dense matrix types.
 class ( HasVectorView a, 
         MatrixShaped a, 
+        HasHerm a,
         BaseVector (VectorView a) ) => BaseMatrix a where
       
     -- | Get the leading dimension of the storage of the matrix.    
@@ -575,7 +576,7 @@ unsafeGetDivMatrix = unsafeGetBinaryMatrixOp unsafeDivMatrix
 -- Optional:
 --    @unsafeDoSApply{Vector,Matrix}_@
 --
-class (MatrixShaped a, MonadInterleave m) => MMatrix a m where
+class (HasHerm a, MonadInterleave m) => MMatrix a m where
     unsafeGetSApplyVector :: (ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> a (n,p) e -> x p e -> m (y n e)
     unsafeGetSApplyVector alpha a x = do
@@ -1228,7 +1229,7 @@ instance WriteMatrix IOMatrix IO where
 -- | A type class for immutable matrices.  The member functions of the
 -- type class do not perform any checks on the validity of shapes or
 -- indices, so in general their safe counterparts should be preferred.
-class (MatrixShaped a) => IMatrix a where
+class (HasHerm a) => IMatrix a where
     unsafeSApplyVector :: (BLAS2 e) => e -> a (m,n) e -> Vector n e -> Vector m e
     unsafeSApplyMatrix :: (BLAS3 e) => e -> a (m,k) e -> Matrix (k,n) e -> Matrix (m,n) e
 
@@ -1441,6 +1442,8 @@ instance Shaped Matrix (Int,Int) where
     {-# INLINE bounds #-}
 
 instance MatrixShaped Matrix where
+
+instance HasHerm Matrix where
     herm (Matrix a) = Matrix (herm a)
     {-# INLINE herm #-}
     
@@ -1846,6 +1849,8 @@ instance WriteTensor (STMatrix s) (Int,Int) (ST s) where
     {-# INLINE shiftBy #-}
 
 instance MatrixShaped (STMatrix s) where
+
+instance HasHerm (STMatrix s) where
     herm (STMatrix a) = STMatrix (herm a)
     {-# INLINE herm #-}
     

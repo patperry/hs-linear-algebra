@@ -640,6 +640,8 @@ instance Shaped IOBanded (Int,Int) where
     {-# INLINE bounds #-}
 
 instance MatrixShaped IOBanded where
+
+instance HasHerm IOBanded where
     herm = hermIOBanded
     {-# INLINE herm #-}
 

@@ -583,6 +583,8 @@ instance WriteTensor IOMatrix (Int,Int) IO where
 instance HasVectorView IOMatrix where
     type VectorView IOMatrix = IOVector
 
-instance MatrixShaped IOMatrix where
+instance MatrixShaped IOMatrix
+
+instance HasHerm IOMatrix where
     herm = hermIOMatrix
     {-# INLINE herm #-}
