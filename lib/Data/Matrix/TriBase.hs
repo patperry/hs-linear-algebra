@@ -14,7 +14,6 @@ module Data.Matrix.TriBase
 
 import Unsafe.Coerce
 
-import BLAS.Internal( checkFat, checkTall )
 import Data.Matrix.Class
 import Data.Tensor.Class
 
@@ -50,24 +49,23 @@ triToBase (Tri u d a) = (u,d,a)
 
 -- | Get a lower triangular view of a matrix.
 lower :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-lower a = checkTall "lower" (shape a) $ Tri Lower NonUnit a
+lower = Tri Lower NonUnit
 
 -- | Get a lower triangular view of a matrix, with unit diagonal.
 lowerU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-lowerU a = checkTall "lowerU" (shape a) $ Tri Lower Unit a
+lowerU = Tri Lower Unit
 
 -- | Get an upper triangular view of a matrix.
 upper :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-upper a = checkFat "upper" (shape a) $ Tri Upper NonUnit a
+upper = Tri Upper NonUnit
 
 -- | Get an upper triangular view of a matrix, with unit diagonal.
 upperU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
-upperU a = checkFat "upperU" (shape a) $ Tri Upper Unit a
+upperU = Tri Upper Unit
 
       
 instance (MatrixShaped a) => Shaped (Tri a) (Int,Int) where
-    shape (Tri Lower _ a) = (numRows a, min (numRows a) (numCols a))
-    shape (Tri Upper _ a) = (min (numRows a) (numCols a), numCols a)
+    shape (Tri _ _ a) = (numRows a, numCols a)
     {-# INLINE shape #-}    
     bounds a = ((0,0),(m-1,n-1)) where (m,n) = shape a
     {-# INLINE bounds #-}

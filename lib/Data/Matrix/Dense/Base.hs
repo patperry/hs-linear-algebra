@@ -826,67 +826,53 @@ unsafeDoSApplyTriMatrix :: (ReadMatrix a m,
     ReadVector x m, WriteVector y m, BLAS2 e) =>
         e -> Tri a (k,l) e -> x l e -> y k e -> m ()
 unsafeDoSApplyTriMatrix alpha t x y =
-    case (u, toLower d a, toUpper d a) of
-        (Lower,Left t',_) -> do
-            unsafeCopyVector y (coerceVector x)
-            trmv alpha t' y
-            
-        (Lower,Right (t',r),_) -> do
-            let y1 = unsafeSubvectorView y 0            (numRows t')
-                y2 = unsafeSubvectorView y (numRows t') (numRows r)
-            unsafeCopyVector y1 x
-            trmv alpha t' y1
-            gemv alpha r x 0 y2
-            
-        (Upper,_,Left t') -> do
-            unsafeCopyVector (coerceVector y) x
-            trmv alpha t' (coerceVector y)
-
-        (Upper,_,Right (t',r)) ->
-            let x1 = unsafeSubvectorView x 0            (numCols t')
-                x2 = unsafeSubvectorView x (numCols t') (numCols r)
-            in do
-                unsafeCopyVector y x1
-                trmv alpha t' y
-                gemv alpha r x2 1 y
-  where
-    (u,d,a) = triToBase t
+    let mn      = min (numRows t) (numCols t)
+        (x1,x2) = splitElemsAt mn x
+        (y1,y2) = splitElemsAt mn y
+        (u,d,a) = triToBase t
+    in do
+        unsafeCopyVector y1 x1
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
+                trmv alpha t' y1
+            (Lower,Right (t',r),_) -> do
+                trmv alpha t'    y1
+                gemv alpha r x 0 y2
+            (Upper,_,Left t') -> do
+                trmv alpha t' y1
+                setZeroVector y2
+            (Upper,_,Right (t',r)) -> do
+                trmv alpha t'     y1
+                gemv alpha r x2 1 y1
 {-# INLINE unsafeDoSApplyTriMatrix #-}
 
 unsafeDoSApplyMatrixTriMatrix :: (ReadMatrix a m,
     ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
-        e -> Tri a (r,s) e -> b (s,t) e -> c (r,t) e -> m ()
+        e -> Tri a (n,p) e -> b (p,q) e -> c (n,q) e -> m ()
 unsafeDoSApplyMatrixTriMatrix alpha t b c =
-    case (u, toLower d a, toUpper d a) of
-        (Lower,Left t',_) -> do
-            unsafeCopyMatrix c (coerceMatrix b)
-            trmm alpha t' c
-            
-        (Lower,Right (t',r),_) -> do
-            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
-                c2 = unsafeSubmatrixView c (numRows t',0) (numRows r ,numCols c)
-            unsafeCopyMatrix c1 b
-            trmm alpha t' c1
-            gemm alpha r b 0 c2
-            
-        (Upper,_,Left t') -> do
-            unsafeCopyMatrix (coerceMatrix c) b
-            trmm alpha t' (coerceMatrix c)
-
-        (Upper,_,Right (t',r)) ->
-            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
-                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
-            in do
-                unsafeCopyMatrix c b1
-                trmm alpha t' c
-                gemm alpha r b2 1 c
-  where
-    (u,d,a) = triToBase t
+    let mn      = min (numRows t) (numCols t)
+        (b1,b2) = splitRowsAt mn b
+        (c1,c2) = splitRowsAt mn c
+        (u,d,a) = triToBase t
+    in do
+        unsafeCopyMatrix c1 b1
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
+                trmm alpha t' c1
+            (Lower,Right (t',r),_) -> do
+                trmm alpha t'    c1
+                gemm alpha r b 0 c2
+            (Upper,_,Left t') -> do
+                trmm alpha t' c1
+                setZeroMatrix c2
+            (Upper,_,Right (t',r)) -> do
+                trmm alpha t'     c1
+                gemm alpha r b2 1 c1
 {-# INLINE unsafeDoSApplyMatrixTriMatrix #-}
 
-toLower :: (BaseMatrix a) => DiagEnum -> a (m,n) e 
-        -> Either (Tri a (m,m) e) 
-                  (Tri a (n,n) e, a (k,n) e)
+toLower :: (BaseMatrix a) => DiagEnum -> a (n,p) e 
+        -> Either (Tri a (np,np) e) 
+                  (Tri a (np,np) e, a (k,p) e)
 toLower d a =
     if m <= n
         then Left $  triFromBase Lower d (unsafeSubmatrixView a (0,0) (m,m))
@@ -898,9 +884,9 @@ toLower d a =
     k     = m - n
 {-# INLINE toLower #-}
     
-toUpper :: (BaseMatrix a) => DiagEnum -> a (m,n) e
-        -> Either (Tri a (n,n) e)
-                  (Tri a (m,m) e, a (m,k) e)
+toUpper :: (BaseMatrix a) => DiagEnum -> a (n,p) e
+        -> Either (Tri a (np,np) e)
+                  (Tri a (np,np) e, a (n,k) e)
 toUpper d a =
     if n <= m
         then Left $  triFromBase Upper d (unsafeSubmatrixView a (0,0) (n,n))
@@ -916,6 +902,9 @@ unsafeGetColTriMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
                        => Tri a (n,p) e -> Int -> m (x n e)
 unsafeGetColTriMatrix a@(Tri Upper _ _) j = 
     liftM conj $ unsafeGetRowTriMatrix (herm a) j
+
+unsafeGetColTriMatrix (Tri Lower _ a) j | j >= numRows a =
+    newZeroVector (numRows a)
 
 unsafeGetColTriMatrix (Tri Lower Unit a) j = do
     x <- newVector_ m
@@ -1013,58 +1002,46 @@ unsafeDoSSolveTriMatrix :: (ReadMatrix a m,
     ReadVector y m, WriteVector x m, BLAS2 e) =>
         e -> Tri a (k,l) e -> y k e -> x l e -> m ()
 unsafeDoSSolveTriMatrix alpha t y x =
-    case (u, toLower d a, toUpper d a) of
-        (Lower,Left t',_) -> do
-            unsafeCopyVector x (coerceVector y)
-            trsv alpha t' (coerceVector x)
-            
-        (Lower,Right (t',_),_) -> do
-            let y1 = unsafeSubvectorView y 0            (numRows t')
-            unsafeCopyVector x y1
-            trsv alpha t' x
-            
-        (Upper,_,Left t') -> do
-            unsafeCopyVector x (coerceVector y)
-            trsv alpha t' x
-
-        (Upper,_,Right (t',r)) ->
-            let x1 = unsafeSubvectorView x 0            (numCols t')
-                x2 = unsafeSubvectorView x (numCols t') (numCols r)
-            in do
-                unsafeCopyVector x1 y
+    let mn      = min (numRows t) (numCols t)
+        (x1,x2) = splitElemsAt mn x
+        (y1, _) = splitElemsAt mn y
+        (u,d,a) = triToBase t
+    in do
+        unsafeCopyVector x1 y1
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
                 trsv alpha t' x1
                 setZeroVector x2
-  where
-    (u,d,a) = triToBase t
+            (Lower,Right (t',_),_) -> do
+                trsv alpha t' x1
+            (Upper,_,Left t') -> do
+                trsv alpha t' x1
+            (Upper,_,Right (t',_)) -> do
+                trsv alpha t' x1
+                setZeroVector x2
 {-# INLINE unsafeDoSSolveTriMatrix #-}
 
 unsafeDoSSolveMatrixTriMatrix :: (ReadMatrix a m,
     ReadMatrix c m, WriteMatrix b m, BLAS3 e) =>
         e -> Tri a (r,s) e -> c (r,t) e -> b (s,t) e -> m ()
 unsafeDoSSolveMatrixTriMatrix alpha t c b =
-    case (u, toLower d a, toUpper d a) of
-        (Lower,Left t',_) -> do
-            unsafeCopyMatrix b (coerceMatrix c)
-            trsm alpha t' (coerceMatrix b)
-            
-        (Lower,Right (t',_),_) -> do
-            let c1 = unsafeSubmatrixView c (0,0)          (numRows t',numCols c)
-            unsafeCopyMatrix b c1
-            trsm alpha t' b
-            
-        (Upper,_,Left t') -> do
-            unsafeCopyMatrix (coerceMatrix b) c
-            trsm alpha t' (coerceMatrix b)
-
-        (Upper,_,Right (t',r)) ->
-            let b1 = unsafeSubmatrixView b (0,0)          (numCols t',numCols b)
-                b2 = unsafeSubmatrixView b (numCols t',0) (numCols r ,numCols b)
-            in do
-                unsafeCopyMatrix b1 c
+    let mn      = min (numRows t) (numCols t)
+        (b1,b2) = splitRowsAt mn b
+        (c1, _) = splitRowsAt mn c
+        (u,d,a) = triToBase t
+    in do
+        unsafeCopyMatrix b1 c1
+        case (u, toLower d a, toUpper d a) of
+            (Lower,Left t',_) -> do
                 trsm alpha t' b1
                 setZeroMatrix b2
-  where
-    (u,d,a) = triToBase t
+            (Lower,Right (t',_),_) -> do
+                trsm alpha t' b1
+            (Upper,_,Left t') -> do
+                trsm alpha t' b1
+            (Upper,_,Right (t',_)) -> do
+                trsm alpha t' b1
+                setZeroMatrix b2
 {-# INLINE unsafeDoSSolveMatrixTriMatrix #-}
 
 trsv :: (ReadMatrix a m, WriteVector y m, BLAS2 e) =>

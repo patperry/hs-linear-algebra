@@ -205,9 +205,7 @@ matrix mn = frequency [ (3, rawMatrix mn)
 triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix (n,p) e)
 triMatrix (m,n) = do
     a <- matrix (m,n)
-    u <- if m > n then return Lower
-                  else if m < n then return Upper
-                                else QC.elements [ Lower, Upper ]
+    u <- QC.elements [ Lower, Upper  ]
     d <- QC.elements [ Unit, NonUnit ]
     return $ Tri u d a
     
