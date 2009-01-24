@@ -245,6 +245,18 @@ subvectorViewWithStride s x =
     checkedSubvectorWithStride s (dim x) (unsafeSubvectorViewWithStride s x)
 {-# INLINE subvectorViewWithStride #-}
 
+-- | Split a vector into two blocks and returns views into the blocks.  In
+-- @(x1, x2) = splitElemsAt k x@, we have that @x1 = subvectorView x 0 k'@
+-- and @x2 = subvectorView x k (dim x - k')@, where @k'@ is defined
+-- as @k' = max 0 (min (dim x) k)@.
+splitElemsAt :: (BaseVector x) => Int -> x n e -> (x k e, x k' e)
+splitElemsAt k x =
+    let n  = dim x
+        k' = max 0 $ min n k
+        x1 = unsafeSubvectorView x 0  k'
+        x2 = unsafeSubvectorView x k' (n-k')
+    in (x1,x2)
+
 -- | Get a new vector with elements with the conjugates of the elements
 -- of the given vector
 getConjVector :: (ReadVector x m, WriteVector y m) =>

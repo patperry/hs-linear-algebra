@@ -30,6 +30,7 @@ module Data.Vector.Dense (
     -- * Vector views
     subvector,
     subvectorWithStride,
+    splitElemsAt,
 
     -- * Vector properties
     sumAbs,

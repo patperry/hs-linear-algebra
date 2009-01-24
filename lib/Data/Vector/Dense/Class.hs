@@ -40,6 +40,7 @@ module Data.Vector.Dense.Class (
     -- * Vector views
     subvectorView,
     subvectorViewWithStride,
+    splitElemsAt,
 
     -- * Overloaded interface for reading and writing vector elements
     module Data.Tensor.Class.MTensor,
