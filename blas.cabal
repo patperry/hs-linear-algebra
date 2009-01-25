@@ -58,6 +58,7 @@ library
     hs-source-dirs:     lib
     exposed-modules:    
                         Data.Elem.BLAS
+                        Data.Elem.BLAS.Base                        
                         Data.Elem.BLAS.Level1
                         Data.Elem.BLAS.Level2
                         Data.Elem.BLAS.Level3
@@ -98,7 +99,6 @@ library
                         BLAS.Internal
                         BLAS.CTypes
                         BLAS.Types
-                        Data.Elem.BLAS.Base
                         Data.Elem.BLAS.Double
                         Data.Elem.BLAS.Zomplex
                         Data.Matrix.Class.IMatrixBase
