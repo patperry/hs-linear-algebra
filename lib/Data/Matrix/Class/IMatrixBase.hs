@@ -48,6 +48,8 @@ import Data.Tensor.Class
 import Data.Vector.Dense
 import Data.Matrix.Dense.Base
 
+infixr 7 <*>, <**>
+
 -- | Get the given row in a matrix.
 row :: (IMatrix a, Elem e) => a (m,n) e -> Int -> Vector n e
 row a = checkedRow (shape a) (unsafeRow a)
