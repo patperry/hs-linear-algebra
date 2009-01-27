@@ -6,7 +6,7 @@
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
--- Mutable dense matrices in the ST monad.
+-- Mutable banded matrices in the ST monad.
 --
 
 module Data.Matrix.Banded.ST (
