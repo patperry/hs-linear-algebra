@@ -416,8 +416,8 @@ doConjMatrix :: (WriteMatrix a m, BLAS1 e) => a (n,p) e -> m ()
 doConjMatrix = liftMatrix doConjVector
 {-# INLINE doConjMatrix #-}
 
--- | Get a new matrix with elements with the conjugates of the elements
--- of the given matrix.
+-- | Get a new matrix equal to the elementwise conjugate of another
+-- matrix.
 getConjMatrix :: (ReadMatrix a m, WriteMatrix b m, BLAS1 e) =>
     a (n,p) e -> m (b (n,p) e)
 getConjMatrix = getUnaryMatrixOp doConjMatrix
@@ -473,7 +473,7 @@ unsafeGetAddMatrix ::
 unsafeGetAddMatrix = unsafeGetBinaryMatrixOp unsafeAddMatrix
 {-# INLINE unsafeGetAddMatrix #-}
 
--- | Replace the first argument with the elementwise sum.
+-- | Replace the first argument with the elementwise difference.
 subMatrix :: (WriteMatrix b m, ReadMatrix a m, BLAS1 e) =>
     b (n,p) e -> a (n,p) e -> m ()    
 subMatrix b a = 
