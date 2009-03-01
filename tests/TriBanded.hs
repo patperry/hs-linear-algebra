@@ -17,10 +17,10 @@ import Data.Matrix.Tri
 import Test.Matrix.Tri.Banded
 
 
-type V = Vector Int E
-type M = Matrix (Int,Int) E
-type B = Banded (Int,Int) E
-type TB = Tri Banded (Int,Int) E
+type V = Vector E
+type M = Matrix E
+type B = Banded E
+type TB = Tri Banded E
 
 
 prop_tri_apply (TriBandedMV (t :: TB) a x) =

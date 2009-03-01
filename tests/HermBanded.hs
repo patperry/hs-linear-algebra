@@ -14,9 +14,9 @@ import Data.Matrix.Dense.ST
 
 import Test.Matrix.Herm.Banded
 
-type V = Vector Int E
-type B = Banded (Int,Int) E
-type HB = Herm Banded (Int,Int) E
+type V = Vector E
+type B = Banded E
+type HB = Herm Banded E
 
 
 prop_herm_apply (HermBandedMV (h :: HB) a x) =

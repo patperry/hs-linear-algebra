@@ -34,10 +34,10 @@ import Data.Matrix.Banded hiding ( banded )
 import Data.Elem.BLAS ( Elem, BLAS3 )
 
 banded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (m,n) e)
+    (Int,Int) -> (Int,Int) -> Gen (Banded e)
 banded mn lu = Test.bandedWith lu mn
 
-instance (TestElem e) => Arbitrary (Banded (m,n) e) where
+instance (TestElem e) => Arbitrary (Banded e) where
     arbitrary = do
         (m,n)   <- Test.shape
         (kl,ku) <- Test.bandwidths (m,n)
@@ -45,8 +45,8 @@ instance (TestElem e) => Arbitrary (Banded (m,n) e) where
         
     coarbitrary x = undefined
 
-data BandedAt m n e = BandedAt (Banded (m,n) e) (Int,Int) deriving (Eq, Show)
-instance (TestElem e) => Arbitrary (BandedAt m n e) where
+data BandedAt e = BandedAt (Banded e) (Int,Int) deriving (Eq, Show)
+instance (TestElem e) => Arbitrary (BandedAt e) where
     arbitrary = sized $ \k ->
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -98,9 +98,9 @@ instance (Arbitrary e, Elem e) => Arbitrary (MatrixPair m n e) where
     coarbitrary = undefined
 -}  
   
-data BandedMV m n e = BandedMV (Banded (m,n) e) (Vector n e) deriving (Eq, Show)
+data BandedMV e = BandedMV (Banded e) (Vector e) deriving (Eq, Show)
 
-instance (TestElem e) => Arbitrary (BandedMV m n e) where
+instance (TestElem e) => Arbitrary (BandedMV e) where
     arbitrary = sized $ \k -> 
         let k' = ceiling (sqrt $ fromInteger $ toInteger k :: Double)
         in do
@@ -114,10 +114,10 @@ instance (TestElem e) => Arbitrary (BandedMV m n e) where
             
     coarbitrary = undefined
 
-data BandedMVPair m n e = BandedMVPair (Banded (m,n) e) (Vector n e) (Vector n e) 
+data BandedMVPair e = BandedMVPair (Banded e) (Vector e) (Vector e) 
     deriving (Eq, Show)
     
-instance (TestElem e) => Arbitrary (BandedMVPair m n e) where
+instance (TestElem e) => Arbitrary (BandedMVPair e) where
     arbitrary = do
         (BandedMV a x) <- arbitrary
         y <- Test.vector (dim x)
@@ -125,9 +125,9 @@ instance (TestElem e) => Arbitrary (BandedMVPair m n e) where
         
     coarbitrary = undefined
         
-data BandedMM m n k e = BandedMM (Banded (m,k) e) (Matrix (k,n) e) deriving (Eq, Show)
+data BandedMM e = BandedMM (Banded e) (Matrix e) deriving (Eq, Show)
 
-instance (TestElem e) => Arbitrary (BandedMM m n k e) where
+instance (TestElem e) => Arbitrary (BandedMM e) where
     arbitrary = sized $ \s ->
         let s' = ceiling (sqrt $ fromInteger $ toInteger s :: Double)
         in do
@@ -142,10 +142,10 @@ instance (TestElem e) => Arbitrary (BandedMM m n k e) where
             
     coarbitrary = undefined
         
-data BandedMMPair m n k e = BandedMMPair (Banded (m,k) e) (Matrix (k,n) e) (Matrix (k,n) e)
+data BandedMMPair e = BandedMMPair (Banded e) (Matrix e) (Matrix e)
     deriving (Eq, Show)
     
-instance (TestElem e) => Arbitrary (BandedMMPair m n k e) where
+instance (TestElem e) => Arbitrary (BandedMMPair e) where
     arbitrary = do
         (BandedMM a b) <- arbitrary
         c <- Test.matrix (shape b)

@@ -32,7 +32,7 @@ import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
 import Unsafe.Coerce
 
-triMatrix :: (TestElem e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix (m,n) e)
+triMatrix :: (TestElem e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix e)
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
     in do
@@ -52,12 +52,12 @@ isTriIndex Lower NonUnit (i,j) = i >= j
 isTriIndex Lower Unit    (i,j) = i >  j
 
 -- | A triangular Test.matrix and an equivalent dense Test.matrix
-data TriMatrix m n e = 
-    TriMatrix (Tri Matrix (m,n) e) 
-              (Matrix (m,n) e) 
+data TriMatrix e = 
+    TriMatrix (Tri Matrix e) 
+              (Matrix e) 
     deriving Show
 
-instance (TestElem e) => Arbitrary (TriMatrix m n e) where
+instance (TestElem e) => Arbitrary (TriMatrix e) where
     arbitrary = do
         u <- elements [ Upper, Lower  ]
         d <- elements [ Unit, NonUnit ]
@@ -79,13 +79,13 @@ instance (TestElem e) => Arbitrary (TriMatrix m n e) where
 
 -- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.vector in
 -- their domain.        
-data TriMatrixMV m n e = 
-    TriMatrixMV (Tri Matrix (m,n) e) 
-                (Matrix (m,n) e) 
-                (Vector n e) 
+data TriMatrixMV e = 
+    TriMatrixMV (Tri Matrix e) 
+                (Matrix e) 
+                (Vector e) 
     deriving Show
 
-instance (TestElem e) => Arbitrary (TriMatrixMV m n e) where
+instance (TestElem e) => Arbitrary (TriMatrixMV e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -95,13 +95,13 @@ instance (TestElem e) => Arbitrary (TriMatrixMV m n e) where
 
 -- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.matrix in
 -- their domain.        
-data TriMatrixMM m k n e = 
-    TriMatrixMM (Tri Matrix (m,k) e) 
-                (Matrix (m,k) e) 
-                (Matrix (k,n) e) 
+data TriMatrixMM e = 
+    TriMatrixMM (Tri Matrix e) 
+                (Matrix e) 
+                (Matrix e) 
     deriving Show
 
-instance (TestElem e) => Arbitrary (TriMatrixMM m k n e) where
+instance (TestElem e) => Arbitrary (TriMatrixMM e) where
     arbitrary =  do
         (TriMatrix t a) <- arbitrary
         n <- liftM fst Test.shape
@@ -111,12 +111,12 @@ instance (TestElem e) => Arbitrary (TriMatrixMM m k n e) where
     coarbitrary = undefined
 
 -- | A triangular Test.matrix and a Test.vector in its range
-data TriMatrixSV m n e = 
-    TriMatrixSV (Tri Matrix (m,n) e) 
-                (Vector m e) 
+data TriMatrixSV e = 
+    TriMatrixSV (Tri Matrix e) 
+                (Vector e) 
     deriving Show
     
-instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSV m n e) where
+instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSV e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)
@@ -129,12 +129,12 @@ instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSV m n e) where
     coarbitrary = undefined
 
 -- | A triangular Test.matrix and a Test.matrix in its range
-data TriMatrixSM m k n e = 
-    TriMatrixSM (Tri Matrix (m,k) e) 
-                (Matrix (m,n) e) 
+data TriMatrixSM e = 
+    TriMatrixSM (Tri Matrix e) 
+                (Matrix e) 
     deriving Show
     
-instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSM m k n e) where
+instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSM e) where
     arbitrary = do
         (TriMatrix t a) <- arbitrary
         if any (== 0) (elems $ diag a 0)
@@ -147,5 +147,5 @@ instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSM m k n e) where
         
     coarbitrary = undefined
 
-normF :: (BLAS3 e) => Matrix (n,p) e -> Double
+normF :: (BLAS3 e) => Matrix e -> Double
 normF = sum . map norm2 . cols

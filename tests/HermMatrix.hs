@@ -14,9 +14,9 @@ import Data.Vector.Dense.ST
 import Test.Matrix.Herm.Dense
 import qualified Test.QuickCheck.BLAS as Test
 
-type V  = Vector Int E
-type M  = Matrix (Int,Int) E
-type HM = Herm Matrix (Int,Int) E
+type V  = Vector E
+type M  = Matrix E
+type HM = Herm Matrix E
 
 prop_herm_col (Index n j) =
     forAll (Test.hermMatrix n) $ \(a :: HM) ->

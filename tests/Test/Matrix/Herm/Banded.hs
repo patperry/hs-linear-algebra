@@ -27,7 +27,7 @@ import Data.Matrix.Banded
 import Data.Matrix.Dense ( Matrix )
 import Data.Matrix.Herm
 
-listsFromBanded :: (Elem e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded :: (Elem e) => Banded e -> ((Int,Int), (Int,Int),[[e]])
 listsFromBanded a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
@@ -46,7 +46,7 @@ listsFromBanded a = ( (m,n)
 
 
 
-hermBanded :: (TestElem e) => Int -> Int -> Gen (Banded (n,n) e)
+hermBanded :: (TestElem e) => Int -> Int -> Gen (Banded e)
 hermBanded n k 
     | n < 0 = 
         error $ "hermBanded: n must be non-negative"
@@ -70,12 +70,12 @@ hermBanded n k
 
         return $ listsBanded (n,n) (k,k) ds'
 
-data HermBanded n e =
-    HermBanded (Herm Banded (n,n) e)
-               (Banded (n,n) e)
+data HermBanded e =
+    HermBanded (Herm Banded e)
+               (Banded e)
     deriving Show
     
-instance (TestElem e) => Arbitrary (HermBanded n e) where
+instance (TestElem e) => Arbitrary (HermBanded e) where
     arbitrary = do
         n <- liftM fst Test.shape
         k <- if n == 0 then return 0 else choose (0,n-1)
@@ -98,13 +98,13 @@ instance (TestElem e) => Arbitrary (HermBanded n e) where
 
     coarbitrary = undefined
 
-data HermBandedMV n e = 
-    HermBandedMV (Herm Banded (n,n) e) 
-                 (Banded (n,n) e) 
-                 (Vector n e) 
+data HermBandedMV e = 
+    HermBandedMV (Herm Banded e) 
+                 (Banded e) 
+                 (Vector e) 
     deriving Show
 
-instance (TestElem e) => Arbitrary (HermBandedMV n e) where
+instance (TestElem e) => Arbitrary (HermBandedMV e) where
     arbitrary = do
         (HermBanded h a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -113,13 +113,13 @@ instance (TestElem e) => Arbitrary (HermBandedMV n e) where
     coarbitrary = undefined
     
     
-data HermBandedMM m n e = 
-    HermBandedMM (Herm Banded (m,m) e) 
-                 (Banded (m,m) e) 
-                 (Matrix (m,n) e) 
+data HermBandedMM e = 
+    HermBandedMM (Herm Banded e) 
+                 (Banded e) 
+                 (Matrix e) 
     deriving Show
     
-instance (TestElem e) => Arbitrary (HermBandedMM m n e) where
+instance (TestElem e) => Arbitrary (HermBandedMM e) where
     arbitrary = do
         (HermBanded a h) <- arbitrary
         (_,n) <- Test.shape

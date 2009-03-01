@@ -16,8 +16,8 @@ import Data.Vector.Dense.ST
 import Test.Matrix.Dense hiding ( matrix )
 import qualified Test.QuickCheck.BLAS as Test
 
-type V = Vector Int E
-type M = Matrix (Int,Int) E
+type V = Vector E
+type M = Matrix E
 
 
 prop_matrix_shape (Assocs2 mn ijes) =

@@ -27,7 +27,7 @@ import Data.Matrix.Dense.ST
 import Data.Matrix.Herm
 
 
-hermRawMatrix :: (TestElem e) => Int -> Gen (Matrix (n,n) e)
+hermRawMatrix :: (TestElem e) => Int -> Gen (Matrix e)
 hermRawMatrix n = do
     a <- Test.matrix (n,n)
     d <- Test.realElems n
@@ -38,12 +38,12 @@ hermRawMatrix n = do
         setElems (diagView h 0) d
         return h
 
-data HermMatrix n e = 
-    HermMatrix (Herm Matrix (n,n) e)
-               (Matrix (n,n) e)
+data HermMatrix e = 
+    HermMatrix (Herm Matrix e)
+               (Matrix e)
     deriving Show
 
-instance (TestElem e) => Arbitrary (HermMatrix n e) where
+instance (TestElem e) => Arbitrary (HermMatrix e) where
     arbitrary = do
         n <- liftM fst Test.shape
         a <- hermRawMatrix n
@@ -62,13 +62,13 @@ instance (TestElem e) => Arbitrary (HermMatrix n e) where
     coarbitrary = undefined
 
 
-data HermMatrixMV n e = 
-    HermMatrixMV (Herm Matrix (n,n) e) 
-                 (Matrix (n,n) e) 
-                 (Vector n e) 
+data HermMatrixMV e = 
+    HermMatrixMV (Herm Matrix e) 
+                 (Matrix e) 
+                 (Vector e) 
     deriving Show
 
-instance (TestElem e) => Arbitrary (HermMatrixMV n e) where
+instance (TestElem e) => Arbitrary (HermMatrixMV e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
         x <- Test.vector (numCols a)
@@ -77,13 +77,13 @@ instance (TestElem e) => Arbitrary (HermMatrixMV n e) where
     coarbitrary = undefined
 
     
-data HermMatrixMM m n e = 
-    HermMatrixMM (Herm Matrix (m,m) e) 
-                 (Matrix (m,m) e) 
-                 (Matrix (m,n) e) 
+data HermMatrixMM e = 
+    HermMatrixMM (Herm Matrix e) 
+                 (Matrix e) 
+                 (Matrix e) 
     deriving Show
     
-instance (TestElem e) => Arbitrary (HermMatrixMM m n e) where
+instance (TestElem e) => Arbitrary (HermMatrixMM e) where
     arbitrary = do
         (HermMatrix h a) <- arbitrary
         n <- liftM fst Test.shape

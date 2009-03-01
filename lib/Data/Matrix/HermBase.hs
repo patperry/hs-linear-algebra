@@ -25,36 +25,34 @@ import BLAS.Types ( UpLoEnum(..) )
 --
 --     * @a@: the underlyting matrix type.
 --
---     * @nn@: a phantom type for the shape of the matrix.
---
 --     * @e@: the element type of the matrix.
 --
-data Herm a nn e = Herm UpLoEnum (a nn e)
+data Herm a e = Herm UpLoEnum (a e)
 
 -- | Cast the phantom shape type.
-coerceHerm :: Herm a mn e -> Herm a mn' e
+coerceHerm :: Herm a e -> Herm a e
 coerceHerm = unsafeCoerce
 
 -- | ApplyVector a function to the unerlying matrix.
-mapHerm :: (a nn e -> b nn' e) -> Herm a nn e -> Herm b nn' e
+mapHerm :: (a e -> b e) -> Herm a e -> Herm b e
 mapHerm f (Herm u a) = Herm u $ f a
 
 -- | Convert from a base matrix type to a Herm matrix type.
-hermFromBase :: UpLoEnum -> a (n,n) e -> Herm a (n,n) e
+hermFromBase :: UpLoEnum -> a e -> Herm a e
 hermFromBase = Herm
         
 -- | Convert from a Herm matrix type to a base matrix type.        
-hermToBase :: Herm a (n,n) e -> (UpLoEnum, a (n,n) e)
+hermToBase :: Herm a e -> (UpLoEnum, a e)
 hermToBase (Herm u a) = (u,a)
 
 -- | Construct a lower-triangular hermitian view into a matrix.  This also
 -- checks to see if the base matrix is square.
-hermL :: (MatrixShaped a) => a (n,n) e -> Herm a (n,n) e
+hermL :: (MatrixShaped a) => a e -> Herm a e
 hermL a = checkSquare "hermL" (shape a) (Herm Lower a)
 
 -- | Construct an upper-triangular hermitian view into a matrix.  This also
 -- checks to see if the base matrix is square.
-hermU :: (MatrixShaped a) => a (n,n) e -> Herm a (n,n) e
+hermU :: (MatrixShaped a) => a e -> Herm a e
 hermU a = checkSquare "hermU" (shape a) (Herm Upper a)
       
 instance (MatrixShaped a) => Shaped (Herm a) (Int,Int) where
@@ -69,7 +67,7 @@ instance (HasHerm a) => HasHerm (Herm a) where
     herm = coerceHerm
     {-# INLINE herm #-}
     
-instance Show (a (n,n) e) => Show (Herm a (n,n) e) where
+instance Show (a e) => Show (Herm a e) where
     show (Herm u a) = constructor ++ " (" ++ show a ++ ")"
       where
         constructor = case u of

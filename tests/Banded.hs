@@ -23,7 +23,7 @@ import Data.Matrix.Banded
 import Test.Matrix.Banded hiding ( banded )
         
 
-listsFromBanded :: (BLAS1 e) => Banded np e -> ((Int,Int), (Int,Int),[[e]])
+listsFromBanded :: (BLAS1 e) => Banded e -> ((Int,Int), (Int,Int),[[e]])
 listsFromBanded a = ( (m,n)
             , (kl,ku)
             , map paddedDiag [(-kl)..ku]
@@ -39,9 +39,9 @@ listsFromBanded a = ( (m,n)
                    ++ padEnd i 
                    )
                    
-type V = Vector Int E
-type M = Matrix (Int,Int) E
-type B = Banded (Int,Int) E
+type V = Vector E
+type M = Matrix E
+type B = Banded E
 
 fromAssocs (Assocs2 mn ijes) =
     let kl = foldl' max 0 $ map (\((i,j),_) -> (i-j)) ijes

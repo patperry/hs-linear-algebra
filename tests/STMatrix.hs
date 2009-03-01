@@ -190,12 +190,12 @@ prop_GetDivMatrix =
 -- The specification language
 --
     
-abstract :: (BLAS3 e) => STMatrix s (m,n) e -> ST s (Matrix (m,n) e)
+abstract :: (BLAS3 e) => STMatrix s e -> ST s (Matrix e)
 abstract = freezeMatrix
 
 commutes :: (AEq a, Show a, AEq e, BLAS3 e) =>
-    STMatrix s (m,n) e -> (STMatrix s (m,n) e -> ST s a) ->
-        (Matrix (m,n) e -> (a,Matrix (m,n) e)) -> ST s Bool
+    STMatrix s e -> (STMatrix s e -> ST s a) ->
+        (Matrix e -> (a,Matrix e)) -> ST s Bool
 commutes x a f = do
     old <- abstract x
     r <- a x
@@ -211,9 +211,9 @@ commutes x a f = do
     return passed
 
 commutes2 :: (AEq a, Show a, AEq e, BLAS3 e) =>
-    STMatrix s (m,n) e -> STMatrix s (m,n) e -> 
-    (STMatrix s (m,n) e ->  STMatrix s (m,n) e -> ST s a) ->
-        (Matrix (m,n) e -> Matrix (m,n) e -> (a,Matrix (m,n) e,Matrix (m,n) e)) -> ST s Bool
+    STMatrix s e -> STMatrix s e -> 
+    (STMatrix s e ->  STMatrix s e -> ST s a) ->
+        (Matrix e -> Matrix e -> (a,Matrix e,Matrix e)) -> ST s Bool
 commutes2 x y a f = do
     oldX <- abstract x
     oldY <- abstract y
@@ -230,7 +230,7 @@ commutes2 x y a f = do
             
     return passed
 
-equivalent :: (forall s . ST s (STMatrix s (m,n) E)) -> Matrix (m,n) E -> Bool
+equivalent :: (forall s . ST s (STMatrix s E)) -> Matrix E -> Bool
 equivalent x s = runST $ do
     x' <- (x >>= abstract)
     when (not $ x' === s) $
@@ -239,16 +239,16 @@ equivalent x s = runST $ do
     return (x' === s)
     
 implements :: (AEq a, Show a) =>
-    (forall s . STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> (a,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> ST s a) ->
+    (Matrix E -> (a,Matrix E)) -> 
         Property
 a `implements` f =
     forAll arbitrary $ \(Nat2 mn) ->
         implementsFor mn a f
 
 implements2 :: (AEq a, Show a) =>
-    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> STMatrix s E -> ST s a) ->
+    (Matrix E -> Matrix E -> (a,Matrix E,Matrix E)) -> 
         Property
 a `implements2` f =
     forAll arbitrary $ \(Nat2 mn) ->
@@ -256,8 +256,8 @@ a `implements2` f =
 
 implementsFor :: (AEq a, Show a) =>
     (Int,Int) ->
-    (forall s . STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> (a,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> ST s a) ->
+    (Matrix E -> (a,Matrix E)) -> 
         Property
 implementsFor mn a f =
     forAll (Test.matrix mn) $ \x ->
@@ -267,8 +267,8 @@ implementsFor mn a f =
 
 implementsFor2 :: (AEq a, Show a) =>
     (Int,Int) ->
-    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> STMatrix s E -> ST s a) ->
+    (Matrix E -> Matrix E -> (a,Matrix E,Matrix E)) -> 
         Property
 implementsFor2 mn a f =
     forAll (Test.matrix mn) $ \x ->
@@ -279,9 +279,9 @@ implementsFor2 mn a f =
             commutes2 x' y' a f
 
 implementsIf :: (AEq a, Show a) =>
-    (forall s . STMatrix s (m,n) E -> ST s Bool) ->
-    (forall s . STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> (a,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> ST s Bool) ->
+    (forall s . STMatrix s E -> ST s a) ->
+    (Matrix E -> (a,Matrix E)) -> 
         Property
 implementsIf pre a f =
     forAll arbitrary $ \(Nat2 mn) ->
@@ -294,9 +294,9 @@ implementsIf pre a f =
             commutes x' a f )
 
 implementsIf2 :: (AEq a, Show a) =>
-    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s Bool) ->
-    (forall s . STMatrix s (m,n) E -> STMatrix s (m,n) E -> ST s a) ->
-    (Matrix (m,n) E -> Matrix (m,n) E -> (a,Matrix (m,n) E,Matrix (m,n) E)) -> 
+    (forall s . STMatrix s E -> STMatrix s E -> ST s Bool) ->
+    (forall s . STMatrix s E -> STMatrix s E -> ST s a) ->
+    (Matrix E -> Matrix E -> (a,Matrix E,Matrix E)) -> 
         Property
 implementsIf2 pre a f =
     forAll arbitrary $ \(Nat2 mn) ->

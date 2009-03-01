@@ -138,7 +138,7 @@ index n | n <= 0 =
             choose (0,n-1)
 
 -- | Generate a random vector of the given size.
-vector :: (TestElem e) => Int -> Gen (Vector n e)
+vector :: (TestElem e) => Int -> Gen (Vector e)
 vector n =
     frequency [ (3, rawVector n)  
               , (2, conjVector n)
@@ -146,30 +146,30 @@ vector n =
                     return $ subvectorWithStride s x o n)
               ]    
 
-data SubVector n e = 
+data SubVector e = 
     SubVector Int 
-              (Vector n e) 
+              (Vector e) 
               Int 
               Int 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (SubVector n e) where
+instance (TestElem e) => Arbitrary (SubVector e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
         
     coarbitrary = undefined
 
-rawVector :: (TestElem e) => Int -> Gen (Vector n e)
+rawVector :: (TestElem e) => Int -> Gen (Vector e)
 rawVector n = do
     es <- elems n
     return $ listVector n es
 
-conjVector :: (TestElem e) => Int -> Gen (Vector n e)
+conjVector :: (TestElem e) => Int -> Gen (Vector e)
 conjVector n = do
     x <- vector n
     return $ (conj x)
 
-subVector :: (TestElem e) => Int -> Gen (SubVector n e)
+subVector :: (TestElem e) => Int -> Gen (SubVector e)
 subVector n = do
     o <- choose (0,5)
     s <- choose (1,5)
@@ -177,8 +177,8 @@ subVector n = do
     x <- vector (o + s*n + e)
     return (SubVector s x o n)
 
-data SubMatrix m n e = 
-    SubMatrix (Matrix (m,n) e) 
+data SubMatrix e = 
+    SubMatrix (Matrix e) 
               (Int,Int) 
               (Int,Int) 
     deriving (Show)
@@ -194,7 +194,7 @@ index2 :: (Int,Int) -> Gen (Int,Int)
 index2 (m,n) = liftM2 (,) (index m) (index n)
 
 -- | Generate a random matrix of the given shape.
-matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (n,p) e)
+matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
 matrix mn = frequency [ (3, rawMatrix mn)  
                       , (2, hermedMatrix mn)
                       , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
@@ -202,7 +202,7 @@ matrix mn = frequency [ (3, rawMatrix mn)
                       ]
 
 -- | Generate a triangular dense matrix.
-triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix (n,p) e)
+triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix e)
 triMatrix (m,n) = do
     a <- matrix (m,n)
     u <- QC.elements [ Lower, Upper  ]
@@ -210,7 +210,7 @@ triMatrix (m,n) = do
     return $ Tri u d a
     
 -- | Generate a Hermitian dense matrix.
-hermMatrix :: (TestElem e) => Int -> Gen (Herm Matrix (n,n) e)
+hermMatrix :: (TestElem e) => Int -> Gen (Herm Matrix e)
 hermMatrix n = do
     a <- matrix (n,n)
     d <- realElems n
@@ -221,24 +221,24 @@ hermMatrix n = do
     u <- QC.elements [ Lower, Upper ]
     return $ Herm u a'
 
-rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
+rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
 rawMatrix (m,n) = do
     es <- elems (m*n)
     return $ listMatrix (m,n) es
 
-hermedMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
+hermedMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
 hermedMatrix (m,n) = do
     x <- matrix (n,m)
     return $ (herm x)
 
-subMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix m n e)
+subMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix e)
 subMatrix (m,n) = 
     oneof [ rawSubMatrix (m,n)
           , rawSubMatrix (n,m) >>= \(SubMatrix a (i,j) (m',n')) ->
                 return $ SubMatrix (herm a) (j,i) (n',m')
           ]
 
-rawSubMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix m n e)
+rawSubMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix e)
 rawSubMatrix (m,n) = do
     i <- choose (0,5)
     j <- choose (0,5)
@@ -247,7 +247,7 @@ rawSubMatrix (m,n) = do
     x <- rawMatrix (i+m+e, j+n+f)
     return $ SubMatrix x (i,j) (m,n)
 
-instance (TestElem e) => Arbitrary (SubMatrix m n e) where
+instance (TestElem e) => Arbitrary (SubMatrix e) where
     arbitrary = do
         (m,n) <- shape
         (SubMatrix a ij mn) <- subMatrix (m,n)
@@ -264,20 +264,20 @@ bandwidths :: (Int,Int) -> Gen (Int,Int)
 bandwidths (m,n) = liftM2 (,) (bandwidth m) (bandwidth n)
 
 -- | Generate a random banded matrix of the given shape.
-banded :: (TestElem e) => (Int,Int) -> Gen (Banded (n,p) e)
+banded :: (TestElem e) => (Int,Int) -> Gen (Banded e)
 banded mn = do
     lu <- bandwidths mn
     bandedWith lu mn
 
 -- | Generate a random banded matrix with the given bandwidths.
 bandedWith :: (TestElem e) 
-           => (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
+           => (Int,Int) -> (Int,Int) -> Gen (Banded e)
 bandedWith lu mn = frequency [ (3, rawBanded mn lu)  
                              , (2, hermedBanded mn lu)
                              ]
 
 -- | Generate a triangular banded matrix.
-triBanded :: (TestElem e) => Int -> Gen (Tri Banded (n,n) e)
+triBanded :: (TestElem e) => Int -> Gen (Tri Banded e)
 triBanded n = do
     a <- banded (n,n)
     u <- QC.elements [ Lower, Upper  ]
@@ -285,7 +285,7 @@ triBanded n = do
     return $ Tri u d a
     
 -- | Generate a Hermitian banded matrix.
-hermBanded :: (TestElem e) => Int -> Gen (Herm Banded (n,n) e)
+hermBanded :: (TestElem e) => Int -> Gen (Herm Banded e)
 hermBanded n = do
     a <- banded (n,n)
     d <- realElems n
@@ -297,7 +297,7 @@ hermBanded n = do
     return $ Herm u a'    
 
 rawBanded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
+    (Int,Int) -> (Int,Int) -> Gen (Banded e)
 rawBanded (m,n) (kl,ku) = 
     let bw = kl+ku+1
     in do
@@ -308,7 +308,7 @@ rawBanded (m,n) (kl,ku) =
         return $ fromJust (maybeBandedFromMatrixStorage (m,n) (kl,ku) a)
 
 hermedBanded :: (TestElem e) => 
-    (Int,Int) -> (Int,Int) -> Gen (Banded (n,p) e)
+    (Int,Int) -> (Int,Int) -> Gen (Banded e)
 hermedBanded (m,n) (kl,ku) = do
     x <- rawBanded (n,m) (ku,kl)
     return $ herm x

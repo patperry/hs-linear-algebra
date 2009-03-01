@@ -202,11 +202,11 @@ prop_GetDot = getDot `implements2` getDot_S
 -- The specification language
 --
     
-abstract :: (BLAS1 e) => STVector s n e -> ST s [e]
+abstract :: (BLAS1 e) => STVector s e -> ST s [e]
 abstract = getElems'
 
 commutes :: (AEq a, Show a, AEq e, BLAS1 e) =>
-    STVector s n e -> (STVector s n e -> ST s a) ->
+    STVector s e -> (STVector s e -> ST s a) ->
         ([e] -> (a,[e])) -> ST s Bool
 commutes x a f = do
     old <- abstract x
@@ -223,8 +223,8 @@ commutes x a f = do
     return passed
 
 commutes2 :: (AEq a, Show a, AEq e, BLAS1 e) =>
-    STVector s n e -> STVector s n e -> 
-    (STVector s n e ->  STVector s n e -> ST s a) ->
+    STVector s e -> STVector s e -> 
+    (STVector s e ->  STVector s e -> ST s a) ->
         ([e] -> [e] -> (a,[e],[e])) -> ST s Bool
 commutes2 x y a f = do
     oldX <- abstract x
@@ -242,7 +242,7 @@ commutes2 x y a f = do
             
     return passed
 
-equivalent :: (forall s . ST s (STVector s n E)) -> [E] -> Bool
+equivalent :: (forall s . ST s (STVector s E)) -> [E] -> Bool
 equivalent x s = runST $ do
     x' <- (x >>= abstract)
     when (not $ x' === s) $
@@ -251,7 +251,7 @@ equivalent x s = runST $ do
     return (x' === s)
     
 implements :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> ST s a) ->
     ([E] -> (a,[E])) -> 
         Property
 a `implements` f =
@@ -259,7 +259,7 @@ a `implements` f =
         implementsFor n a f
 
 implements2 :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> STVector s E -> ST s a) ->
     ([E] -> [E] -> (a,[E],[E])) -> 
         Property
 a `implements2` f =
@@ -268,7 +268,7 @@ a `implements2` f =
 
 implementsFor :: (AEq a, Show a) =>
     Int ->
-    (forall s . STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> ST s a) ->
     ([E] -> (a,[E])) -> 
         Property
 implementsFor n a f =
@@ -279,7 +279,7 @@ implementsFor n a f =
 
 implementsFor2 :: (AEq a, Show a) =>
     Int ->
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> STVector s E -> ST s a) ->
     ([E] -> [E] -> (a,[E],[E])) -> 
         Property
 implementsFor2 n a f =
@@ -291,8 +291,8 @@ implementsFor2 n a f =
             commutes2 x' y' a f
 
 implementsIf :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> ST s Bool) ->
-    (forall s . STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> ST s Bool) ->
+    (forall s . STVector s E -> ST s a) ->
     ([E] -> (a,[E])) -> 
         Property
 implementsIf pre a f =
@@ -306,8 +306,8 @@ implementsIf pre a f =
             commutes x' a f )
 
 implementsIf2 :: (AEq a, Show a) =>
-    (forall s . STVector s n E -> STVector s n E -> ST s Bool) ->
-    (forall s . STVector s n E -> STVector s n E -> ST s a) ->
+    (forall s . STVector s E -> STVector s E -> ST s Bool) ->
+    (forall s . STVector s E -> STVector s E -> ST s a) ->
     ([E] -> [E] -> (a,[E],[E])) -> 
         Property
 implementsIf2 pre a f =

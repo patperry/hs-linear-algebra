@@ -25,42 +25,40 @@ import Data.Tensor.Class
 --
 --     * @a@: the underlyting matrix type.
 --
---     * @np@: a phantom type for the shape of the view.
---
 --     * @e@: the element type of the matrix.
 --
-data Tri a np e = Tri UpLoEnum DiagEnum (a np e)
+data Tri a e = Tri UpLoEnum DiagEnum (a e)
 
 -- | Cast the phantom shape type.
-coerceTri :: Tri a np e -> Tri a np' e
+coerceTri :: Tri a e -> Tri a e
 coerceTri = unsafeCoerce
 
 -- | ApplyVector a function to the base matrix.
-mapTri :: (a np e -> b np' e) -> Tri a np e -> Tri b np' e
+mapTri :: (a e -> b e) -> Tri a e -> Tri b e
 mapTri f (Tri u d a) = Tri u d $ f a
 
 -- | Convert from a base matrix type to a triangular view.
-triFromBase :: UpLoEnum -> DiagEnum -> a (n,p) e -> Tri a (n,p) e
+triFromBase :: UpLoEnum -> DiagEnum -> a e -> Tri a e
 triFromBase = Tri
         
 -- | Convert from a triangular view to the base matrix.
-triToBase :: Tri a (n,p) e -> (UpLoEnum, DiagEnum, a (n,p) e)
+triToBase :: Tri a e -> (UpLoEnum, DiagEnum, a e)
 triToBase (Tri u d a) = (u,d,a)
 
 -- | Get a lower triangular view of a matrix.
-lower :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
+lower :: (MatrixShaped a) => a e -> Tri a e
 lower = Tri Lower NonUnit
 
 -- | Get a lower triangular view of a matrix, with unit diagonal.
-lowerU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
+lowerU :: (MatrixShaped a) => a e -> Tri a e
 lowerU = Tri Lower Unit
 
 -- | Get an upper triangular view of a matrix.
-upper :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
+upper :: (MatrixShaped a) => a e -> Tri a e
 upper = Tri Upper NonUnit
 
 -- | Get an upper triangular view of a matrix, with unit diagonal.
-upperU :: (MatrixShaped a) => a (n,p) e -> Tri a (n,p) e
+upperU :: (MatrixShaped a) => a e -> Tri a e
 upperU = Tri Upper Unit
 
       
@@ -76,7 +74,7 @@ instance (HasHerm a) => HasHerm (Tri a) where
     herm (Tri u d a) = Tri (flipUpLo u) d (herm a)
     {-# INLINE herm #-}
 
-instance (Show (a (n,p) e), MatrixShaped a) => Show (Tri a (n,p) e) where
+instance (Show (a e), MatrixShaped a) => Show (Tri a e) where
     show (Tri u d a) =
         constructor ++ " (" ++ show a ++ ")"
         where

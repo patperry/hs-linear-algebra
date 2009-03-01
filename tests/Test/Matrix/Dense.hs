@@ -30,21 +30,21 @@ import Data.Vector.Dense ( Vector, dim )
 import Data.Matrix.Dense hiding ( Test.matrix )
 import Data.Elem.BLAS ( BLAS3 )
 
-matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix (m,n) e)
+matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
 matrix = Test.matrix
 
 
-instance (TestElem e) => Arbitrary (Matrix (m,n) e) where
+instance (TestElem e) => Arbitrary (Matrix e) where
     arbitrary   = Test.matrix =<< Test.shape
     coarbitrary = undefined
 
-data SubMatrix m n e = 
-    SubMatrix (Matrix (m,n) e) 
+data SubMatrix e = 
+    SubMatrix (Matrix e) 
               (Int,Int) 
               (Int,Int) 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (SubMatrix m n e) where
+instance (TestElem e) => Arbitrary (SubMatrix e) where
     arbitrary = do
         (m,n) <- Test.shape
         i <- choose (0,5)
@@ -57,11 +57,11 @@ instance (TestElem e) => Arbitrary (SubMatrix m n e) where
     coarbitrary = undefined
 
 
-data MatrixAt m n e =
-    MatrixAt (Matrix (m,n) e)
+data MatrixAt e =
+    MatrixAt (Matrix e)
              (Int,Int)
     deriving (Show)
-instance (TestElem e) => Arbitrary (MatrixAt m n e) where
+instance (TestElem e) => Arbitrary (MatrixAt e) where
     arbitrary = do
         (m',n') <- Test.shape
         i <- choose (0,m')
@@ -74,12 +74,12 @@ instance (TestElem e) => Arbitrary (MatrixAt m n e) where
 
 
         
-data MatrixPair m n e = 
-    MatrixPair (Matrix (m,n) e) 
-               (Matrix (m,n) e) 
+data MatrixPair e = 
+    MatrixPair (Matrix e) 
+               (Matrix e) 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (MatrixPair m n e) where
+instance (TestElem e) => Arbitrary (MatrixPair e) where
     arbitrary = do
         a <- arbitrary
         b <- Test.matrix (shape a)
@@ -87,12 +87,12 @@ instance (TestElem e) => Arbitrary (MatrixPair m n e) where
         
     coarbitrary = undefined
   
-data MatrixMV m n e = 
-    MatrixMV (Matrix (m,n) e) 
-             (Vector n e) 
+data MatrixMV e = 
+    MatrixMV (Matrix e) 
+             (Vector e) 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (MatrixMV m n e) where
+instance (TestElem e) => Arbitrary (MatrixMV e) where
     arbitrary = do
         a <- arbitrary
         x <- Test.vector (numCols a)
@@ -100,13 +100,13 @@ instance (TestElem e) => Arbitrary (MatrixMV m n e) where
             
     coarbitrary = undefined
 
-data MatrixMVPair m n e = 
-    MatrixMVPair (Matrix (m,n) e) 
-                 (Vector n e) 
-                 (Vector n e) 
+data MatrixMVPair e = 
+    MatrixMVPair (Matrix e) 
+                 (Vector e) 
+                 (Vector e) 
     deriving (Show)
     
-instance (TestElem e) => Arbitrary (MatrixMVPair m n e) where
+instance (TestElem e) => Arbitrary (MatrixMVPair e) where
     arbitrary = do
         (MatrixMV a x) <- arbitrary
         y <- Test.vector (dim x)
@@ -115,12 +115,12 @@ instance (TestElem e) => Arbitrary (MatrixMVPair m n e) where
     coarbitrary = undefined
 
         
-data MatrixMM m n k e = 
-    MatrixMM (Matrix (m,k) e) 
-             (Matrix (k,n) e) 
+data MatrixMM e = 
+    MatrixMM (Matrix e) 
+             (Matrix e) 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (MatrixMM m n k e) where
+instance (TestElem e) => Arbitrary (MatrixMM e) where
     arbitrary = do
         a <- arbitrary
         (_,n) <- Test.shape
@@ -129,13 +129,13 @@ instance (TestElem e) => Arbitrary (MatrixMM m n k e) where
             
     coarbitrary = undefined
         
-data MatrixMMPair m n k e = 
-    MatrixMMPair (Matrix (m,k) e) 
-                 (Matrix (k,n) e) 
-                 (Matrix (k,n) e)
+data MatrixMMPair e = 
+    MatrixMMPair (Matrix e) 
+                 (Matrix e) 
+                 (Matrix e)
     deriving (Show)
     
-instance (TestElem e) => Arbitrary (MatrixMMPair m n k e) where
+instance (TestElem e) => Arbitrary (MatrixMMPair e) where
     arbitrary = do
         (MatrixMM a b) <- arbitrary
         c <- Test.matrix (shape b)

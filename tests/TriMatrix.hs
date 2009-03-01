@@ -21,9 +21,9 @@ import Data.Matrix.Dense
 import Data.Matrix.Dense.ST
 import Data.Matrix.Tri
 
-type V = Vector Int E
-type M = Matrix (Int,Int) E
-type TM = Tri Matrix (Int,Int) E
+type V = Vector E
+type M = Matrix E
+type TM = Tri Matrix E
 
 prop_tri_col (Index2 (m,n) (_,j)) =
     forAll (Test.triMatrix (m,n)) $ \(a :: TM) ->

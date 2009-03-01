@@ -24,7 +24,7 @@ class (Ix i, Show i) => Shaped x i | x -> i where
     -- | Get the shape of the tensor.  For vectors this is the dimension.
     -- For matrices, this will be a pair @(m,n)@ of the number of rows
     -- and columns.
-    shape :: x n e -> i
+    shape :: x e -> i
     
     -- | Get the range of valid indices in the tensor.
-    bounds :: x n e -> (i,i)
+    bounds :: x e -> (i,i)

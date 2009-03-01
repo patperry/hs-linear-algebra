@@ -12,8 +12,8 @@ import Data.Matrix.Tri
 import Data.Vector.Dense.ST
 
 
-lu :: (BLAS3 e) => Matrix (n,p) e -> Either Int (Matrix (n,p) e, [Int])
-lu (a :: Matrix (n,p) e) = runST $ do
+lu :: (BLAS3 e) => Matrix e -> Either Int (Matrix e, [Int])
+lu (a :: Matrix e) = runST $ do
     ma <- thawMatrix a :: ST s (STMatrix s (n,p) e)
     luFactorize ma >>=
         either (return . Left) (\pivots -> do
@@ -30,7 +30,7 @@ lu (a :: Matrix (n,p) e) = runST $ do
  - On failure, the index of the failing column is returned.
  -}      
 {-# INLINE luFactorize #-}
-luFactorize :: (WriteMatrix a m, BLAS3 e) => a (n,p) e -> m (Either Int [Int])
+luFactorize :: (WriteMatrix a m, BLAS3 e) => a e -> m (Either Int [Int])
 luFactorize a
     | mn > 1 =
         let nleft = mn `div` 2

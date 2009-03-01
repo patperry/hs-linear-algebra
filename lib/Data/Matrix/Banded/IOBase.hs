@@ -49,15 +49,10 @@ import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
 
 -- | Banded matrix in the 'IO' monad.  The type arguments are as follows:
 --
---     * @np@: a phantom type for the shape of the matrix.  Most functions
---       will demand that this be specified as a pair.  When writing a function
---       signature, you should always prefer @IOBanded (n,p) e@ to
---       @IOBanded np e@.
---
 --     * @e@: the element type of the matrix.  Only certain element types
 --       are supported.
 --
-data IOBanded np e =
+data IOBanded e =
        Elem e =>
        IOBanded { transEnumIOBanded :: {-# UNPACK #-} !TransEnum
                 , numRowsIOBanded   :: {-# UNPACK #-} !Int
@@ -69,22 +64,22 @@ data IOBanded np e =
                 , ldaIOBanded       :: {-# UNPACK #-} !Int
                 }
 
-hermIOBanded :: IOBanded np e -> IOBanded pn e
+hermIOBanded :: IOBanded e -> IOBanded e
 hermIOBanded (IOBanded h m n kl ku f p l) = 
     (IOBanded (flipTrans h) n m ku kl f p l)
 {-# INLINE hermIOBanded #-}
 
-isHermIOBanded :: IOBanded np e -> Bool
+isHermIOBanded :: IOBanded e -> Bool
 isHermIOBanded = (ConjTrans ==) . transEnumIOBanded
 {-# INLINE isHermIOBanded #-}
 
-indexIOBanded :: IOBanded np e -> (Int,Int) -> Int
+indexIOBanded :: IOBanded e -> (Int,Int) -> Int
 indexIOBanded (IOBanded h _ _ kl ku _ _ ld) (i,j) =
     let (ku',i',j') = if h == ConjTrans then (kl,j,i) else (ku,i,j)
     in ku' + (i' - j') + j' * ld
 {-# INLINE indexIOBanded #-}
 
-hasStorageIOBanded :: IOBanded np e -> (Int,Int) -> Bool
+hasStorageIOBanded :: IOBanded e -> (Int,Int) -> Bool
 hasStorageIOBanded (IOBanded h m n kl ku _ _ _) (i,j) =
     let (m',kl',ku',i',j') = if h == ConjTrans
                                  then (n,ku,kl,j,i) 
@@ -94,20 +89,20 @@ hasStorageIOBanded (IOBanded h m n kl ku _ _ _) (i,j) =
 
 -- | Execute an 'IO' action with a pointer to the first element in the
 -- banded matrix.
-withIOBanded :: IOBanded (n,p) e -> (Ptr e -> IO a) -> IO a
+withIOBanded :: IOBanded e -> (Ptr e -> IO a) -> IO a
 withIOBanded (IOBanded _ _ _ _ _ f p _) g = do
     a <- g p
     touchForeignPtr f
     return a
 {-# INLINE withIOBanded #-}
 
-withIOBandedElem :: IOBanded np e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
+withIOBandedElem :: IOBanded e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
 withIOBandedElem a@(IOBanded _ _ _ _ _ _ _ _) (i,j) f =
     withIOBanded (coerceIOBanded a) $ \p ->
         f $ p `advancePtr` (indexIOBanded a (i,j))
 {-# INLINE withIOBandedElem #-}
 
-maybeMatrixStorageFromIOBanded :: IOBanded (n,p) e -> Maybe (IOMatrix (k,p) e)
+maybeMatrixStorageFromIOBanded :: IOBanded e -> Maybe (IOMatrix e)
 maybeMatrixStorageFromIOBanded (IOBanded h _ n kl ku f p l)
     | h == ConjTrans = Nothing
     | otherwise      = Just $ IOMatrix NoTrans (kl+1+ku) n f p l
@@ -115,8 +110,8 @@ maybeMatrixStorageFromIOBanded (IOBanded h _ n kl ku f p l)
 
 maybeIOBandedFromMatrixStorage :: (Int,Int)
                                -> (Int,Int)
-                               -> IOMatrix np e
-                               -> Maybe (IOBanded np' e)
+                               -> IOMatrix e
+                               -> Maybe (IOBanded e)
 maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix h m' n' f p l)
     | m < 0 || n < 0 =
         err "dimensions must be non-negative."
@@ -143,7 +138,7 @@ maybeIOBandedFromMatrixStorage (m,n) (kl,ku) (IOMatrix h m' n' f p l)
       error $ "maybeBandedFromMatrixStorage " ++ show (m,n) ++ " " ++ show (kl,ku) 
             ++ " <matrix of shape " ++ show (m',n') ++ ">: " ++ show s
 
-viewVectorAsIOBanded :: (Int,Int) -> IOVector k e -> IOBanded (n,p) e
+viewVectorAsIOBanded :: (Int,Int) -> IOVector e -> IOBanded e
 viewVectorAsIOBanded (m,n) (IOVector c k f p l)
     | k /= m && k /= n =
         error $ "viewVectorAsBanded " ++ show (m,n) ++ " "
@@ -155,7 +150,7 @@ viewVectorAsIOBanded (m,n) (IOVector c k f p l)
         in IOBanded h m n 0 0 f p l
 {-# INLINE viewVectorAsIOBanded #-}
 
-maybeViewIOBandedAsVector :: IOBanded (n,p) e -> Maybe (IOVector k e)
+maybeViewIOBandedAsVector :: IOBanded e -> Maybe (IOVector e)
 maybeViewIOBandedAsVector (IOBanded h m n kl ku f p l)
     | kl == 0 && ku == 0 =
         let c = if h == ConjTrans then Conj else NoConj
@@ -164,28 +159,28 @@ maybeViewIOBandedAsVector (IOBanded h m n kl ku f p l)
         Nothing
 {-# INLINE maybeViewIOBandedAsVector #-}
 
-bandwidthsIOBanded :: IOBanded np e -> (Int,Int)
+bandwidthsIOBanded :: IOBanded e -> (Int,Int)
 bandwidthsIOBanded a =
     (numLowerIOBanded a, numUpperIOBanded a)
 {-# INLINE bandwidthsIOBanded #-}
 
-coerceIOBanded :: IOBanded np e -> IOBanded np' e
+coerceIOBanded :: IOBanded e -> IOBanded e
 coerceIOBanded = unsafeCoerce
 {-# INLINE coerceIOBanded #-}
 
-shapeIOBanded :: IOBanded np e -> (Int,Int)
+shapeIOBanded :: IOBanded e -> (Int,Int)
 shapeIOBanded a = (numRowsIOBanded a, numColsIOBanded a)
 {-# INLINE shapeIOBanded #-}
 
-boundsIOBanded :: IOBanded np e -> ((Int,Int), (Int,Int))
+boundsIOBanded :: IOBanded e -> ((Int,Int), (Int,Int))
 boundsIOBanded a = ((0,0), (m-1,n-1)) where (m,n) = shapeIOBanded a
 {-# INLINE boundsIOBanded #-}
 
-sizeIOBanded :: IOBanded np e -> Int
+sizeIOBanded :: IOBanded e -> Int
 sizeIOBanded (IOBanded _ m n kl ku _ _ _) =
     foldl' (+) 0 $ map (diagLen (m,n)) [(-kl)..ku]
 
-indicesIOBanded :: IOBanded np e -> [(Int,Int)]
+indicesIOBanded :: IOBanded e -> [(Int,Int)]
 indicesIOBanded a =
     let is = if isHermIOBanded a
                  then [ (i,j) | i <- range (0,m-1), j <- range (0,n-1) ]
@@ -193,19 +188,19 @@ indicesIOBanded a =
     in filter (hasStorageIOBanded a) is
   where (m,n) = shapeIOBanded a
 
-getSizeIOBanded :: IOBanded np e -> IO Int
+getSizeIOBanded :: IOBanded e -> IO Int
 getSizeIOBanded = return . sizeIOBanded
 {-# INLINE getSizeIOBanded #-}
 
-getIndicesIOBanded :: IOBanded np e -> IO [(Int,Int)]
+getIndicesIOBanded :: IOBanded e -> IO [(Int,Int)]
 getIndicesIOBanded = return . indicesIOBanded
 {-# INLINE getIndicesIOBanded #-}
 
-getIndicesIOBanded' :: IOBanded np e -> IO [(Int,Int)]
+getIndicesIOBanded' :: IOBanded e -> IO [(Int,Int)]
 getIndicesIOBanded' = getIndicesIOBanded
 {-# INLINE getIndicesIOBanded' #-}
 
-getAssocsIOBanded :: IOBanded np e -> IO [((Int,Int),e)]
+getAssocsIOBanded :: IOBanded e -> IO [((Int,Int),e)]
 getAssocsIOBanded a =
     let go []     = return []
         go (i:is) = unsafeInterleaveIO $ do
@@ -215,21 +210,21 @@ getAssocsIOBanded a =
     in go (indicesIOBanded a)
 {-# INLINE getAssocsIOBanded #-}
 
-getAssocsIOBanded' :: IOBanded np e -> IO [((Int,Int),e)]
+getAssocsIOBanded' :: IOBanded e -> IO [((Int,Int),e)]
 getAssocsIOBanded' a =
     sequence [ liftM ((,) i) (unsafeReadElemIOBanded a i)
              | i <- indicesIOBanded a ]
 {-# INLINE getAssocsIOBanded' #-}
 
-getElemsIOBanded :: IOBanded np e -> IO [e]
+getElemsIOBanded :: IOBanded e -> IO [e]
 getElemsIOBanded a = liftM (snd . unzip) $ getAssocsIOBanded a
 {-# INLINE getElemsIOBanded #-}
 
-getElemsIOBanded' :: IOBanded np e -> IO [e]
+getElemsIOBanded' :: IOBanded e -> IO [e]
 getElemsIOBanded' a = liftM (snd . unzip) $ getAssocsIOBanded a
 {-# INLINE getElemsIOBanded' #-}
 
-unsafeReadElemIOBanded :: IOBanded np e -> (Int,Int) -> IO e
+unsafeReadElemIOBanded :: IOBanded e -> (Int,Int) -> IO e
 unsafeReadElemIOBanded a@(IOBanded _ _ _ _ _ _ _ _) (i,j)
     | hasStorageIOBanded a (i,j) =
         let f = if isHermIOBanded a then conjugate else id
@@ -238,25 +233,25 @@ unsafeReadElemIOBanded a@(IOBanded _ _ _ _ _ _ _ _) (i,j)
         return 0
 {-# INLINE unsafeReadElemIOBanded #-}
 
-unsafeWriteElemIOBanded :: IOBanded np e -> (Int,Int) -> e -> IO ()
+unsafeWriteElemIOBanded :: IOBanded e -> (Int,Int) -> e -> IO ()
 unsafeWriteElemIOBanded a@(IOBanded _ _ _ _ _ _ _ _) ij e =
     let e' = if isHermIOBanded a then conjugate e else e
     in withIOBandedElem a ij (`poke` e')
 {-# INLINE unsafeWriteElemIOBanded #-}
 
-modifyWithIOBanded :: (e -> e) -> IOBanded np e -> IO ()
+modifyWithIOBanded :: (e -> e) -> IOBanded e -> IO ()
 modifyWithIOBanded f a = do
     ies <- getAssocsIOBanded a
     forM_ ies $ \(i,e) -> do
          unsafeWriteElemIOBanded a i (f e)
 
-canModifyElemIOBanded :: IOBanded np e -> (Int,Int) -> IO Bool
+canModifyElemIOBanded :: IOBanded e -> (Int,Int) -> IO Bool
 canModifyElemIOBanded a ij = return $ hasStorageIOBanded a ij
 {-# INLINE canModifyElemIOBanded #-}
 
 -- | Create a new banded matrix of given shape and (lower,upper), bandwidths,
 -- but do not initialize the elements.
-newIOBanded_ :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (IOBanded np e)
+newIOBanded_ :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (IOBanded e)
 newIOBanded_ (m,n) (kl,ku)
     | m < 0 || n < 0 =
         err "dimensions must be non-negative."
@@ -283,7 +278,7 @@ newIOBanded :: (Elem e)
             => (Int,Int)
             -> (Int,Int)
             -> [((Int,Int), e)]
-            -> IO (IOBanded (n,p) e)
+            -> IO (IOBanded e)
 newIOBanded (m,n) (kl,ku) ies = do
     a <- newIOBanded_ (m,n) (kl,ku)
     withIOBanded a $ \p ->
@@ -301,7 +296,7 @@ unsafeNewIOBanded :: (Elem e)
                   => (Int,Int) 
                   -> (Int,Int) 
                   -> [((Int,Int), e)] 
-                  -> IO (IOBanded (n,p) e)
+                  -> IO (IOBanded e)
 unsafeNewIOBanded (m,n) (kl,ku) ies = do
     a <- newIOBanded_ (m,n) (kl,ku)
     withIOBanded a $ \p ->
@@ -314,38 +309,38 @@ newListsIOBanded :: (Elem e)
                  => (Int,Int)
                  -> (Int,Int)
                  -> [[e]]
-                 -> IO (IOBanded (n,p) e)
+                 -> IO (IOBanded e)
 newListsIOBanded (m,n) (kl,ku) xs = do
     a <- newIOBanded_ (m,n) (kl,ku)
     zipWithM_ (writeDiagElems a) [(negate kl)..ku] xs
     return a
   where
     writeDiagElems :: (Elem e) 
-                   => IOBanded (n,p) e -> Int -> [e] -> IO ()
+                   => IOBanded e -> Int -> [e] -> IO ()
     writeDiagElems a i es =
         let d   = unsafeDiagViewIOBanded a i
             nb  = max 0 (-i)
             es' = drop nb es
         in zipWithM_ (unsafeWriteElem d) [0..(dim d - 1)] es'
 
-newZeroIOBanded :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (IOBanded np e)
+newZeroIOBanded :: (Elem e) => (Int,Int) -> (Int,Int) -> IO (IOBanded e)
 newZeroIOBanded mn bw = do
     a <- newIOBanded_ mn bw
     setZeroIOBanded a
     return a
 
-setZeroIOBanded :: IOBanded np e -> IO ()
+setZeroIOBanded :: IOBanded e -> IO ()
 setZeroIOBanded a@(IOBanded _ _ _ _ _ _ _ _) = setConstantIOBanded 0 a
 {-# INLINE setZeroIOBanded #-}
 
 newConstantIOBanded :: (Elem e)
-                    => (Int,Int) -> (Int,Int) -> e -> IO (IOBanded np e)
+                    => (Int,Int) -> (Int,Int) -> e -> IO (IOBanded e)
 newConstantIOBanded mn bw e = do
     a <- newIOBanded_ mn bw
     setConstantIOBanded e a
     return a
 
-setConstantIOBanded :: e -> IOBanded np e -> IO ()
+setConstantIOBanded :: e -> IOBanded e -> IO ()
 setConstantIOBanded e a@(IOBanded _ _ _ _ _ _ _ _)
     | isHermIOBanded a = setConstantIOBanded (conjugate e) (hermIOBanded a)
     | otherwise = do
@@ -353,7 +348,7 @@ setConstantIOBanded e a@(IOBanded _ _ _ _ _ _ _ _)
         mapM_ (\i -> unsafeWriteElemIOBanded a i e) is
 {-# INLINE setConstantIOBanded #-}
 
-newCopyIOBanded :: IOBanded np e -> IO (IOBanded np e)
+newCopyIOBanded :: IOBanded e -> IO (IOBanded e)
 newCopyIOBanded a@(IOBanded _ _ _ _ _ _ _ _)
     | isHermIOBanded a =
         liftM hermIOBanded $ newCopyIOBanded (hermIOBanded a)
@@ -362,7 +357,7 @@ newCopyIOBanded a@(IOBanded _ _ _ _ _ _ _ _)
         unsafeCopyIOBanded a' a
         return a'
 
-unsafeCopyIOBanded :: IOBanded mn e -> IOBanded mn e -> IO ()
+unsafeCopyIOBanded :: IOBanded e -> IOBanded e -> IO ()
 unsafeCopyIOBanded dst@(IOBanded _ _ _ _ _ _ _ _) src
     | isHermIOBanded dst = 
         unsafeCopyIOBanded (hermIOBanded dst) 
@@ -399,9 +394,9 @@ unsafeCopyIOBanded dst@(IOBanded _ _ _ _ _ _ _ _) src
             (kl,ku) -> map (unsafeDiagViewIOBanded a) $ range (-kl,ku)
 
 
-unsafeRowViewIOBanded :: IOBanded np e
+unsafeRowViewIOBanded :: IOBanded e
                       -> Int
-                      -> (Int, IOVector k e, Int)
+                      -> (Int, IOVector e, Int)
 unsafeRowViewIOBanded a@(IOBanded h _ n kl ku f p ld) i =
     if h == ConjTrans then
         case unsafeColViewIOBanded (hermIOBanded a) i of
@@ -416,9 +411,9 @@ unsafeRowViewIOBanded a@(IOBanded h _ n kl ku f p ld) i =
             len = n - (nb + na)
         in (nb, IOVector NoConj len f p' inc, na)
 
-unsafeColViewIOBanded :: IOBanded np e
+unsafeColViewIOBanded :: IOBanded e
                       -> Int
-                      -> (Int, IOVector k e, Int)
+                      -> (Int, IOVector e, Int)
 unsafeColViewIOBanded a@(IOBanded h m _ kl ku f p ld) j =
     if h == ConjTrans then
         case unsafeRowViewIOBanded (hermIOBanded a) j of
@@ -433,7 +428,7 @@ unsafeColViewIOBanded a@(IOBanded h m _ kl ku f p ld) j =
             len = m - (nb + na)
         in (nb, IOVector NoConj len f p' inc, na)
 
-unsafeDiagViewIOBanded :: IOBanded np e -> Int -> IOVector k e
+unsafeDiagViewIOBanded :: IOBanded e -> Int -> IOVector e
 unsafeDiagViewIOBanded a@(IOBanded h m n _ _ fp p ld) d
     | h == ConjTrans =
          conj $ unsafeDiagViewIOBanded (hermIOBanded a) (negate d)
@@ -445,7 +440,7 @@ unsafeDiagViewIOBanded a@(IOBanded h m n _ _ fp p ld) d
         in (IOVector NoConj len fp p' inc)
 
 
-unsafeGetRowIOBanded :: IOBanded np e -> Int -> IO (IOVector p e)
+unsafeGetRowIOBanded :: IOBanded e -> Int -> IO (IOVector e)
 unsafeGetRowIOBanded a@(IOBanded _ _ _ _ _ _ _ _) i =
     let (nb,x,na) = unsafeRowViewIOBanded a i
         n = numCols a
@@ -453,14 +448,14 @@ unsafeGetRowIOBanded a@(IOBanded _ _ _ _ _ _ _ _) i =
         es <- getElems x
         newListVector n $ (replicate nb 0) ++ es ++ (replicate na 0)
 
-unsafeGetColIOBanded :: IOBanded np e -> Int -> IO (IOVector n e)
+unsafeGetColIOBanded :: IOBanded e -> Int -> IO (IOVector e)
 unsafeGetColIOBanded a j =
     liftM conj $ unsafeGetRowIOBanded (hermIOBanded a) j
 
 -- | @gbmv alpha a x beta y@ replaces @y := alpha a * x + beta y@
 gbmv :: (ReadVector x IO, WriteVector y IO, BLAS2 e)
-     => e -> IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
-gbmv alpha a (x :: x p e) beta y
+     => e -> IOBanded e -> x e -> e -> y e -> IO ()
+gbmv alpha a (x :: x e) beta y
     | n == 0 =
         scaleByVector beta y
     | otherwise =
@@ -483,23 +478,23 @@ gbmv alpha a (x :: x p e) beta y
 
 -- | @gbmm alpha a b beta c@ replaces @c := alpha a * b + beta c@.
 gbmm :: (ReadMatrix b IO, WriteMatrix c IO, BLAS2 e)
-     => e -> IOBanded (n,p) e -> b (p,q) e -> e -> c (n,q) e -> IO ()
+     => e -> IOBanded e -> b e -> e -> c e -> IO ()
 gbmm alpha a b beta c =
     sequence_ $
         zipWith (\x y -> gbmv alpha a x beta y) (colViews b) (colViews c)
 
 unsafeGetColHermIOBanded :: (WriteVector y IO, Elem e)
-                         => Herm IOBanded (n,p) e -> Int -> IO (y n e)
+                         => Herm IOBanded e -> Int -> IO (y e)
 unsafeGetColHermIOBanded =
     error "TODO: unsafeGetColHermIOBanded is not implemented"
 
 unsafeGetRowHermIOBanded :: (WriteVector y IO, Elem e)
-                         => Herm IOBanded (n,p) e -> Int -> IO (y p e)
+                         => Herm IOBanded e -> Int -> IO (y e)
 unsafeGetRowHermIOBanded =
     error "TODO: unsafeGetRowHermIOBanded is not implemented"
 
 hbmv :: (ReadVector x IO, BLAS2 e) => 
-    e -> Herm IOBanded (n,p) e -> x p e -> e -> IOVector n e -> IO ()
+    e -> Herm IOBanded e -> x e -> e -> IOVector e -> IO ()
 hbmv alpha h x beta y =
     let (u,a) = hermToBase (coerceHerm h)
         n     = numCols a
@@ -523,22 +518,22 @@ hbmv alpha h x beta y =
                       n k alpha pA ldA pX incX beta pY incY
 
 hbmm :: (ReadMatrix b IO, BLAS2 e) => 
-    e -> Herm IOBanded (n,p) e -> b (p,q) e -> e -> IOMatrix (n,q) e -> IO ()
+    e -> Herm IOBanded e -> b e -> e -> IOMatrix e -> IO ()
 hbmm alpha h b beta c =
     zipWithM_ (\x y -> hbmv alpha h x beta y) (colViews b) (colViews c)
 
 unsafeGetColTriIOBanded :: (WriteVector y IO, Elem e)
-                        => Tri IOBanded (n,p) e -> Int -> IO (y n e)
+                        => Tri IOBanded e -> Int -> IO (y e)
 unsafeGetColTriIOBanded =
     error "TODO: unsafeGetColTriIOBanded is not implemented"
 
 unsafeGetRowTriIOBanded :: (WriteVector y IO, Elem e)
-                        => Tri IOBanded (n,p) e -> Int -> IO (y p e)
+                        => Tri IOBanded e -> Int -> IO (y e)
 unsafeGetRowTriIOBanded =
     error "TODO: unsafeGetRowTriIOBanded is not implemented"
 
 tbmv :: (WriteVector y IO, BLAS2 e) => 
-    e -> Tri IOBanded (n,n) e -> y n e -> IO ()
+    e -> Tri IOBanded e -> y e -> IO ()
 tbmv alpha t x =
     let (u,d,a) = triToBase t
         (transA,uploA) 
@@ -560,15 +555,15 @@ tbmv alpha t x =
            BLAS.tbmv uploA transA diagA (conjEnum x) n k pA ldA pX incX
 
 tbmm :: (WriteMatrix b IO, BLAS2 e) =>
-    e -> Tri IOBanded (n,n) e -> b (n,p) e -> IO ()
+    e -> Tri IOBanded e -> b e -> IO ()
 tbmm 1     t b = mapM_ (\x -> tbmv 1 t x) (colViews b)
 tbmm alpha t b = scaleByMatrix alpha b >> tbmm 1 t b
 
 tbmv' :: (ReadVector x IO, WriteVector y IO, BLAS2 e) => 
-    e -> Tri IOBanded (n,p) e -> x p e -> e -> y n e -> IO ()
-tbmv' alpha a (x :: x p e) beta (y  :: y n e)
+    e -> Tri IOBanded e -> x e -> e -> y e -> IO ()
+tbmv' alpha a (x :: x e) beta (y  :: y e)
     | beta /= 0 = do
-        (x' :: y p e) <- newCopyVector x
+        (x' :: y e) <- newCopyVector x
         tbmv alpha (coerceTri a) x'
         scaleByVector beta y
         unsafeAxpyVector 1 x' (coerceVector y)
@@ -577,10 +572,10 @@ tbmv' alpha a (x :: x p e) beta (y  :: y n e)
         tbmv alpha (coerceTri a) (coerceVector y)
 
 tbmm' :: (ReadMatrix b IO, WriteMatrix c IO, BLAS2 e) => 
-    e -> Tri IOBanded (r,s) e -> b (s,t) e -> e -> c (r,t) e -> IO ()
-tbmm' alpha a (b :: b (s,t) e) beta (c :: c (r,t) e)
+    e -> Tri IOBanded e -> b e -> e -> c e -> IO ()
+tbmm' alpha a (b :: b e) beta (c :: c e)
     | beta /= 0 = do
-        (b' :: c (s,t) e) <- newCopyMatrix b
+        (b' :: c e) <- newCopyMatrix b
         tbmm alpha (coerceTri a) b'
         scaleByMatrix beta c
         unsafeAxpyMatrix 1 b' (coerceMatrix c)
@@ -589,7 +584,7 @@ tbmm' alpha a (b :: b (s,t) e) beta (c :: c (r,t) e)
         tbmm alpha (coerceTri a) (coerceMatrix c)
 
 tbsv :: (WriteVector y IO, BLAS2 e) => 
-    e -> Tri IOBanded (n,n) e -> y n e -> IO ()
+    e -> Tri IOBanded e -> y e -> IO ()
 tbsv alpha t x =
     let (u,d,a) = triToBase t
         (transA,uploA) 
@@ -611,18 +606,18 @@ tbsv alpha t x =
            BLAS.tbsv uploA transA diagA (conjEnum x) n k pA ldA pX incX
 
 tbsm :: (WriteMatrix b IO, BLAS2 e) => 
-    e -> Tri IOBanded (k,k) e -> b (k,l) e -> IO ()
+    e -> Tri IOBanded e -> b e -> IO ()
 tbsm 1     t b = mapM_ (\x -> tbsv 1 t x) (colViews b)
 tbsm alpha t b = scaleByMatrix alpha b >> tbsm 1 t b
 
 tbsv' :: (ReadVector y IO, WriteVector x IO, BLAS2 e)
-      => e -> Tri IOBanded (k,l) e -> y k e -> x l e -> IO ()
+      => e -> Tri IOBanded e -> y e -> x e -> IO ()
 tbsv' alpha a y x = do
     unsafeCopyVector (coerceVector x) y
     tbsv alpha (coerceTri a) (coerceVector x)
 
 tbsm' :: (ReadMatrix c IO, WriteMatrix b IO, BLAS2 e) 
-      => e -> Tri IOBanded (r,s) e -> c (r,t) e -> b (s,t) e -> IO ()
+      => e -> Tri IOBanded e -> c e -> b e -> IO ()
 tbsm' alpha a c b = do
     unsafeCopyMatrix (coerceMatrix b) c
     tbsm alpha (coerceTri a) b

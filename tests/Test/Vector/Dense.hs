@@ -24,28 +24,28 @@ import qualified Test.QuickCheck.BLAS as Test
 import Data.Vector.Dense hiding ( vector )
 import Data.Elem.BLAS ( BLAS1 )
 
-vector :: (TestElem e) => Int -> Gen (Vector n e)
+vector :: (TestElem e) => Int -> Gen (Vector e)
 vector = Test.vector
     
-data VectorPair n e = 
-    VectorPair (Vector n e) 
-               (Vector n e) 
+data VectorPair e = 
+    VectorPair (Vector e) 
+               (Vector e) 
     deriving (Show)
     
-data VectorTriple n e = 
-    VectorTriple (Vector n e) 
-                 (Vector n e) 
-                 (Vector n e) 
+data VectorTriple e = 
+    VectorTriple (Vector e) 
+                 (Vector e) 
+                 (Vector e) 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (Vector n e) where
+instance (TestElem e) => Arbitrary (Vector e) where
     arbitrary = do
         n <- Test.dim
         Test.vector n
         
     coarbitrary = undefined
 
-instance (TestElem e) => Arbitrary (VectorPair n e) where
+instance (TestElem e) => Arbitrary (VectorPair e) where
     arbitrary = do
         n <- Test.dim
         x <- vector n
@@ -54,7 +54,7 @@ instance (TestElem e) => Arbitrary (VectorPair n e) where
         
     coarbitrary = undefined
         
-instance (TestElem e) => Arbitrary (VectorTriple n e) where
+instance (TestElem e) => Arbitrary (VectorTriple e) where
     arbitrary = do
         n <- Test.dim
         x <- vector n
@@ -64,14 +64,14 @@ instance (TestElem e) => Arbitrary (VectorTriple n e) where
     
     coarbitrary = undefined
 
-data SubVector n e = 
+data SubVector e = 
     SubVector Int 
-              (Vector n e) 
+              (Vector e) 
               Int 
               Int 
     deriving (Show)
 
-instance (TestElem e) => Arbitrary (SubVector n e) where
+instance (TestElem e) => Arbitrary (SubVector e) where
     arbitrary = do
         n <- Test.dim
         o <- choose (0,5)

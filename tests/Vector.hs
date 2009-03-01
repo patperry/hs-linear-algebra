@@ -13,7 +13,7 @@ import Test.Vector.Dense hiding ( vector )
 import qualified Test.Vector.Dense as Test
 import System.IO.Unsafe
 
-type V = Vector Index E
+type V = Vector E
 
 
 ---------------------------- Creating Vectors --------------------------------

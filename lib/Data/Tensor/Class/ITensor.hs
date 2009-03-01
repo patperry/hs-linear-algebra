@@ -27,50 +27,50 @@ infixl 5 `shift`
 -- | A class for immutable tensors.
 class (Shaped x i) => ITensor x i where
     -- | Get the numer of elements stored in the tensor.
-    size :: x n e -> Int
+    size :: x e -> Int
     
     -- | Get a new tensor by replacing the elements at the given indices.
-    (//) :: x n e -> [(i,e)] -> x n e
+    (//) :: x e -> [(i,e)] -> x e
 
     -- | Get the value at the given index, without doing any bounds-checking.
-    unsafeAt :: x n e -> i -> e
+    unsafeAt :: x e -> i -> e
     
     -- | Same as '(//)' but doesn't do any bounds-checking.
-    unsafeReplace :: x n e -> [(i,e)] -> x n e
+    unsafeReplace :: x e -> [(i,e)] -> x e
     
     -- | Get the indices of the elements stored in the tensor.
-    indices :: x n e -> [i]
+    indices :: x e -> [i]
     indices = fst . unzip . assocs
     {-# INLINE indices #-}
     
     -- | Get the elements stored in the tensor.
-    elems :: x n e -> [e]
+    elems :: x e -> [e]
     elems = snd . unzip . assocs
     {-# INLINE elems #-}
 
     -- | Get the list of @(@index@,@ element@)@ pairs stored in the tensor.
-    assocs :: x n e -> [(i,e)]
+    assocs :: x e -> [(i,e)]
 
     -- accum :: (e -> e' -> e) -> x e -> [(i,e')] -> x e
     
     -- | ApplyVector a function elementwise to a tensor.
-    tmap :: (e -> e) -> x n e -> x n e
+    tmap :: (e -> e) -> x e -> x e
     
     -- ixmap :: i -> (i -> i) -> x e -> x e
     -- unsafeIxMap
     
     -- | Scale every element by the given value.
-    (*>) :: (BLAS1 e) => e -> x n e -> x n e
+    (*>) :: (BLAS1 e) => e -> x e -> x e
     (*>) k = tmap (k*)
     {-# INLINE (*>) #-}
     
     -- | Add a constant to every element.
-    shift :: (BLAS1 e) => e -> x n e -> x n e
+    shift :: (BLAS1 e) => e -> x e -> x e
     shift k = tmap (k+)
     {-# INLINE shift #-}
     
 -- | Get the value at the given index.  Range-checks the argument.
-(!) :: (ITensor x i) => x n e -> i -> e
+(!) :: (ITensor x i) => x e -> i -> e
 (!) x i =
     case (inRange b i) of
         False -> 

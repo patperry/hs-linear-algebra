@@ -36,15 +36,10 @@ import Data.Vector.Dense.Base
 
 -- | Dense matrix in the 'IO' monad.  The type arguments are as follows:
 --
---     * @np@: a phantom type for the shape of the matrix.  Most functions
---       will demand that this be specified as a pair.  When writing a function
---       signature, you should always prefer @IOMatrix (n,p) e@ to
---       @IOMatrix np e@.
---
 --     * @e@: the element type of the matrix.  Only certain element types
 --       are supported.
 --
-data IOMatrix np e =
+data IOMatrix e =
       Elem e =>
       IOMatrix { transEnumIOMatrix :: {-# UNPACK #-} !TransEnum
                , numRowsIOMatrix   :: {-# UNPACK #-} !Int
@@ -59,7 +54,7 @@ matrixViewArray :: (Elem e)
                 => ForeignPtr e
                 -> Int          -- ^ offset
                 -> (Int,Int)    -- ^ shape
-                -> IOMatrix (n,p) e
+                -> IOMatrix e
 matrixViewArray f o (m,n) = matrixViewArrayWithLda (max 1 m) f o (m,n)
 {-# INLINE matrixViewArray #-}
 
@@ -70,43 +65,43 @@ matrixViewArrayWithLda :: (Elem e)
                        -> ForeignPtr e
                        -> Int          -- ^ offset
                        -> (Int,Int)    -- ^ shape
-                       -> IOMatrix (n,p) e
+                       -> IOMatrix e
 matrixViewArrayWithLda l f o (m,n) =
     let p = unsafeForeignPtrToPtr f `advancePtr` o
     in IOMatrix NoTrans m n f p l
 {-# INLINE matrixViewArrayWithLda #-}
 
-isHermIOMatrix :: IOMatrix np e -> Bool
+isHermIOMatrix :: IOMatrix e -> Bool
 isHermIOMatrix = (ConjTrans ==) . transEnumIOMatrix
 {-# INLINE isHermIOMatrix #-}
 
-hermIOMatrix :: IOMatrix np e -> IOMatrix nm e
+hermIOMatrix :: IOMatrix e -> IOMatrix e
 hermIOMatrix (IOMatrix h m n f p l) = (IOMatrix (flipTrans h) n m f p l)
 {-# INLINE hermIOMatrix #-}
 
 unsafeSubmatrixViewIOMatrix :: 
-    IOMatrix np e -> (Int,Int) -> (Int,Int) -> IOMatrix np' e
+    IOMatrix e -> (Int,Int) -> (Int,Int) -> IOMatrix e
 unsafeSubmatrixViewIOMatrix (IOMatrix h _ _ f p l) (i,j) (m',n') =
     let o = if h == ConjTrans then i*l+j else i+j*l
         p' = p `advancePtr` o
     in IOMatrix h m' n' f p' l
 {-# INLINE unsafeSubmatrixViewIOMatrix #-}
 
-unsafeRowViewIOMatrix :: IOMatrix np e -> Int -> IOVector p e
+unsafeRowViewIOMatrix :: IOMatrix e -> Int -> IOVector e
 unsafeRowViewIOMatrix (IOMatrix h _ n f p l) i =
     let (c,o,s) = if h == ConjTrans then (Conj,i*l,1) else (NoConj,i,l)
         p'      = p `advancePtr` o
     in IOVector c n f p' s
 {-# INLINE unsafeRowViewIOMatrix #-}
 
-unsafeColViewIOMatrix :: IOMatrix np e -> Int -> IOVector n e
+unsafeColViewIOMatrix :: IOMatrix e -> Int -> IOVector e
 unsafeColViewIOMatrix (IOMatrix h m _ f p l) j =
     let (c,o,s) = if h == ConjTrans then (Conj,j,l) else (NoConj,j*l,1)
         p'      = p `advancePtr` o
     in IOVector c m f p' s
 {-# INLINE unsafeColViewIOMatrix #-}
 
-unsafeDiagViewIOMatrix :: IOMatrix np e -> Int -> IOVector k e
+unsafeDiagViewIOMatrix :: IOMatrix e -> Int -> IOVector e
 unsafeDiagViewIOMatrix (IOMatrix h m n f p l) i =
     let o = if i >= 0 
                 then if h == ConjTrans then  i   else  i*l
@@ -118,7 +113,7 @@ unsafeDiagViewIOMatrix (IOMatrix h m n f p l) i =
     in IOVector c k f p' s
 {-# INLINE unsafeDiagViewIOMatrix #-}
 
-maybeViewVectorAsRowIOMatrix :: IOVector p e -> Maybe (IOMatrix p1 e)
+maybeViewVectorAsRowIOMatrix :: IOVector e -> Maybe (IOMatrix e)
 maybeViewVectorAsRowIOMatrix (IOVector c n f p s)
     | c == Conj && s == 1 =
         Just $ IOMatrix ConjTrans 1 n f p (max 1 n)
@@ -128,7 +123,7 @@ maybeViewVectorAsRowIOMatrix (IOVector c n f p s)
         Nothing
 {-# INLINE maybeViewVectorAsRowIOMatrix #-}
 
-maybeViewVectorAsColIOMatrix :: IOVector n e -> Maybe (IOMatrix n1 e)
+maybeViewVectorAsColIOMatrix :: IOVector e -> Maybe (IOMatrix e)
 maybeViewVectorAsColIOMatrix (IOVector c n f p s)
     | c == Conj =
         Just $ IOMatrix ConjTrans n 1 f p s        
@@ -138,14 +133,14 @@ maybeViewVectorAsColIOMatrix (IOVector c n f p s)
         Nothing
 {-# INLINE maybeViewVectorAsColIOMatrix #-}
 
-maybeViewIOMatrixAsVector :: IOMatrix np e -> Maybe (IOVector k e)
+maybeViewIOMatrixAsVector :: IOMatrix e -> Maybe (IOVector e)
 maybeViewIOMatrixAsVector (IOMatrix h m n f p l)
     | h == ConjTrans = Nothing
     | l /= m         = Nothing
     | otherwise      = Just $ IOVector NoConj (m*n) f p 1
 {-# INLINE maybeViewIOMatrixAsVector #-}
 
-maybeViewVectorAsIOMatrix :: (Int,Int) -> IOVector k e -> Maybe (IOMatrix np e)
+maybeViewVectorAsIOMatrix :: (Int,Int) -> IOVector e -> Maybe (IOMatrix e)
 maybeViewVectorAsIOMatrix (m,n) (IOVector c k f p inc)
     | m*n /= k =
         error $ "maybeViewVectorAsMatrix " ++ show (m,n)
@@ -156,7 +151,7 @@ maybeViewVectorAsIOMatrix (m,n) (IOVector c k f p inc)
     | otherwise = Just $ IOMatrix NoTrans m n f p m
 {-# INLINE maybeViewVectorAsIOMatrix #-}
 
-liftIOMatrix :: (forall n. IOVector n e -> IO ()) -> IOMatrix np e -> IO ()
+liftIOMatrix :: (IOVector e -> IO ()) -> IOMatrix e -> IO ()
 liftIOMatrix g (IOMatrix h m n f p l)
     | h == ConjTrans && l == n = do
         g (IOVector Conj   (m*n) f p 1)
@@ -171,8 +166,8 @@ liftIOMatrix g (IOMatrix h m n f p l)
                       go (p' `advancePtr` l)
         in go p
 
-liftIOMatrix2 :: (forall k. IOVector k e -> IOVector k f -> IO ())
-              -> IOMatrix np e -> IOMatrix np f -> IO ()
+liftIOMatrix2 :: (IOVector e -> IOVector f -> IO ())
+              -> IOMatrix e -> IOMatrix f -> IO ()
 liftIOMatrix2 f a b =
     if isHermIOMatrix a == isHermIOMatrix b
         then case (maybeViewIOMatrixAsVector a, maybeViewIOMatrixAsVector b) of
@@ -200,7 +195,7 @@ liftIOMatrix2 f a b =
 
 -- | Perform an 'IO' action with a pointer to the first element of the
 -- matrix.
-withIOMatrix :: IOMatrix (n,p) e -> (Ptr e -> IO a) -> IO a
+withIOMatrix :: IOMatrix e -> (Ptr e -> IO a) -> IO a
 withIOMatrix (IOMatrix _ _ _ f p _) g = do
     a <- g p
     touchForeignPtr f
@@ -208,7 +203,7 @@ withIOMatrix (IOMatrix _ _ _ f p _) g = do
 {-# INLINE withIOMatrix #-}
 
 -- | Create a new matrix of given shape, but do not initialize the elements.
-newIOMatrix_ :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)
+newIOMatrix_ :: (Elem e) => (Int,Int) -> IO (IOMatrix e)
 newIOMatrix_ (m,n) 
     | m < 0 || n < 0 =
         fail $ 
@@ -218,7 +213,7 @@ newIOMatrix_ (m,n)
         return $ IOMatrix NoTrans m n f (unsafeForeignPtrToPtr f) (max 1 m)
 
 newIOMatrix :: (Elem e) 
-            => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix (n,p) e)
+            => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix e)
 newIOMatrix (m,n) ies =
     let go p (((i,j),e):ies') = do
             when (i < 0 || i >= m || j < 0 || j >= n) $ fail $
@@ -234,7 +229,7 @@ newIOMatrix (m,n) ies =
         return a
     
 unsafeNewIOMatrix :: (Elem e) 
-                  => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix (n,p) e)
+                  => (Int,Int) -> [((Int,Int), e)] -> IO (IOMatrix e)
 unsafeNewIOMatrix (m,n) ies =
     let go p (((i,j),e):ies') = do
             pokeElemOff p (i+j*m) e
@@ -245,25 +240,25 @@ unsafeNewIOMatrix (m,n) ies =
         withIOMatrix a $ \p -> go p ies
         return a
 
-newListIOMatrix :: (Elem e) => (Int,Int) -> [e] -> IO (IOMatrix (n,p) e)
+newListIOMatrix :: (Elem e) => (Int,Int) -> [e] -> IO (IOMatrix e)
 newListIOMatrix (m,n) es = do
     a  <- newZeroIOMatrix (m,n)
     withIOMatrix a $ flip pokeArray (take (m*n) es)
     return a
 
-newIdentityIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix np e)
+newIdentityIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix e)
 newIdentityIOMatrix mn = do
     a  <- newIOMatrix_ mn
     setIdentityIOMatrix a
     return a
 
-setIdentityIOMatrix :: IOMatrix np e -> IO ()
+setIdentityIOMatrix :: IOMatrix e -> IO ()
 setIdentityIOMatrix a@(IOMatrix _ _ _ _ _ _) = do
     setZeroIOMatrix a
     setConstantIOVector 1 (unsafeDiagViewIOMatrix a 0)
 
 newColsIOMatrix :: (ReadVector x IO, Elem e)
-                => (Int,Int) -> [x n e] -> IO (IOMatrix (n,p) e)
+                => (Int,Int) -> [x e] -> IO (IOMatrix e)
 newColsIOMatrix (m,n) cs = 
     let go _ j (_:_)   | j == n = 
             error $ printf 
@@ -283,7 +278,7 @@ newColsIOMatrix (m,n) cs =
         return a
 
 newRowsIOMatrix :: (ReadVector x IO, Elem e) 
-                => (Int,Int) -> [x p e] -> IO (IOMatrix (n,p) e)
+                => (Int,Int) -> [x e] -> IO (IOMatrix e)
 newRowsIOMatrix (m,n) rs = 
     let go _ i (_:_)   | i == m = 
             error $ printf 
@@ -303,26 +298,26 @@ newRowsIOMatrix (m,n) rs =
         return a
 
 newColIOMatrix :: (ReadVector x IO, Elem e)
-               => x n e -> IO (IOMatrix (n,one) e)
+               => x e -> IO (IOMatrix e)
 newColIOMatrix x = newColsIOMatrix (dim x,1) [x]
 
 newRowIOMatrix :: (ReadVector x IO, Elem e)
-               => x p e -> IO (IOMatrix (one,p) e)
+               => x e -> IO (IOMatrix e)
 newRowIOMatrix x = newRowsIOMatrix (1,dim x) [x]
 
-newZeroIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix (n,p) e)
+newZeroIOMatrix :: (Elem e) => (Int,Int) -> IO (IOMatrix e)
 newZeroIOMatrix mn = do
     a  <- newIOMatrix_ mn
     setZeroIOMatrix a
     return a
 
-newConstantIOMatrix :: (Elem e) => (Int,Int) -> e -> IO (IOMatrix (n,p) e)
+newConstantIOMatrix :: (Elem e) => (Int,Int) -> e -> IO (IOMatrix e)
 newConstantIOMatrix mn e = do
     a  <- newIOMatrix_ mn
     setConstantIOMatrix e a
     return a
 
-newCopyIOMatrix :: IOMatrix np e -> IO (IOMatrix np e)
+newCopyIOMatrix :: IOMatrix e -> IO (IOMatrix e)
 newCopyIOMatrix a@(IOMatrix h m n _ _ _) =
     let (m',n') = if h == ConjTrans then (n,m) else (m,n)
     in do
@@ -332,52 +327,52 @@ newCopyIOMatrix a@(IOMatrix h m n _ _ _) =
         return b'
 {-# INLINE newCopyIOMatrix #-}
 
-newCopyIOMatrix' :: IOMatrix np e -> IO (IOMatrix np e)
+newCopyIOMatrix' :: IOMatrix e -> IO (IOMatrix e)
 newCopyIOMatrix' a@(IOMatrix _ m n _ _ _) = do
     b  <- newIOMatrix_ (m,n)
     unsafeCopyIOMatrix b a
     return b
 {-# INLINE newCopyIOMatrix' #-}
 
-unsafeCopyIOMatrix :: IOMatrix np e -> IOMatrix np e -> IO ()
+unsafeCopyIOMatrix :: IOMatrix e -> IOMatrix e -> IO ()
 unsafeCopyIOMatrix = liftIOMatrix2 unsafeCopyIOVector
 {-# INLINE unsafeCopyIOMatrix #-}
 
-shapeIOMatrix :: IOMatrix np e -> (Int,Int)
+shapeIOMatrix :: IOMatrix e -> (Int,Int)
 shapeIOMatrix (IOMatrix _ m n _ _ _) = (m,n)
 {-# INLINE shapeIOMatrix #-}
 
-boundsIOMatrix :: IOMatrix np e -> ((Int,Int), (Int,Int))
+boundsIOMatrix :: IOMatrix e -> ((Int,Int), (Int,Int))
 boundsIOMatrix a = ((0,0), (m-1,n-1)) where (m,n) = shapeIOMatrix a
 {-# INLINE boundsIOMatrix #-}
 
-sizeIOMatrix :: IOMatrix np e -> Int
+sizeIOMatrix :: IOMatrix e -> Int
 sizeIOMatrix (IOMatrix _ m n _ _ _) = m*n
 {-# INLINE sizeIOMatrix #-}
 
-getSizeIOMatrix :: IOMatrix np e -> IO Int
+getSizeIOMatrix :: IOMatrix e -> IO Int
 getSizeIOMatrix = return . sizeIOMatrix
 {-# INLINE getSizeIOMatrix #-}
 
-getMaxSizeIOMatrix :: IOMatrix np e -> IO Int
+getMaxSizeIOMatrix :: IOMatrix e -> IO Int
 getMaxSizeIOMatrix = getSizeIOMatrix
 {-# INLINE getMaxSizeIOMatrix #-}
 
-indicesIOMatrix :: IOMatrix np e -> [(Int,Int)]
+indicesIOMatrix :: IOMatrix e -> [(Int,Int)]
 indicesIOMatrix (IOMatrix h m n _ _ _)
     | h == ConjTrans = [ (i,j) | i <- [ 0..m-1 ], j <- [ 0..n-1 ] ]
     | otherwise      = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
 {-# INLINE indicesIOMatrix #-}
 
-getIndicesIOMatrix :: IOMatrix np e -> IO [(Int,Int)]
+getIndicesIOMatrix :: IOMatrix e -> IO [(Int,Int)]
 getIndicesIOMatrix = return . indicesIOMatrix
 {-# INLINE getIndicesIOMatrix #-}
 
-getIndicesIOMatrix' :: IOMatrix np e -> IO [(Int,Int)]
+getIndicesIOMatrix' :: IOMatrix e -> IO [(Int,Int)]
 getIndicesIOMatrix' = getIndicesIOMatrix
 {-# INLINE getIndicesIOMatrix' #-}
 
-getElemsIOMatrix :: IOMatrix np e -> IO [e]
+getElemsIOMatrix :: IOMatrix e -> IO [e]
 getElemsIOMatrix (IOMatrix h m n f p l)
     | h == ConjTrans = 
         liftM (map conjugate) $ 
@@ -392,10 +387,10 @@ getElemsIOMatrix (IOMatrix h m n f p l)
                         cs <- go (p' `advancePtr` l)
                         return (c ++ cs)
         in go p
-{-# SPECIALIZE INLINE getElemsIOMatrix :: IOMatrix np Double -> IO [Double] #-}
-{-# SPECIALIZE INLINE getElemsIOMatrix :: IOMatrix np (Complex Double) -> IO [Complex Double] #-}
+{-# SPECIALIZE INLINE getElemsIOMatrix :: IOMatrix Double -> IO [Double] #-}
+{-# SPECIALIZE INLINE getElemsIOMatrix :: IOMatrix (Complex Double) -> IO [Complex Double] #-}
 
-getElemsIOMatrix' :: IOMatrix np e -> IO [e]
+getElemsIOMatrix' :: IOMatrix e -> IO [e]
 getElemsIOMatrix' (IOMatrix h m n f p l) 
     | h == ConjTrans = 
         liftM (map conjugate) $ 
@@ -410,24 +405,24 @@ getElemsIOMatrix' (IOMatrix h m n f p l)
                         cs <- go (p' `advancePtr` l)
                         return (c ++ cs)
         in go p
-{-# SPECIALIZE INLINE getElemsIOMatrix' :: IOMatrix np Double -> IO [Double] #-}
-{-# SPECIALIZE INLINE getElemsIOMatrix' :: IOMatrix np (Complex Double) -> IO [Complex Double] #-}
+{-# SPECIALIZE INLINE getElemsIOMatrix' :: IOMatrix Double -> IO [Double] #-}
+{-# SPECIALIZE INLINE getElemsIOMatrix' :: IOMatrix (Complex Double) -> IO [Complex Double] #-}
 
-getAssocsIOMatrix :: IOMatrix np e -> IO [((Int,Int),e)]
+getAssocsIOMatrix :: IOMatrix e -> IO [((Int,Int),e)]
 getAssocsIOMatrix a = do
     is <- getIndicesIOMatrix a
     es <- getElemsIOMatrix a
     return $ zip is es
 {-# INLINE getAssocsIOMatrix #-}
 
-getAssocsIOMatrix' :: IOMatrix np e -> IO [((Int,Int),e)]
+getAssocsIOMatrix' :: IOMatrix e -> IO [((Int,Int),e)]
 getAssocsIOMatrix' a = do
     is <- getIndicesIOMatrix' a
     es <- getElemsIOMatrix' a
     return $ zip is es
 {-# INLINE getAssocsIOMatrix' #-}
 
-unsafeReadElemIOMatrix :: IOMatrix np e -> (Int,Int) -> IO e
+unsafeReadElemIOMatrix :: IOMatrix e -> (Int,Int) -> IO e
 unsafeReadElemIOMatrix (IOMatrix h _ _ f p l) (i,j)
     | h == ConjTrans = do
         e <- peekElemOff p (i*l+j)
@@ -437,14 +432,14 @@ unsafeReadElemIOMatrix (IOMatrix h _ _ f p l) (i,j)
         e <- peekElemOff p (i+j*l)
         touchForeignPtr f
         return e
-{-# SPECIALIZE INLINE unsafeReadElemIOMatrix :: IOMatrix n Double -> (Int,Int) -> IO (Double) #-}
-{-# SPECIALIZE INLINE unsafeReadElemIOMatrix :: IOMatrix n (Complex Double) -> (Int,Int) -> IO (Complex Double) #-}        
+{-# SPECIALIZE INLINE unsafeReadElemIOMatrix :: IOMatrix Double -> (Int,Int) -> IO (Double) #-}
+{-# SPECIALIZE INLINE unsafeReadElemIOMatrix :: IOMatrix (Complex Double) -> (Int,Int) -> IO (Complex Double) #-}        
 
-canModifyElemIOMatrix :: IOMatrix np e -> (Int,Int) -> IO Bool
+canModifyElemIOMatrix :: IOMatrix e -> (Int,Int) -> IO Bool
 canModifyElemIOMatrix _ _ = return True
 {-# INLINE canModifyElemIOMatrix #-}
 
-unsafeWriteElemIOMatrix :: IOMatrix np e -> (Int,Int) -> e -> IO ()
+unsafeWriteElemIOMatrix :: IOMatrix e -> (Int,Int) -> e -> IO ()
 unsafeWriteElemIOMatrix (IOMatrix h _ _ f p l) (i,j) e
     | h == ConjTrans = do
         io <- pokeElemOff p (i*l+j) (conjugate e)
@@ -454,10 +449,10 @@ unsafeWriteElemIOMatrix (IOMatrix h _ _ f p l) (i,j) e
         io <- pokeElemOff p (i+j*l) e
         touchForeignPtr f
         return io
-{-# SPECIALIZE INLINE unsafeWriteElemIOMatrix :: IOMatrix n Double -> (Int,Int) -> Double -> IO () #-}
-{-# SPECIALIZE INLINE unsafeWriteElemIOMatrix :: IOMatrix n (Complex Double) -> (Int,Int) -> Complex Double -> IO () #-}        
+{-# SPECIALIZE INLINE unsafeWriteElemIOMatrix :: IOMatrix Double -> (Int,Int) -> Double -> IO () #-}
+{-# SPECIALIZE INLINE unsafeWriteElemIOMatrix :: IOMatrix (Complex Double) -> (Int,Int) -> Complex Double -> IO () #-}        
 
-unsafeModifyElemIOMatrix :: IOMatrix n e -> (Int,Int) -> (e -> e) -> IO ()
+unsafeModifyElemIOMatrix :: IOMatrix e -> (Int,Int) -> (e -> e) -> IO ()
 unsafeModifyElemIOMatrix (IOMatrix h _ _ f p l) (i,j) g =
     let g' = if h == ConjTrans then conjugate . g . conjugate else g
         p' = if h == ConjTrans then p `advancePtr` (i*l+j) 
@@ -467,10 +462,10 @@ unsafeModifyElemIOMatrix (IOMatrix h _ _ f p l) (i,j) g =
         io <- poke p' (g' e)
         touchForeignPtr f
         return io
-{-# SPECIALIZE INLINE unsafeModifyElemIOMatrix :: IOMatrix n Double -> (Int,Int) -> (Double -> Double) -> IO () #-}
-{-# SPECIALIZE INLINE unsafeModifyElemIOMatrix :: IOMatrix n (Complex Double) -> (Int,Int) -> (Complex Double -> Complex Double) -> IO () #-}
+{-# SPECIALIZE INLINE unsafeModifyElemIOMatrix :: IOMatrix Double -> (Int,Int) -> (Double -> Double) -> IO () #-}
+{-# SPECIALIZE INLINE unsafeModifyElemIOMatrix :: IOMatrix (Complex Double) -> (Int,Int) -> (Complex Double -> Complex Double) -> IO () #-}
 
-unsafeSwapElemsIOMatrix :: IOMatrix n e -> (Int,Int) -> (Int,Int) -> IO ()
+unsafeSwapElemsIOMatrix :: IOMatrix e -> (Int,Int) -> (Int,Int) -> IO ()
 unsafeSwapElemsIOMatrix (IOMatrix h _ _ f p l) (i1,j1) (i2,j2) =
     let (p1,p2) = 
             if h == ConjTrans 
@@ -482,48 +477,48 @@ unsafeSwapElemsIOMatrix (IOMatrix h _ _ f p l) (i1,j1) (i2,j2) =
         poke p2 e1
         poke p1 e2
         touchForeignPtr f
-{-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix n Double -> (Int,Int) -> (Int,Int) -> IO () #-}
-{-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix n (Complex Double) -> (Int,Int) -> (Int,Int) -> IO () #-}
+{-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix Double -> (Int,Int) -> (Int,Int) -> IO () #-}
+{-# SPECIALIZE INLINE unsafeSwapElemsIOMatrix :: IOMatrix (Complex Double) -> (Int,Int) -> (Int,Int) -> IO () #-}
 
-modifyWithIOMatrix :: (e -> e) -> IOMatrix np e -> IO ()
+modifyWithIOMatrix :: (e -> e) -> IOMatrix e -> IO ()
 modifyWithIOMatrix g = liftIOMatrix (modifyWithIOVector g)
 {-# INLINE modifyWithIOMatrix #-}
 
-setZeroIOMatrix :: IOMatrix np e -> IO ()
+setZeroIOMatrix :: IOMatrix e -> IO ()
 setZeroIOMatrix = liftIOMatrix setZeroIOVector
 
-setConstantIOMatrix :: e -> IOMatrix np e -> IO ()
+setConstantIOMatrix :: e -> IOMatrix e -> IO ()
 setConstantIOMatrix k = liftIOMatrix (setConstantIOVector k)
 
-getConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO (IOMatrix np e)
+getConjIOMatrix :: (BLAS1 e) => IOMatrix e -> IO (IOMatrix e)
 getConjIOMatrix a = do
     b  <- newCopyIOMatrix a 
     doConjIOMatrix b
     return b
 
-doConjIOMatrix :: (BLAS1 e) => IOMatrix np e -> IO ()
+doConjIOMatrix :: (BLAS1 e) => IOMatrix e -> IO ()
 doConjIOMatrix = liftIOMatrix doConjIOVector
 
-getScaledIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
+getScaledIOMatrix :: (BLAS1 e) => e -> IOMatrix e -> IO (IOMatrix e)
 getScaledIOMatrix e a = do
     b  <- newCopyIOMatrix a
     scaleByIOMatrix e b
     return b
 
-scaleByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()
+scaleByIOMatrix :: (BLAS1 e) => e -> IOMatrix e -> IO ()
 scaleByIOMatrix k = liftIOMatrix (scaleByIOVector k)
 
-getShiftedIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO (IOMatrix np e)
+getShiftedIOMatrix :: (BLAS1 e) => e -> IOMatrix e -> IO (IOMatrix e)
 getShiftedIOMatrix e a = do
     b  <- newCopyIOMatrix a
     shiftByIOMatrix e b
     return b
                     
-shiftByIOMatrix :: (BLAS1 e) => e -> IOMatrix np e -> IO ()                    
+shiftByIOMatrix :: (BLAS1 e) => e -> IOMatrix e -> IO ()                    
 shiftByIOMatrix k = liftIOMatrix (shiftByIOVector k)
 
 unsafeRank1UpdateIOMatrix :: (ReadVector x IO, ReadVector y IO, BLAS2 e) 
-                          => IOMatrix (n,p) e -> e -> x n e -> y p e -> IO ()
+                          => IOMatrix e -> e -> x e -> y e -> IO ()
 unsafeRank1UpdateIOMatrix (IOMatrix h m n fA pA ldA) alpha x y =
     let (m',n') = if h == ConjTrans then (n,m) else (m,n)
         (IOVector conjX _ fX pX incX) = unsafeVectorToIOVector x
