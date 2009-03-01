@@ -30,8 +30,6 @@ import Data.Elem.BLAS ( BLAS3 )
 import Data.Matrix.Tri ( Tri, triFromBase )
 import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
-import Unsafe.Coerce
-
 triMatrix :: (TestElem e) => UpLoEnum -> DiagEnum -> (Int,Int) -> Gen (Matrix e)
 triMatrix u d (m,n) =
     let ijs = filter (isTriIndex u d) $ range ((0,0), (m-1,n-1))
@@ -70,7 +68,7 @@ instance (TestElem e) => Arbitrary (TriMatrix e) where
                           , (not . (isTriIndex u d)) (i,j) ]
             t   = triFromBase u d $ a // zip ijs junk
             
-        (t',a') <- elements [ (t,a), unsafeCoerce (herm t, herm a) ]
+        (t',a') <- elements [ (t,a), (herm t, herm a) ]
             
         return $ TriMatrix t' $ submatrix a' (0,0) (shape t')
             

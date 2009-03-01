@@ -22,8 +22,6 @@ module Data.Matrix.Tri (
     upper,
     upperU,
 
-    coerceTri,
-
     -- * Overloaded interface for solving linear systems
     module Data.Matrix.Class.ISolve,
     module Data.Matrix.Class.MSolve,

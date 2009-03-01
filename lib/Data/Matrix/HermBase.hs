@@ -12,8 +12,6 @@
 module Data.Matrix.HermBase
     where
 
-import Unsafe.Coerce
-
 import BLAS.Internal( checkSquare )
 import Data.Matrix.Class
 import Data.Tensor.Class
@@ -28,10 +26,6 @@ import BLAS.Types ( UpLoEnum(..) )
 --     * @e@: the element type of the matrix.
 --
 data Herm a e = Herm UpLoEnum (a e)
-
--- | Cast the phantom shape type.
-coerceHerm :: Herm a e -> Herm a e
-coerceHerm = unsafeCoerce
 
 -- | ApplyVector a function to the unerlying matrix.
 mapHerm :: (a e -> b e) -> Herm a e -> Herm b e
@@ -64,7 +58,7 @@ instance (MatrixShaped a) => Shaped (Herm a) (Int,Int) where
 instance (MatrixShaped a) => MatrixShaped (Herm a) where
 
 instance (HasHerm a) => HasHerm (Herm a) where
-    herm = coerceHerm
+    herm = id
     {-# INLINE herm #-}
     
 instance Show (a e) => Show (Herm a e) where

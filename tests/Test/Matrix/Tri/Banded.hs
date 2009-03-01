@@ -32,8 +32,6 @@ import Data.Elem.BLAS ( Elem, BLAS1, BLAS3 )
 import Data.Matrix.Tri ( Tri, triFromBase )
 import Data.Matrix.Class( UpLoEnum(..), DiagEnum(..) )
 
-import Unsafe.Coerce
-
 listsFromBanded :: (Elem e) => Banded e -> ((Int,Int), (Int,Int),[[e]])
 listsFromBanded a = ( (m,n)
             , (kl,ku)
@@ -41,12 +39,12 @@ listsFromBanded a = ( (m,n)
             )
   where
     (m,n)   = shape a
-    (kl,ku) = bandwidths (coerceBanded a)
+    (kl,ku) = bandwidths a
     
     padBegin i   = replicate (max (-i) 0)    0
     padEnd   i   = replicate (max (m-n+i) 0) 0
     paddedDiag i = (  padBegin i
-                   ++ elems (diagBanded (coerceBanded a) i) 
+                   ++ elems (diagBanded a i)
                    ++ padEnd i 
                    )
                    
@@ -109,7 +107,7 @@ instance (TestElem e) => Arbitrary (TriBanded e) where
                     (Lower,Unit) -> 
                         listsBanded (n,n) (k,l) $ init ds ++ [diagJunk] ++ junk
 
-        (t',a') <- elements [ (t,a), unsafeCoerce (herm t, herm a)]
+        (t',a') <- elements [ (t,a), (herm t, herm a)]
         return $ TriBanded t' a'
             
     coarbitrary = undefined

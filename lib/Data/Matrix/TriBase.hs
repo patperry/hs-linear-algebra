@@ -12,8 +12,6 @@
 module Data.Matrix.TriBase
     where
 
-import Unsafe.Coerce
-
 import Data.Matrix.Class
 import Data.Tensor.Class
 
@@ -28,10 +26,6 @@ import Data.Tensor.Class
 --     * @e@: the element type of the matrix.
 --
 data Tri a e = Tri UpLoEnum DiagEnum (a e)
-
--- | Cast the phantom shape type.
-coerceTri :: Tri a e -> Tri a e
-coerceTri = unsafeCoerce
 
 -- | ApplyVector a function to the base matrix.
 mapTri :: (a e -> b e) -> Tri a e -> Tri b e

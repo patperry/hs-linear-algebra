@@ -19,7 +19,6 @@ import Control.Monad.ST
 import Data.AEq
 import Foreign
 import Text.Printf
-import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, inlinePerformIO,
     checkedSubvector, checkedSubvectorWithStride, checkVecVecOp )
@@ -79,11 +78,6 @@ class (Shaped x Int) => BaseVector x where
     
     -- | Get a view into the complex conjugate of a vector.
     conj :: x e -> x e
-
-    -- | Cast the shape type of the vector.
-    coerceVector :: x e -> x e
-    coerceVector = unsafeCoerce
-    {-# INLINE coerceVector #-}
 
     unsafeSubvectorViewWithStride :: Int -> x e -> Int -> Int -> x e
 

@@ -20,7 +20,6 @@ import Data.AEq
 import Data.Maybe
 import Data.Ix
 import System.IO.Unsafe
-import Unsafe.Coerce
 
 import BLAS.Internal( clearArray, checkedRow, checkedCol, checkedDiag,
     diagLen, inlinePerformIO )
@@ -104,11 +103,6 @@ class ( MatrixShaped a,
     isHermBanded :: a e -> Bool
     isHermBanded = (ConjTrans ==) . transEnumBanded
     {-# INLINE isHermBanded #-}
-
-    -- | Cast the shape type of the banded matrix.
-    coerceBanded :: a e -> a e
-    coerceBanded = unsafeCoerce
-    {-# INLINE coerceBanded #-}
 
     -- | Get a matrix with the underlying storage of the banded matrix.
     -- This will fail if the banded matrix is hermed.
@@ -572,12 +566,12 @@ listsFromBanded a@(Banded (IOBanded _ _ _ _ _ _ _ _)) = ( (m,n)
             )
   where
     (m,n)   = shape a
-    (kl,ku) = bandwidths (coerceBanded a)
+    (kl,ku) = bandwidths a
     
     padBegin i   = replicate (max (-i) 0)    0
     padEnd   i   = replicate (max (m-n+i) 0) 0
     paddedDiag i = (  padBegin i
-                   ++ elems (unsafeDiagViewBanded (coerceBanded a) i) 
+                   ++ elems (unsafeDiagViewBanded a i) 
                    ++ padEnd i 
                    )
 
@@ -618,9 +612,9 @@ instance (AEq e) => AEq (Banded e) where
 replaceBandedHelp :: (IOBanded e -> (Int,Int) -> e -> IO ())
                   -> Banded e -> [((Int,Int), e)] -> Banded e
 replaceBandedHelp set x ies = unsafePerformIO $ do
-    y  <- IO.newCopyIOBanded =<< unsafeThawIOBanded (coerceBanded x)
+    y  <- IO.newCopyIOBanded =<< unsafeThawIOBanded x
     mapM_ (uncurry $ set y) ies
-    unsafeFreezeIOBanded (coerceBanded y)
+    unsafeFreezeIOBanded y
 {-# NOINLINE replaceBandedHelp #-}
 
 tmapBanded :: (e -> e) -> Banded e -> Banded e
@@ -648,7 +642,7 @@ instance ITensor Banded (Int,Int) where
     {-# INLINE indices #-}
     assocs (Banded a) = inlinePerformIO $ getAssocs a
     {-# INLINE assocs #-}
-    tmap f = coerceBanded . tmapBanded f . coerceBanded
+    tmap f = tmapBanded f
     {-# INLINE tmap #-}
 
 instance (Monad m) => ReadTensor Banded (Int,Int) m where

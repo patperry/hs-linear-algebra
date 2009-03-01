@@ -30,12 +30,12 @@ listsFromBanded a = ( (m,n)
             )
   where
     (m,n)   = shape a
-    (kl,ku) = bandwidths (coerceBanded a)
+    (kl,ku) = bandwidths a
     
     padBegin i   = replicate (max (-i) 0)    0
     padEnd   i   = replicate (max (m-n+i) 0) 0
     paddedDiag i = (  padBegin i
-                   ++ elems (diagBanded (coerceBanded a) i) 
+                   ++ elems (diagBanded a i) 
                    ++ padEnd i 
                    )
                    

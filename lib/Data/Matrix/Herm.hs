@@ -16,7 +16,6 @@ module Data.Matrix.Herm (
     mapHerm,
     hermL,
     hermU,
-    coerceHerm,
     ) where
 
 import Data.Matrix.HermBase

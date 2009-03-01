@@ -14,7 +14,7 @@
 
 module Data.Matrix.Dense.Class (
     -- * Dense matrix type classes
-    BaseMatrix( ldaMatrix, isHermMatrix, transEnumMatrix, coerceMatrix ),
+    BaseMatrix( ldaMatrix, isHermMatrix, transEnumMatrix ),
     ReadMatrix,
     WriteMatrix,
     

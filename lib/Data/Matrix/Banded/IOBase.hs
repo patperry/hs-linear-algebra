@@ -19,7 +19,6 @@ import Control.Monad
 import Foreign
 import System.IO.Unsafe
 import Text.Printf
-import Unsafe.Coerce
 
 import BLAS.Internal( clearArray, diagLen, diagStart )
 import Data.Elem.BLAS.Base( Elem, conjugate )
@@ -38,11 +37,11 @@ import Data.Tensor.Class
 import Data.Tensor.Class.MTensor
 
 import Data.Matrix.Dense.IOBase( IOMatrix(..) )
-import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix, coerceMatrix,
+import Data.Matrix.Dense.Base( ReadMatrix, WriteMatrix,
     newCopyMatrix, colViews, scaleByMatrix, unsafeCopyMatrix, 
     unsafeAxpyMatrix, unsafeMatrixToIOMatrix )
 import Data.Vector.Dense.IOBase( IOVector(..), withIOVector )
-import Data.Vector.Dense.Base( ReadVector, WriteVector, dim, coerceVector,
+import Data.Vector.Dense.Base( ReadVector, WriteVector, dim,
     stride, conj, conjEnum, unsafeVectorToIOVector, newListVector,
     newCopyVector, scaleByVector,unsafeCopyVector, unsafeAxpyVector,
     unsafeConvertIOVector, unsafePerformIOWithVector )
@@ -98,7 +97,7 @@ withIOBanded (IOBanded _ _ _ _ _ f p _) g = do
 
 withIOBandedElem :: IOBanded e -> (Int,Int) -> (Ptr e -> IO a) -> IO a
 withIOBandedElem a@(IOBanded _ _ _ _ _ _ _ _) (i,j) f =
-    withIOBanded (coerceIOBanded a) $ \p ->
+    withIOBanded a $ \p ->
         f $ p `advancePtr` (indexIOBanded a (i,j))
 {-# INLINE withIOBandedElem #-}
 
@@ -163,10 +162,6 @@ bandwidthsIOBanded :: IOBanded e -> (Int,Int)
 bandwidthsIOBanded a =
     (numLowerIOBanded a, numUpperIOBanded a)
 {-# INLINE bandwidthsIOBanded #-}
-
-coerceIOBanded :: IOBanded e -> IOBanded e
-coerceIOBanded = unsafeCoerce
-{-# INLINE coerceIOBanded #-}
 
 shapeIOBanded :: IOBanded e -> (Int,Int)
 shapeIOBanded a = (numRowsIOBanded a, numColsIOBanded a)
@@ -364,8 +359,8 @@ unsafeCopyIOBanded dst@(IOBanded _ _ _ _ _ _ _ _) src
                            (hermIOBanded src)
                          
     | (not . isHermIOBanded) src =
-        withIOBanded (coerceIOBanded dst) $ \pDst ->
-        withIOBanded (coerceIOBanded src) $ \pSrc ->
+        withIOBanded dst $ \pDst ->
+        withIOBanded src $ \pSrc ->
             if ldDst == m && ldSrc == m
                 then copyBlock pDst pSrc
                 else copyCols  pDst pSrc n
@@ -496,7 +491,7 @@ unsafeGetRowHermIOBanded =
 hbmv :: (ReadVector x IO, BLAS2 e) => 
     e -> Herm IOBanded e -> x e -> e -> IOVector e -> IO ()
 hbmv alpha h x beta y =
-    let (u,a) = hermToBase (coerceHerm h)
+    let (u,a) = hermToBase h
         n     = numCols a
         k     = case u of 
                     Upper -> numUpperIOBanded a
@@ -564,24 +559,24 @@ tbmv' :: (ReadVector x IO, WriteVector y IO, BLAS2 e) =>
 tbmv' alpha a (x :: x e) beta (y  :: y e)
     | beta /= 0 = do
         (x' :: y e) <- newCopyVector x
-        tbmv alpha (coerceTri a) x'
+        tbmv alpha a x'
         scaleByVector beta y
-        unsafeAxpyVector 1 x' (coerceVector y)
+        unsafeAxpyVector 1 x' y
     | otherwise = do
-        unsafeCopyVector (coerceVector y) x
-        tbmv alpha (coerceTri a) (coerceVector y)
+        unsafeCopyVector y x
+        tbmv alpha a y
 
 tbmm' :: (ReadMatrix b IO, WriteMatrix c IO, BLAS2 e) => 
     e -> Tri IOBanded e -> b e -> e -> c e -> IO ()
 tbmm' alpha a (b :: b e) beta (c :: c e)
     | beta /= 0 = do
         (b' :: c e) <- newCopyMatrix b
-        tbmm alpha (coerceTri a) b'
+        tbmm alpha a b'
         scaleByMatrix beta c
-        unsafeAxpyMatrix 1 b' (coerceMatrix c)
+        unsafeAxpyMatrix 1 b' c
     | otherwise = do
-        unsafeCopyMatrix (coerceMatrix c) b
-        tbmm alpha (coerceTri a) (coerceMatrix c)
+        unsafeCopyMatrix c b
+        tbmm alpha a c
 
 tbsv :: (WriteVector y IO, BLAS2 e) => 
     e -> Tri IOBanded e -> y e -> IO ()
@@ -613,14 +608,14 @@ tbsm alpha t b = scaleByMatrix alpha b >> tbsm 1 t b
 tbsv' :: (ReadVector y IO, WriteVector x IO, BLAS2 e)
       => e -> Tri IOBanded e -> y e -> x e -> IO ()
 tbsv' alpha a y x = do
-    unsafeCopyVector (coerceVector x) y
-    tbsv alpha (coerceTri a) (coerceVector x)
+    unsafeCopyVector x y
+    tbsv alpha a x
 
 tbsm' :: (ReadMatrix c IO, WriteMatrix b IO, BLAS2 e) 
       => e -> Tri IOBanded e -> c e -> b e -> IO ()
 tbsm' alpha a c b = do
-    unsafeCopyMatrix (coerceMatrix b) c
-    tbsm alpha (coerceTri a) b
+    unsafeCopyMatrix b c
+    tbsm alpha a b
 
 instance HasVectorView IOBanded where
     type VectorView IOBanded = IOVector

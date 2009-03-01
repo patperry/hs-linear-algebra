@@ -20,7 +20,6 @@ import Data.AEq
 import Foreign
 import System.IO.Unsafe
 import Text.Printf
-import Unsafe.Coerce
 
 import BLAS.Internal( checkBinaryOp, checkedSubmatrix, checkedDiag,
     checkedRow, checkedCol, inlinePerformIO )
@@ -86,11 +85,6 @@ class ( HasVectorView a,
     isHermMatrix :: a e -> Bool
     isHermMatrix = (ConjTrans ==) . transEnumMatrix
     {-# INLINE isHermMatrix #-}
-
-    -- | Cast the shape type of the matrix.
-    coerceMatrix :: a e -> a e
-    coerceMatrix = unsafeCoerce
-    {-# INLINE coerceMatrix #-}
 
     unsafeSubmatrixView :: a e -> (Int,Int) -> (Int,Int) -> a e
     unsafeDiagView :: a e -> Int -> VectorView a e
@@ -722,10 +716,9 @@ gemm alpha a b beta c
 unsafeGetColHermMatrix :: (ReadMatrix a m, WriteVector x m, Elem e)
                        => Herm a e -> Int -> m (x e)
 unsafeGetColHermMatrix (Herm l a) i =
-    let a' = coerceMatrix a
-        n  = numRows a'
-        r  = unsafeRowView a' i
-        c  = unsafeColView a' i 
+    let n  = numRows a
+        r  = unsafeRowView a i
+        c  = unsafeColView a i 
         (r',c') = case l of { Lower -> (c,r) ; Upper -> (conj r, conj c) }
     in do
         x <- newVector_ n
@@ -779,18 +772,6 @@ hemm alpha h b beta c
       withMatrixPtr d f = unsafePerformIOWithMatrix d $ flip withIOMatrix f
       (u,a) = hermToBase h
 {-# INLINE hemm #-}
-
-hemv' :: (ReadMatrix a m, ReadVector x m, WriteVector y m, BLAS2 e) =>
-    e -> Herm a e -> x e -> e -> y e -> m ()
-hemv' alpha a x beta y = 
-    hemv alpha (coerceHerm a) x beta (coerceVector y)
-{-# INLINE hemv' #-}
-
-hemm' :: (ReadMatrix a m, ReadMatrix b m, WriteMatrix c m, BLAS3 e) =>
-    e -> Herm a e -> b e -> e -> c e -> m ()
-hemm' alpha a b beta c = 
-    hemm alpha (coerceHerm a) b beta (coerceMatrix c)
-{-# INLINE hemm' #-}
 
 unsafeDoSApplyAddVectorTriMatrix :: (ReadMatrix a m,
     ReadVector x m, WriteVector y m, BLAS2 e) =>
@@ -1172,9 +1153,9 @@ instance MMatrix IOMatrix IO where
     {-# INLINE unsafeGetCol #-}
 
 instance MMatrix (Herm IOMatrix) IO where
-    unsafeDoSApplyAddVector = hemv'
+    unsafeDoSApplyAddVector = hemv
     {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = hemm'
+    unsafeDoSApplyAddMatrix = hemm
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
@@ -1398,8 +1379,8 @@ elemsMatrix (Matrix a) =
         Nothing  -> concatMap (elemsVector . Vector) (vecViews a)
   where
     vecViews = if isHermIOMatrix a
-                   then rowViews . coerceMatrix
-                   else colViews . coerceMatrix
+                   then rowViews
+                   else colViews
 {-# INLINE elemsMatrix #-}
 
 assocsMatrix :: Matrix e -> [((Int,Int),e)]
@@ -1408,10 +1389,10 @@ assocsMatrix a = zip (indicesMatrix a) (elemsMatrix a)
 
 tmapMatrix :: (e -> e) -> Matrix e -> Matrix e
 tmapMatrix f a@(Matrix ma@(IOMatrix _ _ _ _ _ _))
-    | isHermIOMatrix ma = coerceMatrix $ herm $ 
+    | isHermIOMatrix ma = herm $ 
                               listMatrix (n,m) $ map (conjugate . f) (elems a)
-    | otherwise         = coerceMatrix $
-                              listMatrix (m,n) $ map f (elems a)
+    | otherwise         = listMatrix (m,n) $ map f (elems a)
+                              
   where
     (m,n) = shape a
 {-# INLINE tmapMatrix #-}
@@ -1423,11 +1404,10 @@ tzipWithMatrix f a@(Matrix (IOMatrix _ _ _ _ _ _)) b
                 show mn ++ "' and second has shape `" ++
                 show (shape b) ++ "'")
     | otherwise =
-        coerceMatrix $
-            listMatrix mn $ zipWith f (colElems a) (colElems b)
+        listMatrix mn $ zipWith f (colElems a) (colElems b)
   where
     mn = shape a
-    colElems = (concatMap elems) . colViews . coerceMatrix
+    colElems = (concatMap elems) . colViews
 {-# INLINE tzipWithMatrix #-}
 
 instance Shaped Matrix (Int,Int) where
@@ -1577,9 +1557,9 @@ instance (MonadInterleave m) => MMatrix Matrix m where
     {-# INLINE unsafeGetCol #-}
 
 instance (MonadInterleave m) => MMatrix (Herm Matrix) m where
-    unsafeDoSApplyAddVector = hemv'
+    unsafeDoSApplyAddVector = hemv
     {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = hemm'
+    unsafeDoSApplyAddMatrix = hemm
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
@@ -1621,7 +1601,7 @@ compareMatrixWith cmp a b
     | otherwise =
         and $ zipWith cmp (colElems a) (colElems b)
   where
-    colElems c = concatMap elems (colViews $ coerceMatrix c)
+    colElems c = concatMap elems (colViews c)
 
 instance (Eq e) => Eq (Matrix e) where
     (==) = compareMatrixWith (==)
@@ -1651,14 +1631,14 @@ instance (BLAS1 e) => Num (Matrix e) where
     {-# INLINE abs #-}
     signum      = tmap signum
     {-# INLINE signum #-}
-    fromInteger = coerceMatrix . (constantMatrix (1,1)) . fromInteger
+    fromInteger = (constantMatrix (1,1)) . fromInteger
     
 instance (BLAS3 e) => Fractional (Matrix e) where
     (/) x y      = unsafePerformIO $ unsafeFreezeIOMatrix =<< getDivMatrix x y
     {-# INLINE (/) #-}
     recip        = tmap recip
     {-# INLINE recip #-}
-    fromRational = coerceMatrix . (constantMatrix (1,1)) . fromRational 
+    fromRational = (constantMatrix (1,1)) . fromRational 
 
 instance (BLAS3 e, Floating e) => Floating (Matrix e) where
     pi    = constantMatrix (1,1) pi
@@ -1705,8 +1685,8 @@ liftMatrix f a =
         Just x -> f x
         _ ->
             let xs = case isHermMatrix a of
-                          True ->  rowViews (coerceMatrix a)
-                          False -> colViews (coerceMatrix a)
+                          True ->  rowViews a
+                          False -> colViews a
                 go (y:ys) = do f y
                                go ys
                 go []     = return ()
@@ -1726,10 +1706,8 @@ liftMatrix2 f a b =
         else elementwise
   where
     elementwise =
-        let vecsA = if isHermMatrix a then rowViews . coerceMatrix
-                                      else colViews . coerceMatrix
-            vecsB = if isHermMatrix a then rowViews . coerceMatrix
-                                      else colViews . coerceMatrix
+        let vecsA = if isHermMatrix a then rowViews else colViews
+            vecsB = if isHermMatrix a then rowViews else colViews
             go (x:xs) (y:ys) = do f x y
                                   go xs ys
             go []     []     = return ()
@@ -1855,9 +1833,9 @@ instance MMatrix (STMatrix s) (ST s) where
     {-# INLINE unsafeGetCol #-}
 
 instance MMatrix (Herm (STMatrix s)) (ST s) where
-    unsafeDoSApplyAddVector = hemv'
+    unsafeDoSApplyAddVector = hemv
     {-# INLINE unsafeDoSApplyAddVector #-}
-    unsafeDoSApplyAddMatrix = hemm'
+    unsafeDoSApplyAddMatrix = hemm
     {-# INLINE unsafeDoSApplyAddMatrix #-}    
     unsafeGetCol = unsafeGetColHermMatrix
     {-# INLINE unsafeGetCol #-}
