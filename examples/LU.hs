@@ -14,7 +14,7 @@ import Data.Vector.Dense.ST
 
 lu :: (BLAS3 e) => Matrix e -> Either Int (Matrix e, [Int])
 lu (a :: Matrix e) = runST $ do
-    ma <- thawMatrix a :: ST s (STMatrix s (n,p) e)
+    ma <- thawMatrix a :: ST s (STMatrix s e)
     luFactorize ma >>=
         either (return . Left) (\pivots -> do
             a' <- unsafeFreezeMatrix ma
