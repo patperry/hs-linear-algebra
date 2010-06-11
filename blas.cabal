@@ -17,12 +17,12 @@ description:
 category:        Math
 license:         BSD3
 license-file:    COPYING
-copyright:       (c) 2008. Patrick Perry <patperry@stanford.edu>
+copyright:       (c) 2010. Patrick Perry <patperry@stanford.edu>
 author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@stanford.edu>
 cabal-version:   >= 1.2.3
 build-type:      Configure
-tested-with:     GHC == 6.10.1
+tested-with:     GHC == 6.12.2
 
 extra-source-files:     NEWS README TODO configure.ac configure
                         aclocal.m4 m4/ax_blas.m4
@@ -134,4 +134,4 @@ library
                         TypeFamilies
                          
     build-depends:      base, ieee, monad-interleave, storable-complex,
-                        QuickCheck >= 1.2, QuickCheck < 2
+                        QuickCheck >= 2.1

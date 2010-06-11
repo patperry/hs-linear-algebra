@@ -41,14 +41,14 @@ prop_tri_sapply k (TriMatrixMV (t :: TM) a x) =
 
 prop_doSapplyAddVector alpha beta (TriMatrixMV (a :: TM) _ x) = monadicST $ do
     forAllM (Test.vector (numRows a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         y'' <- run $ freezeVector y'
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
 
 prop_doSSolveVector alpha (TriMatrixSV (a :: TM) x) = monadicST $ do
     forAllM (Test.vector (numCols a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         run $ doSSolveVector alpha a x y'
         assert $ y ~== a <\> (alpha *> x)
 
@@ -86,19 +86,19 @@ prop_doSSolveMatrix alpha (TriMatrixSM (a :: TM) b) = monadicST $ do
         assert $ c ~== a <\\> (alpha *> b)
 
 tests_TriMatrix =
-    [ ("tri col"               , mytest prop_tri_col)
-    , ("tri row"               , mytest prop_tri_row)
-    , ("tri apply"             , mytest prop_tri_apply)
-    , ("tri sapply"            , mytest prop_tri_sapply)
-    , ("tri doSApplyAddVector"     , mytest prop_doSapplyAddVector)    
-    , ("tri applyMatrix"          , mytest prop_tri_applyMatrix)
-    , ("tri sapplyMatrix"         , mytest prop_tri_sapplyMatrix)
-    , ("tri doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)        
+    [ testProperty "tri col" prop_tri_col
+    , testProperty "tri row" prop_tri_row
+    , testProperty "tri apply" prop_tri_apply
+    , testProperty "tri sapply" prop_tri_sapply
+    , testProperty "tri doSApplyAddVector" prop_doSapplyAddVector    
+    , testProperty "tri applyMatrix" prop_tri_applyMatrix
+    , testProperty "tri sapplyMatrix" prop_tri_sapplyMatrix
+    , testProperty "tri doSApplyAddMatrix" prop_doSapplyAddMatrix        
 
-    , ("tri solve"             , mytest prop_tri_solve)
-    , ("tri ssolve"            , mytest prop_tri_ssolve)
-    , ("tri doSSolveVector"     , mytest prop_doSSolveVector)        
-    , ("tri solveMatrix"          , mytest prop_tri_solveMatrix)
-    , ("tri ssolveMatrix"         , mytest prop_tri_ssolveMatrix)
-    , ("tri doSSolveMatrix"     , mytest prop_doSSolveMatrix)            
+    , testProperty "tri solve" prop_tri_solve
+    , testProperty "tri ssolve" prop_tri_ssolve
+    , testProperty "tri doSSolveVector" prop_doSSolveVector        
+    , testProperty "tri solveMatrix" prop_tri_solveMatrix
+    , testProperty "tri ssolveMatrix" prop_tri_ssolveMatrix
+    , testProperty "tri doSSolveMatrix" prop_doSSolveMatrix            
     ]

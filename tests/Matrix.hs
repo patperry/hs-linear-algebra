@@ -159,7 +159,7 @@ prop_apply_linear (MatrixMVPair (a :: M) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 prop_doSapplyAddVector alpha beta (MatrixMV (a ::M) x) = monadicST $ do
     forAllM (Test.vector (numRows a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y' <- run $ (unsafeThawVector y :: ST s (STVector s E))
         y'' <- run $ freezeVector y'
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
@@ -214,86 +214,86 @@ prop_recip (a :: M) =
     elems (recip a) ~== (map recip $ elems a)
 
 tests_Matrix =
-    [ ("shape of matrix"       , mytest prop_matrix_shape)
-    , ("assocs of matrix"      , mytest prop_matrix_assocs)
-    , ("shape of listMatrix"   , mytest prop_listMatrix_shape)
-    , ("assocs of listMatrix"  , mytest prop_listMatrix_assocs)
-    , ("shape of zero"         , mytest prop_zero_shape)
-    , ("elems of zero"         , mytest prop_zero_elems)
+    [ testProperty "shape of matrix" prop_matrix_shape
+    , testProperty "assocs of matrix" prop_matrix_assocs
+    , testProperty "shape of listMatrix" prop_listMatrix_shape
+    , testProperty "assocs of listMatrix" prop_listMatrix_assocs
+    , testProperty "shape of zero" prop_zero_shape
+    , testProperty "elems of zero" prop_zero_elems
     
-    , ("shape of constant"     , mytest prop_constant_shape)
-    , ("elems of constant"     , mytest prop_constant_elems)
+    , testProperty "shape of constant" prop_constant_shape
+    , testProperty "elems of constant" prop_constant_elems
     
-    , ("shape of identityMatrix"     , mytest prop_identityMatrix_shape)
-    , ("diag of identityMatrix"      , mytest prop_identityMatrix_diag)
-    , ("row of identityMatrix"       , mytest prop_identityMatrix_row)
-    , ("col of identityMatrix"       , mytest prop_identityMatrix_col)
+    , testProperty "shape of identityMatrix" prop_identityMatrix_shape
+    , testProperty "diag of identityMatrix" prop_identityMatrix_diag
+    , testProperty "row of identityMatrix" prop_identityMatrix_row
+    , testProperty "col of identityMatrix" prop_identityMatrix_col
     
-    , ("elems of replace"      , mytest prop_replace_elems)
+    , testProperty "elems of replace" prop_replace_elems
     
-    , ("numRows/numCols"       , mytest prop_shape)
-    , ("size"                  , mytest prop_size)
-    , ("bounds"                , mytest prop_bounds)
-    , ("at"                    , mytest prop_at)
-    , ("row dim"               , mytest prop_row_dim)
-    , ("col dim"               , mytest prop_col_dim)
-    , ("rows length"           , mytest prop_rows_len)
-    , ("cols length"           , mytest prop_cols_len)
-    , ("rows dims"             , mytest prop_rows_dims)
-    , ("cols dims"             , mytest prop_cols_dims)
+    , testProperty "numRows/numCols" prop_shape
+    , testProperty "size" prop_size
+    , testProperty "bounds" prop_bounds
+    , testProperty "at" prop_at
+    , testProperty "row dim" prop_row_dim
+    , testProperty "col dim" prop_col_dim
+    , testProperty "rows length" prop_rows_len
+    , testProperty "cols length" prop_cols_len
+    , testProperty "rows dims" prop_rows_dims
+    , testProperty "cols dims" prop_cols_dims
 
-    , ("indices"               , mytest prop_indices)
-    , ("elems"                 , mytest prop_elems)
-    , ("assocs"                , mytest prop_assocs)
+    , testProperty "indices" prop_indices
+    , testProperty "elems" prop_elems
+    , testProperty "assocs" prop_assocs
     
-    , ("shape of submatrix"    , mytest prop_submatrix_shape)
-    , ("rows of submatrix"     , mytest prop_submatrix_rows)
-    , ("col of submatrix"      , mytest prop_submatrix_cols)
+    , testProperty "shape of submatrix" prop_submatrix_shape
+    , testProperty "rows of submatrix" prop_submatrix_rows
+    , testProperty "col of submatrix" prop_submatrix_cols
     
-    , ("elems of scale"        , mytest prop_scale_elems)
-    , ("elem of herm"          , mytest prop_herm_elem)
-    , ("herm/scale"            , mytest prop_herm_scale)
+    , testProperty "elems of scale" prop_scale_elems
+    , testProperty "elem of herm" prop_herm_elem
+    , testProperty "herm/scale" prop_herm_scale
                                
-    , ("shape . herm"          , mytest prop_herm_shape)
-    , ("rows . herm"           , mytest prop_herm_rows)
-    , ("cols . herm"           , mytest prop_herm_cols)
+    , testProperty "shape . herm" prop_herm_shape
+    , testProperty "rows . herm" prop_herm_rows
+    , testProperty "cols . herm" prop_herm_cols
                                
-    , ("herm . herm == id"     , mytest prop_herm_herm)
+    , testProperty "herm . herm == id" prop_herm_herm
                                
-    , ("subdiag . herm"        , mytest prop_diag_herm1)
-    , ("superdiag . herm"      , mytest prop_diag_herm2)
+    , testProperty "subdiag . herm" prop_diag_herm1
+    , testProperty "superdiag . herm" prop_diag_herm2
                                
-    , ("shape . matrixFromRow"       , mytest prop_matrixFromRow_shape)
-    , ("elems . matrixFromRow"       , mytest prop_matrixFromRow_elems)
-    , ("shape . matrixFromCol"       , mytest prop_matrixFromCol_shape)
-    , ("elems . matrixFromCol"       , mytest prop_matrixFromCol_elems)
+    , testProperty "shape . matrixFromRow" prop_matrixFromRow_shape
+    , testProperty "elems . matrixFromRow" prop_matrixFromRow_elems
+    , testProperty "shape . matrixFromCol" prop_matrixFromCol_shape
+    , testProperty "elems . matrixFromCol" prop_matrixFromCol_elems
 
-    , ("apply basis"           , mytest prop_apply_basis)
-    , ("apply herm basis"      , mytest prop_apply_herm_basis)
-    , ("apply scale"           , mytest prop_apply_scale)
-    , ("apply linear"          , mytest prop_apply_linear)
-    , ("doSApplyAddVector"     , mytest prop_doSapplyAddVector)
+    , testProperty "apply basis" prop_apply_basis
+    , testProperty "apply herm basis" prop_apply_herm_basis
+    , testProperty "apply scale" prop_apply_scale
+    , testProperty "apply linear" prop_apply_linear
+    , testProperty "doSApplyAddVector" prop_doSapplyAddVector
     
-    , ("applyMatrix id left"       , mytest prop_applyMatrix_id_left)
-    , ("applyMatrix id right"      , mytest prop_applyMatrix_id_right)
-    , ("applyMatrix scale left"    , mytest prop_applyMatrix_scale_left)
-    , ("applyMatrix scale right"   , mytest prop_applyMatrix_scale_right)
-    , ("applyMatrix linear"        , mytest prop_applyMatrix_linear)
-    , ("applyMatrix herm"          , mytest prop_applyMatrix_herm)
-    , ("applyMatrix cols"          , mytest prop_applyMatrix_cols)
-    , ("doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)    
-    , ("shift"                 , mytest prop_shift)
-    , ("scale"                 , mytest prop_scale)
+    , testProperty "applyMatrix id left" prop_applyMatrix_id_left
+    , testProperty "applyMatrix id right" prop_applyMatrix_id_right
+    , testProperty "applyMatrix scale left" prop_applyMatrix_scale_left
+    , testProperty "applyMatrix scale right" prop_applyMatrix_scale_right
+    , testProperty "applyMatrix linear" prop_applyMatrix_linear
+    , testProperty "applyMatrix herm" prop_applyMatrix_herm
+    , testProperty "applyMatrix cols" prop_applyMatrix_cols
+    , testProperty "doSApplyAddMatrix" prop_doSapplyAddMatrix    
+    , testProperty "shift" prop_shift
+    , testProperty "scale" prop_scale
     
-    , ("plus"                  , mytest prop_plus)
-    , ("minus"                 , mytest prop_minus)
-    , ("times"                 , mytest prop_times)
-    , ("divide"                , mytest prop_divide)
+    , testProperty "plus" prop_plus
+    , testProperty "minus" prop_minus
+    , testProperty "times" prop_times
+    , testProperty "divide" prop_divide
     
-    , ("negate"                , mytest prop_negate)
-    , ("abs"                   , mytest prop_abs)
-    , ("signum"                , mytest prop_signum)
-    , ("recip"                 , mytest prop_recip)
+    , testProperty "negate" prop_negate
+    , testProperty "abs" prop_abs
+    , testProperty "signum" prop_signum
+    , testProperty "recip" prop_recip
     ]
 
 

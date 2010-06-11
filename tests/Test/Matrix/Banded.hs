@@ -24,7 +24,7 @@ module Test.Matrix.Banded (
 import Debug.Trace
 import Control.Monad( forM )
 
-import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -42,8 +42,6 @@ instance (TestElem e) => Arbitrary (Banded e) where
         (m,n)   <- Test.shape
         (kl,ku) <- Test.bandwidths (m,n)
         banded (m,n) (kl,ku)
-        
-    coarbitrary x = undefined
 
 data BandedAt e = BandedAt (Banded e) (Int,Int) deriving (Eq, Show)
 instance (TestElem e) => Arbitrary (BandedAt e) where
@@ -59,8 +57,6 @@ instance (TestElem e) => Arbitrary (BandedAt e) where
             a  <- banded (m,n) (kl,ku)
             
             return $ BandedAt a (i,j)
-
-    coarbitrary = undefined
 
 data ListsBanded e = ListsBanded !(Int,Int) !(Int,Int) ![[e]] deriving (Eq,Show)
 instance (TestElem e) => Arbitrary (ListsBanded e) where
@@ -78,7 +74,8 @@ instance (TestElem e) => Arbitrary (ListsBanded e) where
                       return $ replicate beginPad 0 ++ xs ++ replicate endPad 0
          
         return $ ListsBanded (m,n) (kl,ku) ds
-          
+
+instance (TestElem e) => CoArbitrary (ListsBanded e) where
     coarbitrary (ListsBanded mn lu ds) = coarbitrary (mn,lu,ds)
    
 {-
@@ -111,8 +108,6 @@ instance (TestElem e) => Arbitrary (BandedMV e) where
             a <- banded (m,n) (kl,ku)             
             x <- Test.vector n
             return $ BandedMV a x
-            
-    coarbitrary = undefined
 
 data BandedMVPair e = BandedMVPair (Banded e) (Vector e) (Vector e) 
     deriving (Eq, Show)
@@ -122,8 +117,6 @@ instance (TestElem e) => Arbitrary (BandedMVPair e) where
         (BandedMV a x) <- arbitrary
         y <- Test.vector (dim x)
         return $ BandedMVPair a x y
-        
-    coarbitrary = undefined
         
 data BandedMM e = BandedMM (Banded e) (Matrix e) deriving (Eq, Show)
 
@@ -139,8 +132,6 @@ instance (TestElem e) => Arbitrary (BandedMM e) where
             a <- banded (m,k) (kl,ku)             
             b <- Test.matrix (k,n)
             return $ BandedMM a b
-            
-    coarbitrary = undefined
         
 data BandedMMPair e = BandedMMPair (Banded e) (Matrix e) (Matrix e)
     deriving (Eq, Show)
@@ -150,5 +141,3 @@ instance (TestElem e) => Arbitrary (BandedMMPair e) where
         (BandedMM a b) <- arbitrary
         c <- Test.matrix (shape b)
         return $ BandedMMPair a b c
-        
-    coarbitrary = undefined

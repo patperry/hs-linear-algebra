@@ -314,55 +314,55 @@ implementsIf2 pre a f =
 ------------------------------------------------------------------------
 
 tests_STMatrix =
-    [ ("newMatrix", mytest prop_NewMatrix)
-    , ("newListMatrix", mytest prop_NewListMatrix)
+    [ testProperty "newMatrix" prop_NewMatrix
+    , testProperty "newListMatrix" prop_NewListMatrix
     
-    , ("getSize", mytest prop_GetSize)
-    , ("readElem", mytest prop_ReadElem)
-    , ("canModifyElem", mytest prop_CanModifyElem)
-    , ("writeElem", mytest prop_WriteElem)
-    , ("modifyElem", mytest prop_ModifyElem)
+    , testProperty "getSize" prop_GetSize
+    , testProperty "readElem" prop_ReadElem
+    , testProperty "canModifyElem" prop_CanModifyElem
+    , testProperty "writeElem" prop_WriteElem
+    , testProperty "modifyElem" prop_ModifyElem
 
-    , ("getIndices", mytest prop_GetIndicesLazy)
-    , ("getIndices'", mytest prop_GetIndicesStrict)
-    , ("getElems", mytest prop_GetElemsLazy)
-    , ("getElems'", mytest prop_GetElemsStrict)
+    , testProperty "getIndices" prop_GetIndicesLazy
+    , testProperty "getIndices'" prop_GetIndicesStrict
+    , testProperty "getElems" prop_GetElemsLazy
+    , testProperty "getElems'" prop_GetElemsStrict
 
-    , ("getElems . modifyWith", mytest prop_GetElemsLazyModifyWith)
-    , ("getElems' . modifyWith", mytest prop_GetElemsStrictModifyWith)
-    , ("getAssocs . modifyWith", mytest prop_GetAssocsLazyModifyWith)
-    , ("getAssocs' . modifyWith", mytest prop_GetAssocsStrictModifyWith)
+    , testProperty "getElems . modifyWith" prop_GetElemsLazyModifyWith
+    , testProperty "getElems' . modifyWith" prop_GetElemsStrictModifyWith
+    , testProperty "getAssocs . modifyWith" prop_GetAssocsLazyModifyWith
+    , testProperty "getAssocs' . modifyWith" prop_GetAssocsStrictModifyWith
 
-    , ("newZeroMatrix", mytest prop_NewZeroMatrix)
-    , ("setZeroMatrix", mytest prop_SetZeroMatrix)
-    , ("newConstantMatrix", mytest prop_NewConstantMatrix)
-    , ("setConstantMatrix", mytest prop_SetConstantMatrix)
-    , ("newIdentityMatrix", mytest prop_NewIdentityMatrix)
-    , ("setIdentityMatrix", mytest prop_SetIdentityMatrix)
+    , testProperty "newZeroMatrix" prop_NewZeroMatrix
+    , testProperty "setZeroMatrix" prop_SetZeroMatrix
+    , testProperty "newConstantMatrix" prop_NewConstantMatrix
+    , testProperty "setConstantMatrix" prop_SetConstantMatrix
+    , testProperty "newIdentityMatrix" prop_NewIdentityMatrix
+    , testProperty "setIdentityMatrix" prop_SetIdentityMatrix
     
-    , ("newCopyMatrix", mytest prop_NewCopyMatrix)
-    , ("copyMatrix", mytest prop_CopyMatrix)
-    , ("swapMatrix", mytest prop_SwapMatrix)
+    , testProperty "newCopyMatrix" prop_NewCopyMatrix
+    , testProperty "copyMatrix" prop_CopyMatrix
+    , testProperty "swapMatrix" prop_SwapMatrix
 
-    , ("doConj", mytest prop_DoConj)
-    , ("scaleBy", mytest prop_ScaleBy)
-    , ("shiftBy", mytest prop_ShiftBy)
-    , ("modifyWith", mytest prop_ModifyWith)
-    , ("rank1UpdateMatrix", mytest prop_Rank1UpdateMatrix)
+    , testProperty "doConj" prop_DoConj
+    , testProperty "scaleBy" prop_ScaleBy
+    , testProperty "shiftBy" prop_ShiftBy
+    , testProperty "modifyWith" prop_ModifyWith
+    , testProperty "rank1UpdateMatrix" prop_Rank1UpdateMatrix
     
-    , ("getConjMatrix", mytest prop_GetConjMatrix)
-    , ("getScaledMatrix", mytest prop_GetScaledMatrix)
-    , ("getShiftedMatrix", mytest prop_GetShiftedMatrix)
+    , testProperty "getConjMatrix" prop_GetConjMatrix
+    , testProperty "getScaledMatrix" prop_GetScaledMatrix
+    , testProperty "getShiftedMatrix" prop_GetShiftedMatrix
 
-    , ("axpyMatrix", mytest prop_AxpyMatrix)
-    , ("addMatrix", mytest prop_AddMatrix)
-    , ("subMatrix", mytest prop_SubMatrix)
-    , ("mulMatrix", mytest prop_MulMatrix)
-    , ("divMatrix", mytest prop_DivMatrix)
+    , testProperty "axpyMatrix" prop_AxpyMatrix
+    , testProperty "addMatrix" prop_AddMatrix
+    , testProperty "subMatrix" prop_SubMatrix
+    , testProperty "mulMatrix" prop_MulMatrix
+    , testProperty "divMatrix" prop_DivMatrix
     
-    , ("getAddMatrix", mytest prop_GetAddMatrix)
-    , ("getSubMatrix", mytest prop_GetSubMatrix)
-    , ("getMulMatrix", mytest prop_GetMulMatrix)
-    , ("getDivMatrix", mytest prop_GetDivMatrix)
+    , testProperty "getAddMatrix" prop_GetAddMatrix
+    , testProperty "getSubMatrix" prop_GetSubMatrix
+    , testProperty "getMulMatrix" prop_GetMulMatrix
+    , testProperty "getDivMatrix" prop_GetDivMatrix
 
     ]

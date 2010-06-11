@@ -37,7 +37,7 @@ prop_herm_herm_apply (HermMatrixMV (h :: HM) a x) =
 
 prop_doSapplyAddVector alpha beta (HermMatrixMV (a :: HM) _ x) = monadicST $ do
     forAllM (Test.vector (numRows a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         y'' <- run $ freezeVector y'
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
@@ -60,15 +60,15 @@ prop_doSapplyAddMatrix alpha beta (HermMatrixMM (a :: HM) _ b) = monadicST $ do
 
 
 tests_HermMatrix =
-    [ ("herm col"              , mytest prop_herm_col)
-    , ("herm row"              , mytest prop_herm_row)
-    , ("herm apply"            , mytest prop_herm_apply)
-    , ("herm sapply"           , mytest prop_herm_sapply)
-    , ("herm herm apply"       , mytest prop_herm_herm_apply)
-    , ("doSApplyAddVector"     , mytest prop_doSapplyAddVector)
+    [ testProperty "herm col" prop_herm_col
+    , testProperty "herm row" prop_herm_row
+    , testProperty "herm apply" prop_herm_apply
+    , testProperty "herm sapply" prop_herm_sapply
+    , testProperty "herm herm apply" prop_herm_herm_apply
+    , testProperty "doSApplyAddVector" prop_doSapplyAddVector
 
-    , ("herm applyMatrix"         , mytest prop_herm_applyMatrix)
-    , ("herm sapplyMatrix"        , mytest prop_herm_sapplyMatrix)
-    , ("herm herm applyMatrix"    , mytest prop_herm_herm_applyMatrix)
-    , ("doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)        
+    , testProperty "herm applyMatrix" prop_herm_applyMatrix
+    , testProperty "herm sapplyMatrix" prop_herm_sapplyMatrix
+    , testProperty "herm herm applyMatrix" prop_herm_herm_applyMatrix
+    , testProperty "doSApplyAddMatrix" prop_doSapplyAddMatrix        
     ]

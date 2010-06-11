@@ -327,56 +327,56 @@ implementsIf2 pre a f =
 ------------------------------------------------------------------------
 
 tests_STVector =
-    [ ("newVector", mytest prop_NewVector)
-    , ("newListVector", mytest prop_NewListVector)
+    [ testProperty "newVector" prop_NewVector
+    , testProperty "newListVector" prop_NewListVector
     
-    , ("getSize", mytest prop_GetSize)
-    , ("readElem", mytest prop_ReadElem)
-    , ("canModifyElem", mytest prop_CanModifyElem)
-    , ("writeElem", mytest prop_WriteElem)
-    , ("modifyElem", mytest prop_ModifyElem)
+    , testProperty "getSize" prop_GetSize
+    , testProperty "readElem" prop_ReadElem
+    , testProperty "canModifyElem" prop_CanModifyElem
+    , testProperty "writeElem" prop_WriteElem
+    , testProperty "modifyElem" prop_ModifyElem
 
-    , ("getIndices", mytest prop_GetIndicesLazy)
-    , ("getIndices'", mytest prop_GetIndicesStrict)
-    , ("getElems", mytest prop_GetElemsLazyModifyWith)
-    , ("getElems'", mytest prop_GetElemsStrictModifyWith)
-    , ("getAssocs", mytest prop_GetAssocsLazyModifyWith)
-    , ("getAssocs'", mytest prop_GetAssocsStrictModifyWith)
+    , testProperty "getIndices" prop_GetIndicesLazy
+    , testProperty "getIndices'" prop_GetIndicesStrict
+    , testProperty "getElems" prop_GetElemsLazyModifyWith
+    , testProperty "getElems'" prop_GetElemsStrictModifyWith
+    , testProperty "getAssocs" prop_GetAssocsLazyModifyWith
+    , testProperty "getAssocs'" prop_GetAssocsStrictModifyWith
 
-    , ("newZeroVector", mytest prop_NewZeroVector)
-    , ("setZero", mytest prop_SetZero)
-    , ("newConstantVector", mytest prop_NewConstantVector)
-    , ("setConstant", mytest prop_SetConstant)
-    , ("newBasisVector", mytest prop_NewBasisVector)
-    , ("setBasisVector", mytest prop_SetBasisVector)
+    , testProperty "newZeroVector" prop_NewZeroVector
+    , testProperty "setZero" prop_SetZero
+    , testProperty "newConstantVector" prop_NewConstantVector
+    , testProperty "setConstant" prop_SetConstant
+    , testProperty "newBasisVector" prop_NewBasisVector
+    , testProperty "setBasisVector" prop_SetBasisVector
     
-    , ("newCopyVector", mytest prop_NewCopyVector)
-    , ("copyVector", mytest prop_CopyVector)
-    , ("swapVector", mytest prop_SwapVector)
+    , testProperty "newCopyVector" prop_NewCopyVector
+    , testProperty "copyVector" prop_CopyVector
+    , testProperty "swapVector" prop_SwapVector
 
-    , ("doConj", mytest prop_DoConj)
-    , ("scaleBy", mytest prop_ScaleBy)
-    , ("shiftBy", mytest prop_ShiftBy)
-    , ("modifyWith", mytest prop_ModifyWith)
+    , testProperty "doConj" prop_DoConj
+    , testProperty "scaleBy" prop_ScaleBy
+    , testProperty "shiftBy" prop_ShiftBy
+    , testProperty "modifyWith" prop_ModifyWith
     
-    , ("getConjVector", mytest prop_GetConjVector)
-    , ("getScaledVector", mytest prop_GetScaledVector)
-    , ("getShiftedVector", mytest prop_GetShiftedVector)
+    , testProperty "getConjVector" prop_GetConjVector
+    , testProperty "getScaledVector" prop_GetScaledVector
+    , testProperty "getShiftedVector" prop_GetShiftedVector
 
-    , ("addVector", mytest prop_AddVector)
-    , ("subVector", mytest prop_SubVector)
-    , ("axpyVector", mytest prop_AxpyVector)
-    , ("mulVector", mytest prop_MulVector)
-    , ("divVector", mytest prop_DivVector)
+    , testProperty "addVector" prop_AddVector
+    , testProperty "subVector" prop_SubVector
+    , testProperty "axpyVector" prop_AxpyVector
+    , testProperty "mulVector" prop_MulVector
+    , testProperty "divVector" prop_DivVector
     
-    , ("getAddVector", mytest prop_GetAddVector)
-    , ("getSubVector", mytest prop_GetSubVector)
-    , ("getMulVector", mytest prop_GetMulVector)
-    , ("getDivVector", mytest prop_GetDivVector)
+    , testProperty "getAddVector" prop_GetAddVector
+    , testProperty "getSubVector" prop_GetSubVector
+    , testProperty "getMulVector" prop_GetMulVector
+    , testProperty "getDivVector" prop_GetDivVector
 
-    , ("getSumAbs", mytest prop_GetSumAbs)
-    , ("getNorm2", mytest prop_GetNorm2)
-    , ("getWhichMaxAbs", mytest prop_GetWhichMaxAbs)
-    , ("getDot", mytest prop_GetDot)
+    , testProperty "getSumAbs" prop_GetSumAbs
+    , testProperty "getNorm2" prop_GetNorm2
+    , testProperty "getWhichMaxAbs" prop_GetWhichMaxAbs
+    , testProperty "getDot" prop_GetDot
 
     ]

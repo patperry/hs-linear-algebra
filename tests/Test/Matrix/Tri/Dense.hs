@@ -19,11 +19,11 @@ module Test.Matrix.Tri.Dense (
 import Data.Ix ( range )
 import Control.Monad( liftM )
 
-import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
-import Data.Vector.Dense hiding ( Test.vector )
+import Data.Vector.Dense hiding ( vector )
 import Data.Matrix.Dense
 import Data.Elem.BLAS ( BLAS3 )
 
@@ -71,8 +71,6 @@ instance (TestElem e) => Arbitrary (TriMatrix e) where
         (t',a') <- elements [ (t,a), (herm t, herm a) ]
             
         return $ TriMatrix t' $ submatrix a' (0,0) (shape t')
-            
-    coarbitrary = undefined
 
 
 -- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.vector in
@@ -89,8 +87,6 @@ instance (TestElem e) => Arbitrary (TriMatrixMV e) where
         x <- Test.vector (numCols a)
         return $ TriMatrixMV t a x
 
-    coarbitrary = undefined
-
 -- | A triangular Test.matrix, and equivalent dense Test.matrix, and a Test.matrix in
 -- their domain.        
 data TriMatrixMM e = 
@@ -105,8 +101,6 @@ instance (TestElem e) => Arbitrary (TriMatrixMM e) where
         n <- liftM fst Test.shape
         b <- Test.matrix (numCols a, n)
         return $ TriMatrixMM t a b
-            
-    coarbitrary = undefined
 
 -- | A triangular Test.matrix and a Test.vector in its range
 data TriMatrixSV e = 
@@ -123,8 +117,6 @@ instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSV e) where
                 x <- Test.vector (numCols a)
                 let y  = a <*> x
                 return (TriMatrixSV t y)
-        
-    coarbitrary = undefined
 
 -- | A triangular Test.matrix and a Test.matrix in its range
 data TriMatrixSM e = 
@@ -142,8 +134,6 @@ instance (BLAS3 e, TestElem e) => Arbitrary (TriMatrixSM e) where
                 b <- Test.matrix (numCols a, n)
                 let c  = a <**> b
                 return (TriMatrixSM t c)
-        
-    coarbitrary = undefined
 
 normF :: (BLAS3 e) => Matrix e -> Double
 normF = sum . map norm2 . cols

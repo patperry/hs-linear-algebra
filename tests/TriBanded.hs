@@ -37,7 +37,7 @@ prop_scale_herm_tri_apply k (TriBandedMV (t :: TB) a x) =
 
 prop_doSapplyAddVector alpha beta (TriBandedMV (a :: TB) _ x) = monadicST $ do
     forAllM (Test.vector (numRows a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         y'' <- run $ freezeVector y'
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
@@ -70,7 +70,7 @@ prop_tri_ssolve k (TriBandedSV (t :: TB) y) =
 
 prop_doSSolveVector alpha (TriBandedSV (a :: TB) x) = monadicST $ do
     forAllM (Test.vector (numCols a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         run $ doSSolveVector alpha a x y'
         assert $ y ~== a <\> (alpha *> x)
 
@@ -89,23 +89,23 @@ prop_doSSolveMatrix alpha (TriBandedSM (a :: TB) b) = monadicST $ do
 
 
 tests_TriBanded =
-    [ ("tri apply"             , mytest prop_tri_apply)
-    , ("scale tri apply"       , mytest prop_scale_tri_apply)
-    , ("herm tri apply"        , mytest prop_herm_tri_apply)
-    , ("scale herm tri apply"  , mytest prop_scale_herm_tri_apply)
-    , ("tri doSApplyAddVector"     , mytest prop_doSapplyAddVector) 
+    [ testProperty "tri apply" prop_tri_apply
+    , testProperty "scale tri apply" prop_scale_tri_apply
+    , testProperty "herm tri apply" prop_herm_tri_apply
+    , testProperty "scale herm tri apply" prop_scale_herm_tri_apply
+    , testProperty "tri doSApplyAddVector" prop_doSapplyAddVector 
         
-    , ("tri compose"           , mytest prop_tri_compose)
-    , ("scale tri compose"     , mytest prop_scale_tri_compose)
-    , ("herm tri compose"      , mytest prop_herm_tri_compose)
-    , ("scale herm tri compose", mytest prop_scale_herm_tri_compose)
-    , ("tri doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)            
+    , testProperty "tri compose" prop_tri_compose
+    , testProperty "scale tri compose" prop_scale_tri_compose
+    , testProperty "herm tri compose" prop_herm_tri_compose
+    , testProperty "scale herm tri compose" prop_scale_herm_tri_compose
+    , testProperty "tri doSApplyAddMatrix" prop_doSapplyAddMatrix            
     
-    , ("tri solve"             , mytest prop_tri_solve)
-    , ("tri ssolve"            , mytest prop_tri_ssolve)
-    , ("tri doSSolveVector"     , mytest prop_doSSolveVector)
+    , testProperty "tri solve" prop_tri_solve
+    , testProperty "tri ssolve" prop_tri_ssolve
+    , testProperty "tri doSSolveVector" prop_doSSolveVector
     
-    , ("tri solveMatrix"          , mytest prop_tri_solveMatrix)
-    , ("tri ssolveMatrix"         , mytest prop_tri_ssolveMatrix)
-    , ("tri doSSolveMatrix"     , mytest prop_doSSolveMatrix)   
+    , testProperty "tri solveMatrix" prop_tri_solveMatrix
+    , testProperty "tri ssolveMatrix" prop_tri_ssolveMatrix
+    , testProperty "tri doSSolveMatrix" prop_doSSolveMatrix   
     ]

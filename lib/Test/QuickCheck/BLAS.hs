@@ -86,7 +86,7 @@ import Data.Matrix.Tri
 import Data.Elem.BLAS
 
 -- | Element types that can be tested with QuickCheck properties.
-class (Elem e, Arbitrary e) => TestElem e where
+class (Elem e, Arbitrary e, CoArbitrary e) => TestElem e where
     -- | Inicates whether or not the value should be used in tests.  For
     -- 'Double's, @isTestElemElem e@ is defined as 
     -- @not (isNaN e || isInfinite e || isDenormalized e)@.
@@ -99,6 +99,8 @@ instance TestElem Double where
 instance Arbitrary (Complex Double) where
     arbitrary = liftM2 (:+) arbitrary arbitrary
     {-# INLINE arbitrary #-}
+
+instance CoArbitrary (Complex Double) where
     coarbitrary (x:+y) = coarbitrary (x,y)
     {-# INLINE coarbitrary #-}
 
@@ -127,7 +129,8 @@ realElems n = replicateM n realElem
 
 -- | Get an appropriate dimension for a random vector
 dim :: Gen Int
-dim = liftM abs arbitrary
+dim = sized $ \n -> 
+      resize (n `div` 4) $ liftM abs arbitrary
 
 -- | Given a dimension generate a valid index.  The dimension must be positive.
 index :: Int -> Gen Int
@@ -157,8 +160,6 @@ instance (TestElem e) => Arbitrary (SubVector e) where
     arbitrary = sized $ \m -> 
         choose (0,m) >>= subVector
         
-    coarbitrary = undefined
-
 rawVector :: (TestElem e) => Int -> Gen (Vector e)
 rawVector n = do
     es <- elems n
@@ -252,8 +253,6 @@ instance (TestElem e) => Arbitrary (SubMatrix e) where
         (m,n) <- shape
         (SubMatrix a ij mn) <- subMatrix (m,n)
         return $ SubMatrix a ij mn
-        
-    coarbitrary = undefined
 
 -- | Generate valid bandwidth for a given matrix dimension size
 bandwidth :: Int -> Gen Int
@@ -348,19 +347,28 @@ bandedAssocs (m,n) (kl,ku) | m*n == 0  = return []
 newtype Nat = Nat Int deriving (Eq,Show)
 instance Arbitrary Nat where
     arbitrary           = liftM Nat dim
+
+instance CoArbitrary Nat where    
     coarbitrary (Nat n) = coarbitrary n
+
 
 -- | A pair of non-negative integers
 newtype Nat2 = Nat2 (Int,Int) deriving (Eq,Show)
 instance Arbitrary Nat2 where
     arbitrary            = liftM Nat2 shape
+
+instance CoArbitrary Nat2 where
     coarbitrary (Nat2 n) = coarbitrary n
+
 
 -- | A positive integer.
 newtype Pos = Pos Int deriving (Eq,Show)
 instance Arbitrary Pos where
     arbitrary           = liftM (Pos . (1+)) dim
+
+instance CoArbitrary Pos where
     coarbitrary (Pos n) = coarbitrary n
+
 
 -- | A pair of positive integers
 newtype Pos2 = Pos2 (Int,Int) deriving (Eq,Show)
@@ -369,8 +377,10 @@ instance Arbitrary Pos2 where
         (m,n) <- shape
         return $ Pos2 (m+1,n+1)
         
+instance CoArbitrary Pos2 where        
     coarbitrary (Pos2 mn) =
         coarbitrary mn
+
 
 -- | A dimension and a valid index for it.
 data Index = Index Int Int deriving (Eq,Show)
@@ -380,9 +390,11 @@ instance Arbitrary Index where
         let n' = n+1
         i <- index n'
         return $ Index n' i
-        
+
+instance CoArbitrary Index where        
     coarbitrary (Index n i) = 
         coarbitrary (n,i)
+
 
 -- | A shape and a valid index for it.
 data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
@@ -392,9 +404,11 @@ instance Arbitrary Index2 where
         let mn' = (m+1,n+1)
         ij <- index2 mn'
         return $ Index2 mn' ij
-        
+
+instance CoArbitrary Index2 where        
     coarbitrary (Index2 mn ij) = 
         coarbitrary (mn,ij)
+
 
 -- | A dimension and an associations list.
 data Assocs e = Assocs Int [(Int,e)] deriving (Eq,Show)
@@ -404,8 +418,10 @@ instance (TestElem e) => Arbitrary (Assocs e) where
         ies <- assocs n
         return $ Assocs n ies
         
+instance (TestElem e) => CoArbitrary (Assocs e) where        
     coarbitrary (Assocs n ies) =
         coarbitrary (n,ies)
+
         
 -- | A shape and an associations list.
 data Assocs2 e = Assocs2 (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
@@ -414,10 +430,12 @@ instance (TestElem e) => Arbitrary (Assocs2 e) where
         n    <- shape
         ies  <- assocs2 n
         return $ Assocs2 n ies
-        
+
+instance (TestElem e) => CoArbitrary (Assocs2 e) where
     coarbitrary (Assocs2 n ies) =
         coarbitrary (n,ies)
-        
+
+
 -- | A shape, bandwidths, and an associations list.
 data BandedAssocs e = BandedAssocs (Int,Int) (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
 instance (TestElem e) => Arbitrary (BandedAssocs e) where
@@ -426,6 +444,7 @@ instance (TestElem e) => Arbitrary (BandedAssocs e) where
         bw  <- bandwidths mn
         ies <- bandedAssocs mn bw
         return $ BandedAssocs mn bw ies
-        
+
+instance (TestElem e) => CoArbitrary (BandedAssocs e) where
     coarbitrary (BandedAssocs mn bw ies) =
         coarbitrary (mn,bw,ies)

@@ -16,7 +16,7 @@ module Test.Matrix.Herm.Banded (
 
 import Control.Monad ( liftM, replicateM )
 
-import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -96,8 +96,6 @@ instance (TestElem e) => Arbitrary (HermBanded e) where
             
         return $ HermBanded h a
 
-    coarbitrary = undefined
-
 data HermBandedMV e = 
     HermBandedMV (Herm Banded e) 
                  (Banded e) 
@@ -109,8 +107,6 @@ instance (TestElem e) => Arbitrary (HermBandedMV e) where
         (HermBanded h a) <- arbitrary
         x <- Test.vector (numCols a)
         return $ HermBandedMV h a x
-
-    coarbitrary = undefined
     
     
 data HermBandedMM e = 
@@ -126,5 +122,3 @@ instance (TestElem e) => Arbitrary (HermBandedMM e) where
         b <- Test.matrix (numCols h,n)
 
         return $ HermBandedMM a h b
-            
-    coarbitrary = undefined

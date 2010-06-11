@@ -19,7 +19,7 @@ module Test.Matrix.Tri.Banded (
 
 import Control.Monad ( replicateM )
 
-import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck as QC
 import qualified Test.QuickCheck.BLAS as Test
@@ -109,8 +109,6 @@ instance (TestElem e) => Arbitrary (TriBanded e) where
 
         (t',a') <- elements [ (t,a), (herm t, herm a)]
         return $ TriBanded t' a'
-            
-    coarbitrary = undefined
 
 data TriBandedMV e = 
     TriBandedMV (Tri Banded e) (Banded e) (Vector e) deriving Show
@@ -121,8 +119,6 @@ instance (TestElem e) => Arbitrary (TriBandedMV e) where
         x <- Test.vector (numCols t)
         return $ TriBandedMV t a x
         
-    coarbitrary = undefined
-        
 data TriBandedMM e = 
     TriBandedMM (Tri Banded e) (Banded e) (Matrix e) deriving Show
 
@@ -132,8 +128,6 @@ instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedMM e) where
         (_,n) <- Test.shape
         b <- Test.matrix (numCols t, n)
         return $ TriBandedMM t a b
-            
-    coarbitrary = undefined
         
 data TriBandedSV e = 
     TriBandedSV (Tri Banded e) (Vector e) deriving (Show)
@@ -147,8 +141,6 @@ instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedSV e) where
                 x <- Test.vector (numCols t)
                 let y = t <*> x
                 return (TriBandedSV t y)
-        
-    coarbitrary = undefined
 
 
 data TriBandedSM e = 
@@ -163,6 +155,4 @@ instance (TestElem e, BLAS3 e) => Arbitrary (TriBandedSM e) where
         
         let b = t <**> a
         return (TriBandedSM t b)
-        
-    coarbitrary = undefined
     

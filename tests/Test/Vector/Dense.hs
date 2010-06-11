@@ -42,8 +42,6 @@ instance (TestElem e) => Arbitrary (Vector e) where
     arbitrary = do
         n <- Test.dim
         Test.vector n
-        
-    coarbitrary = undefined
 
 instance (TestElem e) => Arbitrary (VectorPair e) where
     arbitrary = do
@@ -52,8 +50,6 @@ instance (TestElem e) => Arbitrary (VectorPair e) where
         y <- vector n
         return $ VectorPair x y
         
-    coarbitrary = undefined
-        
 instance (TestElem e) => Arbitrary (VectorTriple e) where
     arbitrary = do
         n <- Test.dim
@@ -61,8 +57,6 @@ instance (TestElem e) => Arbitrary (VectorTriple e) where
         y <- vector n
         z <- vector n
         return $ VectorTriple x y z
-    
-    coarbitrary = undefined
 
 data SubVector e = 
     SubVector Int 
@@ -79,5 +73,3 @@ instance (TestElem e) => Arbitrary (SubVector e) where
         e <- choose (0,5)
         x <- Test.vector (o + s*n + e)
         return (SubVector s x o n)
-        
-    coarbitrary = undefined

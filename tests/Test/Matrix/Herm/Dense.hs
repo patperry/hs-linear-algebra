@@ -16,7 +16,7 @@ module Test.Matrix.Herm.Dense(
 
 import Control.Monad( liftM )
 
-import Test.QuickCheck hiding ( Test.vector )
+import Test.QuickCheck hiding ( vector )
 import Test.QuickCheck.BLAS ( TestElem )
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -58,8 +58,6 @@ instance (TestElem e) => Arbitrary (HermMatrix e) where
                       , hermFromBase (flipUpLo u') (herm b')
                       ]
         return $ HermMatrix h a
-        
-    coarbitrary = undefined
 
 
 data HermMatrixMV e = 
@@ -73,8 +71,6 @@ instance (TestElem e) => Arbitrary (HermMatrixMV e) where
         (HermMatrix h a) <- arbitrary
         x <- Test.vector (numCols a)
         return $ HermMatrixMV h a x
-        
-    coarbitrary = undefined
 
     
 data HermMatrixMM e = 
@@ -89,6 +85,4 @@ instance (TestElem e) => Arbitrary (HermMatrixMM e) where
         n <- liftM fst Test.shape
         b <- Test.matrix (numCols a,n)
         return $ HermMatrixMM h a b
-            
-    coarbitrary = undefined
         

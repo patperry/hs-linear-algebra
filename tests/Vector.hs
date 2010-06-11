@@ -175,54 +175,54 @@ prop_dot_linear2 (VectorTriple (x :: V) y z) =
 
 ------------------------------------------------------------------------------
 tests_Vector =
-    [ ("vector/dim", mytest prop_vector_dim)
-    , ("vector/assocs", mytest prop_vector_assocs)
-    , ("listVector/dim", mytest prop_listVector_dim)
-    , ("listVector/assocs", mytest prop_listVector_assocs)
+    [ testProperty "vector/dim" prop_vector_dim
+    , testProperty "vector/assocs" prop_vector_assocs
+    , testProperty "listVector/dim" prop_listVector_dim
+    , testProperty "listVector/assocs" prop_listVector_assocs
     
-    , ("dim", mytest prop_dim)
-    , ("bounds", mytest prop_bounds)
-    , ("(!)", mytest prop_at)
-    , ("indices", mytest prop_indices)
-    , ("assocs", mytest prop_assocs)
-    , ("(//)", mytest prop_replace_elems)
+    , testProperty "dim" prop_dim
+    , testProperty "bounds" prop_bounds
+    , testProperty "(!)" prop_at
+    , testProperty "indices" prop_indices
+    , testProperty "assocs" prop_assocs
+    , testProperty "(//)" prop_replace_elems
     
-    , ("subvector/dim", mytest prop_subvector_dim)
-    , ("subvector/elems", mytest prop_subvector_elems)
-    , ("subvectorWithStride/dim", mytest prop_subvectorWithStride_dim)
-    , ("subvectorWithStride/elems", mytest prop_subvectorWithStride_elems)
+    , testProperty "subvector/dim" prop_subvector_dim
+    , testProperty "subvector/elems" prop_subvector_elems
+    , testProperty "subvectorWithStride/dim" prop_subvectorWithStride_dim
+    , testProperty "subvectorWithStride/elems" prop_subvectorWithStride_elems
     
-    , ("zeroVector/dim", mytest prop_zeroVector_dim)
-    , ("zeroVector/elems", mytest prop_zeroVector_elems)
-    , ("constantVector/dim", mytest prop_constantVector_dim)
-    , ("constantVector/elems", mytest prop_constantVector_elems)
-    , ("basisVector/dim", mytest prop_basisVector_dim)
-    , ("basisVector/elems", mytest prop_basisVector_elems)
+    , testProperty "zeroVector/dim" prop_zeroVector_dim
+    , testProperty "zeroVector/elems" prop_zeroVector_elems
+    , testProperty "constantVector/dim" prop_constantVector_dim
+    , testProperty "constantVector/elems" prop_constantVector_elems
+    , testProperty "basisVector/dim" prop_basisVector_dim
+    , testProperty "basisVector/elems" prop_basisVector_elems
 
-    , ("conj", mytest prop_conj_elems)
-    , ("(*>)", mytest prop_scale)
-    , ("shift", mytest prop_shift)
-    , ("conj . (*>)", mytest prop_conj_scale)
-    , ("negate", mytest prop_negate)
-    , ("abs", mytest prop_abs)
-    , ("signum", mytest prop_signum)
-    , ("recip", mytest prop_recip)
+    , testProperty "conj" prop_conj_elems
+    , testProperty "(*>)" prop_scale
+    , testProperty "shift" prop_shift
+    , testProperty "conj . (*>)" prop_conj_scale
+    , testProperty "negate" prop_negate
+    , testProperty "abs" prop_abs
+    , testProperty "signum" prop_signum
+    , testProperty "recip" prop_recip
     
-    , ("(+)", mytest prop_plus)
-    , ("(-)", mytest prop_minus)
-    , ("(*)", mytest prop_times)
-    , ("(/)", mytest prop_divide)
+    , testProperty "(+)" prop_plus
+    , testProperty "(-)" prop_minus
+    , testProperty "(*)" prop_times
+    , testProperty "(/)" prop_divide
     
-    , ("sumAbs", mytest prop_sumAbs)
-    , ("norm2", mytest prop_norm2)
-    , ("whichMaxAbs1", mytest prop_whichMaxAbs1)
-    , ("whichMaxAbs2", mytest prop_whichMaxAbs2)
-    , ("dot self", mytest prop_dot_self)
-    , ("dot conj", mytest prop_dot_conj)
-    , ("dot scale1", mytest prop_dot_scale1)
-    , ("dot scale2", mytest prop_dot_scale2)
-    , ("dot linear1", mytest prop_dot_linear1)
-    , ("dot linear2", mytest prop_dot_linear2)
+    , testProperty "sumAbs" prop_sumAbs
+    , testProperty "norm2" prop_norm2
+    , testProperty "whichMaxAbs1" prop_whichMaxAbs1
+    , testProperty "whichMaxAbs2" prop_whichMaxAbs2
+    , testProperty "dot self" prop_dot_self
+    , testProperty "dot conj" prop_dot_conj
+    , testProperty "dot scale1" prop_dot_scale1
+    , testProperty "dot scale2" prop_dot_scale2
+    , testProperty "dot linear1" prop_dot_linear1
+    , testProperty "dot linear2" prop_dot_linear2
     
     ]
 

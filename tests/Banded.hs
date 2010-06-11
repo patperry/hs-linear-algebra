@@ -160,7 +160,7 @@ prop_apply_linear (BandedMVPair (a :: B) x y) =
     a <*> (x + y) ~== a <*> x + a <*> y
 prop_doSapplyAddVector alpha beta (BandedMV (a :: B) x) = monadicST $ do
     forAllM (Test.vector (numRows a)) $ \y -> do
-        y'  <- run $ unsafeThawVector y
+        y'  <- run $ (unsafeThawVector y :: ST s (STVector s E))
         y'' <- run $ freezeVector y'
         run $ doSApplyAddVector alpha a x beta y'
         assert $ y ~== a <*> (alpha *> x) + (beta *> y'')
@@ -184,64 +184,63 @@ prop_scale k (a :: B) =
     k *> a ~== tmap (\e -> e * k) a
 
 tests_Banded =
-    [ ("shape of banded"       , mytest prop_banded_shape)
-    , ("assocs of banded"      , mytest prop_banded_assocs)
-    , ("shape of listsBanded"  , mytest prop_listsBanded_shape)
-    , ("listsFromBanded/listsBanded"
-                               , mytest prop_listsBanded_listsFromBanded)
+    [ testProperty "shape of banded" prop_banded_shape
+    , testProperty "assocs of banded" prop_banded_assocs
+    , testProperty "shape of listsBanded" prop_listsBanded_shape
+    , testProperty "listsFromBanded/listsBanded" prop_listsBanded_listsFromBanded
 
-    , ("elems of replace"      , mytest prop_replace_elems)
+    , testProperty "elems of replace" prop_replace_elems
     
-    , ("numRows/numCols"       , mytest prop_shape)
-    , ("numLower/numUpper"     , mytest prop_bandwidths)
-    , ("size"                  , mytest prop_size)
-    , ("bounds"                , mytest prop_bounds)
+    , testProperty "numRows/numCols" prop_shape
+    , testProperty "numLower/numUpper" prop_bandwidths
+    , testProperty "size" prop_size
+    , testProperty "bounds" prop_bounds
 
-    , ("at"                    , mytest prop_at)
-    , ("row dim"               , mytest prop_row_dim)
-    , ("col dim"               , mytest prop_col_dim)
-    , ("rows length"           , mytest prop_rows_len)
-    , ("cols length"           , mytest prop_cols_len)
-    , ("rows dims"             , mytest prop_rows_dims)
-    , ("cols dims"             , mytest prop_cols_dims)
-    , ("row at"                , mytest prop_row_at)
-    , ("col at"                , mytest prop_col_at)
+    , testProperty "at" prop_at
+    , testProperty "row dim" prop_row_dim
+    , testProperty "col dim" prop_col_dim
+    , testProperty "rows length" prop_rows_len
+    , testProperty "cols length" prop_cols_len
+    , testProperty "rows dims" prop_rows_dims
+    , testProperty "cols dims" prop_cols_dims
+    , testProperty "row at" prop_row_at
+    , testProperty "col at" prop_col_at
 
-    , ("indices length"        , mytest prop_indices_length)
-    , ("indices low bw"        , mytest prop_indices_lower)
-    , ("indices up bw"         , mytest prop_indices_upper)
+    , testProperty "indices length" prop_indices_length
+    , testProperty "indices low bw" prop_indices_lower
+    , testProperty "indices up bw" prop_indices_upper
 
-    , ("elems length"          , mytest prop_elems_length)
+    , testProperty "elems length" prop_elems_length
 
-    , ("assocs"                , mytest prop_assocs)
-    , ("assocs/at"             , mytest prop_assocs_at)
+    , testProperty "assocs" prop_assocs
+    , testProperty "assocs/at" prop_assocs_at
 
-    , ("elems of scale"        , mytest prop_scale_elems)
-    , ("elem of herm"          , mytest prop_herm_elem)
-    , ("herm/scale"            , mytest prop_herm_scale)
+    , testProperty "elems of scale" prop_scale_elems
+    , testProperty "elem of herm" prop_herm_elem
+    , testProperty "herm/scale" prop_herm_scale
                                
-    , ("shape . herm"          , mytest prop_herm_shape)
-    , ("rows . herm"           , mytest prop_herm_rows)
-    , ("cols . herm"           , mytest prop_herm_cols)
+    , testProperty "shape . herm" prop_herm_shape
+    , testProperty "rows . herm" prop_herm_rows
+    , testProperty "cols . herm" prop_herm_cols
                                
-    , ("herm . herm == id"     , mytest prop_herm_herm)
+    , testProperty "herm . herm == id" prop_herm_herm
                                
-    , ("subdiag . herm"        , mytest prop_diag_herm1)
-    , ("superdiag . herm"      , mytest prop_diag_herm2)
+    , testProperty "subdiag . herm" prop_diag_herm1
+    , testProperty "superdiag . herm" prop_diag_herm2
                                
-    , ("apply basis"           , mytest prop_apply_basis)
-    , ("apply herm basis"      , mytest prop_apply_herm_basis)
-    , ("apply scale"           , mytest prop_apply_scale)
-    , ("apply linear"          , mytest prop_apply_linear)
-    , ("doSApplyAddVector"     , mytest prop_doSapplyAddVector)
+    , testProperty "apply basis" prop_apply_basis
+    , testProperty "apply herm basis" prop_apply_herm_basis
+    , testProperty "apply scale" prop_apply_scale
+    , testProperty "apply linear" prop_apply_linear
+    , testProperty "doSApplyAddVector" prop_doSapplyAddVector
     
-    , ("applyMatrix scale left"   , mytest prop_applyMatrix_scale_left)
-    , ("applyMatrix scale right"  , mytest prop_applyMatrix_scale_right)
-    , ("applyMatrix linear"       , mytest prop_applyMatrix_linear)
-    , ("applyMatrix cols"         , mytest prop_applyMatrix_cols)
-    , ("doSApplyAddMatrix"     , mytest prop_doSapplyAddMatrix)    
+    , testProperty "applyMatrix scale left" prop_applyMatrix_scale_left
+    , testProperty "applyMatrix scale right" prop_applyMatrix_scale_right
+    , testProperty "applyMatrix linear" prop_applyMatrix_linear
+    , testProperty "applyMatrix cols" prop_applyMatrix_cols
+    , testProperty "doSApplyAddMatrix" prop_doSapplyAddMatrix    
     
-    , ("scale"                 , mytest prop_scale)
+    , testProperty "scale" prop_scale
     
     ]
 
