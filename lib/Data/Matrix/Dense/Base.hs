@@ -601,7 +601,7 @@ class (HasHerm a, MonadInterleave m) => MMatrix a m where
     unsafeDoSApplyVector_ :: (WriteVector y m, BLAS2 e) =>
         e -> a e -> y e -> m ()
     unsafeDoSApplyVector_ alpha a (x :: y e) = do
-        y <- newVector_ (dim x)
+        y <- newVector_ (dim x) :: m (y e)
         unsafeDoSApplyAddVector alpha a x 0 y
         unsafeCopyVector x y
     {-# INLINE unsafeDoSApplyVector_  #-}

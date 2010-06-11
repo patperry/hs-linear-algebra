@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances,
-        FunctionalDependencies, Rank2Types #-}
+        Rank2Types #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -99,7 +99,7 @@ class (BaseVector x, MonadInterleave m, ReadTensor x Int m) => ReadVector x m wh
 
 
 -- | Vectors that can be created or modified in a monad.
-class (ReadVector x m, WriteTensor x Int m) => WriteVector x m | m -> x where
+class (ReadVector x m, WriteTensor x Int m) => WriteVector x m where
     -- | Creates a new vector of the given length.  The elements will be
     -- uninitialized.
     newVector_ :: (Elem e) => Int -> m (x e)
