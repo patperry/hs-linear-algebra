@@ -25,9 +25,9 @@ build-type:      Configure
 tested-with:     GHC == 6.12.2
 
 extra-source-files:     NEWS README TODO configure.ac configure
-                        aclocal.m4 m4/ax_blas.m4
+                        aclocal.m4 m4/ax_check_blas.m4
                         blas.buildinfo.in cbits/config.h.in cbits/BLAS.h
-                        tests/Makefile.in
+                        cbits/vectorOps.h tests/Makefile.in
                         
                         examples/LU.hs
                         
@@ -67,8 +67,7 @@ library
 
                         BLAS.Vector
                         BLAS.Vector.ST
-
-
+                        
     other-modules:      
                         BLAS.Elem.Double
                         BLAS.Elem.VNum                        
