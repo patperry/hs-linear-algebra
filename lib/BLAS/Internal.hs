@@ -48,7 +48,7 @@ import Text.Printf ( printf )
 
 #if defined(__GLASGOW_HASKELL__)
 import GHC.Base                 ( realWorld# )
-import GHC.IOBase               ( IO(IO) )
+import GHC.IO                   ( IO(IO) )
 #else
 import System.IO.Unsafe         ( unsafePerformIO )
 #endif

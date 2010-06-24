@@ -1,5 +1,5 @@
 name:            blas
-version:         0.8
+version:         0.9
 homepage:        http://github.com/patperry/blas
 synopsis:        Bindings to the BLAS library
 description:
@@ -17,9 +17,9 @@ description:
 category:        Math
 license:         BSD3
 license-file:    COPYING
-copyright:       (c) 2010. Patrick Perry <patperry@stanford.edu>
+copyright:       (c) 2010. Patrick Perry <patperry@gmail.com>
 author:          Patrick Perry
-maintainer:      Patrick Perry <patperry@stanford.edu>
+maintainer:      Patrick Perry <patperry@gmail.com>
 cabal-version:   >= 1.2.3
 build-type:      Configure
 tested-with:     GHC == 6.12.2
@@ -57,81 +57,48 @@ extra-tmp-files:        config.log config.status autom4te.cache
 library
     hs-source-dirs:     lib
     exposed-modules:    
-                        Data.Elem.BLAS
-                        Data.Elem.BLAS.Base                        
-                        Data.Elem.BLAS.Level1
-                        Data.Elem.BLAS.Level2
-                        Data.Elem.BLAS.Level3
+                        BLAS.Elem
+                        BLAS.Elem.Level1
+                        BLAS.Elem.Level2
+                        BLAS.Elem.Level3
+                        BLAS.Elem.VMath                        
 
-                        Data.Tensor.Class
-                            Data.Tensor.Class.ITensor
-                            Data.Tensor.Class.MTensor
+                        BLAS.Types
 
-                        Data.Matrix.Class
-                            Data.Matrix.Class.IMatrix
-                            Data.Matrix.Class.MMatrix
-                            Data.Matrix.Class.ISolve
-                            Data.Matrix.Class.MSolve
+                        BLAS.Vector
+                        BLAS.Vector.ST
 
-                        Data.Matrix.Banded
-                            Data.Matrix.Banded.Class
-                            Data.Matrix.Banded.IO
-                            Data.Matrix.Banded.ST
-                        
-                        Data.Matrix.Dense
-                            Data.Matrix.Dense.Class
-                            Data.Matrix.Dense.IO
-                            Data.Matrix.Dense.ST
-
-                        Data.Matrix.Herm
-                        Data.Matrix.Tri
-
-                        Data.Vector.Dense
-                            Data.Vector.Dense.Class
-                            Data.Vector.Dense.IO
-                            Data.Vector.Dense.ST
-
-                        Test.QuickCheck.BLAS
-
-                        Unsafe.BLAS
 
     other-modules:      
+                        BLAS.Elem.Double
+                        BLAS.Elem.VNum                        
+                        BLAS.Elem.VFractional                        
+                        BLAS.Elem.VFloating
+                        BLAS.Elem.Zomplex
                         BLAS.Internal
                         BLAS.CTypes
-                        BLAS.Types
-                        Data.Elem.BLAS.Double
-                        Data.Elem.BLAS.Zomplex
-                        Data.Matrix.Class.IMatrixBase
-                        Data.Matrix.Class.MMatrixBase
-                        Data.Matrix.Class.ISolveBase
-                        Data.Matrix.Class.MSolveBase
-                        Data.Matrix.Banded.Base
-                        Data.Matrix.Banded.IOBase
-                        Data.Matrix.Dense.Base
-                        Data.Matrix.Dense.IOBase
-                        Data.Matrix.HermBase
-                        Data.Matrix.TriBase
-                        Data.Vector.Dense.Base
-                        Data.Vector.Dense.IOBase
+                        BLAS.Vector.Base
+                        BLAS.Vector.STBase
     
     includes:           cbits/config.h
                         cbits/BLAS.h
+                        cbits/vectorOps.h                        
     include-dirs:       cbits
-    c-sources:          cbits/double.c
-                        cbits/zomplex.c
+    c-sources:          cbits/BLAS-double.c
+                        cbits/BLAS-zomplex.c
+                        cbits/vectorOps-double.c
+                        cbits/vectorOps-zomplex.c                                                
                         
     ghc-options:        -Wall
     
-    extensions:         BangPatterns, 
-                        FlexibleContexts, 
-                        FlexibleInstances, 
+    extensions:         BangPatterns,
+                        CPP,
+                        DeriveDataTypeable,
+                        FlexibleContexts,
+                        FlexibleInstances,
+                        GeneralizedNewtypeDeriving,
                         ForeignFunctionInterface, 
-                        FunctionalDependencies, 
-                        GADTs,
-                        MultiParamTypeClasses,
-                        Rank2Types,
-                        ScopedTypeVariables,
-                        TypeFamilies
+                        Rank2Types
                          
-    build-depends:      base, ieee, monad-interleave, storable-complex,
+    build-depends:      base, ieee, storable-complex,
                         QuickCheck >= 2.1

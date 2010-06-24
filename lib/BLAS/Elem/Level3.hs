@@ -1,16 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Elem.BLAS.Level3
--- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
+-- Module     : BLAS.Elem.Level3
+-- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
--- Maintainer : Patrick Perry <patperry@stanford.edu>
+-- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 -- Matrix-Matrix operations.
 --
 
-module Data.Elem.BLAS.Level3
+module BLAS.Elem.Level3
     where
      
 import Data.Complex 
@@ -18,9 +18,9 @@ import Foreign ( Ptr, with )
 
 import BLAS.Types
 import BLAS.CTypes
-import Data.Elem.BLAS.Level2
-import Data.Elem.BLAS.Double  
-import Data.Elem.BLAS.Zomplex 
+import BLAS.Elem.Level2
+import BLAS.Elem.Double  
+import BLAS.Elem.Zomplex 
         
 -- | Types with matrix-matrix operations.        
 class (BLAS2 a) => BLAS3 a where

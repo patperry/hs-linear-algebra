@@ -2,19 +2,104 @@
 {-# CFILES cbits/zomplex.c #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Data.Elem.BLAS.Zomplex
--- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
+-- Module     : BLAS.Elem.Zomplex
+-- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
--- Maintainer : Patrick Perry <patperry@stanford.edu>
+-- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module Data.Elem.BLAS.Zomplex
+module BLAS.Elem.Zomplex
     where
         
 import Data.Complex ( Complex )
 import Foreign.Ptr  ( Ptr )
 import BLAS.CTypes
+
+foreign import ccall unsafe "vectorOps.h zVectorConj"
+    vzConj :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorShift"
+    vzShift :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorAdd"
+    vzAdd :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorSub"
+    vzSub :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorAxpby"
+    vzAxpby :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorScale"
+    vzScale :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorMul"
+    vzMul :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorNeg"
+    vzNeg :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorAbs"
+    vzAbs :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorSgn"
+    vzSgn :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorInv"
+    vzInv :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorDiv"
+    vzDiv :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe "vectorOps.h zVectorExp"
+    vzExp :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorSqrt"    
+    vzSqrt :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorLog"
+    vzLog :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorPow"
+    vzPow :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()            
+    
+foreign import ccall unsafe "vectorOps.h zVectorSin"
+    vzSin :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                
+    
+foreign import ccall unsafe "vectorOps.h zVectorCos"
+    vzCos :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorTan"    
+    vzTan :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                        
+
+foreign import ccall unsafe "vectorOps.h zVectorASin"
+    vzASin :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                
+    
+foreign import ccall unsafe "vectorOps.h zVectorACos"
+    vzACos :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorATan"    
+    vzATan :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                        
+
+foreign import ccall unsafe "vectorOps.h zVectorSinh"
+    vzSinh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                
+    
+foreign import ccall unsafe "vectorOps.h zVectorCosh"
+    vzCosh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorTanh"    
+    vzTanh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                        
+
+foreign import ccall unsafe "vectorOps.h zVectorASinh"
+    vzASinh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                
+    
+foreign import ccall unsafe "vectorOps.h zVectorACosh"
+    vzACosh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()
+    
+foreign import ccall unsafe "vectorOps.h zVectorATanh"    
+    vzATanh :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()                        
+
 
 ---------------------------- Level 1 Routines -------------------------------
 
