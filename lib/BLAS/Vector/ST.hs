@@ -26,7 +26,7 @@ module BLAS.Vector.ST (
     swapVector,
 
     -- * Vector views
-    subvectorViewVector,
+    spliceVector,
     splitViewVector,
 
     -- * Reading and writing vector elements

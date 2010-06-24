@@ -19,7 +19,7 @@ import Foreign
 import System.IO.Unsafe( unsafeInterleaveIO )
 import Text.Printf( printf )
 
-import BLAS.Internal( clearArray, checkedSubvector )
+import BLAS.Internal( clearArray )
 import BLAS.Elem( Complex, VNum, VFractional, VFloating, BLAS1 )
 import qualified BLAS.Elem.Level1 as BLAS
 import qualified BLAS.Elem.VNum as VNum
@@ -44,7 +44,7 @@ class RVector v where
     -- elements in the vector.                          
     dimVector :: v e -> Int
 
-    unsafeSubvectorViewVector :: (Storable e) => v e -> Int -> Int -> v e
+    unsafeSpliceVector :: (Storable e) => v e -> Int -> Int -> v e
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- vector.
@@ -56,9 +56,9 @@ instance RVector (STVector s) where
     dimVector (STVector _ n _) = n
     {-# INLINE dimVector #-}
 
-    unsafeSubvectorViewVector (STVector p _ f) o n =
+    unsafeSpliceVector (STVector p _ f) o n =
         STVector (p `advancePtr` o) n f
-    {-# INLINE unsafeSubvectorViewVector #-}
+    {-# INLINE unsafeSpliceVector #-}
 
     unsafeWithVector (STVector p _ f) g = do
         a <- g p
@@ -68,15 +68,22 @@ instance RVector (STVector s) where
 
 
 
--- | @subvectorViewVector x o n@ creates a subvector view of @x@ starting at
--- index @o@ and having length (dimension) @n@.
-subvectorViewVector :: (RVector v, Storable e)
-                    => v e
-                    -> Int
-                    -> Int
-                    -> v e
-subvectorViewVector x = checkedSubvector (dimVector x) (unsafeSubvectorViewVector x)
-{-# INLINE subvectorViewVector #-}
+-- | @spliceVector x o n@ creates a subvector view of @x@ starting at
+-- index @o@ and having dimension @n@.
+spliceVector :: (RVector v, Storable e)
+             => v e
+             -> Int
+             -> Int
+             -> v e
+spliceVector x o n'
+    | o < 0 || n' < 0 || o + n' > n = error $
+        printf "spliceVector <vector with dim %d> %d %d: index out of range"
+               n o n'
+    | otherwise =
+        unsafeSpliceVector x o n'
+  where
+    n = dimVector x
+{-# INLINE spliceVector #-}
 
 -- | View an array in memory as a vector.
 vectorViewArray :: (Storable e)
@@ -149,8 +156,8 @@ splitViewVector :: (RVector v, Storable e) => v e -> Int -> (v e, v e)
 splitViewVector x k =
     let n  = dimVector x
         k' = max 0 $ min n k
-        x1 = unsafeSubvectorViewVector x 0  k'
-        x2 = unsafeSubvectorViewVector x k' (n-k')
+        x1 = unsafeSpliceVector x 0  k'
+        x2 = unsafeSpliceVector x k' (n-k')
     in (x1,x2)
 
 -- | Get the indices of the elements in the vector, @[ 0..n-1 ]@, where

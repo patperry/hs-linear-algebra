@@ -32,7 +32,7 @@ module BLAS.Vector (
     zipWithVector,
 
     -- * Vector views
-    subvectorViewVector,
+    spliceVector,
     splitViewVector,
 
     -- * Vector properties
