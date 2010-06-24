@@ -33,7 +33,7 @@ module BLAS.Vector (
 
     -- * Vector views
     spliceVector,
-    splitViewVector,
+    splitVectorAt,
 
     -- * Vector properties
     sumAbsVector,
