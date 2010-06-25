@@ -14,7 +14,7 @@
 
 module Test.QuickCheck.BLAS (
     -- Testable element types
-    -- TestElem(..),
+    TestElem(..),
     
     -- * Generating random objects
     -- ** Dimensions
@@ -68,10 +68,11 @@ import Prelude hiding ( elem )
 
 -- import BLAS.Types( UpLoEnum(..), DiagEnum(..) )
 import Control.Monad
--- import Data.List( nub )
--- import Data.Maybe( fromJust, mapMaybe )
+import Data.List( nub )
+import Data.Complex( mkPolar )
+import Data.Maybe( fromJust )
 
-import Test.QuickCheck hiding ( vector, elements )
+import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 
@@ -87,12 +88,37 @@ import BLAS.Vector( Vector, listVector, dimVector, spliceVector )
 import BLAS.Elem
 
 instance Arbitrary (Complex Double) where
-    arbitrary = liftM2 (:+) arbitrary arbitrary
-    shrink (x:+y) =
-        [ x':+y' | x' <- shrink x, y' <- shrink y ]
+    arbitrary = do
+        r <- arbitrary
+        theta <- choose(0, pi)
+        elements [ mkPolar r theta, r :+ 0, 0 :+ r ]
+
+    shrink (x:+y) = nub $
+        [ x:+0 | y /= 0
+        ] ++
+        [ 0:+y | x /= 0
+        ] ++
+        [ x:+y' | y' <- shrink y
+        ] ++
+        [ x':+y | x' <- shrink x
+        ]
 
 instance CoArbitrary (Complex Double) where
     coarbitrary (x:+y) = coarbitrary (x,y)
+
+class TestElem e where
+    maybeToReal :: e -> Maybe Double
+    toReal :: e -> Double
+    toReal = fromJust . maybeToReal
+    
+instance (TestElem Double) where
+    maybeToReal = Just
+    toReal = id
+    
+instance (TestElem (Complex Double)) where
+    maybeToReal (x :+ y) | y == 0    = Just x
+                         | otherwise = Nothing
+                        
 
 {-
 -- | Element types that can be tested with QuickCheck properties.
@@ -178,6 +204,12 @@ vector n = do
 
 instance (Arbitrary e, Storable e) => Arbitrary (Vector e) where
     arbitrary = dim >>= vector
+    
+    shrink x =
+        [ spliceVector x 0 n
+        | (NonNegative n) <- shrink (NonNegative $ dimVector x)
+        ]
+
 
 -- | Two vectors with the same dimension.
 data VectorPair e f = 
