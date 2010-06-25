@@ -2,6 +2,8 @@ module Vector (
     tests_Vector
     ) where
 
+import Debug.Trace
+
 import Data.AEq
 import BLAS.Elem
 import BLAS.Vector
@@ -9,7 +11,7 @@ import BLAS.Vector
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
-import Test.QuickCheck.BLAS( Dim(..), Assocs(..), VectorPair(..) )
+import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Assocs(..), VectorPair(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 
@@ -80,6 +82,17 @@ testPropertyDZ str propd propz =
     testGroup str
         [ testProperty "Double" $ propd undefined
         , testProperty "Complex Double" $ propz undefined
+        ]
+
+testPropertyZ :: (Testable a, Testable b)
+              => TestName
+              -> (Double -> a)
+              -> (Complex Double -> b)
+              -> Test
+testPropertyZ str propd propz =
+    testGroup str
+        [ --testProperty "Double" $ propd undefined
+        testProperty "Complex Double" $ propz undefined
         ]
     
 
@@ -290,6 +303,7 @@ prop_cos t x =
     _ = typed t x
 
 prop_asin t x =
+    -- trace (show (asin x) ++ "\n" ++ (show $ mapVector asin x)) $    
     asin x ~== mapVector asin x
   where
     _ = typed t x
@@ -305,32 +319,33 @@ prop_acos t x =
     _ = typed t x
 
 prop_sinh t x =
-    sin x ~== mapVector sinh x
+    sinh x ~== mapVector sinh x
   where
     _ = typed t x
 
 prop_tanh t x =
-    tan x ~== mapVector tanh x
+    tanh x ~== mapVector tanh x
   where
     _ = typed t x
 
 prop_cosh t x =
-    cos x ~== mapVector cosh x
+    cosh x ~== mapVector cosh x
   where
     _ = typed t x
 
 prop_asinh t x =
-    asin x ~== mapVector asinh x
+    -- trace (show (asinh x) ++ "\n" ++ (show $ mapVector asinh x)) $
+    asinh x ~== mapVector asinh x
   where
     _ = typed t x
 
 prop_atanh t x =
-    atan x ~== mapVector atanh x
+    atanh x ~== mapVector atanh x
   where
     _ = typed t x
 
 prop_acosh t x =
-    acos x ~== mapVector acosh x
+    acosh x ~== mapVector acosh x
   where
     _ = typed t x
 
