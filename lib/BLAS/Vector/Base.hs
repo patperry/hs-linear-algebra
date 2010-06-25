@@ -94,6 +94,12 @@ listVector n es = runVector $ do
     return v
 {-# INLINE listVector #-}
 
+-- | Create a vector of the given dimension with all elements initialized
+-- to the given value
+constantVector :: (Storable e) => Int -> e -> Vector e
+constantVector n e = runVector $ newVector n e
+{-# INLINE constantVector #-}
+
 -- | Returns the element of a vector at the specified index.
 atVector :: (Storable e) => Vector e -> Int -> e
 atVector v i

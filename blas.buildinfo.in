@@ -1,3 +1,7 @@
 
 buildable: @BUILD_PACKAGE_BOOL@
 ld-options: @LDFLAGS@ @BLAS_LIBS@ @LIBS@
+
+executable: test
+buildable: @BUILD_PACKAGE_BOOL@
+ld-options: @LDFLAGS@ @BLAS_LIBS@ @LIBS@

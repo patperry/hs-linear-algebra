@@ -69,7 +69,7 @@ dVectorAbs (int n, const double *x, double *z)
 static double
 dsgn (double x)
 {
-        if (isnan(x)) {
+        if (x == 0 || isnan(x)) {
                 return x;
         } else {
                 return copysign(1, x);
@@ -151,7 +151,10 @@ dVectorMul (int n, const double *x, const double *y, double *z)
                 blas_dtbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, y, 1,
                            z, 1);
         } else {
-                blas_dgbmv(BlasNoTrans, n, n, 0, 0, 1, x, 1, y, 1, 0, z, 1);
+                int i;
+                for (i = 0; i < n; i++) {
+                        z[i] = x[i] * y[i];
+                }
         }
 }
 

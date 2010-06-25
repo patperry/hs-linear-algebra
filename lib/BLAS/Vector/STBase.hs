@@ -149,16 +149,18 @@ unsafeSwapVector = vectorStrideCall2 BLAS.swap
 
 -- | Split a vector into two blocks and returns views into the blocks.  In
 -- @(x1, x2) = splitVectorAt k x@, we have that
--- @x1 = spliceVector x 0 k'@ and
--- @x2 = spliceVector x k (dimVector x - k')@, where @k'@ is defined
--- as @k' = max 0 (min (dimVector x) k)@.
+-- @x1 = spliceVector x 0 k@ and
+-- @x2 = spliceVector x k (dimVector x - k)@.
 splitVectorAt :: (RVector v, Storable e) => Int -> v e -> (v e, v e)
-splitVectorAt k x =
-    let n  = dimVector x
-        k' = max 0 $ min n k
-        x1 = unsafeSpliceVector x 0  k'
-        x2 = unsafeSpliceVector x k' (n-k')
+splitVectorAt k x
+    | k < 0 || k > n = error $
+        printf "splitVectorAt %d <vector with dim %d>: invalid index" k n
+    | otherwise = let
+        x1 = unsafeSpliceVector x 0 k
+        x2 = unsafeSpliceVector x k (n-k)
     in (x1,x2)
+  where
+    n = dimVector x
 {-# INLINE splitVectorAt #-}
 
 -- | Get the indices of the elements in the vector, @[ 0..n-1 ]@, where

@@ -54,7 +54,7 @@ extra-source-files:     NEWS README TODO configure.ac configure
 extra-tmp-files:        config.log config.status autom4te.cache
                         blas.buildinfo cbits/config.h tests/Makefile
 
-library
+Library
     hs-source-dirs:     lib
     exposed-modules:    
                         BLAS.Elem
@@ -67,6 +67,8 @@ library
 
                         BLAS.Vector
                         BLAS.Vector.ST
+                        
+                        Test.QuickCheck.BLAS
                         
     other-modules:      
                         BLAS.Elem.Double
@@ -100,4 +102,25 @@ library
                         Rank2Types
                          
     build-depends:      base, ieee, storable-complex,
-                        QuickCheck >= 2.1
+                        QuickCheck >= 2.1 && < 3
+
+Executable test
+    hs-source-dirs:     lib, tests
+    main-is:            Main.hs
+    other-modules:      Vector
+
+    includes:           cbits/config.h
+                        cbits/BLAS.h
+                        cbits/vectorOps.h                        
+    include-dirs:       cbits
+    c-sources:          cbits/BLAS-double.c
+                        cbits/BLAS-zomplex.c
+                        cbits/vectorOps-double.c
+                        cbits/vectorOps-zomplex.c                                                
+    
+    extensions:         ScopedTypeVariables
+    
+    build-depends:      base,
+                        QuickCheck >= 2.1 && < 3,
+                        test-framework >= 0.3.1 && < 0.4,
+                        test-framework-quickcheck2 >= 0.2.7 && < 0.3

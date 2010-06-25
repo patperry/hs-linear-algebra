@@ -22,5 +22,5 @@ fi
 AC_SUBST([BUILD_PACKAGE_BOOL])
 
 AC_CONFIG_HEADERS([cbits/config.h])
-AC_CONFIG_FILES([blas.buildinfo tests/Makefile])
+AC_CONFIG_FILES([blas.buildinfo])
 AC_OUTPUT

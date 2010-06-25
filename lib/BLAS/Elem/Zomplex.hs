@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# CFILES cbits/zomplex.c #-}
+{-# CFILES cbits/BLAS-double.c cbits/vectorOps-double.c #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.Elem.Zomplex

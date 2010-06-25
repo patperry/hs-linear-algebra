@@ -82,8 +82,12 @@ zVectorAbs (int n, const double complex *x, double complex *z)
 static void
 zsgn (const double complex x, double complex *z)
 {
-        double arg = carg(x);
-        *z = cexp(0 + arg*I); /* TODO: use sincos if available */
+        if (x == 0) {
+                *z = x;
+        } else {
+                double r = cabs(x);
+                *z = creal(x)/r + cimag(x)/r*I;
+        }
 }
 
 void
@@ -166,8 +170,10 @@ zVectorMul (int n, const double complex *x, const double complex *y, double comp
                 blas_ztbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, y, 1,
                            z, 1);
         } else {
-                double complex one = 1;
-                blas_zgbmv(BlasNoTrans, n, n, 0, 0, &one, x, 1, y, 1, 0, z, 1);
+                int i;
+                for (i = 0; i < n; i++) {
+                        z[i] = x[i] * y[i];
+                }
         }
 }
 

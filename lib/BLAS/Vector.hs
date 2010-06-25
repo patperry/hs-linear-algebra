@@ -16,6 +16,7 @@ module BLAS.Vector (
     -- * Vector construction
     vector, 
     listVector,
+    constantVector,
 
     -- * Accessing vectors
     atVector,
