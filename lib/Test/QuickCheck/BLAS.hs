@@ -69,7 +69,7 @@ import Prelude hiding ( elem )
 -- import BLAS.Types( UpLoEnum(..), DiagEnum(..) )
 import Control.Monad
 import Data.List( nub )
-import Data.Complex( mkPolar )
+import Data.Complex( mkPolar, magnitude )
 import Data.Maybe( fromJust )
 
 import Test.QuickCheck hiding ( vector )
@@ -109,16 +109,25 @@ instance CoArbitrary (Complex Double) where
 class TestElem e where
     maybeToReal :: e -> Maybe Double
     toReal :: e -> Double
+    norm1 :: e -> Double
+    norm :: e -> Double
+    conj :: e -> e
+    
     toReal = fromJust . maybeToReal
     
 instance (TestElem Double) where
     maybeToReal = Just
     toReal = id
+    norm1 = abs
+    norm = abs
+    conj = id
     
 instance (TestElem (Complex Double)) where
     maybeToReal (x :+ y) | y == 0    = Just x
                          | otherwise = Nothing
-                        
+    norm1 (x :+ y) = abs x + abs y
+    norm z = magnitude z
+    conj (x :+ y) = x :+ (-y)
 
 {-
 -- | Element types that can be tested with QuickCheck properties.
