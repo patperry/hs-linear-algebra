@@ -24,51 +24,37 @@ import BLAS.Elem.Zomplex
 -- | Types with vectorized 'Floating' operations.
 class (VFractional a, Floating a) => VFloating a where
     vExp :: Int -> Ptr a -> Ptr a -> IO ()
-    vExp = vop exp
-    
     vSqrt :: Int -> Ptr a -> Ptr a -> IO ()
-    vSqrt = vop sqrt
-    
     vLog :: Int -> Ptr a -> Ptr a -> IO ()        
-    vLog = vop log
-    
     vPow :: Int -> Ptr a -> Ptr a -> Ptr a -> IO ()            
-    vPow = vop2 (**)
-    
     vSin :: Int -> Ptr a -> Ptr a -> IO ()                
-    vSin = vop sin
-    
     vCos :: Int -> Ptr a -> Ptr a -> IO ()                    
-    vCos = vop cos
-    
     vTan :: Int -> Ptr a -> Ptr a -> IO ()                        
-    vTan = vop tan
-    
     vASin :: Int -> Ptr a -> Ptr a -> IO ()                
-    vASin = vop asin
-    
     vACos :: Int -> Ptr a -> Ptr a -> IO ()                    
-    vACos = vop acos
-    
     vATan :: Int -> Ptr a -> Ptr a -> IO ()                        
-    vATan = vop atan
-    
     vSinh :: Int -> Ptr a -> Ptr a -> IO ()                
-    vSinh = vop sinh
-    
     vCosh :: Int -> Ptr a -> Ptr a -> IO ()                    
-    vCosh = vop cosh
-
     vTanh :: Int -> Ptr a -> Ptr a -> IO ()                        
-    vTanh = vop tanh
-
     vASinh :: Int -> Ptr a -> Ptr a -> IO ()                
-    vASinh = vop asinh
-
     vACosh :: Int -> Ptr a -> Ptr a -> IO ()                    
-    vACosh = vop acosh
-    
     vATanh :: Int -> Ptr a -> Ptr a -> IO ()
+
+    vExp = vop exp
+    vSqrt = vop sqrt
+    vLog = vop log
+    vPow = vop2 (**)
+    vSin = vop sin
+    vCos = vop cos
+    vTan = vop tan
+    vASin = vop asin
+    vACos = vop acos
+    vATan = vop atan
+    vSinh = vop sinh
+    vCosh = vop cosh
+    vTanh = vop tanh
+    vASinh = vop asinh
+    vACosh = vop acosh
     vATanh = vop atanh
     
     
