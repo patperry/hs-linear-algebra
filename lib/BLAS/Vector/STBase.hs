@@ -533,6 +533,11 @@ atanhToVector = checkVectorOp2 "atanhToVector" $
     vectorCall2 VFloating.vATanh
 {-# INLINE atanhToVector #-}
 
+-- | Gets the sum of the vector entries.
+getSumVector :: (RVector v, VNum e) => v e -> ST s e
+getSumVector = vectorCall VNum.vSum
+{-# INLINE getSumVector #-}
+
 -- | Gets the sum of the absolute values of the vector entries.
 getSumAbsVector :: (RVector v, BLAS1 e) => v e -> ST s Double
 getSumAbsVector = vectorStrideCall BLAS.asum

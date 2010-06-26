@@ -44,6 +44,7 @@ module BLAS.Vector.ST (
     zipWithToVector,
 
     -- * Vector properties
+    getSumVector,    
     getSumAbsVector,
     getNorm2Vector,
     getWhichMaxAbsVector,

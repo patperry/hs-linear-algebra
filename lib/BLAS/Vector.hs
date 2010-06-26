@@ -37,7 +37,8 @@ module BLAS.Vector (
     splitVectorAt,
 
     -- * Vector properties
-    sumAbsVector,
+    sumVector,
+    sumAbsVector,    
     norm2Vector,
     whichMaxAbsVector,
     dotVector,

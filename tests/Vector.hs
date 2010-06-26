@@ -30,7 +30,8 @@ tests_Vector = testGroup "Vector"
     , testPropertyI "zipWith" prop_zipWith
     , testPropertyI "splice" prop_splice
     , testPropertyI "splitAt" prop_splitAt
-    , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs
+    , testPropertyDZ "sum" prop_sum prop_sum
+    , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs    
     , testPropertyDZ "norm2" prop_norm2 prop_norm2
     , testPropertyDZ "whichMaxAbs1" prop_whichMaxAbs1 prop_whichMaxAbs1
     , testPropertyDZ "whichMaxAbs2" prop_whichMaxAbs1 prop_whichMaxAbs2
@@ -365,6 +366,11 @@ prop_atanh t x =
 
 -------------------------- Vector Properties ---------------------------------
 
+prop_sum t x =
+    sumVector x ~== (sum $ elemsVector x)
+  where
+    _ = typed t x
+
 prop_sumAbs t x =
     sumAbsVector x ~== (sum $ map norm1 $ elemsVector x)
   where
@@ -390,8 +396,9 @@ prop_whichMaxAbs2 t x =
     _     = typed t x
 
 prop_dot t (VectorPair x y) =
-    dotVector x y ~== sum [ conj e * f | (e,f) <- zip es fs ]
+    dotVector x y ~== sum (conj x * y)
   where
-    es = elemsVector x
-    fs = elemsVector y
-    _  = typed t x
+    sum  = sumVector
+    conj = conjVector
+    (*)  = mulVector
+    _    = typed t x
