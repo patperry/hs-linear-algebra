@@ -32,6 +32,10 @@ module BLAS.Vector.ST (
     -- * Reading and writing vector elements
     readVector,
     writeVector,
+    getElemsVector,
+    getElemsVector',
+    getAssocsVector,
+    getAssocsVector',
     setElemsVector,
     setAssocsVector,    
 
