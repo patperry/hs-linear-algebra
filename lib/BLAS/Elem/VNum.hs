@@ -49,7 +49,7 @@ instance VNum Double where
     {-# INLINE vScale #-}
     vMul = vdMul
     {-# INLINE vMul #-}
-    vConj _ _ _ = return ()
+    vConj n src dst = dcopy n src 1 dst 1
     {-# INLINE vConj #-}
     vNeg = vdNeg
     {-# INLINE vNeg #-}
