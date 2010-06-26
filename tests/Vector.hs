@@ -2,16 +2,17 @@ module Vector (
     tests_Vector
     ) where
 
-import Debug.Trace
-
 import Data.AEq
-import BLAS.Elem
-import BLAS.Vector
-
+import Debug.Trace
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
-import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Assocs(..), VectorPair(..) )
+
+import BLAS.Elem
+import BLAS.Vector
+
+import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Assocs(..),
+    VectorPair(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 
@@ -57,6 +58,11 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "asinh" prop_asinh prop_asinh
     , testPropertyDZ "atanh" prop_atanh prop_atanh
     , testPropertyDZ "acosh" prop_acosh prop_acosh
+    , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs
+    , testPropertyDZ "norm2" prop_norm2 prop_norm2
+    , testPropertyDZ "whichMaxAbs1" prop_whichMaxAbs1 prop_whichMaxAbs1
+    , testPropertyDZ "whichMaxAbs2" prop_whichMaxAbs1 prop_whichMaxAbs2
+    , testPropertyDZ "dot" prop_dot prop_dot
     ]
 
 typed :: e -> a e -> a e
@@ -99,7 +105,7 @@ testPropertyZ str propd propz =
 ------------------------- Vector Construction ------------------------------
 
 prop_dim_vector t (Assocs n ies) =
-    dimVector (vector n ies) == n
+    dimVector (vector n ies) === n
   where
     _ = typed t $ vector n ies
 
@@ -112,12 +118,12 @@ prop_at_vector t (Assocs n ies) = let
     _ = typed t $ vector n ies
 
 prop_listVector t (Dim n) es =
-    listVector n es == vector n (zip [ 0..n-1 ] es)
+    listVector n es === vector n (zip [ 0..n-1 ] es)
   where
     _ = typed t es
 
 prop_constantVector t (Dim n) e =
-    constantVector n e == listVector n (replicate n e)
+    constantVector n e === listVector n (replicate n e)
   where
     _ = typed t [e]
 
@@ -125,18 +131,18 @@ prop_constantVector t (Dim n) e =
 -------------------------- Accessing Vectors ------------------------------
 
 prop_indices t x =
-    indicesVector x == [ 0..((dimVector x) - 1) ]
+    indicesVector x === [ 0..((dimVector x) - 1) ]
   where
     _ = immutableVector x
     _ = typed t x
 
 prop_elems t x =
-    elemsVector x == [ atVector x i | i <- indicesVector x ]
+    elemsVector x === [ atVector x i | i <- indicesVector x ]
   where
     _ = typed t x
     
 prop_assocs t x =
-    assocsVector x == zip (indicesVector x) (elemsVector x)
+    assocsVector x === zip (indicesVector x) (elemsVector x)
   where
     _ = typed t x
 
@@ -153,15 +159,15 @@ prop_replace t (Assocs n ies) =
             [ atVector x' i `elem` [ e | (i',e) <- ies, i' == i ]
             | i <- is1
             ] ++
-            [ atVector x' i == atVector x i
+            [ atVector x' i === atVector x i
             | i <- is0
             ]
 
 prop_accum t (Blind f) (Assocs n ies) =
     forAll (typed t `fmap` Test.vector n) $ \x -> let
         x' = accumVector f x ies
-        in x' == listVector n [ foldl f e [ e' | (i',e') <- ies, i' == i]
-                              | (i,e) <- assocsVector x ]
+        in x' === listVector n [ foldl f e [ e' | (i',e') <- ies, i' == i]
+                               | (i,e) <- assocsVector x ]
   where
       _ = typed t $ (snd . unzip) ies
      
@@ -169,13 +175,13 @@ prop_accum t (Blind f) (Assocs n ies) =
 -------------------------- Derived Vectors ------------------------------
      
 prop_map t (Blind f) x =
-    mapVector f x == listVector (dimVector x) (map f $ elemsVector x)
+    mapVector f x === listVector (dimVector x) (map f $ elemsVector x)
   where
     _ = typed t x
     _ = typed t $ mapVector f x
 
 prop_zipWith t (Blind f) (VectorPair x y) =
-    zipWithVector f x y == (listVector (dimVector x) $
+    zipWithVector f x y === (listVector (dimVector x) $
                                 zipWith f (elemsVector x) (elemsVector y))
   where
     _ = typed t x
@@ -188,7 +194,7 @@ prop_zipWith t (Blind f) (VectorPair x y) =
 prop_splice t x = 
     forAll (choose (0,n)) $ \n' ->
     forAll (choose (0,n-n')) $ \o ->
-        spliceVector x o n' == listVector n' (take n' $ drop o $ es)
+        spliceVector x o n' === listVector n' (take n' $ drop o $ es)
   where
     n  = dimVector x
     es = elemsVector x
@@ -196,8 +202,8 @@ prop_splice t x =
 
 prop_splitAt t x =
     forAll (choose (0,n)) $ \k ->
-        splitVectorAt k x == (listVector k $ take k es,
-                              listVector (n-k) $ drop k es)
+        splitVectorAt k x === (listVector k $ take k es,
+                               listVector (n-k) $ drop k es)
   where
     n  = dimVector x
     es = elemsVector x
@@ -233,12 +239,12 @@ prop_abs t x =
     _ = typed t x
 
 prop_signum t x =
-    signum x == mapVector signum x
+    signum x === mapVector signum x
   where
     _ = typed t x
 
 prop_fromInteger t n =
-    fromInteger n == typed t (listVector 1 [fromInteger n])
+    fromInteger n === typed t (listVector 1 [fromInteger n])
 
 
 ---------------------- Fractional Vector Operations ------------------------
@@ -254,13 +260,13 @@ prop_recip t x =
     _ = typed t x
     
 prop_fromRational t q =
-    fromRational q == typed t (listVector 1 [fromRational q])
+    fromRational q === typed t (listVector 1 [fromRational q])
 
 
 ---------------------- Floating Vector Operations ------------------------
 
 prop_pi t =
-    pi == typed t (listVector 1 [pi])
+    pi === typed t (listVector 1 [pi])
 
 prop_exp t x =
     exp x ~== mapVector exp x
@@ -350,63 +356,35 @@ prop_acosh t x =
     _ = typed t x
 
 
-
-
-
-{-
-
-
 -------------------------- Vector Properties ---------------------------------
 
-prop_sumAbs (x :: V) =
-    sumAbs x ~== (sum $ map norm1 $ elems x)
-    
-prop_norm2 (x :: V) =
-    norm2 x ~== (sqrt $ sum $ map (^2) $ map norm $ elems x)
-    
-prop_whichMaxAbs1 (x :: V) =
-    (dim x > 0) && all (not . isNaN) (map norm1 $ elems x) ==>
-        let (i,e) = whichMaxAbs x
-        in x ! i === e
-        
-prop_whichMaxAbs2 (x :: V) =
-    (dim x > 0) && all (not . isNaN) (map norm1 $ elems x) ==>
-        let a = norm1 $ snd $ whichMaxAbs x
-        in all (<= a) (map norm1 $ elems x)
-        
-prop_dot_self (x :: V) =
-    (sqrt $ x <.> x) ~== (fromReal $ norm2 x)
-    
-prop_dot_conj (VectorPair (x :: V) y) =
-    (x <.> y) ~== (conjugate $ y <.> x)
-    
-prop_dot_scale1 k (VectorPair (x :: V) y) =
-    (x <.> (k *> y)) ~== k * (x <.> y)
-    
-prop_dot_scale2 k (VectorPair (x :: V) y) =
-    ((k *> x) <.> y) ~== (conjugate k) * (x <.> y)
-    
-prop_dot_linear1 (VectorTriple (x :: V) y z) =
-    (x <.> (y + z)) ~== (x <.> y + x <.> z)
-    
-prop_dot_linear2 (VectorTriple (x :: V) y z) =
-    ((x + y) <.> z) ~== (x <.> z + y <.> z)
+prop_sumAbs t x =
+    sumAbsVector x ~== (sum $ map norm1 $ elemsVector x)
+  where
+    _ = typed t x
 
-------------------------------------------------------------------------------
-tests_Vector =
-    
-    , testProperty "sumAbs" prop_sumAbs
-    , testProperty "norm2" prop_norm2
-    , testProperty "whichMaxAbs1" prop_whichMaxAbs1
-    , testProperty "whichMaxAbs2" prop_whichMaxAbs2
-    , testProperty "dot self" prop_dot_self
-    , testProperty "dot conj" prop_dot_conj
-    , testProperty "dot scale1" prop_dot_scale1
-    , testProperty "dot scale2" prop_dot_scale2
-    , testProperty "dot linear1" prop_dot_linear1
-    , testProperty "dot linear2" prop_dot_linear2
-    
-    ]
+prop_norm2 t x =
+    norm2Vector x ~== (sqrt $ sum $ map (^^2) $ map norm $ elemsVector x)
+  where
+    _ = typed t x
 
+prop_whichMaxAbs1 t x =
+    (dimVector x > 0) && all (not . isNaN) (map norm1 $ elemsVector x) ==>
+        atVector x i === e
+  where
+    (i,e) = whichMaxAbsVector x      
+    _     = typed t x
 
--}
+prop_whichMaxAbs2 t x =
+    (dimVector x > 0) && all (not . isNaN) (map norm1 $ elemsVector x) ==>
+        all (<= norm1 e) $ map norm1 (elemsVector x)
+  where
+    (_,e) = whichMaxAbsVector x
+    _     = typed t x
+
+prop_dot t (VectorPair x y) =
+    dotVector x y ~== sum [ conj e * f | (e,f) <- zip es fs ]
+  where
+    es = elemsVector x
+    fs = elemsVector y
+    _  = typed t x
