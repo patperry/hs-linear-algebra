@@ -396,15 +396,15 @@ scaleToVector alpha = checkVectorOp2 "scaleToVector _" $
     vectorCall2 (flip VNum.vScale alpha)
 {-# INLINE scaleToVector #-}
 
--- | @addToVectorWithScales alpha x beta y z@ replaces @z@ with
+-- | @addToVectorWithScale alpha x beta y z@ replaces @z@ with
 -- @alpha * x + beta * y@.
-addToVectorWithScales :: (RVector v1, RVector v2, VNum e)
-                      => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
-addToVectorWithScales alpha x beta y z =
-    checkVectorOp3 "addToVectorWithScales"
+addToVectorWithScale :: (RVector v1, RVector v2, VNum e)
+                     => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
+addToVectorWithScale alpha x beta y z =
+    checkVectorOp3 "addToVectorWithScale"
         (vectorCall3 (\n v1 v2 v3 -> VNum.vAxpby n alpha v1 beta v2 v3))
         x y z
-{-# INLINE addToVectorWithScales #-}
+{-# INLINE addToVectorWithScale #-}
 
 -- | @addToVector x y z@ replaces @z@ with @x+y@.
 addToVector :: (RVector v1, RVector v2, VNum e)

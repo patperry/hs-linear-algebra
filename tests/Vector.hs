@@ -30,39 +30,39 @@ tests_Vector = testGroup "Vector"
     , testPropertyI "zipWith" prop_zipWith
     , testPropertyI "splice" prop_splice
     , testPropertyI "splitAt" prop_splitAt
-    , testPropertyDZ "(+)" prop_plus prop_plus
-    , testPropertyDZ "(*)" prop_times prop_times
-    , testPropertyDZ "(-)" prop_minus prop_minus
-    , testPropertyDZ "negate" prop_negate prop_negate
-    , testPropertyDZ "abs" prop_abs prop_abs
-    , testPropertyDZ "signum" prop_signum prop_signum
-    , testPropertyDZ "fromInteger" prop_fromInteger prop_fromInteger
-    , testPropertyDZ "(/)" prop_div prop_div
-    , testPropertyDZ "(recip)" prop_recip prop_recip
-    , testPropertyDZ "fromRational" prop_fromRational prop_fromRational
-    , testPropertyDZ "pi" prop_pi prop_pi
-    , testPropertyDZ "exp" prop_exp prop_exp
-    , testPropertyDZ "sqrt" prop_sqrt prop_sqrt
-    , testPropertyDZ "log" prop_log prop_log
-    , testPropertyDZ "(**)" prop_pow prop_pow
-    , testPropertyDZ "logBase" prop_logBase prop_logBase
-    , testPropertyDZ "sin" prop_sin prop_sin
-    , testPropertyDZ "tan" prop_tan prop_tan
-    , testPropertyDZ "cos" prop_cos prop_cos
-    , testPropertyDZ "asin" prop_asin prop_asin    
-    , testPropertyDZ "atan" prop_atan prop_atan    
-    , testPropertyDZ "acos" prop_acos prop_acos    
-    , testPropertyDZ "sinh" prop_sinh prop_sinh
-    , testPropertyDZ "tanh" prop_tanh prop_tanh
-    , testPropertyDZ "cosh" prop_cosh prop_cosh
-    , testPropertyDZ "asinh" prop_asinh prop_asinh
-    , testPropertyDZ "atanh" prop_atanh prop_atanh
-    , testPropertyDZ "acosh" prop_acosh prop_acosh
     , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs
     , testPropertyDZ "norm2" prop_norm2 prop_norm2
     , testPropertyDZ "whichMaxAbs1" prop_whichMaxAbs1 prop_whichMaxAbs1
     , testPropertyDZ "whichMaxAbs2" prop_whichMaxAbs1 prop_whichMaxAbs2
     , testPropertyDZ "dot" prop_dot prop_dot
+    , testPropertyDZ "shift" prop_shift prop_shift
+    , testPropertyDZ "add" prop_add prop_add
+    , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
+    , testPropertyDZ "sub" prop_sub prop_sub
+    , testPropertyDZ "scale" prop_scale prop_scale
+    , testPropertyDZ "mul" prop_mul prop_mul
+    , testPropertyDZ "negate" prop_negate prop_negate
+    , testPropertyDZ "conj" prop_conj prop_conj
+    , testPropertyDZ "abs" prop_abs prop_abs
+    , testPropertyDZ "signum" prop_signum prop_signum
+    , testPropertyDZ "div" prop_div prop_div
+    , testPropertyDZ "recip" prop_recip prop_recip
+    , testPropertyDZ "sqrt" prop_sqrt prop_sqrt
+    , testPropertyDZ "exp" prop_exp prop_exp
+    , testPropertyDZ "log" prop_log prop_log
+    , testPropertyDZ "pow" prop_pow prop_pow
+    , testPropertyDZ "sin" prop_sin prop_sin
+    , testPropertyDZ "cos" prop_cos prop_cos
+    , testPropertyDZ "tan" prop_tan prop_tan
+    , testPropertyDZ "asin" prop_asin prop_asin    
+    , testPropertyDZ "acos" prop_acos prop_acos    
+    , testPropertyDZ "atan" prop_atan prop_atan    
+    , testPropertyDZ "sinh" prop_sinh prop_sinh
+    , testPropertyDZ "cosh" prop_cosh prop_cosh
+    , testPropertyDZ "tanh" prop_tanh prop_tanh
+    , testPropertyDZ "asinh" prop_asinh prop_asinh
+    , testPropertyDZ "acosh" prop_acosh prop_acosh
+    , testPropertyDZ "atanh" prop_atanh prop_atanh
     ]
 
 typed :: e -> a e -> a e
@@ -213,145 +213,152 @@ prop_splitAt t x =
 
 -------------------------- Num Vector Operations --------------------------
 
-prop_plus t (VectorPair x y) =
-    x + y === zipWithVector (+) x y
+prop_shift t k x =
+    k `shiftVector` x === mapVector (k+) x
   where
     _ = typed t x
 
-prop_times t (VectorPair x y) =
-    x * y === zipWithVector (*) x y
+prop_add t (VectorPair x y) =
+    x `addVector` y === zipWithVector (+) x y
   where
     _ = typed t x
 
-prop_minus t (VectorPair x y) =
-    x - y === zipWithVector (-) x y
+prop_addWithScale t a b (VectorPair x y) =
+    addVectorWithScale a x b y ~== 
+        zipWithVector (+) (mapVector (a*) x) (mapVector (b*) y)
+  where
+    _ = typed t x
+
+prop_sub t (VectorPair x y) =
+    x `subVector` y === zipWithVector (-) x y
+  where
+    _ = typed t x
+
+prop_scale t k x =
+    k `scaleVector` x === mapVector (k*) x
+  where
+    _ = typed t x
+
+prop_mul t (VectorPair x y) =
+    x `mulVector` y === zipWithVector (*) x y
   where
     _ = typed t x
 
 prop_negate t x =
-    negate x === mapVector negate x
+    negateVector x === mapVector negate x
+  where
+    _ = typed t x
+
+prop_conj t x =
+    conjVector x === mapVector conj x
   where
     _ = typed t x
 
 prop_abs t x =
-    abs x === mapVector abs x
+    absVector x === mapVector abs x
   where
     _ = typed t x
 
 prop_signum t x =
-    signum x === mapVector signum x
+    signumVector x === mapVector signum x
   where
     _ = typed t x
-
-prop_fromInteger t n =
-    fromInteger n === typed t (listVector 1 [fromInteger n])
 
 
 ---------------------- Fractional Vector Operations ------------------------
 
 prop_div t (VectorPair x y) =
-    x / y ~== zipWithVector (/) x y
+    x `divVector` y ~== zipWithVector (/) x y
   where
     _ = typed t x
     
 prop_recip t x =
-    recip x === constantVector (dimVector x) 1 / x
+    recipVector x ~== mapVector (1/) x
   where
     _ = typed t x
     
-prop_fromRational t q =
-    fromRational q === typed t (listVector 1 [fromRational q])
-
 
 ---------------------- Floating Vector Operations ------------------------
 
-prop_pi t =
-    pi === typed t (listVector 1 [pi])
-
 prop_exp t x =
-    exp x ~== mapVector exp x
+    expVector x ~== mapVector exp x
   where
     _ = typed t x
 
 prop_sqrt t x =
-    sqrt x ~== mapVector sqrt x
+    sqrtVector x ~== mapVector sqrt x
   where
     _ = typed t x
 
 prop_log t x =
-    log x ~== mapVector log x
+    logVector x ~== mapVector log x
   where
     _ = typed t x
 
 prop_pow t (VectorPair x y) =
-    x ** y ~== zipWithVector (**) x y
-  where
-    _ = typed t x
-
-prop_logBase t (VectorPair x y) =
-    logBase x y ~== zipWithVector logBase x y
+    x `powVector` y ~== zipWithVector (**) x y
   where
     _ = typed t x
 
 prop_sin t x =
-    sin x ~== mapVector sin x
-  where
-    _ = typed t x
-
-prop_tan t x =
-    tan x ~== mapVector tan x
+    sinVector x ~== mapVector sin x
   where
     _ = typed t x
 
 prop_cos t x =
-    cos x ~== mapVector cos x
+    cosVector x ~== mapVector cos x
+  where
+    _ = typed t x
+
+prop_tan t x =
+    tanVector x ~== mapVector tan x
   where
     _ = typed t x
 
 prop_asin t x =
-    -- trace (show (asin x) ++ "\n" ++ (show $ mapVector asin x)) $    
-    asin x ~== mapVector asin x
-  where
-    _ = typed t x
-
-prop_atan t x =
-    atan x ~== mapVector atan x
+    -- trace (show (asinVector x) ++ "\n" ++ (show $ mapVector asin x)) $    
+    asinVector x ~== mapVector asin x
   where
     _ = typed t x
 
 prop_acos t x =
-    acos x ~== mapVector acos x
+    acosVector x ~== mapVector acos x
+  where
+    _ = typed t x
+
+prop_atan t x =
+    atanVector x ~== mapVector atan x
   where
     _ = typed t x
 
 prop_sinh t x =
-    sinh x ~== mapVector sinh x
-  where
-    _ = typed t x
-
-prop_tanh t x =
-    tanh x ~== mapVector tanh x
+    sinhVector x ~== mapVector sinh x
   where
     _ = typed t x
 
 prop_cosh t x =
-    cosh x ~== mapVector cosh x
+    coshVector x ~== mapVector cosh x
+  where
+    _ = typed t x
+
+prop_tanh t x =
+    tanhVector x ~== mapVector tanh x
   where
     _ = typed t x
 
 prop_asinh t x =
-    -- trace (show (asinh x) ++ "\n" ++ (show $ mapVector asinh x)) $
-    asinh x ~== mapVector asinh x
-  where
-    _ = typed t x
-
-prop_atanh t x =
-    atanh x ~== mapVector atanh x
+    -- trace (show (asinhVector x) ++ "\n" ++ (show $ mapVector asinh x)) $
+    asinhVector x ~== mapVector asinh x
   where
     _ = typed t x
 
 prop_acosh t x =
-    acosh x ~== mapVector acosh x
+    acoshVector x ~== mapVector acosh x
+  where
+    _ = typed t x
+
+prop_atanh t x =
+    atanhVector x ~== mapVector atanh x
   where
     _ = typed t x
 

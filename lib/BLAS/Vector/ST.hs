@@ -43,18 +43,24 @@ module BLAS.Vector.ST (
     mapToVector,
     zipWithToVector,
 
+    -- * Vector properties
+    getSumAbsVector,
+    getNorm2Vector,
+    getWhichMaxAbsVector,
+    getDotVector,
+
     -- * Vector math operations
     -- ** Num
-    addToVector,
-    addToVectorWithScales,
-    subToVector,
-    mulToVector,
     shiftToVector,
+    addToVector,
+    addToVectorWithScale,
+    subToVector,
     scaleToVector,
+    mulToVector,
     negateToVector,
+    conjToVector,
     absToVector,
     signumToVector,
-    conjToVector,
 
     -- ** Fractional
     divToVector,
@@ -77,12 +83,6 @@ module BLAS.Vector.ST (
     asinhToVector,
     acoshToVector,
     atanhToVector,
-
-    -- * Vector properties
-    getSumAbsVector,
-    getNorm2Vector,
-    getWhichMaxAbsVector,
-    getDotVector,
 
     -- * Conversions between mutable and immutable vectors
     freezeVector,

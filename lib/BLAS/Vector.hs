@@ -42,6 +42,41 @@ module BLAS.Vector (
     whichMaxAbsVector,
     dotVector,
 
+    -- * Vector math operations
+    -- ** Num
+    shiftVector,
+    addVector,
+    addVectorWithScale,
+    subVector,
+    scaleVector,
+    mulVector,
+    negateVector,
+    conjVector,
+    absVector,
+    signumVector,
+
+    -- ** Fractional
+    divVector,
+    recipVector,        
+
+    -- ** Floating
+    sqrtVector,
+    expVector,
+    logVector,
+    powVector,
+    sinVector,
+    cosVector,
+    tanVector,
+    asinVector,
+    acosVector,
+    atanVector,
+    sinhVector,
+    coshVector,
+    tanhVector,
+    asinhVector,
+    acoshVector,
+    atanhVector,
+
     ) where
 
 import BLAS.Vector.Base

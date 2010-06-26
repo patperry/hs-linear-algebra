@@ -21,13 +21,15 @@ import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
 import BLAS.Internal( inlinePerformIO )
-
-
-
 import BLAS.Elem
--- import qualified Data.Elem.BLAS.Level1 as BLAS
+
 
 import BLAS.Vector.STBase
+
+infixr 8 `powVector`
+infixl 7 `divVector`
+infixl 7 `mulVector`, `scaleVector`
+infixl 6 `addVector`, `shiftVector`, `subVector`
 
 
 -- | Immutable dense vectors. The type arguments are as follows:
@@ -287,70 +289,119 @@ compareVectorWith cmp v v' =
     && and (zipWith cmp (elemsVector v) (elemsVector v'))
 {-# INLINE compareVectorWith #-}
 
+-- | @shiftVector k x@ returns @k + x@.
+shiftVector :: (VNum e) => e -> Vector e -> Vector e
+shiftVector k = resultVector $ shiftToVector k
 
-instance (VNum e) => Num (Vector e) where
-    (+) = resultVector2 addToVector
-    {-# INLINE (+) #-}
-    (-) = resultVector2 subToVector
-    {-# INLINE (-) #-}
-    (*) = resultVector2 mulToVector
-    {-# INLINE (*) #-}
-    negate = resultVector negateToVector
-    {-# INLINE negate #-}
-    abs = resultVector absToVector
-    {-# INLINE abs #-}
-    signum = resultVector signumToVector
-    {-# INLINE signum #-}
-    fromInteger = singletonVector . fromInteger
-    {-# INLINE fromInteger #-}
+-- | @addVector x y@ returns @x + y@.
+addVector :: (VNum e) => Vector e -> Vector e -> Vector e
+addVector = resultVector2 addToVector
 
-instance (VFractional e) => Fractional (Vector e) where
-    (/) = resultVector2 divToVector
-    {-# INLINE (/) #-}
-    recip = resultVector recipToVector
-    {-# INLINE recip #-}
-    fromRational = singletonVector . fromRational
-    {-# INLINE fromRational #-}
+-- | @addVectorWithScale a x b y@ returns @a*x + b*y@.
+addVectorWithScale :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
+addVectorWithScale a x b y =
+    (resultVector2 $ \x' y' -> addToVectorWithScale a x' b y') x y
 
-instance (VFloating e) => Floating (Vector e) where
-    pi = singletonVector pi
-    {-# INLINE pi #-}
-    exp = resultVector expToVector
-    {-# INLINE exp #-}
-    sqrt = resultVector sqrtToVector
-    {-# INLINE sqrt #-}
-    log = resultVector logToVector
-    {-# INLINE log #-}
-    (**) = resultVector2 powToVector
-    {-# INLINE (**) #-}
-    sin = resultVector sinToVector
-    {-# INLINE sin #-}
-    cos = resultVector cosToVector
-    {-# INLINE cos #-}
-    tan = resultVector tanToVector
-    {-# INLINE tan #-}
-    asin = resultVector asinToVector
-    {-# INLINE asin #-}
-    acos = resultVector acosToVector
-    {-# INLINE acos #-}
-    atan = resultVector atanToVector
-    {-# INLINE atan #-}
-    sinh = resultVector sinhToVector
-    {-# INLINE sinh #-}
-    cosh = resultVector coshToVector
-    {-# INLINE cosh #-}
-    tanh = resultVector tanhToVector
-    {-# INLINE tanh #-}
-    asinh = resultVector asinhToVector
-    {-# INLINE asinh #-}
-    acosh = resultVector acoshToVector
-    {-# INLINE acosh #-}
-    atanh = resultVector atanhToVector
-    {-# INLINE atanh #-}
+-- | @subVector x y@ returns @x - y@.
+subVector :: (VNum e) => Vector e -> Vector e -> Vector e
+subVector = resultVector2 subToVector
 
-singletonVector :: (Storable e) => e -> Vector e
-singletonVector e = listVector 1 [e]
-{-# INLINE singletonVector #-}
+-- | @scaleVector k x@ returns @k * x@.
+scaleVector :: (VNum e) => e -> Vector e -> Vector e
+scaleVector k = resultVector $ scaleToVector k
+
+-- | @mulVector x y@ returns @x + y@.
+mulVector :: (VNum e) => Vector e -> Vector e -> Vector e
+mulVector = resultVector2 mulToVector
+
+-- | @negateVector x@ returns @-x@.
+negateVector :: (VNum e) => Vector e -> Vector e
+negateVector = resultVector negateToVector
+
+-- | @conjVector x@ returns @conj(x)@.
+conjVector :: (VNum e) => Vector e -> Vector e
+conjVector = resultVector conjToVector
+
+-- | @absVector x@ returns @abs(x)@.
+absVector :: (VNum e) => Vector e -> Vector e
+absVector = resultVector absToVector
+
+-- | @signumVector x@ returns @signum(x)@.
+signumVector :: (VNum e) => Vector e -> Vector e
+signumVector = resultVector signumToVector
+
+-- | @divVector x y@ returns @x / y@.
+divVector :: (VFractional e) => Vector e -> Vector e -> Vector e
+divVector = resultVector2 divToVector
+
+-- | @recipVector x y@ returns @1 / x@.
+recipVector :: (VFractional e) => Vector e -> Vector e
+recipVector = resultVector recipToVector
+
+-- | @sqrtVector x@ returns @sqrt(x)@.
+sqrtVector :: (VFloating e) => Vector e -> Vector e
+sqrtVector = resultVector sqrtToVector
+
+-- | @expVector x@ returns @exp(x)@.
+expVector :: (VFloating e) => Vector e -> Vector e
+expVector = resultVector expToVector
+
+-- | @logVector x@ returns @log(x)@.
+logVector :: (VFloating e) => Vector e -> Vector e
+logVector = resultVector logToVector
+
+-- | @powVector x y@ returns @x ** y@.
+powVector :: (VFloating e) => Vector e -> Vector e -> Vector e
+powVector = resultVector2 powToVector
+
+-- | @sinVector x@ returns @sin(x)@.
+sinVector :: (VFloating e) => Vector e -> Vector e
+sinVector = resultVector sinToVector
+
+-- | @cosVector x@ returns @cos(x)@.
+cosVector :: (VFloating e) => Vector e -> Vector e
+cosVector = resultVector cosToVector
+
+-- | @tanVector x@ returns @tan(x)@.
+tanVector :: (VFloating e) => Vector e -> Vector e
+tanVector = resultVector tanToVector
+
+-- | @asinVector x@ returns @asin(x)@.
+asinVector :: (VFloating e) => Vector e -> Vector e
+asinVector = resultVector asinToVector
+
+-- | @acosVector x@ returns @acos(x)@.
+acosVector :: (VFloating e) => Vector e -> Vector e
+acosVector = resultVector acosToVector
+
+-- | @atanVector x@ returns @atan(x)@.
+atanVector :: (VFloating e) => Vector e -> Vector e
+atanVector = resultVector atanToVector
+
+-- | @sinhVector x@ returns @sinh(x)@.
+sinhVector :: (VFloating e) => Vector e -> Vector e
+sinhVector = resultVector sinhToVector
+
+-- | @coshVector x@ returns @cosh(x)@.
+coshVector :: (VFloating e) => Vector e -> Vector e
+coshVector = resultVector coshToVector
+
+-- | @tanhVector x@ returns @tanh(x)@.
+tanhVector :: (VFloating e) => Vector e -> Vector e
+tanhVector = resultVector tanhToVector
+
+-- | @asinhVector x@ returns @asinh(x)@.
+asinhVector :: (VFloating e) => Vector e -> Vector e
+asinhVector = resultVector asinhToVector
+
+-- | @acoshVector x@ returns @acosh(x)@.
+acoshVector :: (VFloating e) => Vector e -> Vector e
+acoshVector = resultVector acoshToVector
+
+-- | @atanhVector x@ returns @atanh(x)@.
+atanhVector :: (VFloating e) => Vector e -> Vector e
+atanhVector = resultVector atanhToVector
+
 
 resultVector :: (Storable f)
              => (forall s . Vector e -> STVector s f -> ST s a)
