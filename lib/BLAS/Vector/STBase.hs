@@ -239,6 +239,7 @@ unsafeSetAssocsVector x ies =
         go _ [] = return ()
     in unsafeIOToST $ unsafeWithVector x $ \p -> go p ies
 
+-- | Get the element stored at the given index.
 readVector :: (RVector v, Storable e) => v e -> Int -> ST s e
 readVector x i
     | i < 0 || i >= n = error $
@@ -257,6 +258,7 @@ unsafeReadVector x i =
 {-# SPECIALIZE INLINE unsafeReadVector :: STVector s Double -> Int -> ST s (Double) #-}
 {-# SPECIALIZE INLINE unsafeReadVector :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
 
+-- | Set the element stored at the given index.
 writeVector :: (Storable e) => STVector s e -> Int -> e -> ST s ()
 writeVector x i e
     | i < 0 || i >= n = error $
