@@ -86,7 +86,9 @@ module BLAS.Vector.ST (
 
     -- * Conversions between mutable and immutable vectors
     freezeVector,
+    unsafeFreezeVector,
     thawVector,
+    unsafeThawVector,
     
     -- * Vector views of arrays
     vectorViewArray,

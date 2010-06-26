@@ -39,24 +39,44 @@ newtype Vector e = Vector { unVector :: STVector RealWorld e }
 
 -- | A safe way to create and work with a mutable vector before returning 
 -- an immutable vector for later perusal. This function avoids copying
--- the vector before returning it - it uses unsafeFreezeVector internally,
+-- the vector before returning it - it uses 'unsafeFreezeVector' internally,
 -- but this wrapper is a safe interface to that function. 
 runVector :: (forall s . ST s (STVector s e)) -> Vector e
 runVector mx = runST $ mx >>= unsafeFreezeVector
 {-# INLINE runVector #-}
 
+
+-- | Converts a mutable vector to an immutable one by taking a complete
+-- copy of it.
 freezeVector :: (Storable e) => STVector s e -> ST s (Vector e)
 freezeVector = fmap Vector . unsafeCoerce . newCopyVector
 {-# INLINE freezeVector #-}
 
-thawVector :: (Storable e) => Vector e -> ST s (STVector s e)
-thawVector = newCopyVector
-{-# INLINE thawVector #-}
-
+-- | Converts a mutable vector into an immutable vector. This simply casts
+-- the vector from one type to the other without copying the vector.
+--
+-- Note that because the vector is possibly not copied, any subsequent
+-- modifications made to the mutable version of the vector may be shared with
+-- the immutable version. It is safe to use, therefore, if the mutable
+-- version is never modified after the freeze operation.
 unsafeFreezeVector :: STVector s e -> ST s (Vector e)
 unsafeFreezeVector = return . Vector . unsafeCoerce
 {-# INLINE unsafeFreezeVector #-}
 
+-- | Converts an immutable vector to a mutable one by taking a complete
+-- copy of it.
+thawVector :: (Storable e) => Vector e -> ST s (STVector s e)
+thawVector = newCopyVector
+{-# INLINE thawVector #-}
+
+-- | Converts an immutable vector into a mutable vector. This simply casts
+-- the vector from one type to the other without copying the vector.
+--
+-- Note that because the vector is possibly not copied, any subsequent
+-- modifications made to the mutable version of the vector may be shared with
+-- the immutable version. It is only safe to use, therefore, if the immutable
+-- vector is never referenced again in this thread, and there is no
+-- possibility that it can be also referenced in another thread.
 unsafeThawVector :: Vector e -> ST s (STVector s e)
 unsafeThawVector = return . unsafeCoerce . unVector
 {-# INLINE unsafeThawVector #-}
@@ -76,7 +96,7 @@ vector n ies = runVector $ do
     return v
 {-# INLINE vector #-}
 
--- Same as 'vector', but does not range-check the indices.
+-- | Same as 'vector', but does not range-check the indices.
 unsafeVector :: (Storable e) => Int -> [(Int, e)] -> Vector e
 unsafeVector n ies = runVector $ do
     v <- newVector_ n
