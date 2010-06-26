@@ -10,10 +10,11 @@
 -- Vector operations.
 --
 
-module BLAS.Elem.VFloating
-    where
+module BLAS.Elem.VFloating (
+    VFloating(..)
+    ) where
      
-import Foreign( Ptr )
+import Foreign( Ptr, Storable, peek, poke, advancePtr )
 import Data.Complex( Complex(..) )
 
 import BLAS.Elem.VFractional
@@ -23,21 +24,73 @@ import BLAS.Elem.Zomplex
 -- | Types with vectorized 'Floating' operations.
 class (VFractional a, Floating a) => VFloating a where
     vExp :: Int -> Ptr a -> Ptr a -> IO ()
-    vSqrt :: Int -> Ptr a -> Ptr a -> IO ()    
+    vExp = vop exp
+    
+    vSqrt :: Int -> Ptr a -> Ptr a -> IO ()
+    vSqrt = vop sqrt
+    
     vLog :: Int -> Ptr a -> Ptr a -> IO ()        
+    vLog = vop log
+    
     vPow :: Int -> Ptr a -> Ptr a -> Ptr a -> IO ()            
+    vPow = vop2 (**)
+    
     vSin :: Int -> Ptr a -> Ptr a -> IO ()                
+    vSin = vop sin
+    
     vCos :: Int -> Ptr a -> Ptr a -> IO ()                    
+    vCos = vop cos
+    
     vTan :: Int -> Ptr a -> Ptr a -> IO ()                        
+    vTan = vop tan
+    
     vASin :: Int -> Ptr a -> Ptr a -> IO ()                
+    vASin = vop asin
+    
     vACos :: Int -> Ptr a -> Ptr a -> IO ()                    
+    vACos = vop acos
+    
     vATan :: Int -> Ptr a -> Ptr a -> IO ()                        
+    vATan = vop atan
+    
     vSinh :: Int -> Ptr a -> Ptr a -> IO ()                
+    vSinh = vop sinh
+    
     vCosh :: Int -> Ptr a -> Ptr a -> IO ()                    
+    vCosh = vop cosh
+
     vTanh :: Int -> Ptr a -> Ptr a -> IO ()                        
+    vTanh = vop tanh
+
     vASinh :: Int -> Ptr a -> Ptr a -> IO ()                
+    vASinh = vop asinh
+
     vACosh :: Int -> Ptr a -> Ptr a -> IO ()                    
+    vACosh = vop acosh
+    
     vATanh :: Int -> Ptr a -> Ptr a -> IO ()
+    vATanh = vop atanh
+    
+    
+vop :: (Storable a, Storable b)
+    => (a -> b) -> Int -> Ptr a -> Ptr b -> IO ()
+vop f n src dst | n <= 0    = return ()
+                | otherwise = do
+    a <- peek src
+    poke dst $ f a
+    vop f (n-1) (src `advancePtr` 1) (dst `advancePtr` 1)
+{-# INLINE vop #-}
+
+vop2 :: (Storable a1, Storable a2, Storable b)
+     => (a1 -> a2 -> b) -> Int -> Ptr a1 -> Ptr a2 -> Ptr b -> IO ()
+vop2 f n src1 src2 dst | n <= 0    = return ()
+                       | otherwise = do
+    a1 <- peek src1
+    a2 <- peek src2
+    poke dst $ f a1 a2
+    vop2 f (n-1) (src1 `advancePtr` 1) (src2 `advancePtr` 1)
+         (dst `advancePtr` 1)
+{-# INLINE vop2 #-}
     
 instance VFloating Double where
     vExp = vdExp
@@ -75,12 +128,14 @@ instance VFloating Double where
 
 
 instance VFloating (Complex Double) where
-    vExp = vzExp
-    {-# INLINE vExp #-}
     vSqrt = vzSqrt
     {-# INLINE vSqrt #-}
     vLog = vzLog
     {-# INLINE vLog #-}
+    
+    {- These functions have branch cuts in the wrong places 
+    vExp = vzExp
+    {-# INLINE vExp #-}
     vPow = vzPow
     {-# INLINE vPow #-}
     vSin = vzSin
@@ -107,3 +162,4 @@ instance VFloating (Complex Double) where
     {-# INLINE vACosh #-}
     vATanh = vzATanh
     {-# INLINE vATanh #-}
+    -}
