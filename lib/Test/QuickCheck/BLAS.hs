@@ -183,7 +183,7 @@ instance Arbitrary Dim where
 -- | Given a dimension generate a valid index.  The dimension must be positive.
 index :: Int -> Gen Int
 index n | n <= 0 = 
-            error $  "index " ++ (show n) ++ ":"
+            error $ "index " ++ (show n) ++ ":"
                   ++ " dimension must be positive (QuickCheck error)"
         | otherwise =
             choose (0,n-1)
@@ -192,10 +192,11 @@ index n | n <= 0 =
 data Index = Index Int Int deriving (Eq,Show)
 instance Arbitrary Index where
     arbitrary = do
-        (Positive (Dim n)) <- arbitrary
+        n <- (1+) `fmap` dim
         i <- index n
         return $ Index n i
-        
+    
+    {-    
     shrink (Index n i) =
         [ Index n 0
         | i /= 0
@@ -203,7 +204,7 @@ instance Arbitrary Index where
         [ Index n' i
         | (Positive n') <- shrink (Positive n)
         , n' > i 
-        ]
+        ]-}
         
 -- | Generate a random vector of the given size.
 vector :: (Arbitrary e, Storable e) => Int -> Gen (Vector e)
