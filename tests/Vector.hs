@@ -15,6 +15,8 @@ import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Assocs(..),
     VectorPair(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
+import Typed
+
 
 tests_Vector = testGroup "Vector"
     [ testPropertyI "dim/vector" prop_dim_vector
@@ -66,42 +68,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "atanh" prop_atanh prop_atanh
     ]
 
-typed :: e -> a e -> a e
-typed _ = id
 
-immutableVector :: Vector e -> Vector e
-immutableVector = id
-
-
-testPropertyI :: (Testable a)
-              => TestName
-              -> (Int -> a)
-              -> Test
-testPropertyI str prop =
-    testProperty str $ prop undefined
-
-testPropertyDZ :: (Testable a, Testable b)
-               => TestName
-               -> (Double -> a)
-               -> (Complex Double -> b)
-               -> Test
-testPropertyDZ str propd propz =
-    testGroup str
-        [ testProperty "Double" $ propd undefined
-        , testProperty "Complex Double" $ propz undefined
-        ]
-
-testPropertyZ :: (Testable a, Testable b)
-              => TestName
-              -> (Double -> a)
-              -> (Complex Double -> b)
-              -> Test
-testPropertyZ str propd propz =
-    testGroup str
-        [ --testProperty "Double" $ propd undefined
-        testProperty "Complex Double" $ propz undefined
-        ]
-    
 
 ------------------------- Vector Construction ------------------------------
 

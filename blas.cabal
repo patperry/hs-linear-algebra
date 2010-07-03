@@ -108,6 +108,8 @@ Executable test
     hs-source-dirs:     lib, tests
     main-is:            Main.hs
     other-modules:      Vector
+                        STVector,
+                        Typed
 
     includes:           cbits/config.h
                         cbits/BLAS.h
@@ -118,7 +120,7 @@ Executable test
                         cbits/vectorOps-double.c
                         cbits/vectorOps-zomplex.c                                                
     
-    extensions:         ScopedTypeVariables
+    extensions:         Rank2Types, ScopedTypeVariables
     
     build-depends:      base,
                         QuickCheck >= 2.1 && < 3,
