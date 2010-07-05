@@ -9,13 +9,14 @@ import Debug.Trace
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
+import qualified Test.QuickCheck as QC
 
 import BLAS.Elem
 import BLAS.Vector
 import BLAS.Vector.ST
 
 import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Index(..), Assocs(..),
-    VectorPair(..) )
+    VectorPair(..), VectorTriple(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
 import Typed
@@ -29,6 +30,22 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "swap" prop_swap prop_swap
     , testPropertyI "read" prop_read
     , testPropertyI "write" prop_write
+    , testPropertyI "getElems" prop_getElems
+    , testPropertyI "getElems'" prop_getElems'
+    , testPropertyI "getAssocs" prop_getAssocs
+    , testPropertyI "getAssocs'" prop_getAssocs'
+    , testPropertyI "setElems" prop_setElems
+    , testPropertyI "setAssocs" prop_setAssocs
+    , testPropertyI "mapTo 1" prop_mapTo1
+    , testPropertyI "mapTo 2" prop_mapTo2
+    , testPropertyI "zipWithTo 1" prop_zipWithTo1
+    , testPropertyI "zipWithTo 2a" prop_zipWithTo2a
+    , testPropertyI "zipWithTo 2b" prop_zipWithTo2b
+    , testPropertyI "zipWithTo 3" prop_zipWithTo3
+    , testPropertyDZ "getSum" prop_getSum prop_getSum
+    , testPropertyDZ "getSumAbs" prop_getSumAbs prop_getSumAbs
+    , testPropertyDZ "getNorm2" prop_getNorm2 prop_getNorm2
+    , testPropertyDZ "getDot" prop_getDot prop_getDot
     ]
     
     
@@ -70,6 +87,130 @@ prop_write t (Index n i) e =
   where
     _ = e == t
 
+prop_getElems t x =
+    forAll arbitrary $ \(Blind f) -> runST $
+        x `mutatesToVector` (mapVector f x) $ \mx -> do
+            es <- getElemsVector mx
+            mapToVector f mx mx
+            return $ es === elemsVector (mapVector f x)
+  where
+    _ = typed t x
+
+prop_getElems' t x =
+    forAll arbitrary $ \(Blind f) -> runST $
+        x `mutatesToVector` (mapVector f x) $ \mx -> do
+            es <- getElemsVector' mx
+            mapToVector f mx mx
+            return $ es === elemsVector x
+  where
+    _ = typed t x
+
+prop_getAssocs t x =
+    forAll arbitrary $ \(Blind f) -> runST $
+        x `mutatesToVector` (mapVector f x) $ \mx -> do
+            ies <- getAssocsVector mx
+            mapToVector f mx mx
+            return $ ies === assocsVector (mapVector f x)
+  where
+    _ = typed t x
+
+prop_getAssocs' t x =
+    forAll arbitrary $ \(Blind f) -> runST $
+        x `mutatesToVector` (mapVector f x) $ \mx -> do
+            ies <- getAssocsVector' mx
+            mapToVector f mx mx
+            return $ ies === assocsVector x
+  where
+    _ = typed t x
+
+prop_setElems t x =
+    forAll (QC.vector n) $ \es -> runST $
+        x `mutatesToVector` (listVector n es) $ \mx ->
+            setElemsVector mx es
+  where
+    n = dimVector x
+    _ = typed t x
+
+prop_setAssocs t (Assocs n ies) =
+    forAll (Test.vector n) $ \x -> runST $
+        x `mutatesToVector` (typed t $ replaceVector x ies) $ \mx ->
+            setAssocsVector mx ies
+
+prop_mapTo1 t (Blind f) x = runST $
+    x `mutatesToVector` (mapVector f x) $ \mx ->
+        mapToVector f mx mx
+  where
+    _ = typed t x
+
+prop_mapTo2 t (Blind f) (VectorPair x y) = runST $
+    x `readOnlyVector` \mx ->
+    y `mutatesToVector` (mapVector f x) $ \my ->
+        mapToVector f mx my
+  where
+    _ = typed t x
+    _ = typed t y
+
+
+prop_zipWithTo1 t (Blind f) x = runST $
+    x `mutatesToVector` (zipWithVector f x x) $ \mx ->
+        zipWithToVector f mx mx mx
+  where
+    _ = typed t x
+
+prop_zipWithTo2a t (Blind f) (VectorPair x y) = runST $
+    x `mutatesToVector` (zipWithVector f x y) $ \mx ->
+    y `readOnlyVector` \my ->
+        zipWithToVector f mx my mx
+  where
+    _ = typed t x
+    _ = typed t y    
+
+prop_zipWithTo2b t (Blind f) (VectorPair x y) = runST $
+    x `readOnlyVector` \mx ->
+    y `mutatesToVector` (zipWithVector f x y) $ \my ->
+        zipWithToVector f mx my my
+  where
+    _ = typed t x
+    _ = typed t y        
+
+prop_zipWithTo3 t (Blind f) (VectorTriple x y z) = runST $
+    x `readOnlyVector` \mx ->
+    y `readOnlyVector` \my ->
+    z `mutatesToVector` (zipWithVector f x y) $ \mz ->
+        zipWithToVector f mx my mz
+  where
+    _ = typed t x
+    _ = typed t y
+    _ = typed t z        
+
+prop_getSum t x = runST $
+    x `readOnlyVector` \mx -> do
+        s <- getSumVector mx
+        return $ s === sumVector x
+  where
+    _ = typed t x
+
+prop_getSumAbs t x = runST $
+    x `readOnlyVector` \mx -> do
+        s <- getSumAbsVector mx
+        return $ s === sumAbsVector x
+  where
+    _ = typed t x
+
+prop_getNorm2 t x = runST $
+    x `readOnlyVector` \mx -> do
+        n <- getNorm2Vector mx
+        return $ n === norm2Vector x
+  where
+    _ = typed t x
+
+prop_getDot t (VectorPair x y) = runST $
+    x `readOnlyVector` \mx ->
+    y `readOnlyVector` \my -> do
+        d <- getDotVector mx my
+        return $ d === dotVector x y
+  where
+    _ = typed t x
 
 readOnlyVector :: (Storable e, AEq e, Testable prop)
                => Vector e

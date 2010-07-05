@@ -215,7 +215,20 @@ getAssocsVector' x = liftM (zip (indicesVector x)) (getElemsVector' x)
 setElemsVector  :: (Storable e) => STVector s e -> [e] -> ST s ()
 setElemsVector x es = let
     n = dimVector x
-    in unsafeIOToST $ unsafeWithVector x $ \p -> pokeArray p $ take n $ es
+    go [] i _ | i < n = error $ 
+                    printf ("setElemsVector <vector with dim %d>"
+                            ++ " <list with length %d>:"
+                            ++ " not enough elements") n i
+    go (_:_) i _ | i == n = error $ 
+                    printf ("setElemsVector <vector with dim %d>"
+                            ++ " <list with length at least %d>:"
+                            ++ " too many elements") n (i+1)
+    go []     _ _ = return ()
+    go (f:fs) i p = do
+        poke p f
+        go fs (i+1) (p `advancePtr` 1)
+    
+    in unsafeIOToST $ unsafeWithVector x $ go es 0
 
 -- | Set the given values in the vector.  If an index is repeated twice,
 -- the value is implementation-defined.

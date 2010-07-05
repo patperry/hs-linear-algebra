@@ -42,6 +42,7 @@ module Test.QuickCheck.BLAS (
     -- ** Vectors
     vector,
     VectorPair(..),
+    VectorTriple(..),
     
     --  Dense matrices
     -- matrix,
@@ -235,6 +236,19 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f) =>
             [ VectorPair (spliceVector x 0 n') (spliceVector y 0 n')
             | n' <- shrink (dimVector x)
             ]
+
+-- | Three vectors with the same dimension.
+data VectorTriple e f g =
+    VectorTriple (Vector e) (Vector f) (Vector g) deriving (Eq, Show)
+instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
+          Arbitrary g, Storable g) =>
+    Arbitrary (VectorTriple e f g) where
+        arbitrary = do
+            x <- arbitrary
+            y <- vector (dimVector x)
+            z <- vector (dimVector x)
+            return $ VectorTriple x y z
+            
     
 -- | Generate an associations list for a vector of the given dimension.
 assocs :: (Arbitrary e) => Int -> Gen [(Int,e)]

@@ -7,6 +7,7 @@ import Debug.Trace
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
+import qualified Test.QuickCheck as QC
 
 import BLAS.Elem
 import BLAS.Vector
@@ -85,10 +86,9 @@ prop_at_vector t (Assocs n ies) = let
   where
     _ = typed t $ vector n ies
 
-prop_listVector t (Dim n) es =
-    listVector n es === vector n (zip [ 0..n-1 ] es)
-  where
-    _ = typed t es
+prop_listVector t (Dim n) =
+    forAll (QC.vector n) $ \es ->
+        listVector n es === (typed t $ vector n $ zip [ 0..n-1 ] es)
 
 prop_constantVector t (Dim n) e =
     constantVector n e === listVector n (replicate n e)
