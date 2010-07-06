@@ -165,10 +165,14 @@ dVectorMul (int n, const double *x, const double *y, double *z)
 void
 dVectorDiv (int n, const double *x, const double *y, double *z)
 {
-        if (y == z) {
+        /* Note: using dtbsv gives slightly different answers
+         */
+        /*if (y == z) {
                 blas_dtbsv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, x, 1,
                            z, 1);
-        } else if (x == z) {
+        } else */
+        
+        if (x == z) {
                 int i;
                 for (i = 0; i < n; i++) {
                         z[i] = z[i] / y[i];

@@ -195,10 +195,14 @@ zVectorMul (int n, const double complex *x, const double complex *y, double comp
 void
 zVectorDiv (int n, const double complex *x, const double complex *y, double complex *z)
 {
+        /* Note: using dtbsv gives slightly different answers
+         */
+        /*
         if (y == z) {
                 blas_ztbsv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, x, 1,
                            z, 1);
-        } else if (x == z) {
+        } else */
+        if (x == z) {
                 int i;
                 for (i = 0; i < n; i++) {
                         z[i] = z[i] / y[i];
