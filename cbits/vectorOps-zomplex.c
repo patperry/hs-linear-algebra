@@ -4,6 +4,18 @@
 #include "BLAS.h"
 #include "vectorOps.h"
 
+static double complex
+complex_mul (double complex x, double complex y)
+{
+	double xr = creal(x), xi = cimag(x);
+	double yr = creal(y), yi = cimag(y);
+	double zr = xr * yr - xi * yi;
+	double zi = xr * yi + xi * yr;
+        double complex z = zr + I * zi;	
+	return z;
+}
+
+
 static void
 zVectorClear (int n, double complex *z)
 {
@@ -36,14 +48,15 @@ zVectorScale (int n, const double complex *palpha, const double complex *x, doub
                 zVectorCopy(n, x, z);
         } else if (alpha == 0) {
                 zVectorClear(n, z);
-        } else if (x == z) {
-                blas_zscal(n, palpha, z, 1);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
-                        z[i] = alpha * x[i];
+                        z[i] = complex_mul(alpha, x[i]);
                 }
         }
+        
+        /* Note: Using zscal sometimes gives differences in the least
+         * significant bit of the answer */
 }
 
 void
@@ -163,17 +176,19 @@ void zVectorSub (int n, const double complex *x, const double complex *y, double
 void
 zVectorMul (int n, const double complex *x, const double complex *y, double complex *z)
 {
+        /* Note: using ztbmv sometimes gives different answers in the lower
+         * bits of precision */
+        /*
         if (y == z) {
                 blas_ztbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, x, 1,
                            z, 1);
         } else if (x == z) {
                 blas_ztbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, y, 1,
                            z, 1);
-        } else {
-                int i;
-                for (i = 0; i < n; i++) {
-                        z[i] = x[i] * y[i];
-                }
+        } */
+        int i;
+        for (i = 0; i < n; i++) {
+                z[i] = complex_mul(x[i], y[i]);
         }
 }
 

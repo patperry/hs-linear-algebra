@@ -25,14 +25,15 @@ dVectorScale (int n, double alpha, const double *x, double *z)
                 dVectorCopy(n, x, z);
         } else if (alpha == 0) {
                 dVectorClear(n, z);
-        } else if (x == z) {
-                blas_dscal(n, alpha, z, 1);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
                         z[i] = alpha * x[i];
                 }
         }
+        
+        /* Note: Using dscal sometimes gives differences in the least
+         * significant bit of the answer */
 }
 
 void
@@ -144,17 +145,20 @@ void dVectorSub (int n, const double *x, const double *y, double *z)
 void
 dVectorMul (int n, const double *x, const double *y, double *z)
 {
-        if (y == z) {
+        /* Note: using dtbmv sometimes gives different answers in the lower
+         * bits of precision */
+        
+        /*if (y == z) {
                 blas_dtbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, x, 1,
                            z, 1);
         } else if (x == z) {
                 blas_dtbmv(BlasUpper, BlasNoTrans, BlasNonUnit, n, 0, y, 1,
                            z, 1);
-        } else {
-                int i;
-                for (i = 0; i < n; i++) {
-                        z[i] = x[i] * y[i];
-                }
+        } else { */
+                
+        int i;
+        for (i = 0; i < n; i++) {
+                z[i] = x[i] * y[i];
         }
 }
 
