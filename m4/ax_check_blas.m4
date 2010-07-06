@@ -166,7 +166,7 @@ fi
 if test x$ax_blas_ok = xno; then
   save_LIBS="$LIBS"; LIBS="-framework vecLib $LIBS"
   unset ac_cv_func_[]sgemm
-  AC_CHECK_FUNC(sgemm, [ax_blas_ok=yes;BLAS_LIBS="-framework vecLib"])
+  AC_CHECK_FUNC(sgemm, [ax_blas_ok=yes;BLAS_LIBS="-lblas"])
   LIBS="$save_LIBS"
 fi
 
