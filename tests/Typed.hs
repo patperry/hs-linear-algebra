@@ -42,14 +42,10 @@ testPropertyDZ str propd propz =
         , testProperty "Complex Double" $ propz undefined
         ]
 
-testPropertyZ :: (Testable a, Testable b)
+testPropertyZ :: (Testable a)
               => TestName
-              -> (Double -> a)
-              -> (Complex Double -> b)
+              -> (Complex Double -> a)
               -> Test
-testPropertyZ str propd propz =
-    testGroup str
-        [ testProperty "Complex Double" $ propz undefined
-        ]
-    
+testPropertyZ str prop =
+    testProperty str $ prop undefined
         
