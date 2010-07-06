@@ -53,6 +53,24 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "conjTo" prop_conjTo prop_conjTo
     , testPropertyDZ "absTo" prop_absTo prop_absTo
     , testPropertyDZ "signumTo" prop_signumTo prop_signumTo
+    , testPropertyDZ "divTo" prop_divTo prop_divTo
+    , testPropertyDZ "recipTo" prop_recipTo prop_recipTo
+    , testPropertyDZ "sqrtTo" prop_sqrtTo prop_sqrtTo
+    , testPropertyDZ "expTo" prop_expTo prop_expTo
+    , testPropertyDZ "logTo" prop_logTo prop_logTo
+    , testPropertyDZ "powTo" prop_powTo prop_powTo
+    , testPropertyDZ "sinTo" prop_sinTo prop_sinTo
+    , testPropertyDZ "cosTo" prop_cosTo prop_cosTo
+    , testPropertyDZ "tanTo" prop_tanTo prop_tanTo
+    , testPropertyDZ "asinTo" prop_asinTo prop_asinTo
+    , testPropertyDZ "acosTo" prop_acosTo prop_acosTo
+    , testPropertyDZ "atanTo" prop_atanTo prop_atanTo
+    , testPropertyDZ "sinhTo" prop_sinhTo prop_sinhTo
+    , testPropertyDZ "coshTo" prop_coshTo prop_coshTo
+    , testPropertyDZ "tanhTo" prop_tanhTo prop_tanhTo
+    , testPropertyDZ "asinhTo" prop_asinhTo prop_asinhTo
+    , testPropertyDZ "acoshTo" prop_acoshTo prop_acoshTo
+    , testPropertyDZ "atanhTo" prop_atanhTo prop_atanhTo
     ]
     
     
@@ -202,6 +220,25 @@ prop_conjTo t = binaryProp t conjVector conjToVector
 prop_absTo t = binaryProp t absVector absToVector
 prop_signumTo t = binaryProp t signumVector signumToVector
 
+prop_divTo t = ternaryProp t divVector divToVector
+prop_recipTo t = binaryProp t recipVector recipToVector
+
+prop_sqrtTo t = binaryProp t sqrtVector sqrtToVector
+prop_expTo t = binaryProp t expVector expToVector
+prop_logTo t = binaryProp t logVector logToVector
+prop_powTo t = ternaryProp t powVector powToVector
+prop_sinTo t = binaryProp t sinVector sinToVector
+prop_cosTo t = binaryProp t cosVector cosToVector
+prop_tanTo t = binaryProp t tanVector tanToVector
+prop_asinTo t = binaryProp t asinVector asinToVector
+prop_acosTo t = binaryProp t acosVector acosToVector
+prop_atanTo t = binaryProp t atanVector atanToVector
+prop_sinhTo t = binaryProp t sinhVector sinhToVector
+prop_coshTo t = binaryProp t coshVector coshToVector
+prop_tanhTo t = binaryProp t tanhVector tanhToVector
+prop_asinhTo t = binaryProp t asinhVector asinhToVector
+prop_acoshTo t = binaryProp t acoshVector acoshToVector
+prop_atanhTo t = binaryProp t atanhVector atanhToVector
 
 
 binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
