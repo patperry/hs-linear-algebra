@@ -1,3 +1,4 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module STVector (
     tests_STVector
     ) where
@@ -5,6 +6,7 @@ module STVector (
 import Control.Monad
 import Control.Monad.ST
 import Data.AEq
+import Data.Complex( magnitude )
 import Debug.Trace
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
@@ -36,16 +38,21 @@ tests_STVector = testGroup "STVector"
     , testPropertyI "getAssocs'" prop_getAssocs'
     , testPropertyI "setElems" prop_setElems
     , testPropertyI "setAssocs" prop_setAssocs
-    , testPropertyI "mapTo 1" prop_mapTo1
-    , testPropertyI "mapTo 2" prop_mapTo2
-    , testPropertyI "zipWithTo 1" prop_zipWithTo1
-    , testPropertyI "zipWithTo 2a" prop_zipWithTo2a
-    , testPropertyI "zipWithTo 2b" prop_zipWithTo2b
-    , testPropertyI "zipWithTo 3" prop_zipWithTo3
+    , testPropertyI "mapTo" prop_mapTo
+    , testPropertyI "zipWithTo" prop_zipWithTo
     , testPropertyDZ "getSum" prop_getSum prop_getSum
     , testPropertyDZ "getSumAbs" prop_getSumAbs prop_getSumAbs
     , testPropertyDZ "getNorm2" prop_getNorm2 prop_getNorm2
     , testPropertyDZ "getDot" prop_getDot prop_getDot
+    , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
+    , testPropertyDZ "addTo" prop_addTo prop_addTo
+    , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
+    , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
+    , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
+    , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
+    , testPropertyDZ "conjTo" prop_conjTo prop_conjTo
+    , testPropertyDZ "absTo" prop_absTo prop_absTo
+    , testPropertyDZ "signumTo" prop_signumTo prop_signumTo
     ]
     
     
@@ -136,52 +143,13 @@ prop_setAssocs t (Assocs n ies) =
         x `mutatesToVector` (typed t $ replaceVector x ies) $ \mx ->
             setAssocsVector mx ies
 
-prop_mapTo1 t (Blind f) x = runST $
-    x `mutatesToVector` (mapVector f x) $ \mx ->
-        mapToVector f mx mx
-  where
-    _ = typed t x
+prop_mapTo t (Blind f) = binaryProp t
+    (\x -> mapVector f x)
+    (\mx my -> mapToVector f mx my)
 
-prop_mapTo2 t (Blind f) (VectorPair x y) = runST $
-    x `readOnlyVector` \mx ->
-    y `mutatesToVector` (mapVector f x) $ \my ->
-        mapToVector f mx my
-  where
-    _ = typed t x
-    _ = typed t y
-
-
-prop_zipWithTo1 t (Blind f) x = runST $
-    x `mutatesToVector` (zipWithVector f x x) $ \mx ->
-        zipWithToVector f mx mx mx
-  where
-    _ = typed t x
-
-prop_zipWithTo2a t (Blind f) (VectorPair x y) = runST $
-    x `mutatesToVector` (zipWithVector f x y) $ \mx ->
-    y `readOnlyVector` \my ->
-        zipWithToVector f mx my mx
-  where
-    _ = typed t x
-    _ = typed t y    
-
-prop_zipWithTo2b t (Blind f) (VectorPair x y) = runST $
-    x `readOnlyVector` \mx ->
-    y `mutatesToVector` (zipWithVector f x y) $ \my ->
-        zipWithToVector f mx my my
-  where
-    _ = typed t x
-    _ = typed t y        
-
-prop_zipWithTo3 t (Blind f) (VectorTriple x y z) = runST $
-    x `readOnlyVector` \mx ->
-    y `readOnlyVector` \my ->
-    z `mutatesToVector` (zipWithVector f x y) $ \mz ->
-        zipWithToVector f mx my mz
-  where
-    _ = typed t x
-    _ = typed t y
-    _ = typed t z        
+prop_zipWithTo t (Blind f) = ternaryProp t
+    (\x y -> zipWithVector f x y)
+    (\mx my mz -> zipWithToVector f mx my mz)
 
 prop_getSum t x = runST $
     x `readOnlyVector` \mx -> do
@@ -212,13 +180,83 @@ prop_getDot t (VectorPair x y) = runST $
   where
     _ = typed t x
 
-readOnlyVector :: (Storable e, AEq e, Testable prop)
+prop_shiftTo t e = binaryProp t
+    (\x -> shiftVector e x)
+    (\mx my -> shiftToVector e mx my)
+    
+prop_addTo t = ternaryProp t addVector addToVector
+
+prop_addToWithScale t e f = ternaryProp t
+    (\x y -> addVectorWithScale e x f y)
+    (\mx my mz -> addToVectorWithScale e mx f my mz)
+    
+prop_subTo t = ternaryProp t subVector subToVector
+
+prop_scaleTo t e = binaryProp t
+    (\x -> scaleVector e x)
+    (\mx my -> scaleToVector e mx my)
+
+prop_mulTo t = ternaryProp t mulVector mulToVector
+prop_negateTo t = binaryProp t negateVector negateToVector
+prop_conjTo t = binaryProp t conjVector conjToVector
+prop_absTo t = binaryProp t absVector absToVector
+prop_signumTo t = binaryProp t signumVector signumToVector
+
+
+
+binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
+            => e
+            -> (Vector e -> Vector e)
+            -> (forall s . STVector s e -> STVector s e -> ST s a)
+            -> Property
+binaryProp t imm_f f = let
+    prop1 t x = runST $
+        x `mutatesToVector` (imm_f x) $ \mx -> f mx mx
+      where _ = typed t x
+    prop2 t (VectorPair x y) = runST $ let _ = typed t x in
+        x `readOnlyVector` \mx ->
+        y `mutatesToVector` (imm_f x) $ \my -> f mx my
+      where _ = typed t x
+    in (    label "1" prop1
+        .&. label "2" prop2
+       )
+    
+ternaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
+            => e
+            -> (Vector e -> Vector e -> Vector e)
+            -> (forall s . STVector s e -> STVector s e -> STVector s e -> ST s a)
+            -> Property
+ternaryProp t imm_f f = let
+    prop1 t x = runST $
+        x `mutatesToVector` (imm_f x x) $ \mx -> f mx mx mx
+      where _ = typed t x
+    prop2a t (VectorPair x y) = runST $
+        x `readOnlyVector` \mx ->
+        y `mutatesToVector` (imm_f x y) $ \my -> f mx my my
+      where _ = typed t x
+    prop2b t (VectorPair x y) = runST $
+        x `mutatesToVector` (imm_f x y) $ \mx ->
+        y `readOnlyVector` \my -> f mx my mx
+      where _ = typed t x        
+    prop3 t (VectorTriple x y z) = runST $
+        x `readOnlyVector` \mx ->
+        y `readOnlyVector` \my ->
+        z `mutatesToVector` (imm_f x y) $ \mz -> f mx my mz
+      where _ = typed t x
+    in (    label "1" prop1
+        .&. label "2a" prop2a
+        .&. label "2b" prop2b
+        .&. label "3" prop3
+       )
+
+
+readOnlyVector :: (Storable e, AEq e, Testable prop, Show e)
                => Vector e
                -> (STVector s e ->  ST s prop)
                -> ST s Property
 readOnlyVector x = mutatesToVector x x
 
-mutatesToVector :: (Storable e, AEq e, Testable prop)
+mutatesToVector :: (Storable e, AEq e, Testable prop, Show e)
                 => Vector e
                 -> Vector e
                 -> (STVector s e -> ST s prop)
