@@ -12,13 +12,16 @@
 module BLAS.Matrix.STBase
     where
       
-import Control.Monad( forM_ )
+import Control.Monad( zipWithM_ )
 import Control.Monad.ST( ST, unsafeIOToST )
 import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, peekElemOff, pokeElemOff )
 import Text.Printf( printf )
 
 import BLAS.Elem
+import qualified BLAS.Elem.Level1 as BLAS
+import qualified BLAS.Elem.Level2 as BLAS
+import BLAS.Types( HasVectorView(..) )
 import BLAS.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
@@ -34,8 +37,6 @@ data STMatrix s e =
                {-# UNPACK #-} !Int            -- leading dimension
   deriving (Eq, Typeable)
 
-class HasVectorView m where
-    type VectorView m :: * -> *
 
 instance HasVectorView (STMatrix s) where
     type VectorView (STMatrix s) = STVector s
@@ -52,8 +53,13 @@ class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
     -- matrix and the leading dimension (lda).
     unsafeWithMatrix :: m e -> (Ptr e -> Int -> IO a) -> IO a
 
-    unsafeVectorToMatrix :: (Int,Int) -> VectorView m e -> m e
-    maybeMatrixToVector :: m e -> Maybe (VectorView m e)
+    unsafeMatrixViewVector ::  VectorView m e -> (Int,Int) -> m e
+    
+    -- | Possibly view a matrix as a vector.  This only succeeds if the
+    -- matrix is stored contiguously in memory, i.e. if the matrix contains
+    -- a single column or the "lda" of the matrix is equal to the number
+    -- of rows.
+    maybeVectorViewMatrix :: m e -> Maybe (VectorView m e)
 
     unsafeColMatrix :: (Storable e)
                     => m e
@@ -74,14 +80,14 @@ instance RMatrix (STMatrix s) where
         unsafeWithVector a $ \p -> f p lda
     {-# INLINE unsafeWithMatrix #-}
 
-    unsafeVectorToMatrix (m,n) x = (STMatrix x m n lda)
+    unsafeMatrixViewVector x (m,n) = (STMatrix x m n lda)
         where lda = max 1 m
-    {-# INLINE unsafeVectorToMatrix #-}
+    {-# INLINE unsafeMatrixViewVector #-}
 
-    maybeMatrixToVector (STMatrix a m n lda) | lda == max 1 m = Just a
-                                             | n == 1         = Just a
-                                             | otherwise      = Nothing
-    {-# INLINE maybeMatrixToVector #-}
+    maybeVectorViewMatrix (STMatrix a m n lda) | lda == max 1 m = Just a
+                                               | n == 1         = Just a
+                                               | otherwise      = Nothing
+    {-# INLINE maybeVectorViewMatrix #-}
 
     unsafeColMatrix (STMatrix a m _ lda) j = let
         o = j * lda
@@ -89,16 +95,17 @@ instance RMatrix (STMatrix s) where
         in x
     {-# INLINE unsafeColMatrix #-}
 
-
-vectorToMatrix :: (RMatrix m) => (Int,Int) -> VectorView m e -> m e
-vectorToMatrix mn@(m,n) x 
+-- | View a vector as a matrix with the given dimensions.
+matrixViewVector :: (RMatrix m) => VectorView m e -> (Int,Int) -> m e
+matrixViewVector x mn@(m,n)
     | dimVector x /= m*n = error $
-        printf ("vectorToMatrix (%d,%d) <vector with dim %d>:"
-                ++ " incorrect number of elements") m n (dimVector x)
+        printf ("matrixViewVector <vector with dim %d> (%d,%d):"
+                ++ " incorrect number of elements") (dimVector x) m n
     | otherwise =
-        unsafeVectorToMatrix mn x
-{-# INLINE vectorToMatrix #-}
+        unsafeMatrixViewVector x mn
+{-# INLINE matrixViewVector #-}
 
+-- | Get a view of a matrix column.
 colMatrix :: (RMatrix m, Storable e)
           => m e
           -> Int
@@ -112,6 +119,13 @@ colMatrix a j
   where
     (m,n) = dimMatrix a
 {-# INLINE colMatrix #-}
+
+-- | Get a list of views of the matrix columns.
+colsMatrix :: (RMatrix m, Storable e)
+           => m e
+           -> [VectorView m e]
+colsMatrix a = [ unsafeColMatrix a j | j <- [ 0..n-1 ] ]
+  where n = (snd . dimMatrix) a
 
 -- | @spliceMatrix a (i,j) (m,n)@ creates a submatrix view of @a@ starting at
 -- element @(i,j)@ and having dimensions @(m,n)@.
@@ -150,7 +164,7 @@ newMatrix_ (m,n)
         printf "newMatrix_ (%d,%d): invalid dimensions" m n
     | otherwise =  do
         x <- newVector_ (m*n)
-        return $ unsafeVectorToMatrix (m,n) x
+        return $ unsafeMatrixViewVector x (m,n)
 
 -- | Create a matrix with every element initialized to the same value.
 newMatrix :: (Storable e) => (Int,Int) -> e -> ST s (STMatrix s e)
@@ -173,14 +187,7 @@ copyToMatrix = checkMatrixOp2 "copyToMatrix" unsafeCopyToMatrix
 {-# INLINE copyToMatrix #-}
 
 unsafeCopyToMatrix :: (RMatrix m, Storable e) => m e -> STMatrix s e -> ST s ()
-unsafeCopyToMatrix a b = 
-    case (maybeMatrixToVector a, maybeMatrixToVector b) of
-        (Just x, Just y) -> unsafeCopyToVector x y
-        _ ->
-            forM_ [ 0..n-1 ] $ \j ->
-                unsafeCopyToVector (colMatrix a j) (colMatrix b j)
-  where
-    n = (snd . dimMatrix) b
+unsafeCopyToMatrix = matrixVectorOp2 unsafeCopyToVector
 {-# INLINE unsafeCopyToMatrix #-}
 
 -- | Split a matrix into two blocks and returns views into the blocks.  In
@@ -224,7 +231,7 @@ indicesMatrix a = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
   
 -- | Lazily get the elements of the matrix, in column-major order.  
 getElemsMatrix :: (RMatrix m, Storable e) => m e -> ST s [e]
-getElemsMatrix a = case maybeMatrixToVector a of
+getElemsMatrix a = case maybeVectorViewMatrix a of
     Just x -> getElemsVector x
     Nothing -> concat `fmap` sequence [ getElemsVector (colMatrix a j)
                                       | j <- [ 0..n-1 ]
@@ -234,7 +241,7 @@ getElemsMatrix a = case maybeMatrixToVector a of
 
 -- | Get the elements of the matrix, in column-major order.
 getElemsMatrix' :: (RMatrix m, Storable e) => m e -> ST s [e]
-getElemsMatrix' a = case maybeMatrixToVector a of
+getElemsMatrix' a = case maybeVectorViewMatrix a of
     Just x -> getElemsVector' x
     Nothing -> concat `fmap` sequence [ getElemsVector' (colMatrix a j)
                                       | j <- [ 0..n-1 ]
@@ -257,7 +264,7 @@ getAssocsMatrix' a = do
 -- | Set all of the values of the matrix from the elements in the list,
 -- in column-major order.
 setElemsMatrix :: (Storable e) => STMatrix s e -> [e] -> ST s ()
-setElemsMatrix a es = case maybeMatrixToVector a of
+setElemsMatrix a es = case maybeVectorViewMatrix a of
     Just x  -> setElemsVector x es
     Nothing -> go 0 es
   where
@@ -316,20 +323,121 @@ unsafeWriteMatrix a (i,j) e = unsafeIOToST $
     unsafeWithMatrix a $ \p lda ->
         pokeElemOff p (i + j * lda) e
 
+-- | Add a constant to all entries of a matrix.
+shiftToMatrix :: (RMatrix m, VNum e)
+              => e -> m e -> STMatrix s e -> ST s ()
+shiftToMatrix e = checkMatrixOp2 "shiftToMatrix" $
+    matrixVectorOp2 (shiftToVector e)
 
-{-
-add,
-shift,
-scale,
-rank1 update
-scaleRows
-scaleCols
-rowSums
-colSums
-rowMeans
-colMeans
-transpose/herm
--}
+-- | Add a vector to the diagonal of a matrix.
+shiftDiagToMatrix :: (RVector v, RMatrix m, BLAS1 e)
+                  => v e -> m e -> STMatrix s e -> ST s ()
+shiftDiagToMatrix s a b
+    | dimVector s /= mn || dimMatrix a /= (m,n) = error $
+        printf ("shiftDiagToMatrix <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
+                ++ " dimension mismatch") (dimVector s)
+                (fst $ dimMatrix a) (snd $ dimMatrix a) m n
+    | otherwise = shiftDiagToMatrixWithScale 1 s a b
+  where
+    (m,n) = dimMatrix b
+    mn = min m n
+
+-- | Add a scaled vector to the diagonal of a matrix.
+shiftDiagToMatrixWithScale :: (RVector v, RMatrix m, BLAS1 e)
+                           => e -> v e -> m e -> STMatrix s e -> ST s ()
+shiftDiagToMatrixWithScale e s a b
+    | dimVector s /= mn || dimMatrix a /= (m,n) = error $
+        printf ("shiftDiagToMatrixWithScale _ <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
+                ++ " dimension mismatch") (dimVector s)
+                (fst $ dimMatrix a) (snd $ dimMatrix a) m n
+    | otherwise = do
+        unsafeCopyToMatrix a b
+        unsafeIOToST $
+            unsafeWithVector s $ \ps ->
+            unsafeWithMatrix b $ \pb ldb ->
+                BLAS.axpy mn e ps 1 pb ldb
+  where
+    (m,n) = dimMatrix b
+    mn = min m n
+
+-- | Add two matrices.
+addToMatrix :: (RMatrix m1, RMatrix m2, VNum e)
+            => m1 e -> m2 e -> STMatrix s e -> ST s ()
+addToMatrix = checkMatrixOp3 "addToMatrix" $ matrixVectorOp3 addToVector
+
+-- | Add two matrices with the given scales.
+addToMatrixWithScale :: (RMatrix m1, RMatrix m2, VNum e)
+                     => e -> m1 e -> e -> m2 e -> STMatrix s e -> ST s ()
+addToMatrixWithScale alpha a beta b c =
+    (checkMatrixOp3 "addToMatrixWithScale" $
+        matrixVectorOp3 (\x y z -> addToVectorWithScale alpha x beta y z))
+        a b c
+
+-- | Subtract two matrices.
+subToMatrix :: (RMatrix m1, RMatrix m2, VNum e)
+            => m1 e -> m2 e -> STMatrix s e -> ST s ()
+subToMatrix = checkMatrixOp3 "subToMatrix" $ matrixVectorOp3 subToVector
+
+-- | Scale the entries of a matrix by the given value.
+scaleToMatrix :: (RMatrix m, VNum e)
+              => e -> m e -> STMatrix s e -> ST s ()
+scaleToMatrix e = checkMatrixOp2 "scaleToMatrix" $
+    matrixVectorOp2 (scaleToVector e)
+
+-- | Scale the rows of a matrix; @scaleRowsToMatrix s a c@ sets
+-- @c := diag(s) * a@.
+scaleRowsToMatrix :: (RVector v, RMatrix m, VNum e)
+                  => v e -> m e -> STMatrix s e -> ST s ()
+scaleRowsToMatrix s a b
+    | dimVector s /= m || dimMatrix a /= (m,n) = error $
+        printf ("scaleRowsToMatrix <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
+                ++ " dimension mismatch") (dimVector s)
+                (fst $ dimMatrix a) (snd $ dimMatrix a) m n
+    | otherwise = do
+        zipWithM_ (mulToVector s) (colsMatrix a) (colsMatrix b)
+  where
+    (m,n) = dimMatrix b
+
+-- | Scale the columns of a matrix; @scaleColsToMatrix s a c@ sets
+-- @c := a * diag(s)@.
+scaleColsToMatrix :: (RVector v, RMatrix m, VNum e)
+                  => v e -> m e -> STMatrix s e -> ST s ()
+scaleColsToMatrix s a b 
+    | dimVector s /= n || dimMatrix a /= (m,n) = error $
+        printf ("scaleColsToMatrix <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
+                ++ " dimension mismatch") (dimVector s)
+                (fst $ dimMatrix a) (snd $ dimMatrix a) m n
+    | otherwise = do
+        es <- getElemsVector s
+        sequence_ [ scaleToVector e x y
+                  | (e,x,y) <- zip3 es (colsMatrix a) (colsMatrix b)
+                  ]
+  where
+    (m,n) = dimMatrix b
+
+-- | @rank1UpdateToMatrix alpha x y a c@ sets @c := alpha * x * y^H + a@.
+rank1UpdateToMatrix :: (RVector v1, RVector v2, RMatrix m, BLAS2 e)
+                    => e -> v1 e -> v2 e -> m e -> STMatrix s e -> ST s ()
+rank1UpdateToMatrix alpha x y a c
+    | dimVector x /= m || dimVector y /= n || dimMatrix a /= (m,n) = error $
+        printf ("rank1UpdateToMatrix _ <vector with dim %d>"
+                ++ " <vector with dim %d> <matrix with dim (%d,%d)>"
+                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+                (dimVector x) (dimVector y) (fst $ dimMatrix a)
+                (snd $ dimMatrix a) m n
+    | otherwise = do
+        unsafeCopyToMatrix a c
+        unsafeIOToST $
+            unsafeWithVector x $ \px ->
+            unsafeWithVector y $ \py ->
+            unsafeWithMatrix c $ \pc ldc ->
+                BLAS.ger m n alpha px 1 py 1 pc ldc
+  where
+    (m,n) = dimMatrix c
 
 checkMatrixOp2 :: (RMatrix x, RMatrix y)
                => String
@@ -347,3 +455,46 @@ checkMatrixOp2 str f x y
     (m1,n1) = dimMatrix x
     (m2,n2) = dimMatrix y        
 {-# INLINE checkMatrixOp2 #-}
+
+checkMatrixOp3 :: (RMatrix x, RMatrix y, RMatrix z)
+               => String
+               -> (x e -> y f -> z g -> a)
+               -> x e
+               -> y f
+               -> z g
+               -> a
+checkMatrixOp3 str f x y z
+    | (m1,n1) /= (m2,n2) || (m1,n1) /= (m3,n3) = error $
+        printf ("%s <matrix with dim (%d,%d)> <matrix with dim (%d,%d)>:"
+                ++ " <matrix with dim (%d,%d)> dimension mismatch")
+               str m1 n1 m2 n2 m3 n3
+    | otherwise =
+        f x y z
+  where
+    (m1,n1) = dimMatrix x
+    (m2,n2) = dimMatrix y
+    (m3,n3) = dimMatrix z
+{-# INLINE checkMatrixOp3 #-}
+
+matrixVectorOp2 :: (RMatrix m, Storable e, Storable f)
+                => (VectorView m e -> STVector s f -> ST s ())
+                -> m e -> STMatrix s f -> ST s ()
+matrixVectorOp2 f a b =
+    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b) of
+        (Just x, Just y) -> f x y
+        _ -> zipWithM_ f (colsMatrix a) (colsMatrix b)
+{-# INLINE matrixVectorOp2 #-}
+
+matrixVectorOp3 :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
+                => (VectorView m1 e1 -> VectorView m2 e2 -> STVector s f -> ST s ())
+                -> m1 e1 -> m2 e2 -> STMatrix s f -> ST s ()
+matrixVectorOp3 f a b c =
+    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b,
+            maybeVectorViewMatrix c) of
+        (Just x, Just y, Just z) -> f x y z
+        _ -> sequence_
+            [ f x y z
+            | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c) ]
+{-# INLINE matrixVectorOp3 #-}
+
+

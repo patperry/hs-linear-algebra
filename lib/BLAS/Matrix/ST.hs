@@ -14,7 +14,7 @@ module BLAS.Matrix.ST (
     -- runMatrix,
     
     -- * Read-only Dense matrix type class
-    RMatrix( dimMatrix, unsafeWithMatrix ),
+    RMatrix( dimMatrix, maybeVectorViewMatrix, unsafeWithMatrix ),
     
     -- * Creating new matrices
     newMatrix_,
@@ -25,6 +25,8 @@ module BLAS.Matrix.ST (
     copyToMatrix,
 
     -- * Matrix views
+    colMatrix,
+    colsMatrix,
     spliceMatrix,
     splitRowsMatrixAt,
     splitColsMatrixAt,    
@@ -40,14 +42,29 @@ module BLAS.Matrix.ST (
     setElemsMatrix,
     setAssocsMatrix,    
 
+    -- * Matrix math operations
+    shiftToMatrix,
+    shiftDiagToMatrix,
+    shiftDiagToMatrixWithScale,    
+    addToMatrix,
+    addToMatrixWithScale,
+    subToMatrix,
+    scaleToMatrix,
+    scaleRowsToMatrix,
+    scaleColsToMatrix,
+
+    -- * Linear algebra
+    rank1UpdateToMatrix,
+
     -- * Conversions between mutable and immutable matrices
     {- freezeMatrix,
     unsafeFreezeMatrix,
     thawMatrix,
     unsafeThawMatrix, -}
     
-    -- * Matrix views of arrays
+    -- * Matrix views of arrays and vectors
     matrixViewArray,
+    matrixViewVector,
 
     ) where
 
