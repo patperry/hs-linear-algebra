@@ -65,6 +65,7 @@ Library
 
                         BLAS.Types
 
+                        BLAS.Matrix.ST
                         BLAS.Vector
                         BLAS.Vector.ST
                         
@@ -78,6 +79,7 @@ Library
                         BLAS.Elem.Zomplex
                         BLAS.Internal
                         BLAS.CTypes
+                        BLAS.Matrix.STBase
                         BLAS.Vector.Base
                         BLAS.Vector.STBase
     
