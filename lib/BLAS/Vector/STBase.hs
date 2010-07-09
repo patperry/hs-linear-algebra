@@ -133,7 +133,7 @@ unsafeCopyToVector :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
 unsafeCopyToVector x y = unsafeIOToST $
     unsafeWithVector x $ \px ->
     unsafeWithVector y $ \py ->
-        copyArray py px n
+        when (px /= py) $ copyArray py px n
   where
     n = dimVector y
 {-# INLINE unsafeCopyToVector #-}
