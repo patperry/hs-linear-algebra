@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : BLAS.Types
@@ -8,6 +9,8 @@
 --
 
 module BLAS.Types (
+    HasVectorView(..),
+
     OrderEnum(..),
     flipOrder,
 
@@ -26,6 +29,10 @@ module BLAS.Types (
     flipConj,
         
     ) where
+
+-- | Types that can be viewed as vectors.
+class HasVectorView (a :: * -> *) where
+    type VectorView a :: * -> *
 
 -- | Matrix element storage order.
 data OrderEnum = RowMajor | ColMajor deriving (Eq, Show)
