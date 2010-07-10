@@ -19,13 +19,15 @@ module Test.QuickCheck.BLAS (
     -- * Generating random objects
     -- ** Dimensions
     dim,
-    -- shape,
+    dim2,
     Dim(..),
-
+    Dim2(..),
+    
     -- ** Indices
     index,
-    -- index2,    
-    Index(..),    
+    index2,    
+    Index(..),
+    Index2(..),     
     
     -- ** Elements
     elem,
@@ -35,8 +37,9 @@ module Test.QuickCheck.BLAS (
     
     -- ** Association lists
     assocs,
+    assocs2,
     Assocs(..),    
-    -- assocs2,
+    Assocs2(..),
     -- bandedAssocs,
     
     -- ** Vectors
@@ -44,8 +47,10 @@ module Test.QuickCheck.BLAS (
     VectorPair(..),
     VectorTriple(..),
     
-    --  Dense matrices
-    -- matrix,
+    --  ** Matrices
+    matrix,
+    MatrixPair(..),
+    MatrixTriple(..),
     -- hermMatrix,
     -- triMatrix,
 
@@ -56,11 +61,6 @@ module Test.QuickCheck.BLAS (
     -- hermBanded,
     -- triBanded,
     
-    --  Convenience types
-
-    -- Index2(..),
-    
-    -- Assocs2(..),
     -- BandedAssocs(..),
 
     ) where
@@ -78,6 +78,7 @@ import qualified Test.QuickCheck as QC
 
 
 import BLAS.Vector( Vector, listVector, dimVector, spliceVector )
+import BLAS.Matrix( Matrix, listMatrix, dimMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
 -- import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
 --     unsafeThawMatrix )
@@ -169,6 +170,13 @@ dim = sized $ \s -> do
     (NonNegative n) <- resize (s `div` 4) $ arbitrary
     return n
  
+-- | Get an appropriate dimension for a random matrix
+dim2 :: Gen (Int,Int)
+dim2 = sized $ \s -> do
+    m <- resize (s `div` 2) $ dim
+    n <- resize (s `div` 2) $ dim
+    return (m,n)
+ 
 -- | A vector dimension.   
 newtype Dim = Dim Int
   deriving (Eq, Ord, Num, Integral, Real, Enum, Show, Read)
@@ -176,10 +184,20 @@ newtype Dim = Dim Int
 instance Arbitrary Dim where
     arbitrary = sized $ \s -> do
         (NonNegative n) <- resize (s `div` 4) $ arbitrary
-        return n
+        return $ Dim n
     
     shrink (Dim a) = 
         [ Dim a' | (NonNegative a') <- shrink (NonNegative a) ]
+
+-- | A matrix dimension.   
+newtype Dim2 = Dim2 (Int,Int)
+  deriving (Eq, Show, Read)
+
+instance Arbitrary Dim2 where
+    arbitrary = do
+        mn <- dim2
+        return $ Dim2 mn
+
 
 -- | Given a dimension generate a valid index.  The dimension must be positive.
 index :: Int -> Gen Int
@@ -189,6 +207,13 @@ index n | n <= 0 =
         | otherwise =
             choose (0,n-1)
 
+-- | Given a matrix dimension generate a valid index.
+index2 :: (Int,Int) -> Gen (Int,Int)
+index2 (m,n) = do
+    i <- index m
+    j <- index n
+    return (i,j)
+
 -- | A dimension and a valid index for it.
 data Index = Index Int Int deriving (Eq,Show)
 instance Arbitrary Index where
@@ -196,17 +221,62 @@ instance Arbitrary Index where
         n <- (1+) `fmap` dim
         i <- index n
         return $ Index n i
+
+-- | A matrix dimension and a valid index for it.
+data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
+instance Arbitrary Index2 where
+    arbitrary = do
+        (m',n') <- dim2
+        let mn = (m' + 1, n' + 1)
+        ij <- index2 mn
+        return $ Index2 mn ij
     
-    {-    
-    shrink (Index n i) =
-        [ Index n 0
-        | i /= 0
+    
+-- | Generate an associations list for a vector of the given dimension.
+assocs :: (Arbitrary e) => Int -> Gen [(Int,e)]
+assocs n | n == 0    = return []
+         | otherwise = do
+    l <- choose(0, 2*n)
+    is <- replicateM l $ index n
+    es <- elems l
+    return $ zip is es
+
+-- | Generate an associations list for a matrix of the given shape.
+assocs2 :: (Arbitrary e) => (Int,Int) -> Gen [((Int,Int),e)]
+assocs2 (m,n) | m*n == 0  = return []
+              | otherwise = do
+    l <- choose(0, 2*m*n)
+    is <- replicateM l $ index2 (m,n)
+    es <- elems l
+    return $ zip is es
+
+
+-- | A dimension and an associations list.
+data Assocs e = Assocs Int [(Int,e)] deriving (Eq,Show)
+
+instance (Arbitrary e) => Arbitrary (Assocs e) where
+    arbitrary = do
+        n   <- dim
+        ies <- assocs n
+        return $ Assocs n ies
+    
+    shrink (Assocs n ies) =
+        [ Assocs n' $ filter ((< n') . fst) ies
+        | n' <- shrink n
         ] ++
-        [ Index n' i
-        | (Positive n') <- shrink (Positive n)
-        , n' > i 
-        ]-}
-        
+        [ Assocs n ies'
+        | ies' <- shrink ies
+        ]
+
+-- | A shape and an associations list.
+data Assocs2 e = Assocs2 (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
+instance (Arbitrary e) => Arbitrary (Assocs2 e) where
+    arbitrary = do
+        mn   <- dim2
+        ies  <- assocs2 mn
+        return $ Assocs2 mn ies
+
+
 -- | Generate a random vector of the given size.
 vector :: (Arbitrary e, Storable e) => Int -> Gen (Vector e)
 vector n = do
@@ -220,7 +290,6 @@ instance (Arbitrary e, Storable e) => Arbitrary (Vector e) where
         [ spliceVector x 0 n
         | (NonNegative n) <- shrink (NonNegative $ dimVector x)
         ]
-
 
 -- | Two vectors with the same dimension.
 data VectorPair e f = 
@@ -249,58 +318,40 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
             z <- vector (dimVector x)
             return $ VectorTriple x y z
             
-    
--- | Generate an associations list for a vector of the given dimension.
-assocs :: (Arbitrary e) => Int -> Gen [(Int,e)]
-assocs n | n == 0    = return []
-         | otherwise = do
-    l <- choose(0, 2*n)
-    is <- replicateM l $ index n
-    es <- elems l
-    return $ zip is es
 
--- | A dimension and an associations list.
-data Assocs e = Assocs Int [(Int,e)] deriving (Eq,Show)
+-- | Generate a random matrix of the given size.
+matrix :: (Arbitrary e, Storable e) => (Int,Int) -> Gen (Matrix e)
+matrix (m,n) = do
+    es <- elems $ m * n
+    return $ listMatrix (m,n) es
 
-instance (Arbitrary e) => Arbitrary (Assocs e) where
-    arbitrary = do
-        n   <- dim
-        ies <- assocs n
-        return $ Assocs n ies
+instance (Arbitrary e, Storable e) => Arbitrary (Matrix e) where
+    arbitrary = dim2 >>= matrix
     
-    shrink (Assocs n ies) =
-        [ Assocs n' $ filter ((< n') . fst) ies
-        | n' <- shrink n
-        ] ++
-        [ Assocs n ies'
-        | ies' <- shrink ies
-        ]
+-- | Two matrices with the same dimension.
+data MatrixPair e f = 
+    MatrixPair (Matrix e) (Matrix f) deriving (Eq, Show)
+instance (Arbitrary e, Storable e, Arbitrary f, Storable f) =>
+    Arbitrary (MatrixPair e f) where
+        arbitrary = do
+            x <- arbitrary
+            y <- matrix (dimMatrix x)
+            return $ MatrixPair x y
+
+-- | Three matrices with the same dimension.
+data MatrixTriple e f g =
+    MatrixTriple (Matrix e) (Matrix f) (Matrix g) deriving (Eq, Show)
+instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
+          Arbitrary g, Storable g) =>
+    Arbitrary (MatrixTriple e f g) where
+        arbitrary = do
+            x <- arbitrary
+            y <- matrix (dimMatrix x)
+            z <- matrix (dimMatrix x)
+            return $ MatrixTriple x y z
+
 
 {-
-
-data SubMatrix e = 
-    SubMatrix (Matrix e) 
-              (Int,Int) 
-              (Int,Int) 
-    deriving (Show)
-
--- | Generate an appropriate shape for a random matrix.
-shape :: Gen (Int,Int)
-shape = sized $ \s ->
-    let s' = (ceiling . sqrt) (fromIntegral s :: Double)
-    in liftM2 (,) (choose (0,s')) (choose (0,1+s'))
-
--- | Given a shape generate a valid index.  The shape must be have nonzero size.
-index2 :: (Int,Int) -> Gen (Int,Int)
-index2 (m,n) = liftM2 (,) (index m) (index n)
-
--- | Generate a random matrix of the given shape.
-matrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
-matrix mn = frequency [ (3, rawMatrix mn)  
-                      , (2, hermedMatrix mn)
-                      , (1, subMatrix mn >>= \(SubMatrix a ij _) -> 
-                                 return $ submatrix a ij mn)
-                      ]
 
 -- | Generate a triangular dense matrix.
 triMatrix :: (TestElem e) => (Int,Int) -> Gen (Tri Matrix e)
@@ -327,10 +378,6 @@ rawMatrix (m,n) = do
     es <- elems (m*n)
     return $ listMatrix (m,n) es
 
-hermedMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
-hermedMatrix (m,n) = do
-    x <- matrix (n,m)
-    return $ (herm x)
 
 subMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix e)
 subMatrix (m,n) = 
@@ -412,15 +459,6 @@ hermedBanded (m,n) (kl,ku) = do
     x <- rawBanded (n,m) (ku,kl)
     return $ herm x
 
--- | Generate an associations list for a matrix of the given shape.
-assocs2 :: (TestElem e) => (Int,Int) -> Gen [((Int,Int),e)]
-assocs2 (m,n) | m*n == 0  = return []
-              | otherwise = do
-    (Nat l) <- arbitrary
-    is <- replicateM l $ index2 (m,n)
-    es <- elems l
-    return $ zip is es
-
 -- | Generate an associations list for a banded matrix of the given shape
 -- and bandwidths.
 bandedAssocs :: (TestElem e) => (Int,Int) -> (Int,Int) -> Gen [((Int,Int),e)]
@@ -434,22 +472,6 @@ bandedAssocs (m,n) (kl,ku) | m*n == 0  = return []
     es      <- replicateM l elem
     return $ zip ijs' es
 
--- | A shape and a valid index for it.
-data Index2 = Index2 (Int,Int) (Int,Int) deriving (Eq,Show)
-instance Arbitrary Index2 where
-    arbitrary = do
-        (m,n) <- shape
-        let mn' = (m+1,n+1)
-        ij <- index2 mn'
-        return $ Index2 mn' ij
-
--- | A shape and an associations list.
-data Assocs2 e = Assocs2 (Int,Int) [((Int,Int),e)] deriving (Eq,Show)
-instance (TestElem e) => Arbitrary (Assocs2 e) where
-    arbitrary = do
-        n    <- shape
-        ies  <- assocs2 n
-        return $ Assocs2 n ies
 
 -- | A shape, bandwidths, and an associations list.
 data BandedAssocs e = BandedAssocs (Int,Int) (Int,Int) [((Int,Int),e)] deriving (Eq,Show)

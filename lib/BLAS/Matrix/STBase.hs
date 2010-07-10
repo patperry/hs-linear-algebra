@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, TypeFamilies #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |

@@ -114,6 +114,7 @@ Executable test
     main-is:            Main.hs
     other-modules:      Vector
                         STVector,
+                        Matrix,
                         Typed
 
     includes:           cbits/config.h

@@ -6,6 +6,7 @@ module Typed(
     testPropertyZ,
     
     immutableVector,
+    immutableMatrix,
     ) where
 
 
@@ -15,6 +16,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
 
 import BLAS.Vector( Vector )
+import BLAS.Matrix( Matrix )
         
 
 typed :: e -> a e -> a e
@@ -23,6 +25,8 @@ typed _ = id
 immutableVector :: Vector e -> Vector e
 immutableVector = id
 
+immutableMatrix :: Matrix e -> Matrix e
+immutableMatrix = id
 
 testPropertyI :: (Testable a)
               => TestName
