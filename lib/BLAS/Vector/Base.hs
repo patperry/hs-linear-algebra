@@ -126,7 +126,7 @@ constantVector n e = runVector $ newVector n e
 atVector :: (Storable e) => Vector e -> Int -> e
 atVector v i
     | i < 0 || i >= n = error $
-        printf "indexVector <vector with dimension %d> %d: invalid index" n i
+        printf "atVector <vector with dim %d> %d: invalid index" n i
     | otherwise =
         unsafeAtVector v i
   where
@@ -166,6 +166,7 @@ unsafeReplaceVector v ies = runVector $ do
     unsafeSetAssocsVector v' ies
     return v'
 
+-- | Create a new vector by replacing the values at the specified indices.
 replaceVector :: (Storable e) => Vector e -> [(Int,e)] -> Vector e
 replaceVector v ies = runVector $ do
     v' <- newCopyVector v
