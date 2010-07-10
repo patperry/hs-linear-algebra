@@ -11,7 +11,7 @@
 module BLAS.Matrix.ST (
     -- * The @STMatrix@ data type
     STMatrix,
-    -- runMatrix,
+    runMatrix,
     
     -- * Read-only Dense matrix type class
     RMatrix( dimMatrix, maybeVectorViewMatrix, unsafeWithMatrix ),
@@ -52,15 +52,16 @@ module BLAS.Matrix.ST (
     scaleToMatrix,
     scaleRowsToMatrix,
     scaleColsToMatrix,
+    negateToMatrix,
 
     -- * Linear algebra
     rank1UpdateToMatrix,
 
     -- * Conversions between mutable and immutable matrices
-    {- freezeMatrix,
+    freezeMatrix,
     unsafeFreezeMatrix,
     thawMatrix,
-    unsafeThawMatrix, -}
+    unsafeThawMatrix,
     
     -- * Matrix views of arrays and vectors
     matrixViewArray,
@@ -68,5 +69,5 @@ module BLAS.Matrix.ST (
 
     ) where
 
--- import BLAS.Matrix.Base
+import BLAS.Matrix.Base
 import BLAS.Matrix.STBase

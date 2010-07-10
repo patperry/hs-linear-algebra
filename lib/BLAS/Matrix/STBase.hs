@@ -380,6 +380,12 @@ subToMatrix :: (RMatrix m1, RMatrix m2, VNum e)
             => m1 e -> m2 e -> STMatrix s e -> ST s ()
 subToMatrix = checkMatrixOp3 "subToMatrix" $ matrixVectorOp3 subToVector
 
+-- | Negate the entries of a matrix.
+negateToMatrix :: (RMatrix m, VNum e)
+               => m e -> STMatrix s e -> ST s ()
+negateToMatrix = checkMatrixOp2 "negateToMatrix" $
+    matrixVectorOp2 negateToVector
+
 -- | Scale the entries of a matrix by the given value.
 scaleToMatrix :: (RMatrix m, VNum e)
               => e -> m e -> STMatrix s e -> ST s ()
@@ -497,4 +503,23 @@ matrixVectorOp3 f a b c =
             | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c) ]
 {-# INLINE matrixVectorOp3 #-}
 
+newResultMatrix :: (RMatrix m, Storable f)
+                => (m e -> STMatrix s f -> ST s a)
+                -> m e
+                -> ST s (STMatrix s f)
+newResultMatrix f a = do
+    c <- newMatrix_ (dimMatrix a)
+    _ <- f a c
+    return c
+{-# INLINE newResultMatrix #-}
 
+newResultMatrix2 :: (RMatrix m1, RMatrix m2, Storable g)
+                 => (m1 e -> m2 f -> STMatrix s g -> ST s a)
+                 -> m1 e
+                 -> m2 f
+                 -> ST s (STMatrix s g)
+newResultMatrix2 f a1 a2 = do
+    c <- newMatrix_ (dimMatrix a1)
+    _ <- f a1 a2 c
+    return c
+{-# INLINE newResultMatrix2 #-}
