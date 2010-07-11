@@ -47,6 +47,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
+    , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
