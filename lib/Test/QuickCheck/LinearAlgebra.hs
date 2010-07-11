@@ -2,17 +2,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Test.QuickCheck.BLAS
+-- Module     : Test.QuickCheck.LinearAlgebra
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
 -- Stability  : experimental
 --
 --
--- Test generators for BLAS types.
+-- Test generators for linear algebra types.
 --
 
-module Test.QuickCheck.BLAS (
+module Test.QuickCheck.LinearAlgebra (
     -- Testable element types
     TestElem(..),
     
@@ -77,8 +77,8 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 
-import BLAS.Vector( Vector, listVector, dimVector, spliceVector )
-import BLAS.Matrix( Matrix, listMatrix, dimMatrix, spliceMatrix )
+import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, spliceVector )
+import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, spliceMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
 -- import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
 --     unsafeThawMatrix )
@@ -87,7 +87,7 @@ import BLAS.Matrix( Matrix, listMatrix, dimMatrix, spliceMatrix )
 --     diagViewBanded )
 -- import Data.Matrix.Herm
 -- import Data.Matrix.Tri
-import BLAS.Elem
+import Numeric.LinearAlgebra.Elem
 
 instance Arbitrary (Complex Double) where
     arbitrary = do

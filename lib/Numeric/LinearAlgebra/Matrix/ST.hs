@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.ST
+-- Module     : Numeric.LinearAlgebra.Matrix.ST
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -8,7 +8,7 @@
 --
 -- Mutable matrices in the ST monad.
 
-module BLAS.Matrix.ST (
+module Numeric.LinearAlgebra.Matrix.ST (
     -- * The @STMatrix@ data type
     STMatrix,
     runMatrix,
@@ -73,5 +73,5 @@ module BLAS.Matrix.ST (
 
     ) where
 
-import BLAS.Matrix.Base
-import BLAS.Matrix.STBase
+import Numeric.LinearAlgebra.Matrix.Base
+import Numeric.LinearAlgebra.Matrix.STBase

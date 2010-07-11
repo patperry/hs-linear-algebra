@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Vector
+-- Module     : Numeric.LinearAlgebra.Vector
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -8,7 +8,7 @@
 --
 -- Immutable dense vectors.
 
-module BLAS.Vector (
+module Numeric.LinearAlgebra.Vector (
     -- * The Vector type
     Vector,
     dimVector,
@@ -80,5 +80,5 @@ module BLAS.Vector (
 
     ) where
 
-import BLAS.Vector.Base
-import BLAS.Vector.STBase
+import Numeric.LinearAlgebra.Vector.Base
+import Numeric.LinearAlgebra.Vector.STBase

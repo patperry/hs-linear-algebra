@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem.VFloating
+-- Module     : Numeric.LinearAlgebra.Elem.VFloating
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,16 +10,16 @@
 -- Vector operations.
 --
 
-module BLAS.Elem.VFloating (
+module Numeric.LinearAlgebra.Elem.VFloating (
     VFloating(..)
     ) where
      
 import Foreign( Ptr, Storable, peek, poke, advancePtr )
 import Data.Complex( Complex(..) )
 
-import BLAS.Elem.VFractional
-import BLAS.Elem.Double  
-import BLAS.Elem.Zomplex
+import Numeric.LinearAlgebra.Elem.VFractional
+import Numeric.LinearAlgebra.Elem.Double  
+import Numeric.LinearAlgebra.Elem.Zomplex
 
 -- | Types with vectorized 'Floating' operations.
 class (VFractional a, Floating a) => VFloating a where

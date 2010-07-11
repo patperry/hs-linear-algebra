@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem.VFractional
+-- Module     : Numeric.LinearAlgebra.Elem.VFractional
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,15 +10,15 @@
 -- Vector operations.
 --
 
-module BLAS.Elem.VFractional
+module Numeric.LinearAlgebra.Elem.VFractional
     where
      
 import Foreign( Ptr )
 import Data.Complex( Complex(..) )
 
-import BLAS.Elem.VNum
-import BLAS.Elem.Double  
-import BLAS.Elem.Zomplex
+import Numeric.LinearAlgebra.Elem.VNum
+import Numeric.LinearAlgebra.Elem.Double  
+import Numeric.LinearAlgebra.Elem.Zomplex
         
 -- | Types with vectorized 'Fractional' operations.
 class (VNum a, Fractional a) => VFractional a where

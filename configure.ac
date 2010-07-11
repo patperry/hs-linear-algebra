@@ -1,7 +1,7 @@
 AC_PREREQ([2.61])
-AC_INIT([Haskell blas], [0.9], [patperry@gmail.com])
+AC_INIT([Haskell Linear Algebra], [0.8], [patperry@gmail.com])
 
-AC_CONFIG_SRCDIR([blas.cabal])
+AC_CONFIG_SRCDIR([linear-algebra.cabal])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_ARG_WITH(compiler, 
@@ -22,5 +22,5 @@ fi
 AC_SUBST([BUILD_PACKAGE_BOOL])
 
 AC_CONFIG_HEADERS([cbits/config.h])
-AC_CONFIG_FILES([blas.buildinfo])
+AC_CONFIG_FILES([linear-algebra.buildinfo])
 AC_OUTPUT

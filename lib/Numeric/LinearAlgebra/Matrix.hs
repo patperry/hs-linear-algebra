@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix
+-- Module     : Numeric.LinearAlgebra.Matrix
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -8,7 +8,7 @@
 --
 -- Immutable dense matrices.
 
-module BLAS.Matrix (
+module Numeric.LinearAlgebra.Matrix (
     -- * The Matrix type
     Matrix,
     dimMatrix,
@@ -54,5 +54,5 @@ module BLAS.Matrix (
 
     ) where
 
-import BLAS.Matrix.Base
-import BLAS.Matrix.STBase
+import Numeric.LinearAlgebra.Matrix.Base
+import Numeric.LinearAlgebra.Matrix.STBase

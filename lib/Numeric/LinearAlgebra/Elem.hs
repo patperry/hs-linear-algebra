@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem
+-- Module     : Numeric.LinearAlgebra.Elem
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -9,7 +9,7 @@
 -- Type classes for elements with BLAS support.
 --
 
-module BLAS.Elem (
+module Numeric.LinearAlgebra.Elem (
     -- * Vector math types
     VNum,
     VFractional,
@@ -26,9 +26,7 @@ module BLAS.Elem (
     module Foreign.Storable,
     ) where
 
-import BLAS.Elem.VMath( VNum, VFractional, VFloating )
-import BLAS.Elem.Level1( BLAS1 )
-import BLAS.Elem.Level2( BLAS2 )
-import BLAS.Elem.Level3( BLAS3 )
+import Numeric.LinearAlgebra.Elem.VMath( VNum, VFractional, VFloating )
+import Numeric.LinearAlgebra.Elem.BLAS( BLAS1, BLAS2, BLAS3 )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )

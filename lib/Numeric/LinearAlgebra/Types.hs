@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Types
+-- Module     : Numeric.LinearAlgebra.Types
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module BLAS.Types (
+module Numeric.LinearAlgebra.Types (
     HasVectorView(..),
 
     OrderEnum(..),

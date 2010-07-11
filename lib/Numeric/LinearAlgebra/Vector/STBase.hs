@@ -2,14 +2,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Vector.STBase
+-- Module     : Numeric.LinearAlgebra.Vector.STBase
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : asinerimental
 --
 
-module BLAS.Vector.STBase
+module Numeric.LinearAlgebra.Vector.STBase
     where
 
 import Control.Monad
@@ -19,12 +19,12 @@ import Foreign
 import System.IO.Unsafe( unsafeInterleaveIO )
 import Text.Printf( printf )
 
-import BLAS.Internal( clearArray )
-import BLAS.Elem( Complex, VNum, VFractional, VFloating, BLAS1 )
-import qualified BLAS.Elem.Level1 as BLAS
-import qualified BLAS.Elem.VNum as VNum
-import qualified BLAS.Elem.VFractional as VFractional
-import qualified BLAS.Elem.VFloating as VFloating
+import Numeric.LinearAlgebra.Internal( clearArray )
+import Numeric.LinearAlgebra.Elem( Complex, VNum, VFractional, VFloating, BLAS1 )
+import qualified Numeric.LinearAlgebra.Elem.BLAS as BLAS
+import qualified Numeric.LinearAlgebra.Elem.VNum as VNum
+import qualified Numeric.LinearAlgebra.Elem.VFractional as VFractional
+import qualified Numeric.LinearAlgebra.Elem.VFloating as VFloating
 
 -- | Dense vectors in the 'ST' monad.  The type arguments are as follows:
 --

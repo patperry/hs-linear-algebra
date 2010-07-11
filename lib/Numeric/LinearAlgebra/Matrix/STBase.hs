@@ -2,14 +2,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.STBase
+-- Module     : Numeric.LinearAlgebra.Matrix.STBase
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : asinerimental
 --
 
-module BLAS.Matrix.STBase
+module Numeric.LinearAlgebra.Matrix.STBase
     where
       
 import Control.Monad( zipWithM_ )
@@ -18,11 +18,11 @@ import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, peekElemOff, pokeElemOff )
 import Text.Printf( printf )
 
-import BLAS.Elem
-import qualified BLAS.Elem.Level1 as BLAS
-import qualified BLAS.Elem.Level2 as BLAS
-import BLAS.Types( HasVectorView(..) )
-import BLAS.Vector.STBase
+import Numeric.LinearAlgebra.Elem
+import qualified Numeric.LinearAlgebra.Elem.BLAS1 as BLAS
+import qualified Numeric.LinearAlgebra.Elem.BLAS2 as BLAS
+import Numeric.LinearAlgebra.Types( HasVectorView(..) )
+import Numeric.LinearAlgebra.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
 --

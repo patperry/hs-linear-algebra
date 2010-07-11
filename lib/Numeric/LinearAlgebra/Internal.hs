@@ -3,7 +3,7 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Internal
+-- Module     : Numeric.LinearAlgebra.Internal
 -- Copyright  : Copyright (c) 2008, Patrick Perry <patperry@stanford.edu>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@stanford.edu>
@@ -11,7 +11,7 @@
 --
 
 
-module BLAS.Internal (
+module Numeric.LinearAlgebra.Internal (
     clearArray,
     bzero,
     inlinePerformIO,

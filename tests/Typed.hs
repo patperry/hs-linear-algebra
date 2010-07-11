@@ -15,8 +15,8 @@ import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
 
-import BLAS.Vector( Vector )
-import BLAS.Matrix( Matrix )
+import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Matrix( Matrix )
         
 
 typed :: e -> a e -> a e

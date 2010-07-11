@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem.Level3
+-- Module     : Numeric.LinearAlgebra.Elem.BLAS3
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,17 +10,17 @@
 -- Matrix-Matrix operations.
 --
 
-module BLAS.Elem.Level3
+module Numeric.LinearAlgebra.Elem.BLAS3
     where
      
 import Data.Complex 
 import Foreign ( Ptr, with )   
 
-import BLAS.Types
-import BLAS.CTypes
-import BLAS.Elem.Level2
-import BLAS.Elem.Double  
-import BLAS.Elem.Zomplex 
+import Numeric.LinearAlgebra.Types
+import Numeric.LinearAlgebra.CTypes
+import Numeric.LinearAlgebra.Elem.BLAS2
+import Numeric.LinearAlgebra.Elem.Double  
+import Numeric.LinearAlgebra.Elem.Zomplex 
         
 -- | Types with matrix-matrix operations.        
 class (BLAS2 a) => BLAS3 a where

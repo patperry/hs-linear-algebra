@@ -5,7 +5,7 @@ cbits/config.h
 cbits/config.h.in
 aclocal.m4
 autom4te.cache
-blas.buildinfo
+linear-algebra.buildinfo
 config.status
 config.log
 configure

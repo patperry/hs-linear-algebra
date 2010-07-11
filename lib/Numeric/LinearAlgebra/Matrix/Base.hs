@@ -3,14 +3,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Matrix.Base
+-- Module     : Numeric.LinearAlgebra.Matrix.Base
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module BLAS.Matrix.Base
+module Numeric.LinearAlgebra.Matrix.Base
     where
 
 import Control.Monad( forM_, zipWithM_ )
@@ -21,14 +21,14 @@ import Foreign( peekElemOff )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
-import BLAS.Elem
-import BLAS.Internal( inlinePerformIO )
+import Numeric.LinearAlgebra.Elem
+import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 
-import BLAS.Types
-import BLAS.Vector
-import BLAS.Vector.STBase
+import Numeric.LinearAlgebra.Types
+import Numeric.LinearAlgebra.Vector
+import Numeric.LinearAlgebra.Vector.STBase
 
-import BLAS.Matrix.STBase
+import Numeric.LinearAlgebra.Matrix.STBase
 
 
 infixl 7 `scaleMatrix`, `scaleRowsMatrix`, `scaleColsMatrix`

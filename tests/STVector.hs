@@ -15,13 +15,13 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import BLAS.Elem
-import BLAS.Vector
-import BLAS.Vector.ST
+import Numeric.LinearAlgebra.Elem
+import Numeric.LinearAlgebra.Vector
+import Numeric.LinearAlgebra.Vector.ST
 
-import Test.QuickCheck.BLAS( TestElem(..), Dim(..), Index(..), Assocs(..),
-    VectorPair(..), VectorTriple(..) )
-import qualified Test.QuickCheck.BLAS as Test
+import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim(..), Index(..),
+    Assocs(..), VectorPair(..), VectorTriple(..) )
+import qualified Test.QuickCheck.LinearAlgebra as Test
 
 import Typed
 

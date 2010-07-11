@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Elem.Level2
+-- Module     : Numeric.LinearAlgebra.Elem.BLAS2
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,17 +10,17 @@
 -- Matrix-Vector operations.
 --
 
-module BLAS.Elem.Level2
+module Numeric.LinearAlgebra.Elem.BLAS2
     where
      
 import Data.Complex 
 import Foreign( Ptr, with )
 
-import BLAS.Types
-import BLAS.CTypes
-import BLAS.Elem.Level1
-import BLAS.Elem.Double 
-import BLAS.Elem.Zomplex
+import Numeric.LinearAlgebra.Types
+import Numeric.LinearAlgebra.CTypes
+import Numeric.LinearAlgebra.Elem.BLAS1
+import Numeric.LinearAlgebra.Elem.Double 
+import Numeric.LinearAlgebra.Elem.Zomplex
    
 -- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where

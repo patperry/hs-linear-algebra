@@ -2,14 +2,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Vector.Base
+-- Module     : Numeric.LinearAlgebra.Vector.Base
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module BLAS.Vector.Base
+module Numeric.LinearAlgebra.Vector.Base
     where
 
 import Control.Monad
@@ -20,11 +20,11 @@ import Foreign( advancePtr, peek, peekElemOff, touchForeignPtr )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
-import BLAS.Internal( inlinePerformIO )
-import BLAS.Elem
+import Numeric.LinearAlgebra.Internal( inlinePerformIO )
+import Numeric.LinearAlgebra.Elem
 
 
-import BLAS.Vector.STBase
+import Numeric.LinearAlgebra.Vector.STBase
 
 infixr 8 `powVector`
 infixl 7 `divVector`

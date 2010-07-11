@@ -1,14 +1,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.CTypes
+-- Module     : Numeric.LinearAlgebra.CTypes
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module BLAS.CTypes (
+module Numeric.LinearAlgebra.CTypes (
     CBLASOrder,
     CBLASTrans,
     CBLASUpLo,
@@ -38,7 +38,7 @@ module BLAS.CTypes (
     cblasSide,
     ) where
         
-import BLAS.Types
+import Numeric.LinearAlgebra.Types
         
 newtype CBLASOrder = CBLASOrder Int deriving (Eq, Show)
 newtype CBLASTrans = CBLASTrans Int deriving (Eq, Show)

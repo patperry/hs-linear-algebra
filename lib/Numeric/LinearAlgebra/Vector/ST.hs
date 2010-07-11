@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : BLAS.Vector.ST
+-- Module     : Numeric.LinearAlgebra.Vector.ST
 -- Copyright  : Copyright (c) , Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -8,7 +8,7 @@
 --
 -- Mutable vectors in the ST monad.
 
-module BLAS.Vector.ST (
+module Numeric.LinearAlgebra.Vector.ST (
     -- * The @STVector@ data type
     STVector,
     runVector,
@@ -97,5 +97,5 @@ module BLAS.Vector.ST (
 
     ) where
 
-import BLAS.Vector.Base
-import BLAS.Vector.STBase
+import Numeric.LinearAlgebra.Vector.Base
+import Numeric.LinearAlgebra.Vector.STBase
