@@ -16,6 +16,7 @@ module BLAS.Matrix (
     -- * Matrix construction
     matrix, 
     listMatrix,
+    colListMatrix,
     constantMatrix,
 
     -- * Accessing Matrixs
@@ -27,6 +28,10 @@ module BLAS.Matrix (
     -- * Incremental Matrix updates
     replaceMatrix,
     accumMatrix,
+
+    -- * Derived matrices
+    mapMatrix,
+    zipWithMatrix,
 
     -- * Matrix views
     colMatrix,

@@ -13,7 +13,7 @@
 module BLAS.Matrix.Base
     where
 
-import Control.Monad( forM_ )
+import Control.Monad( forM_, zipWithM_ )
 import Control.Monad.ST
 import Data.AEq( AEq(..) )
 import Data.Typeable( Typeable )
@@ -29,6 +29,10 @@ import BLAS.Vector
 import BLAS.Vector.STBase
 
 import BLAS.Matrix.STBase
+
+
+infixl 7 `scaleMatrix`, `scaleRowsMatrix`, `scaleColsMatrix`
+infixl 6 `addMatrix`, `shiftMatrix`, `shiftDiagMatrix`, `subMatrix`
 
 
 -- | Immutable dense matrices. The type arguments are as follows:
@@ -115,6 +119,14 @@ listMatrix mn es = runMatrix $ do
     return a
 {-# INLINE listMatrix #-}
 
+-- | Create a matrix of the given dimension with the given vectors as
+-- columns.
+colListMatrix :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
+colListMatrix mn cs = runMatrix $ do
+    a <- newMatrix_ mn
+    zipWithM_ copyToVector cs (colsMatrix a)
+    return a
+
 -- | Create a matrix of the given dimension with all elements initialized
 -- to the given value
 constantMatrix :: (Storable e) => (Int,Int) -> e -> Matrix e
@@ -189,6 +201,48 @@ unsafeAccumMatrix f a ies = runMatrix $ do
         old <- unsafeReadMatrix a' i
         unsafeWriteMatrix a' i (f old new)
     return a'
+
+-- | Construct a new matrix by applying a function to every element of
+-- a matrix.
+mapMatrix :: (Storable e, Storable e')
+          => (e -> e')
+          -> Matrix e
+          -> Matrix e'
+mapMatrix f a = runMatrix $ do
+    a' <- newMatrix_ (dimMatrix a)
+    unsafeMapToMatrix f a a'
+    return a'
+{-# INLINE mapMatrix #-}
+
+-- | Construct a new matrix by applying a function to every pair of elements
+-- of two matrices.  The two matrices must have identical dimensions.
+zipWithMatrix :: (Storable e, Storable e', Storable f)
+              => (e -> e' -> f)
+              -> Matrix e
+              -> Matrix e'
+              -> Matrix f
+zipWithMatrix f a a'
+    | m /= m' || n /= n' = error $
+        printf ("zipWithMatrix <function> <matrix with dim (%d,%d)>"
+                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+                m n m' n'
+    | otherwise =
+        unsafeZipWithMatrix f a a'
+  where
+    (m,n) = dimMatrix a
+    (m',n') = dimMatrix a'
+{-# INLINE zipWithMatrix #-}
+
+-- | Version of 'zipWithMatrix' that does not check if the input matrices
+-- have the same dimensions.
+unsafeZipWithMatrix :: (Storable e, Storable e', Storable f)
+                    => (e -> e' -> f)
+                    -> Matrix e
+                    -> Matrix e'
+                    -> Matrix f
+unsafeZipWithMatrix f a a' =
+    listMatrix (dimMatrix a') $ zipWith f (elemsMatrix a) (elemsMatrix a')
+{-# INLINE unsafeZipWithMatrix #-}
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "listMatrix " ++ show (dimMatrix x) ++ " " ++ show (elemsMatrix x)

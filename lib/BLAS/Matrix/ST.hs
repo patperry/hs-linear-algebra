@@ -40,7 +40,11 @@ module BLAS.Matrix.ST (
     getAssocsMatrix,
     getAssocsMatrix',
     setElemsMatrix,
-    setAssocsMatrix,    
+    setAssocsMatrix,
+
+    -- * List-like operations
+    mapToMatrix,
+    zipWithToMatrix,
 
     -- * Matrix math operations
     shiftToMatrix,

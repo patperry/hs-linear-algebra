@@ -323,6 +323,62 @@ unsafeWriteMatrix a (i,j) e = unsafeIOToST $
     unsafeWithMatrix a $ \p lda ->
         pokeElemOff p (i + j * lda) e
 
+-- | @mapToMatrix f a c@ replaces @c@ elementwise with @f(a)@.
+mapToMatrix :: (RMatrix m, Storable e, Storable f)
+            => (e -> f)
+            -> m e
+            -> STMatrix s f
+            -> ST s ()
+mapToMatrix f = checkMatrixOp2 "mapToMatrix _" $ unsafeMapToMatrix f
+{-# INLINE mapToMatrix #-}
+                            
+unsafeMapToMatrix :: (RMatrix m, Storable e, Storable f)
+                  => (e -> f)
+                  -> m e
+                  -> STMatrix s f
+                  -> ST s ()
+unsafeMapToMatrix f a c =
+    case (maybeVectorViewMatrix a, maybeVectorViewMatrix c) of
+        (Just x, Just z) -> unsafeMapToVector f x z
+        _ -> sequence_ [ unsafeMapToVector f x z 
+                       | (x,z) <- zip (colsMatrix a) (colsMatrix c)
+                       ]
+{-# INLINE unsafeMapToMatrix #-}
+
+-- | @zipWithToMatrix f a b c@ replaces @c@ elementwise with @f(a, b)@.
+zipWithToMatrix :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
+                => (e1 -> e2 -> f)
+                -> m1 e1
+                -> m2 e2
+                -> STMatrix s f
+                -> ST s ()
+zipWithToMatrix f = checkMatrixOp3 "zipWithToMatrix _" $
+    unsafeZipWithToMatrix f
+{-# INLINE zipWithToMatrix #-}
+
+unsafeZipWithToMatrix :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
+                      => (e1 -> e2 -> f)
+                      -> m1 e1
+                      -> m2 e2
+                      -> STMatrix s f
+                      -> ST s ()
+unsafeZipWithToMatrix f a b c =
+    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b,
+          maybeVectorViewMatrix c) of
+        (Just x, Just y, Just z) -> unsafeZipWithToVector f x y z
+        _ -> sequence_ [ unsafeZipWithToVector f x y z
+                       | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c)
+                       ]
+{-# INLINE unsafeZipWithToMatrix #-}
+
+-- | Set every element in the matrix to a default value.  For
+-- standard numeric types (including 'Double', 'Complex Double', and 'Int'),
+-- the default value is '0'.
+clearMatrix :: (Storable e) => STMatrix s e -> ST s ()
+clearMatrix a = case maybeVectorViewMatrix a of
+    Just x -> clearVector x
+    Nothing -> sequence_ [ clearVector x | x <- colsMatrix a ]
+
 -- | Add a constant to all entries of a matrix.
 shiftToMatrix :: (RMatrix m, VNum e)
               => e -> m e -> STMatrix s e -> ST s ()
@@ -357,7 +413,7 @@ shiftDiagToMatrixWithScale e s a b
         unsafeIOToST $
             unsafeWithVector s $ \ps ->
             unsafeWithMatrix b $ \pb ldb ->
-                BLAS.axpy mn e ps 1 pb ldb
+                BLAS.axpy mn e ps 1 pb (ldb+1)
   where
     (m,n) = dimMatrix b
     mn = min m n
