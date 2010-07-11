@@ -53,13 +53,13 @@ class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
     -- matrix and the leading dimension (lda).
     unsafeWithMatrix :: m e -> (Ptr e -> Int -> IO a) -> IO a
 
-    unsafeMatrixViewVector ::  VectorView m e -> (Int,Int) -> m e
+    unsafeMatrixViewVector :: VectorView m e -> (Int,Int) -> m e
     
     -- | Possibly view a matrix as a vector.  This only succeeds if the
     -- matrix is stored contiguously in memory, i.e. if the matrix contains
     -- a single column or the "lda" of the matrix is equal to the number
     -- of rows.
-    maybeVectorViewMatrix :: m e -> Maybe (VectorView m e)
+    maybeVectorViewMatrix :: (Storable e) => m e -> Maybe (VectorView m e)
 
     unsafeColMatrix :: (Storable e)
                     => m e
@@ -72,7 +72,10 @@ instance RMatrix (STMatrix s) where
 
     unsafeSpliceMatrix (STMatrix a _ _ lda) (i,j) (m',n') = let
         o = i + j*lda
-        a' = unsafeSpliceVector a o (dimVector a - o)
+        l = if m' == 0 || n' == 0
+                then 0
+                else lda * (n' - 1) + m'
+        a' = unsafeSpliceVector a o l
         in STMatrix a' m' n' lda
     {-# INLINE unsafeSpliceMatrix #-}
     
@@ -85,8 +88,8 @@ instance RMatrix (STMatrix s) where
     {-# INLINE unsafeMatrixViewVector #-}
 
     maybeVectorViewMatrix (STMatrix a m n lda) | lda == max 1 m = Just a
-                                               | n == 1         = Just a
-                                               | otherwise      = Nothing
+                                               | n == 1 = Just a
+                                               | otherwise = Nothing
     {-# INLINE maybeVectorViewMatrix #-}
 
     unsafeColMatrix (STMatrix a m _ lda) j = let
@@ -96,7 +99,8 @@ instance RMatrix (STMatrix s) where
     {-# INLINE unsafeColMatrix #-}
 
 -- | View a vector as a matrix with the given dimensions.
-matrixViewVector :: (RMatrix m) => VectorView m e -> (Int,Int) -> m e
+matrixViewVector :: (RMatrix m, Storable e)
+                 => VectorView m e -> (Int,Int) -> m e
 matrixViewVector x mn@(m,n)
     | dimVector x /= m*n = error $
         printf ("matrixViewVector <vector with dim %d> (%d,%d):"
