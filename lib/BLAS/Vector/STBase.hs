@@ -582,7 +582,7 @@ getDotVector = checkVectorOp2 "getDotVector" unsafeGetDotVector
 
 unsafeGetDotVector :: (RVector x, RVector y, BLAS1 e)
                    => x e -> y e -> ST s e
-unsafeGetDotVector = vectorStrideCall2 BLAS.dot
+unsafeGetDotVector x y = (vectorStrideCall2 BLAS.dotc) y x
 {-# INLINE unsafeGetDotVector #-}
 
 vectorCall :: (RVector x)

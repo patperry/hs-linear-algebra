@@ -24,7 +24,8 @@ import BLAS.Elem.Zomplex
 class (Storable a, Fractional a) => BLAS1 a where
     copy  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()    
     swap  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    dot   :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
+    dotc  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a
+    dotu  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a    
     nrm2  :: Int -> Ptr a -> Int -> IO Double
     asum  :: Int -> Ptr a -> Int -> IO Double
     iamax :: Int -> Ptr a -> Int -> IO Int
@@ -42,8 +43,10 @@ instance BLAS1 Double where
     {-# INLINE copy #-}
     swap = dswap
     {-# INLINE swap #-}
-    dot     = ddot
-    {-# INLINE dot #-}
+    dotc = ddot
+    {-# INLINE dotc #-}
+    dotu = ddot
+    {-# INLINE dotu #-}
     nrm2    = dnrm2
     {-# INLINE nrm2 #-}
     asum    = dasum
@@ -61,11 +64,16 @@ instance BLAS1 Double where
 
 
 instance BLAS1 (Complex Double) where
-    dot n pX incX pY incY =
+    dotc n pX incX pY incY =
         with 0 $ \pDotc -> do
             zdotc_sub n pX incX pY incY pDotc
             peek pDotc
-    {-# INLINE dot #-}
+    {-# INLINE dotc #-}
+    dotu n pX incX pY incY =
+        with 0 $ \pDotu -> do
+            zdotu_sub n pX incX pY incY pDotu
+            peek pDotu
+    {-# INLINE dotu #-}
 
     copy = zcopy
     {-# INLINE copy #-}

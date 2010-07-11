@@ -363,7 +363,7 @@ prop_whichMaxAbs2 t x =
     _     = typed t x
 
 prop_dot t (VectorPair x y) =
-    dotVector x y ~== sum (conj x * y)
+    dotVector x y ~== sum (x * conj y)
   where
     sum  = sumVector
     conj = conjVector
