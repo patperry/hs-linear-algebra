@@ -210,6 +210,7 @@ mapVector f v = runVector $ do
     v' <- newVector_ (dimVector v)
     unsafeMapToVector f v v'
     return v'
+{-# INLINE mapVector #-}
 
 -- | Construct a new vector by applying a function to every pair of elements
 -- of two vectors.  The two vectors must have identical dimensions.
@@ -220,8 +221,8 @@ zipWithVector :: (Storable e, Storable e', Storable f)
               -> Vector f
 zipWithVector f v v'
     | n /= n' = error $
-        printf ("zipWithVector <function> <vector with dimension %d>"
-                ++ " <vector with dimension %d>: lengths differ") n n'
+        printf ("zipWithVector <function> <vector with dim %d>"
+                ++ " <vector with dim %d>: lengths differ") n n'
     | otherwise =
         unsafeZipWithVector f v v'
   where
@@ -238,6 +239,7 @@ unsafeZipWithVector :: (Storable e, Storable e', Storable f)
                     -> Vector f
 unsafeZipWithVector f v v' =
     listVector (dimVector v) $ zipWith f (elemsVector v) (elemsVector v')
+{-# INLINE unsafeZipWithVector #-}
 
 -- | Compute the sum of the entries in the vector.
 sumVector :: (VNum e) => Vector e -> e
