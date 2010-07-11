@@ -1,6 +1,9 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module STMatrix (
-    tests_STMatrix
+    tests_STMatrix,
+    mutatesToMatrix,
+    readOnlyMatrix,
+    
     ) where
 
 import Control.Monad
@@ -23,6 +26,7 @@ import Test.QuickCheck.BLAS( TestElem(..), Dim2(..), Index2(..), Assocs2(..),
     MatrixPair(..), MatrixTriple(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
+import STVector( readOnlyVector )
 import Typed
 
 
@@ -42,10 +46,20 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyI "mapTo" prop_mapTo
     , testPropertyI "zipWithTo" prop_zipWithTo
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
+    , testPropertyDZ "shiftDiagTo (1)" prop_shiftDiagTo1 prop_shiftDiagTo1
+    , testPropertyDZ "shiftDiagTo (2)" prop_shiftDiagTo2 prop_shiftDiagTo2
+    , testPropertyDZ "shiftDiagToWithScale (1)"
+        prop_shiftDiagToWithScale1 prop_shiftDiagToWithScale1
+    , testPropertyDZ "shiftDiagToWithScale (2)"
+        prop_shiftDiagToWithScale2 prop_shiftDiagToWithScale2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
+    , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
+    , testPropertyDZ "scaleRowsTo (2)" prop_scaleRowsTo2 prop_scaleRowsTo2
+    , testPropertyDZ "scaleColsTo (1)" prop_scaleColsTo1 prop_scaleColsTo1
+    , testPropertyDZ "scaleColsTo (2)" prop_scaleColsTo2 prop_scaleColsTo2
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     ]
     
@@ -141,7 +155,45 @@ prop_zipWithTo t (Blind f) = ternaryProp t
 prop_shiftTo t e = binaryProp t
     (\x -> shiftMatrix e x)
     (\mx my -> shiftToMatrix e mx my)
-    
+
+prop_shiftDiagTo1 t a =
+    forAll (Test.vector (min m n)) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `mutatesToMatrix` (shiftDiagMatrix s a) $ \ma ->
+            shiftDiagToMatrix ms ma ma
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_shiftDiagTo2 t (MatrixPair a b) =
+    forAll (Test.vector (min m n)) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `readOnlyMatrix` \ma ->
+        b `mutatesToMatrix` (shiftDiagMatrix s a) $ \mb ->
+            shiftDiagToMatrix ms ma mb
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_shiftDiagToWithScale1 t e a =
+    forAll (Test.vector (min m n)) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `mutatesToMatrix` (shiftDiagMatrixWithScale e s a) $ \ma ->
+            shiftDiagToMatrixWithScale e ms ma ma
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_shiftDiagToWithScale2 t e (MatrixPair a b) =
+    forAll (Test.vector (min m n)) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `readOnlyMatrix` \ma ->
+        b `mutatesToMatrix` (shiftDiagMatrixWithScale e s a) $ \mb ->
+            shiftDiagToMatrixWithScale e ms ma mb
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
 prop_addTo t = ternaryProp t addMatrix addToMatrix
 
 prop_addToWithScale t e f = ternaryProp t
@@ -153,6 +205,44 @@ prop_subTo t = ternaryProp t subMatrix subToMatrix
 prop_scaleTo t e = binaryProp t
     (\x -> scaleMatrix e x)
     (\mx my -> scaleToMatrix e mx my)
+
+prop_scaleRowsTo1 t a =
+    forAll (Test.vector m) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `mutatesToMatrix` (scaleRowsMatrix s a) $ \ma ->
+            scaleRowsToMatrix ms ma ma
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_scaleRowsTo2 t (MatrixPair a b) =
+    forAll (Test.vector m) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `readOnlyMatrix` \ma ->
+        b `mutatesToMatrix` (scaleRowsMatrix s a) $ \mb ->
+            scaleRowsToMatrix ms ma mb
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_scaleColsTo1 t a =
+    forAll (Test.vector n) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `mutatesToMatrix` (scaleColsMatrix s a) $ \ma ->
+            scaleColsToMatrix ms ma ma
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_scaleColsTo2 t (MatrixPair a b) =
+    forAll (Test.vector n) $ \s -> runST $
+        s `readOnlyVector` \ms ->
+        a `readOnlyMatrix` \ma ->
+        b `mutatesToMatrix` (scaleColsMatrix s a) $ \mb ->
+            scaleColsToMatrix ms ma mb
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
 
 prop_negateTo t = binaryProp t negateMatrix negateToMatrix
 

@@ -1,6 +1,8 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module STVector (
-    tests_STVector
+    tests_STVector,
+    mutatesToVector,
+    readOnlyVector,
     ) where
 
 import Control.Monad
