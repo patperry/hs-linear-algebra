@@ -2,6 +2,7 @@ module Matrix (
     tests_Matrix
     ) where
 
+import Control.Monad( zipWithM_ )
 import Data.AEq
 import Debug.Trace
 import Test.Framework
@@ -13,7 +14,7 @@ import BLAS.Elem
 import BLAS.Vector
 import BLAS.Matrix
 
-import Test.QuickCheck.BLAS( TestElem(..), Dim2(..), Assocs2(..),
+import Test.QuickCheck.BLAS( TestElem(..), Dim2(..), Index2(..), Assocs2(..),
     MatrixPair(..) )
 import qualified Test.QuickCheck.BLAS as Test
 
@@ -30,7 +31,11 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "assocs" prop_assocs
     , testPropertyI "replace" prop_replace
     , testPropertyI "accum" prop_accum
-    {-, testPropertyI "splice" prop_splice
+    , testPropertyI "map" prop_map
+    , testPropertyI "zipWith" prop_zipWith
+    , testPropertyI "col" prop_col
+    , testPropertyI "cols" prop_cols
+    , testPropertyI "splice" prop_splice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
     , testPropertyDZ "shift" prop_shift prop_shift
@@ -40,7 +45,9 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
-    , testPropertyDZ "negate" prop_negate prop_negate -}
+    , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
+    , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
+    , testPropertyDZ "negate" prop_negate prop_negate
     ]
 
 
@@ -114,62 +121,132 @@ prop_accum t (Blind f) (Assocs2 mn ies) =
                                 | (i,e) <- assocsMatrix x ]
   where
       _ = typed t $ (snd . unzip) ies
+
+-------------------------- Derived Matrices ------------------------------
+     
+prop_map t (Blind f) x =
+    mapMatrix f x === listMatrix (dimMatrix x) (map f $ elemsMatrix x)
+  where
+    _ = typed t x
+    _ = typed t $ mapMatrix f x
+
+prop_zipWith t (Blind f) (MatrixPair x y) =
+    zipWithMatrix f x y === (listMatrix (dimMatrix x) $
+                                zipWith f (elemsMatrix x) (elemsMatrix y))
+  where
+    _ = typed t x
+    _ = typed t y    
+    _ = typed t $ zipWithMatrix f x y
      
 
------------------------------- Matrix Views-- --------------------------------
+------------------------------ Matrix Views --------------------------------
 
-{-
-prop_splice t x = 
+prop_col t (Index2 (m,n) (_,j)) =
+    forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
+        colMatrix a j === listVector m [ atMatrix a (i,j) | i <- [ 0..m-1 ] ]
+
+prop_cols t a =
+    colsMatrix a === [ colMatrix a j | j <- [ 0..n-1 ] ]
+  where
+    (_,n) = dimMatrix a
+    _ = typed t $ immutableMatrix a
+
+prop_splice t a =
+    forAll (choose (0,m)) $ \m' ->
     forAll (choose (0,n)) $ \n' ->
-    forAll (choose (0,n-n')) $ \o ->
-        spliceVector x o n' === listVector n' (take n' $ drop o $ es)
+    forAll (choose (0,m-m')) $ \i ->
+    forAll (choose (0,n-n')) $ \j ->
+        spliceMatrix a (i,j) (m',n')
+            === colListMatrix (m',n') [ spliceVector (colMatrix a j') i m'
+                                      | j' <- [ j..j+n'-1 ] ]
   where
-    n  = dimVector x
-    es = elemsVector x
-    _  = typed t x
+    (m,n) = dimMatrix a
+    _ = typed t a
 
-prop_splitAt t x =
-    forAll (choose (0,n)) $ \k ->
-        splitVectorAt k x === (listVector k $ take k es,
-                               listVector (n-k) $ drop k es)
+prop_splitRowsAt t a =
+    forAll (choose (0,m)) $ \i ->
+        splitRowsMatrixAt i a
+            === ( spliceMatrix a (0,0) (i,n)
+                , spliceMatrix a (i,0) (m-i,n)
+                )
   where
-    n  = dimVector x
-    es = elemsVector x
-    _  = typed t x
+    (m,n) = dimMatrix a
+    _  = typed t $ immutableMatrix a
+
+prop_splitColsAt t a =
+    forAll (choose (0,n)) $ \j ->
+        splitColsMatrixAt j a
+            === ( spliceMatrix a (0,0) (m,j)
+                , spliceMatrix a (0,j) (m,n-j)
+                )
+  where
+    (m,n) = dimMatrix a
+    _  = typed t $ immutableMatrix a
     
 
+-------------------------- Num Matrix Operations --------------------------
 
--------------------------- Num Vector Operations --------------------------
+prop_shift t k a =
+    k `shiftMatrix` a === mapMatrix (k+) a
+  where
+    _ = typed t a
 
-prop_shift t k x =
-    k `shiftVector` x === mapVector (k+) x
+prop_shiftDiag t a =
+    forAll (Test.vector (min m n)) $ \d ->
+        d `shiftDiagMatrix` a
+            === accumMatrix (+) a [ ((i,i),e) | (i,e) <- assocsVector d ]
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_shiftDiagWithScale t k a =
+    forAll (Test.vector (min m n)) $ \d ->
+        shiftDiagMatrixWithScale k d a
+            ~== accumMatrix (+) a [ ((i,i),k * e) | (i,e) <- assocsVector d ]
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_add t (MatrixPair x y) =
+    x `addMatrix` y === zipWithMatrix (+) x y
   where
     _ = typed t x
 
-prop_add t (VectorPair x y) =
-    x `addVector` y === zipWithVector (+) x y
+prop_addWithScale t a b (MatrixPair x y) =
+    addMatrixWithScale a x b y ~== 
+        zipWithMatrix (+) (mapMatrix (a*) x) (mapMatrix (b*) y)
   where
     _ = typed t x
 
-prop_addWithScale t a b (VectorPair x y) =
-    addVectorWithScale a x b y ~== 
-        zipWithVector (+) (mapVector (a*) x) (mapVector (b*) y)
-  where
-    _ = typed t x
-
-prop_sub t (VectorPair x y) =
-    x `subVector` y === zipWithVector (-) x y
+prop_sub t (MatrixPair x y) =
+    x `subMatrix` y === zipWithMatrix (-) x y
   where
     _ = typed t x
 
 prop_scale t k x =
-    k `scaleVector` x === mapVector (k*) x
+    k `scaleMatrix` x === mapMatrix (k*) x
   where
     _ = typed t x
 
+prop_scaleRows t a =
+    forAll (Test.vector m) $ \s ->
+        scaleRowsMatrix s a
+            === colListMatrix (m,n) [ mulVector s x | x <- colsMatrix a ]
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+
+prop_scaleCols t a =
+    forAll (Test.vector n) $ \s ->
+        scaleColsMatrix s a
+            === colListMatrix (m,n)
+                    [ scaleVector e x 
+                    | (e,x) <- zip (elemsVector s) (colsMatrix a) ]
+  where
+    (m,n) = dimMatrix a
+    _ = typed t a
+    
 prop_negate t x =
-    negateVector x === mapVector negate x
+    negateMatrix x === mapMatrix negate x
   where
     _ = typed t x
-
--}
