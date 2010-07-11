@@ -115,6 +115,7 @@ Executable test
     other-modules:      Vector
                         STVector,
                         Matrix,
+                        STMatrix,
                         Typed
 
     includes:           cbits/config.h

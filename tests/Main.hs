@@ -3,6 +3,7 @@ import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 
 import Matrix
+import STMatrix
 import Vector
 import STVector
 
@@ -12,4 +13,5 @@ main = defaultMain tests
     tests = [ tests_Vector
             , tests_STVector
             , tests_Matrix
+            , tests_STMatrix
             ]
