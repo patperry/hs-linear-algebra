@@ -78,7 +78,7 @@ import qualified Test.QuickCheck as QC
 
 
 import BLAS.Vector( Vector, listVector, dimVector, spliceVector )
-import BLAS.Matrix( Matrix, listMatrix, dimMatrix )
+import BLAS.Matrix( Matrix, listMatrix, dimMatrix, spliceMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
 -- import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
 --     unsafeThawMatrix )
@@ -321,9 +321,16 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
 
 -- | Generate a random matrix of the given size.
 matrix :: (Arbitrary e, Storable e) => (Int,Int) -> Gen (Matrix e)
-matrix (m,n) = do
-    es <- elems $ m * n
-    return $ listMatrix (m,n) es
+matrix (m,n) = 
+    oneof [ raw, sub ]
+  where
+    raw = do
+        es <- elems $ m * n
+        return $ listMatrix (m,n) es
+    sub = do
+        m' <- choose (m, 2*m)
+        es <- elems $ m' * n
+        return $ spliceMatrix (listMatrix (m',n) es) (0,0) (m,n)
 
 instance (Arbitrary e, Storable e) => Arbitrary (Matrix e) where
     arbitrary = dim2 >>= matrix
