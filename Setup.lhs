@@ -9,4 +9,6 @@
 >
 > runTests' :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
 > runTests' _ _ _ lbi = system testprog >> return ()
->   where testprog = (buildDir lbi) </> "test" </> "test"
+>   where testprog = (buildDir lbi)
+>                        </> "test-hs-linear-algebra"
+>                        </> "test-hs-linear-algebra"

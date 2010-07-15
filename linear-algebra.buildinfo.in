@@ -2,6 +2,6 @@
 buildable: @BUILD_PACKAGE_BOOL@
 ld-options: @LDFLAGS@ @BLAS_LIBS@ @LIBS@
 
-executable: test
+executable: test-hs-linear-algebra
 buildable: @BUILD_PACKAGE_BOOL@
 ld-options: @LDFLAGS@ @BLAS_LIBS@ @LIBS@
