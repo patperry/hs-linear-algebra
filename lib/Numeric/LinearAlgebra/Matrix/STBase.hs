@@ -12,7 +12,7 @@
 module Numeric.LinearAlgebra.Matrix.STBase
     where
       
-import Control.Monad( zipWithM_ )
+import Control.Monad( forM_, zipWithM_ )
 import Control.Monad.ST( ST, unsafeIOToST )
 import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, peekElemOff, pokeElemOff )
@@ -292,6 +292,57 @@ setAssocsMatrix a ies =
 unsafeSetAssocsMatrix :: (Storable e) => STMatrix s e -> [((Int,Int),e)] -> ST s ()
 unsafeSetAssocsMatrix a ies =
     sequence_ [ unsafeWriteMatrix a i e | (i,e) <- ies ]
+
+-- | Set the specified row of the matrix to the given vector.
+setRowMatrix :: (RVector v, Storable e)
+             => STMatrix s e -> Int -> v e -> ST s ()
+setRowMatrix a i x
+    | i < 0 || i >= m = error $
+        printf ("setRowMatrix <matrix with dim (%d,%d)> %d:"
+                ++ " index out of range") m n i
+    | dimVector x /= n = error $
+        printf ("setRowMatrix <matrix with dim (%d,%d)> _"
+                ++ " <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector x)
+    | otherwise =
+        unsafeSetRowMatrix a i x
+  where
+    (m,n) = dimMatrix a
+{-# INLINE setRowMatrix #-}
+
+unsafeSetRowMatrix :: (RVector v, Storable e)
+                   => STMatrix s e -> Int -> v e -> ST s ()
+unsafeSetRowMatrix a i x = do
+    jes <- getAssocsVector x
+    sequence_ [ unsafeWriteMatrix a (i,j) e | (j,e) <- jes ]
+{-# INLINE unsafeSetRowMatrix #-}
+
+-- | Copy the specified row of the matrix to the vector.
+getRowMatrix :: (RMatrix m, Storable e)
+             => m e -> Int -> STVector s e -> ST s ()
+getRowMatrix a i x
+    | i < 0 || i >= m = error $
+        printf ("getRowMatrix <matrix with dim (%d,%d)> %d:"
+                ++ " index out of range") m n i
+    | dimVector x /= n = error $
+        printf ("getRowMatrix <matrix with dim (%d,%d)> _"
+                ++ " <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector x)
+    | otherwise =
+        unsafeGetRowMatrix a i x
+  where
+    (m,n) = dimMatrix a
+{-# INLINE getRowMatrix #-}
+
+unsafeGetRowMatrix :: (RMatrix m, Storable e)
+                   => m e -> Int -> STVector s e -> ST s ()
+unsafeGetRowMatrix a i x = 
+    forM_ [ 0..n-1 ] $ \j -> do
+        e <- unsafeReadMatrix a (i,j)
+        unsafeWriteVector x j e
+  where
+    (_,n) = dimMatrix a
+{-# INLINE unsafeGetRowMatrix #-}
 
 -- | Get the element stored at the given index.
 readMatrix :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e

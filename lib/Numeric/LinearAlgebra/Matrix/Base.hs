@@ -25,7 +25,7 @@ import Numeric.LinearAlgebra.Elem
 import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector
+import Numeric.LinearAlgebra.Vector.Base
 import Numeric.LinearAlgebra.Vector.STBase
 
 import Numeric.LinearAlgebra.Matrix.STBase
@@ -125,6 +125,14 @@ colListMatrix :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 colListMatrix mn cs = runMatrix $ do
     a <- newMatrix_ mn
     zipWithM_ copyToVector cs (colsMatrix a)
+    return a
+
+-- | Create a matrix of the given dimension with the given vectors as
+-- rows.
+rowListMatrix :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
+rowListMatrix (m,n) rs = runMatrix $ do
+    a <- newMatrix_ (m,n)
+    sequence_ [ setRowMatrix a i r | (i,r) <- zip [ 0..m-1 ] rs ]
     return a
 
 -- | Create a matrix of the given dimension with all elements initialized
@@ -243,6 +251,29 @@ unsafeZipWithMatrix :: (Storable e, Storable e', Storable f)
 unsafeZipWithMatrix f a a' =
     listMatrix (dimMatrix a') $ zipWith f (elemsMatrix a) (elemsMatrix a')
 {-# INLINE unsafeZipWithMatrix #-}
+
+-- | Get the given row of the matrix.
+rowMatrix :: (Storable e) => Matrix e -> Int -> Vector e
+rowMatrix a i = runVector $ do
+    x <- newVector_ n
+    getRowMatrix a i x
+    return x
+  where
+    (_,n) = dimMatrix a
+
+unsafeRowMatrix :: (Storable e) => Matrix e -> Int -> Vector e
+unsafeRowMatrix a i = runVector $ do
+    x <- newVector_ n
+    unsafeGetRowMatrix a i x
+    return x
+  where
+    (_,n) = dimMatrix a
+
+-- | Get a list of the rows of the matrix.
+rowsMatrix :: (Storable e) => Matrix e -> [Vector e]
+rowsMatrix a = [ unsafeRowMatrix a i | i <- [ 0..m-1 ] ]
+  where
+    (m,_) = dimMatrix a
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "listMatrix " ++ show (dimMatrix x) ++ " " ++ show (elemsMatrix x)

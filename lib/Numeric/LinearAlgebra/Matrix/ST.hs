@@ -29,7 +29,11 @@ module Numeric.LinearAlgebra.Matrix.ST (
     colsMatrix,
     spliceMatrix,
     splitRowsMatrixAt,
-    splitColsMatrixAt,    
+    splitColsMatrixAt,
+    
+    -- * Matrix rows
+    getRowMatrix,
+    setRowMatrix,   
 
     -- * Reading and writing matrix elements
     readMatrix,

@@ -2,8 +2,9 @@ module Matrix (
     tests_Matrix
     ) where
 
-import Control.Monad( zipWithM_ )
+import Control.Monad( replicateM, zipWithM_ )
 import Data.AEq
+import Data.List( transpose )
 import Debug.Trace
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
@@ -25,6 +26,8 @@ tests_Matrix = testGroup "Matrix"
     [ testPropertyI "dim/matrix" prop_dim_matrix
     , testPropertyI "at/matrix" prop_at_matrix
     , testPropertyI "listMatrix" prop_listMatrix
+    , testPropertyI "colListMatrix" prop_colListMatrix    
+    , testPropertyI "rowListMatrix" prop_rowListMatrix        
     , testPropertyI "constantMatrix" prop_constantMatrix
     , testPropertyI "indices" prop_indices
     , testPropertyI "elems" prop_elems
@@ -35,6 +38,8 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "zipWith" prop_zipWith
     , testPropertyI "col" prop_col
     , testPropertyI "cols" prop_cols
+    , testPropertyI "row" prop_row
+    , testPropertyI "rows" prop_rows
     , testPropertyI "splice" prop_splice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
@@ -71,6 +76,16 @@ prop_listMatrix t (Dim2 (m,n)) =
     forAll (QC.vector $ m*n) $ \es ->
         listMatrix (m,n) es === (typed t $ matrix (m,n) $ 
             zip [ (i,j) | j <- [ 0..n-1], i <- [ 0..m-1 ] ] es)
+
+prop_colListMatrix t (Dim2 (m,n)) =
+    forAll (replicateM n $ Test.vector m) $ \cs ->
+        colListMatrix (m,n) cs === (typed t $ listMatrix (m,n) $
+            concatMap elemsVector cs)
+
+prop_rowListMatrix t (Dim2 (m,n)) =
+    forAll (replicateM m $ Test.vector n) $ \rs ->
+        rowListMatrix (m,n) rs === (typed t $ listMatrix (m,n) $
+            concat $ transpose $ map elemsVector rs)
 
 prop_constantMatrix t (Dim2 (m,n)) e =
     constantMatrix (m,n) e === listMatrix (m,n) (replicate (m*n) e)
@@ -149,6 +164,16 @@ prop_cols t a =
     colsMatrix a === [ colMatrix a j | j <- [ 0..n-1 ] ]
   where
     (_,n) = dimMatrix a
+    _ = typed t $ immutableMatrix a
+
+prop_row t (Index2 (m,n) (i,_)) =
+    forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
+        rowMatrix a i === listVector n [ atMatrix a (i,j) | j <- [ 0..n-1 ] ]
+
+prop_rows t a =
+    rowsMatrix a === [ rowMatrix a i | i <- [ 0..m-1 ] ]
+  where
+    (m,_) = dimMatrix a
     _ = typed t $ immutableMatrix a
 
 prop_splice t a =

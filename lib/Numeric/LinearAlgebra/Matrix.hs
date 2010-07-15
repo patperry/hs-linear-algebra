@@ -17,6 +17,7 @@ module Numeric.LinearAlgebra.Matrix (
     matrix, 
     listMatrix,
     colListMatrix,
+    rowListMatrix,
     constantMatrix,
 
     -- * Accessing Matrixs
@@ -39,6 +40,10 @@ module Numeric.LinearAlgebra.Matrix (
     spliceMatrix,
     splitRowsMatrixAt,
     splitColsMatrixAt,
+
+    -- * Matrix rows
+    rowMatrix,
+    rowsMatrix,
 
     -- * Matrix math operations
     shiftMatrix,
