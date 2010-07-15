@@ -58,6 +58,7 @@ extra-tmp-files:        config.log config.status autom4te.cache
 Library
     hs-source-dirs:     lib
     exposed-modules:    
+                        Numeric.LinearAlgebra
                         Numeric.LinearAlgebra.Elem
                         Numeric.LinearAlgebra.Elem.BLAS                        
                         Numeric.LinearAlgebra.Elem.VMath                        
