@@ -28,6 +28,8 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- * Vector views
     spliceVector,
     splitVectorAt,
+    dropVector,
+    takeVector,
 
     -- * Reading and writing vector elements
     readVector,

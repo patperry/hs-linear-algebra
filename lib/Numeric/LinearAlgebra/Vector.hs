@@ -35,6 +35,8 @@ module Numeric.LinearAlgebra.Vector (
     -- * Vector views
     spliceVector,
     splitVectorAt,
+    dropVector,
+    takeVector,
 
     -- * Vector properties
     sumVector,

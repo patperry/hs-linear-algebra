@@ -56,8 +56,8 @@ instance RVector (STVector s) where
     dimVector (STVector _ n _) = n
     {-# INLINE dimVector #-}
 
-    unsafeSpliceVector (STVector p _ f) o n =
-        STVector (p `advancePtr` o) n f
+    unsafeSpliceVector (STVector p _ f) i n =
+        STVector (p `advancePtr` i) n f
     {-# INLINE unsafeSpliceVector #-}
 
     unsafeWithVector (STVector p _ f) g = do
@@ -68,22 +68,33 @@ instance RVector (STVector s) where
 
 
 
--- | @spliceVector x o n@ creates a subvector view of @x@ starting at
--- index @o@ and having dimension @n@.
+-- | @spliceVector x i n@ creates a subvector view of @x@ starting at
+-- index @i@ and having dimension @n@.
 spliceVector :: (RVector v, Storable e)
              => v e
              -> Int
              -> Int
              -> v e
-spliceVector x o n'
-    | o < 0 || n' < 0 || o + n' > n = error $
+spliceVector x i n'
+    | i < 0 || n' < 0 || i + n' > n = error $
         printf "spliceVector <vector with dim %d> %d %d: index out of range"
-               n o n'
+               n i n'
     | otherwise =
-        unsafeSpliceVector x o n'
+        unsafeSpliceVector x i n'
   where
     n = dimVector x
 {-# INLINE spliceVector #-}
+
+-- | @dropVector i x@ is equal to @spliceVector x i (n-i)@, where @n@ is
+-- the dimension of the vector.
+dropVector :: (RVector v, Storable e) => Int -> v e -> v e
+dropVector i x = spliceVector x i (dimVector x - i)
+{-# INLINE dropVector #-}
+
+-- | @takeVector i x@ is equal to @spliceVector x 0 n@.
+takeVector :: (RVector v, Storable e) => Int -> v e -> v e
+takeVector n x = spliceVector x 0 n
+{-# INLINE takeVector #-}
 
 -- | View an array in memory as a vector.
 vectorViewArray :: (Storable e)
@@ -95,9 +106,6 @@ vectorViewArray f o n =
     let p = unsafeForeignPtrToPtr f `advancePtr` o
     in STVector p n f
 {-# INLINE vectorViewArray #-}
-
-                         
-
 
 -- | Creates a new vector of the given length.  The elements will be
 -- uninitialized.
