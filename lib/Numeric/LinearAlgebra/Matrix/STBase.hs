@@ -501,7 +501,7 @@ rank1UpdateToMatrix alpha x y a c
             unsafeWithVector x $ \px ->
             unsafeWithVector y $ \py ->
             unsafeWithMatrix c $ \pc ldc ->
-                BLAS.ger m n alpha px 1 py 1 pc ldc
+                BLAS.gerc m n alpha px 1 py 1 pc ldc
   where
     (m,n) = dimMatrix c
 
