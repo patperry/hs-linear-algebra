@@ -46,6 +46,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "getSumAbs" prop_getSumAbs prop_getSumAbs
     , testPropertyDZ "getNorm2" prop_getNorm2 prop_getNorm2
     , testPropertyDZ "getDot" prop_getDot prop_getDot
+    , testPropertyDZ "kroneckerTo" prop_kroneckerTo prop_kroneckerTo
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
@@ -200,6 +201,15 @@ prop_getDot t (VectorPair x y) = runST $
         return $ d === dotVector x y
   where
     _ = typed t x
+
+prop_kroneckerTo t = sized $ \s -> resize (s `div` 2) $
+    forAll arbitrary $ \x ->
+    forAll arbitrary $ \y ->
+    forAll (Test.vector $ dimVector x * dimVector y) $ \z -> runST $
+        x `readOnlyVector` \mx ->
+        y `readOnlyVector` \my ->
+        z `mutatesToVector` (typed t $ kroneckerVector x y) $ \mz ->
+            kroneckerToVector mx my mz
 
 prop_shiftTo t e = binaryProp t
     (\x -> shiftVector e x)

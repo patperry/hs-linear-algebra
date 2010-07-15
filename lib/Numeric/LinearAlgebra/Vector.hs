@@ -42,6 +42,7 @@ module Numeric.LinearAlgebra.Vector (
     norm2Vector,
     whichMaxAbsVector,
     dotVector,
+    kroneckerVector,
 
     -- * Vector math operations
     -- ** Num

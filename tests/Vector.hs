@@ -39,6 +39,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "whichMaxAbs1" prop_whichMaxAbs1 prop_whichMaxAbs1
     , testPropertyDZ "whichMaxAbs2" prop_whichMaxAbs1 prop_whichMaxAbs2
     , testPropertyDZ "dot" prop_dot prop_dot
+    , testPropertyDZ "kronecker" prop_kronecker prop_kronecker
     , testPropertyDZ "shift" prop_shift prop_shift
     , testPropertyDZ "add" prop_add prop_add
     , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
@@ -369,3 +370,10 @@ prop_dot t (VectorPair x y) =
     conj = conjVector
     (*)  = mulVector
     _    = typed t x
+
+prop_kronecker t x y =
+    x `kroneckerVector` y ===
+        listVector (dimVector x * dimVector y)
+                   [ e*f | e <- elemsVector x, f <- elemsVector y ]
+  where
+    _ = typed t x

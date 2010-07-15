@@ -28,7 +28,7 @@ import Numeric.LinearAlgebra.Vector.STBase
 
 infixr 8 `powVector`
 infixl 7 `divVector`
-infixl 7 `mulVector`, `scaleVector`
+infixl 7 `mulVector`, `scaleVector`, `kroneckerVector`
 infixl 6 `addVector`, `shiftVector`, `subVector`
 
 
@@ -272,6 +272,12 @@ unsafeDotVector :: (BLAS1 e) => Vector e -> Vector e -> e
 unsafeDotVector v v' = runST $ unsafeGetDotVector v v'
 {-# INLINE unsafeDotVector #-}
 
+-- | Compute the kronecker product of two vectors.
+kroneckerVector :: (VNum e) => Vector e -> Vector e -> Vector e
+kroneckerVector x y = runVector $ do
+    z <- newVector_ (dimVector x * dimVector y)
+    kroneckerToVector x y z
+    return z
 
 instance (Storable e, Show e) => Show (Vector e) where
     show x = "listVector " ++ show (dimVector x) ++ " " ++ show (elemsVector x)

@@ -50,7 +50,8 @@ module Numeric.LinearAlgebra.Vector.ST (
     getNorm2Vector,
     getWhichMaxAbsVector,
     getDotVector,
-
+    kroneckerToVector,
+    
     -- * Vector math operations
     -- ** Num
     shiftToVector,
