@@ -378,6 +378,28 @@ unsafeWriteMatrix a (i,j) e = unsafeIOToST $
     unsafeWithMatrix a $ \p lda ->
         pokeElemOff p (i + j * lda) e
 
+-- | Update the element stored at the given index.
+updateMatrix :: (Storable e)
+             => STMatrix s e -> (Int,Int) -> (e -> e) -> ST s ()
+updateMatrix a (i,j)
+    | i < 0 || i >= m || j < 0 || j >= n = error $
+        printf ("updateMatrix <matrix with dim (%d,%d)> (%d,%d):"
+                ++ " index out of range") m n i j
+    | otherwise =
+        unsafeUpdateMatrix a (i,j)
+  where
+    (m,n) = dimMatrix a
+
+unsafeUpdateMatrix :: (Storable e)
+                   => STMatrix s e -> (Int,Int) -> (e -> e) -> ST s ()
+unsafeUpdateMatrix a (i,j) f = unsafeIOToST $
+    unsafeWithMatrix a $ \p lda -> 
+        let o = i + j * lda
+        in do
+            e <- peekElemOff p o
+            pokeElemOff p o $ f e
+{-# INLINE unsafeUpdateMatrix #-}
+
 -- | @mapToMatrix f a c@ replaces @c@ elementwise with @f(a)@.
 mapToMatrix :: (RMatrix m, Storable e, Storable f)
             => (e -> f)

@@ -34,6 +34,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- * Reading and writing vector elements
     readVector,
     writeVector,
+    updateVector,
     indicesVector,
     getElemsVector,
     getElemsVector',

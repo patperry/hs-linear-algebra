@@ -38,6 +38,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- * Reading and writing matrix elements
     readMatrix,
     writeMatrix,
+    updateMatrix,
     indicesMatrix,
     getElemsMatrix,
     getElemsMatrix',

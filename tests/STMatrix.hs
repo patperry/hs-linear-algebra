@@ -37,6 +37,7 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyI "copyTo" prop_copyTo
     , testPropertyI "read" prop_read
     , testPropertyI "write" prop_write
+    , testPropertyI "update" prop_update
     , testPropertyI "getElems" prop_getElems
     , testPropertyI "getElems'" prop_getElems'
     , testPropertyI "getAssocs" prop_getAssocs
@@ -94,6 +95,12 @@ prop_write t (Index2 n i) e =
             writeMatrix mx i e
   where
     _ = e == t
+
+prop_update t (Index2 n i) (Blind f) =
+    forAll (Test.matrix n) $ \x -> runST $
+        x `mutatesToMatrix`
+            (typed t $ x `replaceMatrix` [(i, f $ atMatrix x i)]) $ \mx ->
+                updateMatrix mx i f
 
 prop_getElems t x =
     forAll arbitrary $ \(Blind f) -> runST $
