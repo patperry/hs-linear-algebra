@@ -19,7 +19,7 @@ import Data.Complex( Complex(..) )
 
 import Numeric.LinearAlgebra.Elem.VFractional
 import Numeric.LinearAlgebra.Elem.Double  
-import Numeric.LinearAlgebra.Elem.Zomplex
+-- import Numeric.LinearAlgebra.Elem.Zomplex
 
 -- | Types with vectorized 'Floating' operations.
 class (VFractional a, Floating a) => VFloating a where
@@ -87,12 +87,6 @@ instance VFloating Double where
     {-# INLINE vLog #-}
     vPow = vdPow
     {-# INLINE vPow #-}
-    vSin = vdSin
-    {-# INLINE vSin #-}
-    vCos = vdCos
-    {-# INLINE vCos #-}
-    vTan = vdTan
-    {-# INLINE vTan #-}
     vASin = vdASin
     {-# INLINE vASin #-}
     vACos = vdACos
@@ -105,21 +99,30 @@ instance VFloating Double where
     {-# INLINE vCosh #-}
     vTanh = vdTanh
     {-# INLINE vTanh #-}
+    
+    {- These functions disagree with Haskell
+    vSin = vdSin
+    {-# INLINE vSin #-}
+    vCos = vdCos
+    {-# INLINE vCos #-}
+    vTan = vdTan
+    {-# INLINE vTan #-}
+    
     vASinh = vdASinh
     {-# INLINE vASinh #-}
     vACosh = vdACosh
     {-# INLINE vACosh #-}
     vATanh = vdATanh
     {-# INLINE vATanh #-}
+    -}
 
 
 instance VFloating (Complex Double) where
+    {- These functions have branch cuts in the wrong places 
     vSqrt = vzSqrt
     {-# INLINE vSqrt #-}
     vLog = vzLog
     {-# INLINE vLog #-}
-    
-    {- These functions have branch cuts in the wrong places 
     vExp = vzExp
     {-# INLINE vExp #-}
     vPow = vzPow
