@@ -37,7 +37,6 @@ module Numeric.LinearAlgebra.Vector.Base (
     
     mapVector,
     zipWithVector,
-    unsafeZipWithVector,
     
     sliceVector,
     splitVectorAt,
@@ -245,7 +244,10 @@ mapVector :: (Storable e, Storable e')
           => (e -> e')
           -> Vector e
           -> Vector e'
-mapVector = Vector.map
+mapVector f v = runVector $ do
+    v' <- newVector_ (dimVector v)
+    unsafeMapToVector f v v'
+    return v'
 {-# INLINE mapVector #-}
 
 -- | Construct a new vector by applying a function to every pair of elements
@@ -260,7 +262,7 @@ zipWithVector f v v'
         printf ("zipWithVector <function> <vector with dim %d>"
                 ++ " <vector with dim %d>: lengths differ") n n'
     | otherwise =
-        Vector.zipWith f v v'
+        unsafeZipWithVector f v v'
   where
     n  = dimVector v
     n' = dimVector v'
@@ -273,7 +275,8 @@ unsafeZipWithVector :: (Storable e, Storable e', Storable f)
                     -> Vector e
                     -> Vector e'
                     -> Vector f
-unsafeZipWithVector = Vector.zipWith
+unsafeZipWithVector f v v' =
+    listVector (dimVector v) $ zipWith f (elemsVector v) (elemsVector v')
 {-# INLINE unsafeZipWithVector #-}
 
 -- | Compute the sum of the entries in the vector.
@@ -332,115 +335,116 @@ compareVectorWith cmp v v' =
 
 -- | @shiftVector k x@ returns @k + x@.
 shiftVector :: (VNum e) => e -> Vector e -> Vector e
-shiftVector k = mapVector (k+)
+shiftVector k = resultVector $ shiftToVector k
 
 -- | @addVector x y@ returns @x + y@.
 addVector :: (VNum e) => Vector e -> Vector e -> Vector e
-addVector = zipWithVector (+)
+addVector = resultVector2 addToVector
 
 -- | @addVectorWithScale a x b y@ returns @a*x + b*y@.
 addVectorWithScale :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
-addVectorWithScale a x b y = zipWithVector (\e f -> a * e + b * f) x y
+addVectorWithScale a x b y =
+    (resultVector2 $ \x' y' -> addToVectorWithScale a x' b y') x y
 
 -- | @subVector x y@ returns @x - y@.
 subVector :: (VNum e) => Vector e -> Vector e -> Vector e
-subVector = zipWithVector (-)
+subVector = resultVector2 subToVector
 
 -- | @scaleVector k x@ returns @k * x@.
 scaleVector :: (VNum e) => e -> Vector e -> Vector e
-scaleVector k = mapVector (k*)
+scaleVector k = resultVector $ scaleToVector k
 
 -- | @mulVector x y@ returns @x + y@.
 mulVector :: (VNum e) => Vector e -> Vector e -> Vector e
-mulVector = zipWithVector (*)
+mulVector = resultVector2 mulToVector
 
 -- | @negateVector x@ returns @-x@.
 negateVector :: (VNum e) => Vector e -> Vector e
-negateVector = mapVector negate
+negateVector = resultVector negateToVector
 
 -- | @conjVector x@ returns @conj(x)@.
 conjVector :: (VNum e) => Vector e -> Vector e
-conjVector = resultVector conjToVector -- TODO: replace with mapVector
+conjVector = resultVector conjToVector
 
 -- | @absVector x@ returns @abs(x)@.
 absVector :: (VNum e) => Vector e -> Vector e
-absVector = mapVector abs
+absVector = resultVector absToVector
 
 -- | @signumVector x@ returns @signum(x)@.
 signumVector :: (VNum e) => Vector e -> Vector e
-signumVector = mapVector signum
+signumVector = resultVector signumToVector
 
 -- | @divVector x y@ returns @x / y@.
 divVector :: (VFractional e) => Vector e -> Vector e -> Vector e
-divVector = zipWithVector (/)
+divVector = resultVector2 divToVector
 
 -- | @recipVector x y@ returns @1 / x@.
 recipVector :: (VFractional e) => Vector e -> Vector e
-recipVector = mapVector recip
+recipVector = resultVector recipToVector
 
 -- | @sqrtVector x@ returns @sqrt(x)@.
 sqrtVector :: (VFloating e) => Vector e -> Vector e
-sqrtVector = mapVector sqrt
+sqrtVector = resultVector sqrtToVector
 
 -- | @expVector x@ returns @exp(x)@.
 expVector :: (VFloating e) => Vector e -> Vector e
-expVector = mapVector exp
+expVector = resultVector expToVector
 
 -- | @logVector x@ returns @log(x)@.
 logVector :: (VFloating e) => Vector e -> Vector e
-logVector = mapVector log
+logVector = resultVector logToVector
 
 -- | @powVector x y@ returns @x ** y@.
 powVector :: (VFloating e) => Vector e -> Vector e -> Vector e
-powVector = zipWithVector (**)
+powVector = resultVector2 powToVector
 
 -- | @sinVector x@ returns @sin(x)@.
 sinVector :: (VFloating e) => Vector e -> Vector e
-sinVector = mapVector sin
+sinVector = resultVector sinToVector
 
 -- | @cosVector x@ returns @cos(x)@.
 cosVector :: (VFloating e) => Vector e -> Vector e
-cosVector = mapVector cos
+cosVector = resultVector cosToVector
 
 -- | @tanVector x@ returns @tan(x)@.
 tanVector :: (VFloating e) => Vector e -> Vector e
-tanVector = mapVector tan
+tanVector = resultVector tanToVector
 
 -- | @asinVector x@ returns @asin(x)@.
 asinVector :: (VFloating e) => Vector e -> Vector e
-asinVector = mapVector asin
+asinVector = resultVector asinToVector
 
 -- | @acosVector x@ returns @acos(x)@.
 acosVector :: (VFloating e) => Vector e -> Vector e
-acosVector = mapVector acos
+acosVector = resultVector acosToVector
 
 -- | @atanVector x@ returns @atan(x)@.
 atanVector :: (VFloating e) => Vector e -> Vector e
-atanVector = mapVector atan
+atanVector = resultVector atanToVector
 
 -- | @sinhVector x@ returns @sinh(x)@.
 sinhVector :: (VFloating e) => Vector e -> Vector e
-sinhVector = mapVector sinh
+sinhVector = resultVector sinhToVector
 
 -- | @coshVector x@ returns @cosh(x)@.
 coshVector :: (VFloating e) => Vector e -> Vector e
-coshVector = mapVector cosh
+coshVector = resultVector coshToVector
 
 -- | @tanhVector x@ returns @tanh(x)@.
 tanhVector :: (VFloating e) => Vector e -> Vector e
-tanhVector = mapVector tanh
+tanhVector = resultVector tanhToVector
 
 -- | @asinhVector x@ returns @asinh(x)@.
 asinhVector :: (VFloating e) => Vector e -> Vector e
-asinhVector = mapVector asinh
+asinhVector = resultVector asinhToVector
 
 -- | @acoshVector x@ returns @acosh(x)@.
 acoshVector :: (VFloating e) => Vector e -> Vector e
-acoshVector = mapVector acosh
+acoshVector = resultVector acoshToVector
 
 -- | @atanhVector x@ returns @atanh(x)@.
 atanhVector :: (VFloating e) => Vector e -> Vector e
-atanhVector = mapVector atanh
+atanhVector = resultVector atanhToVector
 
 
 resultVector :: (Storable e, Storable f)
@@ -449,3 +453,11 @@ resultVector :: (Storable e, Storable f)
              -> Vector f
 resultVector f v = runVector $ newResultVector f v
 {-# INLINE resultVector #-}
+
+resultVector2 :: (Storable e, Storable f, Storable g)
+              => (forall s . Vector e -> Vector f -> STVector s g -> ST s a)
+              -> Vector e
+              -> Vector f
+              -> Vector g
+resultVector2 f v1 v2 = runVector $ newResultVector2 f v1 v2
+{-# INLINE resultVector2 #-}
