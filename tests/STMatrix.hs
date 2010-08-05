@@ -315,7 +315,7 @@ mutatesToMatrix :: (Storable e, AEq e, Testable prop, Show e)
                 -> (STMatrix s e -> ST s prop)
                 -> ST s Property
 mutatesToMatrix x x_new f = do
-    mx <- thawMatrix x
+    mx <- newCopyMatrix x
     prop <- f mx
     x' <- freezeMatrix mx
     return $ prop .&. (x' === x_new)

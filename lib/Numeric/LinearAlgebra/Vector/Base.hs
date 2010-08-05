@@ -21,7 +21,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     
     runVector,
     freezeVector,
-    thawVector,
+    unsafeFreezeVector,
     
     atVector,
     unsafeAtVector,
@@ -112,7 +112,8 @@ instance RVector Vector where
 
 -- | A safe way to create and work with a mutable vector before returning 
 -- an immutable vector for later perusal. This function avoids copying
--- the vector before returning it. 
+-- the vector before returning it - it uses 'unsafeFreezeVector' internally,
+-- but this wrapper is a safe interface to that function.
 runVector :: (Storable e) => (forall s . ST s (STVector s e)) -> Vector e
 runVector = Vector.create
 {-# INLINE runVector #-}
@@ -123,16 +124,21 @@ freezeVector :: (Storable e) => STVector s e -> ST s (Vector e)
 freezeVector mv = do
     mv' <- newVector_ (dimVector mv)
     unsafeCopyToVector mv mv'
-    let (f,o,n) = STVector.unsafeToForeignPtr mv'
-        v' = Vector.unsafeFromForeignPtr f o n
-    return v'
+    unsafeFreezeVector mv'
 {-# INLINE freezeVector #-}
 
--- | Converts an immutable vector to a mutable one by taking a complete
--- copy of it.
-thawVector :: (Storable e) => Vector e -> ST s (STVector s e)
-thawVector = newCopyVector
-{-# INLINE thawVector #-}
+-- | Converts a mutable vector into an immutable vector. This simply casts
+-- the vector from one type to the other without copying the vector.
+-- Note that because the vector is possibly not copied, any subsequent
+-- modifications made to the mutable version of the vector may be shared with
+-- the immutable version. It is safe to use, therefore, if the mutable
+-- version is never modified after the freeze operation.
+unsafeFreezeVector :: (Storable e) => STVector s e -> ST s (Vector e)
+unsafeFreezeVector mv =
+    let (f,o,n) = STVector.unsafeToForeignPtr mv
+        v = Vector.unsafeFromForeignPtr f o n
+    in return v
+{-# INLINE unsafeFreezeVector #-}
 
 -- | Create a vector with the given dimension and elements.  The elements
 -- given in the association list must all have unique indices, otherwise

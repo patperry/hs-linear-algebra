@@ -47,9 +47,10 @@ instance HasVectorView Matrix where
 
 -- | A safe way to create and work with a mutable matrix before returning 
 -- an immutable matrix for later perusal. This function avoids copying
--- the matrix before returning it. 
-runMatrix :: (forall s . ST s (STMatrix s e)) -> Matrix e
-runMatrix mx = runST $ mx >>= return . Matrix . unsafeCoerce
+-- the matrix before returning it - it uses 'unsafeFreezeMatrix' internally,
+-- but this wrapper is a safe interface to that function. 
+runMatrix :: (Storable e) => (forall s . ST s (STMatrix s e)) -> Matrix e
+runMatrix mx = runST $ mx >>= unsafeFreezeMatrix
 {-# INLINE runMatrix #-}
 
 -- | Converts a mutable matrix to an immutable one by taking a complete
@@ -58,11 +59,16 @@ freezeMatrix :: (Storable e) => STMatrix s e -> ST s (Matrix e)
 freezeMatrix = fmap Matrix . unsafeCoerce . newCopyMatrix
 {-# INLINE freezeMatrix #-}
 
--- | Converts an immutable matrix to a mutable one by taking a complete
--- copy of it.
-thawMatrix :: (Storable e) => Matrix e -> ST s (STMatrix s e)
-thawMatrix = newCopyMatrix
-{-# INLINE thawMatrix #-}
+-- | Converts a mutable matrix into an immutable matrix. This simply casts
+-- the matrix from one type to the other without copying the matrix.
+-- Note that because the matrix is possibly not copied, any subsequent
+-- modifications made to the mutable version of the matrix may be shared with
+-- the immutable version. It is safe to use, therefore, if the mutable
+-- version is never modified after the freeze operation.
+unsafeFreezeMatrix :: (Storable e) => STMatrix s e -> ST s (Matrix e)
+unsafeFreezeMatrix = return . Matrix . unsafeCoerce
+{-# INLINE unsafeFreezeMatrix #-}
+
 
 -- | Create a matrix with the given dimension and elements.  The elements
 -- given in the association list must all have unique indices, otherwise

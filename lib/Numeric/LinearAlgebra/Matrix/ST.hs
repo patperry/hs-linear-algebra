@@ -83,7 +83,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
 
     -- * Conversions between mutable and immutable matrices
     freezeMatrix,
-    thawMatrix,
+    unsafeFreezeMatrix,
     
     -- * Matrix views of arrays and vectors
     matrixViewArray,

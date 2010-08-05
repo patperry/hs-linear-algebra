@@ -319,7 +319,7 @@ mutatesToVector :: (Storable e, AEq e, Testable prop, Show e)
                 -> (STVector s e -> ST s prop)
                 -> ST s Property
 mutatesToVector x x_new f = do
-    mx <- thawVector x
+    mx <- newCopyVector x
     prop <- f mx
     x' <- freezeVector mx
     return $ prop .&. (x' === x_new)

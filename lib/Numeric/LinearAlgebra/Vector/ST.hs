@@ -92,7 +92,7 @@ module Numeric.LinearAlgebra.Vector.ST (
 
     -- * Conversions between mutable and immutable vectors
     freezeVector,
-    thawVector,
+    unsafeFreezeVector,
     
     -- * Vector views of arrays
     vectorViewArray,
