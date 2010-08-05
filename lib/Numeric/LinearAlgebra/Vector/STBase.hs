@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -9,15 +9,98 @@
 -- Stability  : asinerimental
 --
 
-module Numeric.LinearAlgebra.Vector.STBase
-    where
+module Numeric.LinearAlgebra.Vector.STBase (
+    STVector,
+    RVector(..),
+    
+    sliceVector,
+    dropVector,
+    takeVector,
+    splitVectorAt,
+    
+    vectorViewArray,
+    
+    newVector_,
+    newVector,
+    newCopyVector,
+    newResultVector,
+    newResultVector2,
+    
+    clearVector,
+    copyToVector,
+    unsafeCopyToVector,
+    swapVector,
+    unsafeSwapVector,
+    
+    indicesVector,
+    getElemsVector,
+    getElemsVector',
+    getAssocsVector,
+    getAssocsVector',
+    setElemsVector,
+    setAssocsVector,
+    unsafeSetAssocsVector,
+    
+    readVector,
+    unsafeReadVector,
+    writeVector,
+    unsafeWriteVector,
+    updateVector,
+    unsafeUpdateVector,
+    unsafeSwapElemsVector,
+
+    mapToVector,
+    unsafeMapToVector,
+    zipWithToVector,
+    unsafeZipWithToVector,
+    
+    getSumVector,    
+    getSumAbsVector,
+    getNorm2Vector,
+    getWhichMaxAbsVector,
+    getDotVector,
+    unsafeGetDotVector,
+    kroneckerToVector,
+    
+    shiftToVector,
+    addToVector,
+    addToVectorWithScale,
+    subToVector,
+    scaleToVector,
+    mulToVector,
+    negateToVector,
+    conjToVector,
+    absToVector,
+    signumToVector,
+    divToVector,
+    recipToVector,        
+    sqrtToVector,
+    expToVector,
+    logToVector,
+    powToVector,
+    sinToVector,
+    cosToVector,
+    tanToVector,
+    asinToVector,
+    acosToVector,
+    atanToVector,
+    sinhToVector,
+    coshToVector,
+    tanhToVector,
+    asinhToVector,
+    acoshToVector,
+    atanhToVector,
+    ) where
 
 import Control.Monad
 import Control.Monad.ST
-import Data.Typeable
 import Foreign
 import System.IO.Unsafe( unsafeInterleaveIO )
 import Text.Printf( printf )
+import Unsafe.Coerce( unsafeCoerce )
+
+import Data.Vector.Storable.Mutable( STVector )
+import qualified Data.Vector.Storable.Mutable as STVector
 
 import Numeric.LinearAlgebra.Internal( clearArray )
 import Numeric.LinearAlgebra.Elem( Complex, VNum, VFractional, VFloating, BLAS1 )
@@ -26,85 +109,69 @@ import qualified Numeric.LinearAlgebra.Elem.VNum as VNum
 import qualified Numeric.LinearAlgebra.Elem.VFractional as VFractional
 import qualified Numeric.LinearAlgebra.Elem.VFloating as VFloating
 
--- | Dense vectors in the 'ST' monad.  The type arguments are as follows:
---
---     * @s@: the state variable argument for the 'ST' type
---
---     * @e@: the element type of the vector.
---
-data STVector s e =
-      STVector {-# UNPACK #-} !(Ptr e)        -- pointer to the first element
-               {-# UNPACK #-} !Int            -- the length of the vector
-               {-# UNPACK #-} !(ForeignPtr e) -- memory owner
-  deriving (Eq, Typeable)
 
 -- | Read-only vectors
 class RVector v where
     -- | Get the dimension of the vector.  This is equal to the number of
     -- elements in the vector.                          
-    dimVector :: v e -> Int
+    dimVector :: (Storable e) => v e -> Int
 
-    unsafeSpliceVector :: (Storable e) => v e -> Int -> Int -> v e
+    unsafeSliceVector :: (Storable e) => Int -> Int -> v e -> v e
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- vector.
-    unsafeWithVector :: v e -> (Ptr e -> IO a) -> IO a
+    unsafeWithVector :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
 
 
 
 instance RVector (STVector s) where
-    dimVector (STVector _ n _) = n
+    dimVector = STVector.length
     {-# INLINE dimVector #-}
 
-    unsafeSpliceVector (STVector p _ f) i n =
-        STVector (p `advancePtr` i) n f
-    {-# INLINE unsafeSpliceVector #-}
+    unsafeSliceVector = STVector.unsafeSlice
+    {-# INLINE unsafeSliceVector #-}
 
-    unsafeWithVector (STVector p _ f) g = do
-        a <- g p
-        touchForeignPtr f
-        return a
+    unsafeWithVector v f =
+        STVector.unsafeWith (unsafeCoerce v) f
     {-# INLINE unsafeWithVector #-}
 
 
 
--- | @spliceVector x i n@ creates a subvector view of @x@ starting at
+-- | @sliceVector i n v@ creates a subvector view of @v@ starting at
 -- index @i@ and having dimension @n@.
-spliceVector :: (RVector v, Storable e)
-             => v e
-             -> Int
-             -> Int
-             -> v e
-spliceVector x i n'
+sliceVector :: (RVector v, Storable e)
+            => Int
+            -> Int
+            -> v e
+            -> v e            
+sliceVector i n' v
     | i < 0 || n' < 0 || i + n' > n = error $
-        printf "spliceVector <vector with dim %d> %d %d: index out of range"
-               n i n'
+        printf "sliceVector %d %d <vector with dim %d>: index out of range"
+               i n' n
     | otherwise =
-        unsafeSpliceVector x i n'
+        unsafeSliceVector i n' v
   where
-    n = dimVector x
-{-# INLINE spliceVector #-}
+    n = dimVector v
+{-# INLINE sliceVector #-}
 
--- | @dropVector i x@ is equal to @spliceVector x i (n-i)@, where @n@ is
+-- | @dropVector i v@ is equal to @sliceVector i (n-i) v@, where @n@ is
 -- the dimension of the vector.
 dropVector :: (RVector v, Storable e) => Int -> v e -> v e
-dropVector i x = spliceVector x i (dimVector x - i)
+dropVector i v = sliceVector i (dimVector v - i) v
 {-# INLINE dropVector #-}
 
--- | @takeVector i x@ is equal to @spliceVector x 0 n@.
+-- | @takeVector n v@ is equal to @sliceVector 0 n v@.
 takeVector :: (RVector v, Storable e) => Int -> v e -> v e
-takeVector n x = spliceVector x 0 n
+takeVector n = sliceVector 0 n
 {-# INLINE takeVector #-}
 
 -- | View an array in memory as a vector.
 vectorViewArray :: (Storable e)
-                => ForeignPtr e 
+                => ForeignPtr e -- ^ pointer
                 -> Int          -- ^ offset
                 -> Int          -- ^ length
                 -> STVector s e
-vectorViewArray f o n =
-    let p = unsafeForeignPtrToPtr f `advancePtr` o
-    in STVector p n f
+vectorViewArray = STVector.unsafeFromForeignPtr
 {-# INLINE vectorViewArray #-}
 
 -- | Creates a new vector of the given length.  The elements will be
@@ -115,7 +182,7 @@ newVector_ n
         printf "newVector_ %d: invalid dimension" n
     | otherwise = unsafeIOToST $ do
         f <- mallocForeignPtrArray n
-        return $ STVector (unsafeForeignPtrToPtr f) n f
+        return $ vectorViewArray f 0 n
 
 -- | Create a vector with every element initialized to the same value.
 newVector :: (Storable e) => Int -> e -> ST s (STVector s e)
@@ -156,16 +223,16 @@ unsafeSwapVector = vectorStrideCall2 BLAS.swap
 {-# INLINE unsafeSwapVector #-}
 
 -- | Split a vector into two blocks and returns views into the blocks.  In
--- @(x1, x2) = splitVectorAt k x@, we have that
--- @x1 = spliceVector x 0 k@ and
--- @x2 = spliceVector x k (dimVector x - k)@.
+-- @(x1, x2) = splitVectorAt k x@, we have
+-- @x1 = sliceVector 0 k x@ and
+-- @x2 = sliceVector k (dimVector x - k) x@.
 splitVectorAt :: (RVector v, Storable e) => Int -> v e -> (v e, v e)
 splitVectorAt k x
     | k < 0 || k > n = error $
         printf "splitVectorAt %d <vector with dim %d>: invalid index" k n
     | otherwise = let
-        x1 = unsafeSpliceVector x 0 k
-        x2 = unsafeSpliceVector x k (n-k)
+        x1 = unsafeSliceVector 0 k     x
+        x2 = unsafeSliceVector k (n-k) x
     in (x1,x2)
   where
     n = dimVector x
@@ -173,7 +240,7 @@ splitVectorAt k x
 
 -- | Get the indices of the elements in the vector, @[ 0..n-1 ]@, where
 -- @n@ is the dimension of the vector.
-indicesVector :: (RVector v) => v e -> [Int]
+indicesVector :: (RVector v, Storable e) => v e -> [Int]
 indicesVector x = [ 0..n-1 ] where n = dimVector x
 {-# INLINE indicesVector #-}
 
@@ -188,7 +255,7 @@ getElemsVector v = unsafeIOToST $ unsafeWithVector v $ \p -> let
           | otherwise = unsafeInterleaveIO $ do
               e   <- peek p'
               es  <- go (p' `advancePtr` 1)
-              return (e:es) in
+              return $ e `seq` (e:es) in
     go p
   where
     touchVector v' = unsafeWithVector v' $ const (return ())
@@ -345,16 +412,20 @@ unsafeMapToVector :: (RVector v, Storable e, Storable f)
                   -> v e
                   -> STVector s f
                   -> ST s ()
-unsafeMapToVector f v (STVector dst n fdst) = 
-    let end = dst `advancePtr` n
-        go psrc pdst
-            | pdst == end = 
-                touchForeignPtr fdst
+unsafeMapToVector f v mv =
+    let go psrc pdst end
+            | pdst == end =
+                return ()
             | otherwise = do
                 e <- peek psrc
                 poke pdst (f e)
-                go (psrc `advancePtr` 1) (pdst `advancePtr` 1)
-    in unsafeIOToST $ unsafeWithVector v $ \src -> go src dst
+                go (psrc `advancePtr` 1) (pdst `advancePtr` 1) end
+    in unsafeIOToST $
+           unsafeWithVector v $ \psrc -> 
+           unsafeWithVector mv $ \pdst ->
+               go psrc pdst (pdst `advancePtr` dimVector mv)
+  where
+
 {-# INLINE unsafeMapToVector #-}
 
 -- | @zipWithToVector f x y z@ replaces @z@ elementwise with @f(x, y)@.
@@ -374,21 +445,21 @@ unsafeZipWithToVector :: (RVector v1, RVector v2, Storable e1, Storable e2, Stor
                       -> v2 e2
                       -> STVector s f
                       -> ST s ()
-unsafeZipWithToVector f v1 v2 (STVector dst n fdst) = 
-    let end = dst `advancePtr` n
-        go psrc1 psrc2 pdst
+unsafeZipWithToVector f v1 v2 mv =
+    let go psrc1 psrc2 pdst end
             | pdst == end = 
-                touchForeignPtr fdst
+                return ()
             | otherwise = do
                 e1 <- peek psrc1
                 e2 <- peek psrc2
                 poke pdst (f e1 e2)
                 go (psrc1 `advancePtr` 1) (psrc2 `advancePtr` 1)
-                   (pdst `advancePtr` 1)
+                   (pdst `advancePtr` 1) end
     in unsafeIOToST $
-        unsafeWithVector v1 $ \psrc1 ->
-        unsafeWithVector v2 $ \psrc2 -> 
-            go psrc1 psrc2 dst
+           unsafeWithVector v1 $ \psrc1 ->
+           unsafeWithVector v2 $ \psrc2 -> 
+           unsafeWithVector mv $ \pdst ->
+               go psrc1 psrc2 pdst (pdst `advancePtr` dimVector mv)
 {-# INLINE unsafeZipWithToVector #-}
 
 
@@ -627,12 +698,12 @@ kroneckerToVector x y z
     | otherwise = do
         ies <- getAssocsVector x
         forM_ ies $ \(i,e) ->
-            scaleToVector e y (unsafeSpliceVector z (i*n) n)
+            scaleToVector e y (unsafeSliceVector (i*n) n z)
   where
     m = dimVector x
     n = dimVector y
 
-vectorCall :: (RVector x)
+vectorCall :: (RVector x, Storable e)
            => (Int -> Ptr e -> IO a) 
            ->  x e -> ST s a
 vectorCall f x = 
@@ -642,7 +713,7 @@ vectorCall f x =
                f n pX
 {-# INLINE vectorCall #-}
 
-vectorCall2 :: (RVector x, RVector y)
+vectorCall2 :: (RVector x, RVector y, Storable e, Storable f)
             => (Int -> Ptr e -> Ptr f -> IO a) 
             -> x e -> y f -> ST s a
 vectorCall2 f x y =
@@ -653,7 +724,7 @@ vectorCall2 f x y =
                f n pX pY
 {-# INLINE vectorCall2 #-}    
 
-vectorCall3 :: (RVector x, RVector y, RVector z)
+vectorCall3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
             => (Int -> Ptr e -> Ptr f -> Ptr g -> IO a) 
             -> x e -> y f -> z g -> ST s a
 vectorCall3 f x y z =
@@ -665,7 +736,7 @@ vectorCall3 f x y z =
                f n pX pY pZ
 {-# INLINE vectorCall3 #-}   
 
-vectorStrideCall :: (RVector x)
+vectorStrideCall :: (RVector x, Storable e)
                  => (Int -> Ptr e -> Int -> IO a) 
                  ->  x e -> ST s a
 vectorStrideCall f x = 
@@ -676,7 +747,7 @@ vectorStrideCall f x =
                f n pX incX
 {-# INLINE vectorStrideCall #-}
 
-vectorStrideCall2 :: (RVector x, RVector y)
+vectorStrideCall2 :: (RVector x, RVector y, Storable e, Storable f)
                   => (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
                   -> x e -> y f -> ST s a
 vectorStrideCall2 f x y =
@@ -689,7 +760,7 @@ vectorStrideCall2 f x y =
                f n pX incX pY incY
 {-# INLINE vectorStrideCall2 #-}    
 
-checkVectorOp2 :: (RVector x, RVector y)
+checkVectorOp2 :: (RVector x, RVector y, Storable e, Storable f)
                => String
                -> (x e -> y f -> a)
                -> x e
@@ -706,7 +777,7 @@ checkVectorOp2 str f x y
     n2 = dimVector y        
 {-# INLINE checkVectorOp2 #-}
 
-checkVectorOp3 :: (RVector x, RVector y, RVector z)
+checkVectorOp3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
                => String
                -> (x e -> y f -> z g -> a)
                -> x e
@@ -726,7 +797,7 @@ checkVectorOp3 str f x y z
     n3 = dimVector z
 {-# INLINE checkVectorOp3 #-}
 
-newResultVector :: (RVector v, Storable f)
+newResultVector :: (RVector v, Storable e, Storable f)
                 => (v e -> STVector s f -> ST s a)
                 -> v e
                 -> ST s (STVector s f)
@@ -737,7 +808,7 @@ newResultVector f v = do
 {-# INLINE newResultVector #-}
 
 
-newResultVector2 :: (RVector v1, RVector v2, Storable g)
+newResultVector2 :: (RVector v1, RVector v2, Storable e, Storable f, Storable g)
                  => (v1 e -> v2 f -> STVector s g -> ST s a)
                  -> v1 e
                  -> v2 f

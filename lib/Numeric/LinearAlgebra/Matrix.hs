@@ -37,7 +37,7 @@ module Numeric.LinearAlgebra.Matrix (
     -- * Matrix views
     colMatrix,
     colsMatrix,
-    spliceMatrix,
+    sliceMatrix,
     splitRowsMatrixAt,
     splitColsMatrixAt,
 

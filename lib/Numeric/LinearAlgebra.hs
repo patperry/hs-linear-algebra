@@ -19,7 +19,10 @@ module Numeric.LinearAlgebra (
 
 import Numeric.LinearAlgebra.Elem
 import Numeric.LinearAlgebra.Vector
-import Numeric.LinearAlgebra.Vector.ST
+import Numeric.LinearAlgebra.Vector.ST hiding ( dimVector, indicesVector,
+    sliceVector, splitVectorAt, dropVector, takeVector )
 import Numeric.LinearAlgebra.Matrix
-import Numeric.LinearAlgebra.Matrix.ST
+import Numeric.LinearAlgebra.Matrix.ST hiding ( dimMatrix, indicesMatrix,
+    colMatrix, colsMatrix, sliceMatrix, splitRowsMatrixAt, 
+    splitColsMatrixAt )
 

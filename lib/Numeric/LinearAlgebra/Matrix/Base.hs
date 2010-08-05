@@ -341,14 +341,14 @@ compareMatrixWith cmp a a' =
     && and (zipWith cmp (elemsMatrix a) (elemsMatrix a'))
 {-# INLINE compareMatrixWith #-}
 
-resultMatrix :: (Storable f)
+resultMatrix :: (Storable e, Storable f)
              => (forall s . Matrix e -> STMatrix s f -> ST s a)
              -> Matrix e
              -> Matrix f
 resultMatrix f a = runMatrix $ newResultMatrix f a
 {-# INLINE resultMatrix #-}
 
-resultMatrix2 :: (Storable g)
+resultMatrix2 :: (Storable e, Storable f, Storable g)
               => (forall s . Matrix e -> Matrix f -> STMatrix s g -> ST s a)
               -> Matrix e
               -> Matrix f

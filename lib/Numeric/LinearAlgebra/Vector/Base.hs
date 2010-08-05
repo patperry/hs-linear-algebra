@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, Rank2Types #-}
+{-# LANGUAGE Rank2Types #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -9,21 +10,90 @@
 -- Stability  : experimental
 --
 
-module Numeric.LinearAlgebra.Vector.Base
-    where
+module Numeric.LinearAlgebra.Vector.Base (
+    Vector,
+    dimVector,
+    
+    vector,
+    unsafeVector,
+    listVector,
+    constantVector,
+    
+    runVector,
+    freezeVector,
+    thawVector,
+    
+    atVector,
+    unsafeAtVector,
+    
+    indicesVector,
+    elemsVector,
+    assocsVector,
+    
+    replaceVector,
+    unsafeReplaceVector,
+    accumVector,
+    unsafeAccumVector,
+    
+    mapVector,
+    zipWithVector,
+    
+    sliceVector,
+    splitVectorAt,
+    dropVector,
+    takeVector,
+    
+    sumVector,
+    sumAbsVector,    
+    norm2Vector,
+    whichMaxAbsVector,
+    dotVector,
+    unsafeDotVector,
+    kroneckerVector,
+    
+    shiftVector,
+    addVector,
+    addVectorWithScale,
+    subVector,
+    scaleVector,
+    mulVector,
+    negateVector,
+    conjVector,
+    absVector,
+    signumVector,
+    
+    divVector,
+    recipVector,        
+
+    sqrtVector,
+    expVector,
+    logVector,
+    powVector,
+    sinVector,
+    cosVector,
+    tanVector,
+    asinVector,
+    acosVector,
+    atanVector,
+    sinhVector,
+    coshVector,
+    tanhVector,
+    asinhVector,
+    acoshVector,
+    atanhVector,
+    ) where
 
 import Control.Monad
 import Control.Monad.ST
 import Data.AEq( AEq(..) )
-import Data.Typeable
-import Foreign( advancePtr, peek, peekElemOff, touchForeignPtr )
+
+import Data.Vector.Storable( Vector )
+import qualified Data.Vector.Storable as Vector
+import qualified Data.Vector.Storable.Mutable as STVector
+
 import Text.Printf( printf )
-import Unsafe.Coerce( unsafeCoerce )
 
-import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 import Numeric.LinearAlgebra.Elem
-
-
 import Numeric.LinearAlgebra.Vector.STBase
 
 infixr 8 `powVector`
@@ -31,58 +101,38 @@ infixl 7 `divVector`
 infixl 7 `mulVector`, `scaleVector`, `kroneckerVector`
 infixl 6 `addVector`, `shiftVector`, `subVector`
 
+instance RVector Vector where
+    dimVector = Vector.length
+    {-# INLINE dimVector #-}
+    unsafeSliceVector = Vector.unsafeSlice
+    {-# INLINE unsafeSliceVector #-}
+    unsafeWithVector = Vector.unsafeWith
+    {-# INLINE unsafeWithVector #-}
 
--- | Immutable dense vectors. The type arguments are as follows:
---
---     * @e@: the element type of the vector.
---
-newtype Vector e = Vector { unVector :: STVector RealWorld e }
-    deriving (RVector, Typeable)
 
 -- | A safe way to create and work with a mutable vector before returning 
 -- an immutable vector for later perusal. This function avoids copying
--- the vector before returning it - it uses 'unsafeFreezeVector' internally,
--- but this wrapper is a safe interface to that function. 
-runVector :: (forall s . ST s (STVector s e)) -> Vector e
-runVector mx = runST $ mx >>= unsafeFreezeVector
+-- the vector before returning it. 
+runVector :: (Storable e) => (forall s . ST s (STVector s e)) -> Vector e
+runVector = Vector.create
 {-# INLINE runVector #-}
-
 
 -- | Converts a mutable vector to an immutable one by taking a complete
 -- copy of it.
 freezeVector :: (Storable e) => STVector s e -> ST s (Vector e)
-freezeVector = fmap Vector . unsafeCoerce . newCopyVector
+freezeVector mv = do
+    mv' <- newVector_ (dimVector mv)
+    unsafeCopyToVector mv mv'
+    let (f,o,n) = STVector.unsafeToForeignPtr mv'
+        v' = Vector.unsafeFromForeignPtr f o n
+    return v'
 {-# INLINE freezeVector #-}
-
--- | Converts a mutable vector into an immutable vector. This simply casts
--- the vector from one type to the other without copying the vector.
---
--- Note that because the vector is possibly not copied, any subsequent
--- modifications made to the mutable version of the vector may be shared with
--- the immutable version. It is safe to use, therefore, if the mutable
--- version is never modified after the freeze operation.
-unsafeFreezeVector :: STVector s e -> ST s (Vector e)
-unsafeFreezeVector = return . Vector . unsafeCoerce
-{-# INLINE unsafeFreezeVector #-}
 
 -- | Converts an immutable vector to a mutable one by taking a complete
 -- copy of it.
 thawVector :: (Storable e) => Vector e -> ST s (STVector s e)
 thawVector = newCopyVector
 {-# INLINE thawVector #-}
-
--- | Converts an immutable vector into a mutable vector. This simply casts
--- the vector from one type to the other without copying the vector.
---
--- Note that because the vector is possibly not copied, any subsequent
--- modifications made to the mutable version of the vector may be shared with
--- the immutable version. It is only safe to use, therefore, if the immutable
--- vector is never referenced again in this thread, and there is no
--- possibility that it can be also referenced in another thread.
-unsafeThawVector :: Vector e -> ST s (STVector s e)
-unsafeThawVector = return . unsafeCoerce . unVector
-{-# INLINE unsafeThawVector #-}
-
 
 -- | Create a vector with the given dimension and elements.  The elements
 -- given in the association list must all have unique indices, otherwise
@@ -96,7 +146,7 @@ vector n ies = runVector $ do
     v <- newVector_ n
     setAssocsVector v ies
     return v
-{-# INLINE vector #-}
+{-# NOINLINE vector #-}
 
 -- | Same as 'vector', but does not range-check the indices.
 unsafeVector :: (Storable e) => Int -> [(Int, e)] -> Vector e
@@ -104,7 +154,7 @@ unsafeVector n ies = runVector $ do
     v <- newVector_ n
     unsafeSetAssocsVector v ies
     return v
-{-# INLINE unsafeVector #-}
+{-# NOINLINE unsafeVector #-}
 
 -- | Create a vector of the given dimension with elements initialized
 -- to the values from the list.  @listVector n es@ is equivalent to 
@@ -114,13 +164,13 @@ listVector n es = runVector $ do
     v <- newVector_ n
     setElemsVector v es
     return v
-{-# INLINE listVector #-}
+{-# NOINLINE listVector #-}
 
 -- | Create a vector of the given dimension with all elements initialized
 -- to the given value
 constantVector :: (Storable e) => Int -> e -> Vector e
 constantVector n e = runVector $ newVector n e
-{-# INLINE constantVector #-}
+{-# NOINLINE constantVector #-}
 
 -- | Returns the element of a vector at the specified index.
 atVector :: (Storable e) => Vector e -> Int -> e
@@ -134,26 +184,14 @@ atVector v i
 {-# INLINE atVector #-}
 
 unsafeAtVector :: (Storable e) => Vector e -> Int -> e
-unsafeAtVector (Vector (STVector p _ f)) i = inlinePerformIO $ do
-    e  <- peekElemOff p i
-    touchForeignPtr f
-    return $! e
+unsafeAtVector v i = (Vector.unsafeIndex) v i
 {-# INLINE unsafeAtVector #-}
 
 -- | Returns a list of the elements of a vector, in the same order as their
 -- indices.
 elemsVector :: (Storable e) => Vector e -> [e]
-elemsVector (Vector (STVector p n f)) =
-    let end = p `advancePtr` n
-        go p' | p' == end = inlinePerformIO $ do
-                                touchForeignPtr f
-                                return []
-              | otherwise = let e  = inlinePerformIO (peek p')
-                                es = go (p' `advancePtr` 1)
-                            in e `seq` (e:es)
-    in go p
-{-# SPECIALIZE INLINE elemsVector :: Vector Double -> [Double] #-}
-{-# SPECIALIZE INLINE elemsVector :: Vector (Complex Double) -> [Complex Double] #-}
+elemsVector = Vector.toList
+{-# INLINE elemsVector #-}
 
 -- | Returns the contents of a vector as a list of associations.
 assocsVector :: (Storable e) => Vector e -> [(Int,e)]
@@ -278,14 +316,6 @@ kroneckerVector x y = runVector $ do
     z <- newVector_ (dimVector x * dimVector y)
     kroneckerToVector x y z
     return z
-
-instance (Storable e, Show e) => Show (Vector e) where
-    show x = "listVector " ++ show (dimVector x) ++ " " ++ show (elemsVector x)
-    {-# INLINE show #-}
-
-instance (Storable e, Eq e) => Eq (Vector e) where
-    (==) = compareVectorWith (==)
-    {-# INLINE (==) #-}
 
 instance (Storable e, AEq e) => AEq (Vector e) where
     (===) = compareVectorWith (===)
@@ -417,14 +447,14 @@ atanhVector :: (VFloating e) => Vector e -> Vector e
 atanhVector = resultVector atanhToVector
 
 
-resultVector :: (Storable f)
+resultVector :: (Storable e, Storable f)
              => (forall s . Vector e -> STVector s f -> ST s a)
              -> Vector e
              -> Vector f
 resultVector f v = runVector $ newResultVector f v
 {-# INLINE resultVector #-}
 
-resultVector2 :: (Storable g)
+resultVector2 :: (Storable e, Storable f, Storable g)
               => (forall s . Vector e -> Vector f -> STVector s g -> ST s a)
               -> Vector e
               -> Vector f

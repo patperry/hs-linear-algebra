@@ -26,7 +26,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     swapVector,
 
     -- * Vector views
-    spliceVector,
+    sliceVector,
     splitVectorAt,
     dropVector,
     takeVector,
@@ -92,9 +92,7 @@ module Numeric.LinearAlgebra.Vector.ST (
 
     -- * Conversions between mutable and immutable vectors
     freezeVector,
-    unsafeFreezeVector,
     thawVector,
-    unsafeThawVector,
     
     -- * Vector views of arrays
     vectorViewArray,

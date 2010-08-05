@@ -31,7 +31,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyI "accum" prop_accum
     , testPropertyI "map" prop_map
     , testPropertyI "zipWith" prop_zipWith
-    , testPropertyI "splice" prop_splice
+    , testPropertyI "slice" prop_slice
     , testPropertyI "splitAt" prop_splitAt
     , testPropertyDZ "sum" prop_sum prop_sum
     , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs    
@@ -160,10 +160,10 @@ prop_zipWith t (Blind f) (VectorPair x y) =
 
 ------------------------------ Vector Views-- --------------------------------
 
-prop_splice t x = 
+prop_slice t x = 
     forAll (choose (0,n)) $ \n' ->
     forAll (choose (0,n-n')) $ \o ->
-        spliceVector x o n' === listVector n' (take n' $ drop o $ es)
+        sliceVector o n' x === listVector n' (take n' $ drop o $ es)
   where
     n  = dimVector x
     es = elemsVector x

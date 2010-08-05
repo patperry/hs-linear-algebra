@@ -33,7 +33,7 @@ module Numeric.LinearAlgebra.Vector (
     zipWithVector,
 
     -- * Vector views
-    spliceVector,
+    sliceVector,
     splitVectorAt,
     dropVector,
     takeVector,
@@ -84,4 +84,3 @@ module Numeric.LinearAlgebra.Vector (
     ) where
 
 import Numeric.LinearAlgebra.Vector.Base
-import Numeric.LinearAlgebra.Vector.STBase

@@ -40,7 +40,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "cols" prop_cols
     , testPropertyI "row" prop_row
     , testPropertyI "rows" prop_rows
-    , testPropertyI "splice" prop_splice
+    , testPropertyI "slice" prop_slice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
     , testPropertyDZ "shift" prop_shift prop_shift
@@ -176,13 +176,13 @@ prop_rows t a =
     (m,_) = dimMatrix a
     _ = typed t $ immutableMatrix a
 
-prop_splice t a =
+prop_slice t a =
     forAll (choose (0,m)) $ \m' ->
     forAll (choose (0,n)) $ \n' ->
     forAll (choose (0,m-m')) $ \i ->
     forAll (choose (0,n-n')) $ \j ->
-        spliceMatrix a (i,j) (m',n')
-            === colListMatrix (m',n') [ spliceVector (colMatrix a j') i m'
+        sliceMatrix (i,j) (m',n') a
+            === colListMatrix (m',n') [ sliceVector i m' (colMatrix a j')
                                       | j' <- [ j..j+n'-1 ] ]
   where
     (m,n) = dimMatrix a
@@ -191,8 +191,8 @@ prop_splice t a =
 prop_splitRowsAt t a =
     forAll (choose (0,m)) $ \i ->
         splitRowsMatrixAt i a
-            === ( spliceMatrix a (0,0) (i,n)
-                , spliceMatrix a (i,0) (m-i,n)
+            === ( sliceMatrix (0,0) (i,n) a
+                , sliceMatrix (i,0) (m-i,n) a
                 )
   where
     (m,n) = dimMatrix a
@@ -201,8 +201,8 @@ prop_splitRowsAt t a =
 prop_splitColsAt t a =
     forAll (choose (0,n)) $ \j ->
         splitColsMatrixAt j a
-            === ( spliceMatrix a (0,0) (m,j)
-                , spliceMatrix a (0,j) (m,n-j)
+            === ( sliceMatrix (0,0) (m,j) a
+                , sliceMatrix (0,j) (m,n-j) a
                 )
   where
     (m,n) = dimMatrix a

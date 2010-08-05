@@ -35,7 +35,7 @@ data STMatrix s e =
                {-# UNPACK #-} !Int            -- row dimension
                {-# UNPACK #-} !Int            -- column dimension
                {-# UNPACK #-} !Int            -- leading dimension
-  deriving (Eq, Typeable)
+  deriving (Typeable)
 
 
 instance HasVectorView (STMatrix s) where
@@ -44,16 +44,16 @@ instance HasVectorView (STMatrix s) where
 -- | Read-only matrices
 class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
     -- | The dimensions of the matrix (number of rows and columns).
-    dimMatrix :: m e -> (Int,Int)
+    dimMatrix :: (Storable e) => m e -> (Int,Int)
     
-    unsafeSpliceMatrix :: (Storable e)
-                       => m e -> (Int,Int) -> (Int,Int) -> m e
+    unsafeSliceMatrix :: (Storable e)
+                      => (Int,Int) -> (Int,Int) -> m e -> m e
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- matrix and the leading dimension (lda).
-    unsafeWithMatrix :: m e -> (Ptr e -> Int -> IO a) -> IO a
+    unsafeWithMatrix :: (Storable e) => m e -> (Ptr e -> Int -> IO a) -> IO a
 
-    unsafeMatrixViewVector :: VectorView m e -> (Int,Int) -> m e
+    unsafeMatrixViewVector :: (Storable e) => VectorView m e -> (Int,Int) -> m e
     
     -- | Possibly view a matrix as a vector.  This only succeeds if the
     -- matrix is stored contiguously in memory, i.e. if the matrix contains
@@ -70,14 +70,14 @@ instance RMatrix (STMatrix s) where
     dimMatrix (STMatrix _ m n _) = (m,n)
     {-# INLINE dimMatrix #-}
 
-    unsafeSpliceMatrix (STMatrix a _ _ lda) (i,j) (m',n') = let
+    unsafeSliceMatrix (i,j) (m',n') (STMatrix a _ _ lda) = let
         o = i + j*lda
         l = if m' == 0 || n' == 0
                 then 0
                 else lda * (n' - 1) + m'
-        a' = unsafeSpliceVector a o l
+        a' = unsafeSliceVector o l a
         in STMatrix a' m' n' lda
-    {-# INLINE unsafeSpliceMatrix #-}
+    {-# INLINE unsafeSliceMatrix #-}
     
     unsafeWithMatrix (STMatrix a _ _ lda) f =
         unsafeWithVector a $ \p -> f p lda
@@ -94,7 +94,7 @@ instance RMatrix (STMatrix s) where
 
     unsafeColMatrix (STMatrix a m _ lda) j = let
         o = j * lda
-        x = unsafeSpliceVector a o m
+        x = unsafeSliceVector o m a
         in x
     {-# INLINE unsafeColMatrix #-}
 
@@ -131,23 +131,23 @@ colsMatrix :: (RMatrix m, Storable e)
 colsMatrix a = [ unsafeColMatrix a j | j <- [ 0..n-1 ] ]
   where n = (snd . dimMatrix) a
 
--- | @spliceMatrix a (i,j) (m,n)@ creates a submatrix view of @a@ starting at
+-- | @sliceMatrix (i,j) (m,n) a@ creates a submatrix view of @a@ starting at
 -- element @(i,j)@ and having dimensions @(m,n)@.
-spliceMatrix :: (RMatrix m, Storable e)
-             => m e
-             -> (Int,Int)
-             -> (Int,Int)
-             -> m e
-spliceMatrix a (i,j) (m',n')
+sliceMatrix :: (RMatrix m, Storable e)
+            => (Int,Int)
+            -> (Int,Int)
+            -> m e
+            -> m e
+sliceMatrix (i,j) (m',n') a
     | (i < 0 || m' < 0 || i + m' > m 
        || j < 0 || n' < 0 || j + n' > n) = error $
-        printf ("spliceMatrix <matrix with dim (%d,%d)> (%d,%d) (%d,%d):"
-                ++ " index out of range") m n i j m' n'
+        printf ("sliceMatrix (%d,%d) (%d,%d) <matrix with dim (%d,%d)>:"
+                ++ " index out of range") i j m' n' m n
     | otherwise =
-        unsafeSpliceMatrix a (i,j) (m',n')
+        unsafeSliceMatrix (i,j) (m',n') a
   where
     (m,n) = dimMatrix a
-{-# INLINE spliceMatrix #-}
+{-# INLINE sliceMatrix #-}
 
 -- | View an array in memory as a matrix.
 matrixViewArray :: (Storable e)
@@ -195,41 +195,41 @@ unsafeCopyToMatrix = matrixVectorOp2 unsafeCopyToVector
 {-# INLINE unsafeCopyToMatrix #-}
 
 -- | Split a matrix into two blocks and returns views into the blocks.  In
--- @(a1, a2) = splitRowsMatrixAt i a@, we have that
--- @a1 = spliceMatrix a (0,0) (i,n)@ and
--- @a2 = spliceMatrix a (i,0) (m-i,n)@, where @(m,n)@ is the dimension of @a@.
+-- @(a1, a2) = splitRowsMatrixAt i a@, we have
+-- @a1 = sliceMatrix (0,0) (i,n) a@ and
+-- @a2 = sliceMatrix (i,0) (m-i,n) a@, where @(m,n)@ is the dimension of @a@.
 splitRowsMatrixAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
 splitRowsMatrixAt i a
     | i < 0 || i > m = error $
         printf ("splitRowsMatrixAt %d <matrix with dim (%d,%d)>:"
                 ++ " invalid index") i m n
     | otherwise = let
-        a1 = unsafeSpliceMatrix a (0,0) (i,n)
-        a2 = unsafeSpliceMatrix a (i,0) (m-i,n)
+        a1 = unsafeSliceMatrix (0,0) (i,n)   a
+        a2 = unsafeSliceMatrix (i,0) (m-i,n) a
     in (a1,a2)
   where
     (m,n) = dimMatrix a
 {-# INLINE splitRowsMatrixAt #-}
 
 -- | Split a matrix into two blocks and returns views into the blocks.  In
--- @(a1, a2) = splitColsMatrixAt j a@, we have that
--- @a1 = spliceMatrix a (0,0) (m,j)@ and
--- @a2 = spliceMatrix a (0,j) (m,n-j)@, where @(m,n)@ is the dimension of @a@.
+-- @(a1, a2) = splitColsMatrixAt j a@, we have
+-- @a1 = sliceMatrix (0,0) (m,j) a@ and
+-- @a2 = sliceMatrix (0,j) (m,n-j) a@, where @(m,n)@ is the dimension of @a@.
 splitColsMatrixAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
 splitColsMatrixAt j a
     | j < 0 || j > n = error $
         printf ("splitColsMatrixAt %d <matrix with dim (%d,%d)>:"
                 ++ " invalid index") j m n
     | otherwise = let
-        a1 = unsafeSpliceMatrix a (0,0) (m,j)
-        a2 = unsafeSpliceMatrix a (0,j) (m,n-j)
+        a1 = unsafeSliceMatrix (0,0) (m,j)   a
+        a2 = unsafeSliceMatrix (0,j) (m,n-j) a
     in (a1,a2)
   where
     (m,n) = dimMatrix a
 {-# INLINE splitColsMatrixAt #-}
 
 -- | Get the indices of the elements in the matrix, in column-major order.
-indicesMatrix :: (RMatrix m) => m e -> [(Int,Int)]
+indicesMatrix :: (RMatrix m, Storable e) => m e -> [(Int,Int)]
 indicesMatrix a = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
   where (m,n) = dimMatrix a
   
@@ -578,7 +578,7 @@ rank1UpdateToMatrix alpha x y a c
   where
     (m,n) = dimMatrix c
 
-checkMatrixOp2 :: (RMatrix x, RMatrix y)
+checkMatrixOp2 :: (RMatrix x, RMatrix y, Storable e, Storable f)
                => String
                -> (x e -> y f -> a)
                -> x e
@@ -595,7 +595,7 @@ checkMatrixOp2 str f x y
     (m2,n2) = dimMatrix y        
 {-# INLINE checkMatrixOp2 #-}
 
-checkMatrixOp3 :: (RMatrix x, RMatrix y, RMatrix z)
+checkMatrixOp3 :: (RMatrix x, RMatrix y, RMatrix z, Storable e, Storable f, Storable g)
                => String
                -> (x e -> y f -> z g -> a)
                -> x e
@@ -636,7 +636,7 @@ matrixVectorOp3 f a b c =
             | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c) ]
 {-# INLINE matrixVectorOp3 #-}
 
-newResultMatrix :: (RMatrix m, Storable f)
+newResultMatrix :: (RMatrix m, Storable e, Storable f)
                 => (m e -> STMatrix s f -> ST s a)
                 -> m e
                 -> ST s (STMatrix s f)
@@ -646,7 +646,7 @@ newResultMatrix f a = do
     return c
 {-# INLINE newResultMatrix #-}
 
-newResultMatrix2 :: (RMatrix m1, RMatrix m2, Storable g)
+newResultMatrix2 :: (RMatrix m1, RMatrix m2, Storable e, Storable f, Storable g)
                  => (m1 e -> m2 f -> STMatrix s g -> ST s a)
                  -> m1 e
                  -> m2 f

@@ -77,8 +77,8 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 
-import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, spliceVector )
-import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, spliceMatrix )
+import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, sliceVector )
+import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
 -- import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
 --     unsafeThawMatrix )
@@ -287,7 +287,7 @@ instance (Arbitrary e, Storable e) => Arbitrary (Vector e) where
     arbitrary = dim >>= vector
     
     shrink x =
-        [ spliceVector x 0 n
+        [ sliceVector 0 n x
         | (NonNegative n) <- shrink (NonNegative $ dimVector x)
         ]
 
@@ -302,7 +302,7 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f) =>
             return $ VectorPair x y
             
         shrink (VectorPair x y) =
-            [ VectorPair (spliceVector x 0 n') (spliceVector y 0 n')
+            [ VectorPair (sliceVector 0 n' x) (sliceVector 0 n' y)
             | n' <- shrink (dimVector x)
             ]
 
@@ -330,7 +330,7 @@ matrix (m,n) =
     sub = do
         m' <- choose (m, 2*m)
         es <- elems $ m' * n
-        return $ spliceMatrix (listMatrix (m',n) es) (0,0) (m,n)
+        return $ sliceMatrix (0,0) (m,n) (listMatrix (m',n) es)
 
 instance (Arbitrary e, Storable e) => Arbitrary (Matrix e) where
     arbitrary = dim2 >>= matrix
