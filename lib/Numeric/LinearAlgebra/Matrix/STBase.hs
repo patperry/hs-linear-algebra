@@ -12,16 +12,17 @@
 module Numeric.LinearAlgebra.Matrix.STBase
     where
       
-import Control.Monad( forM_, zipWithM_ )
+import Control.Monad( forM_, zipWithM_, when )
 import Control.Monad.ST( ST, unsafeIOToST )
 import Data.Typeable( Typeable )
-import Foreign( ForeignPtr, Ptr, peekElemOff, pokeElemOff )
+import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Elem
 import qualified Numeric.LinearAlgebra.Elem.BLAS1 as BLAS
 import qualified Numeric.LinearAlgebra.Elem.BLAS2 as BLAS
-import Numeric.LinearAlgebra.Types( HasVectorView(..) )
+import qualified Numeric.LinearAlgebra.Elem.BLAS3 as BLAS
+import Numeric.LinearAlgebra.Types( HasVectorView(..), TransEnum(..) )
 import Numeric.LinearAlgebra.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
@@ -513,6 +514,12 @@ subToMatrix :: (RMatrix m1, RMatrix m2, VNum e)
             => m1 e -> m2 e -> STMatrix s e -> ST s ()
 subToMatrix = checkMatrixOp3 "subToMatrix" $ matrixVectorOp3 subToVector
 
+-- | Conjugate the entries of a matrix.
+conjToMatrix :: (RMatrix m, VNum e)
+             => m e -> STMatrix s e -> ST s ()
+conjToMatrix = checkMatrixOp2 "conjToMatrix" $
+    matrixVectorOp2 conjToVector
+
 -- | Negate the entries of a matrix.
 negateToMatrix :: (RMatrix m, VNum e)
                => m e -> STMatrix s e -> ST s ()
@@ -577,6 +584,192 @@ rank1UpdateToMatrix alpha x y a c
                 BLAS.gerc m n alpha px 1 py 1 pc ldc
   where
     (m,n) = dimMatrix c
+
+
+-- | @transToMatrix a c@ sets @c := trans(a)@.
+transToMatrix :: (RMatrix m, BLAS1 e)
+              => m e
+              -> STMatrix s e
+              -> ST s ()
+transToMatrix a a'
+    | (ma,na) /= (na',ma') = error $
+        printf ("transToMatrix <matrix with dim (%d,%d)>"
+                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+    | otherwise = unsafeIOToST $
+        unsafeWithMatrix a $ \pa lda ->
+        unsafeWithMatrix a' $ \pa' lda' -> let
+            go j px py | j == n = return ()
+                       | otherwise = do
+                           BLAS.copy m px 1 py lda'
+                           go (j+1) (px `advancePtr` lda) (py `advancePtr` 1)
+            in go 0 pa pa'
+  where
+    (ma,na) = dimMatrix a
+    (ma',na') = dimMatrix a'
+    (m,n) = (ma,na)
+
+-- | @conjTransToMatrix a c@ sets @c := conj(trans(a))@.
+conjTransToMatrix :: (RMatrix m, BLAS1 e, VNum e)
+                  => m e
+                  -> STMatrix s e
+                  -> ST s ()
+conjTransToMatrix a a' = do
+    transToMatrix a a'
+    conjToMatrix a' a'
+
+-- | @mulMatrixToVectorWith transa a x y@
+-- sets @y := op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulMatrixToVector :: (RMatrix m, RVector v, BLAS2 e)
+                  => TransEnum -> m e
+                  -> v e
+                  -> STVector s e
+                  -> ST s ()
+mulMatrixToVector = mulMatrixToVectorWithScale 1
+
+-- | @mulMatrixToVectorWithScale alpha transa a x y@
+-- sets @y := alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulMatrixToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
+                           => e
+                           -> TransEnum -> m e
+                           -> v e
+                           -> STVector s e
+                           -> ST s ()
+mulMatrixToVectorWithScale alpha t a x y =
+    mulMatrixAddToVectorWithScales alpha t a x 0 y y
+
+-- | @mulMatrixAddToVector transa a x y y'@
+-- sets @y' := op(a) * x + y@, where @op(a)@ is determined by @transa@.                   
+mulMatrixAddToVector :: (RMatrix m, RVector v1, RVector v2, BLAS2 e)
+                     => TransEnum -> m e
+                     -> v1 e
+                     -> v2 e
+                     -> STVector s e
+                     -> ST s ()
+mulMatrixAddToVector t a x y y' =
+    mulMatrixAddToVectorWithScales 1 t a x 1 y y'
+
+-- | @mulMatrixAddToVectorWithScales alpha transa a x beta y y'@
+-- sets @y' := alpha * op(a) * x + beta * y@, where @op(a)@ is
+-- determined by @transa@.
+mulMatrixAddToVectorWithScales :: (RMatrix m, RVector v1, RVector v2, BLAS2 e)
+                               => e
+                               -> TransEnum -> m e
+                               -> v1 e
+                               -> e
+                               -> v2 e
+                               -> STVector s e
+                               -> ST s ()
+mulMatrixAddToVectorWithScales alpha transa a x beta y y'
+    | (not . and) [ case transa of NoTrans -> (ma,na) == (m,n)
+                                   _       -> (ma,na) == (n,m)
+                  , nx == n
+                  , ny == m
+                  , ny' == m
+                  ] = error $
+        printf ("mulMatrixAddToVectorWithScales _"
+                ++ " %s <matrix with dim (%d,%d)>" 
+                ++ " %s <vector with dim %d>"
+                ++ " _"
+                ++ " <vector with dim %d>"
+                ++ " <vector with dim %d>: dimension mismatch")
+               (show transa) ma na
+               nx ny ny'
+    | otherwise = do
+        when (beta /= 0) $ unsafeCopyToVector y y'
+        unsafeIOToST $
+            unsafeWithMatrix a $ \pa lda ->
+            unsafeWithVector x $ \px ->
+            unsafeWithVector y' $ \py ->
+                if n == 0
+                    then BLAS.scal m beta py 1
+                    else BLAS.gemv transa ma na alpha pa lda px 1 beta py 1
+  where
+    (ma,na) = dimMatrix a
+    nx = dimVector x
+    ny = dimVector y
+    ny' = dimVector y'
+    (m,n) = (ny',nx)
+
+-- | @mulMatrixToMatrix transa a transb b c@
+-- sets @c := op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                  => TransEnum -> m1 e
+                  -> TransEnum -> m2 e
+                  -> STMatrix s e
+                  -> ST s ()
+mulMatrixToMatrix = mulMatrixToMatrixWithScale 1
+
+-- | @mulMatrixToMatrixWithScale alpha transa a transb b c@
+-- sets @c := alpha * op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                           => e
+                           -> TransEnum -> m1 e
+                           -> TransEnum -> m2 e
+                           -> STMatrix s e
+                           -> ST s ()
+mulMatrixToMatrixWithScale alpha ta a tb b c =
+    mulMatrixAddToMatrixWithScales alpha ta a tb b 0 c c
+
+
+-- | @mulMatrixAddToMatrix transa a transb b c c'@
+-- sets @c' := op(a) * op(b) + c@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixAddToMatrix :: (RMatrix m1, RMatrix m2, RMatrix m3, BLAS3 e)
+                     => TransEnum -> m1 e
+                     -> TransEnum -> m2 e
+                     -> m3 e
+                     -> STMatrix s e
+                     -> ST s ()
+mulMatrixAddToMatrix ta a tb b c c' =
+    mulMatrixAddToMatrixWithScales 1 ta a tb b 1 c c'
+
+-- | @mulMatrixAddToMatrixWithScales alpha transa a transb b beta c c'@
+-- sets @c' := alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
+-- @op(b)@ are determined by @transa@ and @transb@.
+mulMatrixAddToMatrixWithScales :: (RMatrix m1, RMatrix m2, RMatrix m3, BLAS3 e)
+                               => e
+                               -> TransEnum -> m1 e
+                               -> TransEnum -> m2 e
+                               -> e
+                               -> m3 e
+                               -> STMatrix s e
+                               -> ST s ()
+mulMatrixAddToMatrixWithScales alpha transa a transb b beta c c' 
+    | (not . and) [ case transa of NoTrans -> (ma,na) == (m,k)
+                                   _       -> (ma,na) == (k,m)
+                  , case transb of NoTrans -> (mb,nb) == (k,n)
+                                   _       -> (mb,nb) == (n,k)
+                  , (mc, nc ) == (m,n)
+                  , (mc',nc') == (m,n)
+                  ] = error $
+        printf ("mulMatrixAddToMatrixWithScales _"
+                ++ " %s <matrix with dim (%d,%d)>" 
+                ++ " %s <matrix with dim (%d,%d)>"
+                ++ " _"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+               (show transa) ma na
+               (show transb) mb nb
+               mc nc
+               mc' nc'
+    | otherwise = do
+        when (beta /= 0) $ unsafeCopyToMatrix c c'
+        unsafeIOToST $
+            unsafeWithMatrix a $ \pa lda ->
+            unsafeWithMatrix b $ \pb ldb ->
+            unsafeWithMatrix c' $ \pc ldc ->
+                BLAS.gemm transa transb m n k alpha pa lda pb ldb beta pc ldc
+  where
+    (ma,na) = dimMatrix a
+    (mb,nb) = dimMatrix b
+    (mc,nc) = dimMatrix c
+    (mc',nc') = dimMatrix c'
+    (m,n) = dimMatrix c'
+    k = case transa of NoTrans -> na
+                       _       -> ma
+
 
 checkMatrixOp2 :: (RMatrix x, RMatrix y, Storable e, Storable f)
                => String

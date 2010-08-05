@@ -53,6 +53,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
     , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
     , testPropertyDZ "negate" prop_negate prop_negate
+    , testPropertyDZ "conj" prop_conj prop_conj
     ]
 
 
@@ -273,5 +274,10 @@ prop_scaleCols t a =
     
 prop_negate t x =
     negateMatrix x === mapMatrix negate x
+  where
+    _ = typed t x
+
+prop_conj t x =
+    conjMatrix x === mapMatrix conj x
   where
     _ = typed t x

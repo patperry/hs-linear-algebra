@@ -62,6 +62,7 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "scaleColsTo (1)" prop_scaleColsTo1 prop_scaleColsTo1
     , testPropertyDZ "scaleColsTo (2)" prop_scaleColsTo2 prop_scaleColsTo2
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
+    , testPropertyDZ "conjTo" prop_conjTo prop_conjTo
     ]
     
     
@@ -252,6 +253,8 @@ prop_scaleColsTo2 t (MatrixPair a b) =
     _ = typed t a
 
 prop_negateTo t = binaryProp t negateMatrix negateToMatrix
+
+prop_conjTo t = binaryProp t conjMatrix conjToMatrix
 
 
 binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)

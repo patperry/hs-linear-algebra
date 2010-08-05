@@ -62,15 +62,28 @@ module Numeric.LinearAlgebra.Matrix.ST (
     scaleRowsToMatrix,
     scaleColsToMatrix,
     negateToMatrix,
+    conjToMatrix,
 
     -- * Linear algebra
+    transToMatrix,
+    conjTransToMatrix,
     rank1UpdateToMatrix,
+    
+    -- ** Matrix-Vector multiplication
+    mulMatrixToVector,
+    mulMatrixToVectorWithScale,
+    mulMatrixAddToVector,
+    mulMatrixAddToVectorWithScales,
+    
+    -- ** Matrix-Matrix multiplication
+    mulMatrixToMatrix,
+    mulMatrixToMatrixWithScale,
+    mulMatrixAddToMatrix,
+    mulMatrixAddToMatrixWithScales,
 
     -- * Conversions between mutable and immutable matrices
     freezeMatrix,
-    unsafeFreezeMatrix,
     thawMatrix,
-    unsafeThawMatrix,
     
     -- * Matrix views of arrays and vectors
     matrixViewArray,

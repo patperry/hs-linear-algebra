@@ -47,10 +47,9 @@ instance HasVectorView Matrix where
 
 -- | A safe way to create and work with a mutable matrix before returning 
 -- an immutable matrix for later perusal. This function avoids copying
--- the matrix before returning it - it uses 'unsafeFreezeMatrix' internally,
--- but this wrapper is a safe interface to that function. 
+-- the matrix before returning it. 
 runMatrix :: (forall s . ST s (STMatrix s e)) -> Matrix e
-runMatrix mx = runST $ mx >>= unsafeFreezeMatrix
+runMatrix mx = runST $ mx >>= return . Matrix . unsafeCoerce
 {-# INLINE runMatrix #-}
 
 -- | Converts a mutable matrix to an immutable one by taking a complete
@@ -59,34 +58,11 @@ freezeMatrix :: (Storable e) => STMatrix s e -> ST s (Matrix e)
 freezeMatrix = fmap Matrix . unsafeCoerce . newCopyMatrix
 {-# INLINE freezeMatrix #-}
 
--- | Converts a mutable matrix into an immutable matrix. This simply casts
--- the matrix from one type to the other without copying the matrix.
---
--- Note that because the matrix is possibly not copied, any subsequent
--- modifications made to the mutable version of the matrix may be shared with
--- the immutable version. It is safe to use, therefore, if the mutable
--- version is never modified after the freeze operation.
-unsafeFreezeMatrix :: STMatrix s e -> ST s (Matrix e)
-unsafeFreezeMatrix = return . Matrix . unsafeCoerce
-{-# INLINE unsafeFreezeMatrix #-}
-
 -- | Converts an immutable matrix to a mutable one by taking a complete
 -- copy of it.
 thawMatrix :: (Storable e) => Matrix e -> ST s (STMatrix s e)
 thawMatrix = newCopyMatrix
 {-# INLINE thawMatrix #-}
-
--- | Converts an immutable matrix into a mutable matrix. This simply casts
--- the matrix from one type to the other without copying the matrix.
---
--- Note that because the matrix is possibly not copied, any subsequent
--- modifications made to the mutable version of the matrix may be shared with
--- the immutable version. It is only safe to use, therefore, if the immutable
--- matrix is never referenced again in this thread, and there is no
--- possibility that it can be also referenced in another thread.
-unsafeThawMatrix :: Matrix e -> ST s (STMatrix s e)
-unsafeThawMatrix = return . unsafeCoerce . unMatrix
-{-# INLINE unsafeThawMatrix #-}
 
 -- | Create a matrix with the given dimension and elements.  The elements
 -- given in the association list must all have unique indices, otherwise
@@ -329,6 +305,10 @@ scaleColsMatrix s = resultMatrix $ scaleColsToMatrix s
 -- | @negateMatrix a@ returns @-a@.
 negateMatrix :: (VNum e) => Matrix e -> Matrix e
 negateMatrix = resultMatrix negateToMatrix
+
+-- | @conjMatrix a@ returns @conj(a)@.
+conjMatrix :: (VNum e) => Matrix e -> Matrix e
+conjMatrix = resultMatrix conjToMatrix
 
 
 compareMatrixWith :: (Storable e, Storable e')

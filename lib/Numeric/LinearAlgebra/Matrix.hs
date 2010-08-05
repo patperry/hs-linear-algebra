@@ -56,6 +56,7 @@ module Numeric.LinearAlgebra.Matrix (
     scaleRowsMatrix,
     scaleColsMatrix,
     negateMatrix,
+    conjMatrix,
 
     ) where
 
