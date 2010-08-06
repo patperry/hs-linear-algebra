@@ -76,7 +76,7 @@ import Data.Maybe( fromJust )
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-
+import Numeric.LinearAlgebra.Types( Trans(..) )
 import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, sliceVector )
 import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
@@ -357,7 +357,8 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
             z <- matrix (dimMatrix x)
             return $ MatrixTriple x y z
 
-
+instance Arbitrary Trans where
+    arbitrary = elements [ NoTrans, ConjTrans ]
 {-
 
 -- | Generate a triangular dense matrix.

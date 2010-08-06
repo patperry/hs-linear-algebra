@@ -10,6 +10,7 @@
 --
 
 module Numeric.LinearAlgebra (
+    module Numeric.LinearAlgebra.Types,
     module Numeric.LinearAlgebra.Elem,
     module Numeric.LinearAlgebra.Vector,
     module Numeric.LinearAlgebra.Vector.ST,
@@ -17,6 +18,7 @@ module Numeric.LinearAlgebra (
     module Numeric.LinearAlgebra.Matrix.ST,
     ) where
 
+import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Elem
 import Numeric.LinearAlgebra.Vector
 import Numeric.LinearAlgebra.Vector.ST hiding ( dimVector, indicesVector,

@@ -11,9 +11,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Numeric.LinearAlgebra.Elem
-import Numeric.LinearAlgebra.Vector
-import Numeric.LinearAlgebra.Matrix
+import Numeric.LinearAlgebra
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim2(..), Index2(..),
     Assocs2(..), MatrixPair(..) )
@@ -54,6 +52,18 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
     , testPropertyDZ "negate" prop_negate prop_negate
     , testPropertyDZ "conj" prop_conj prop_conj
+    , testPropertyDZ "trans" prop_trans prop_trans
+    , testPropertyDZ "conjTrans" prop_conjTrans prop_conjTrans
+    , testPropertyDZ "rank1Update" prop_rank1Update prop_rank1Update
+    , testPropertyDZ "mulMatrixVector" prop_mulMatrixVector prop_mulMatrixVector
+    , testPropertyDZ "mulMatrixVectorWithScale" prop_mulMatrixVectorWithScale prop_mulMatrixVectorWithScale
+    , testPropertyDZ "mulMatrixAddVector" prop_mulMatrixAddVector prop_mulMatrixAddVector
+    , testPropertyDZ "mulMatrixAddVectorWithScales" prop_mulMatrixAddVectorWithScales prop_mulMatrixAddVectorWithScales    
+    , testPropertyDZ "mulMatrixMatrix" prop_mulMatrixMatrix prop_mulMatrixMatrix
+    , testPropertyDZ "mulMatrixMatrixWithScale" prop_mulMatrixMatrixWithScale prop_mulMatrixMatrixWithScale
+    , testPropertyDZ "mulMatrixAddMatrix" prop_mulMatrixAddMatrix prop_mulMatrixAddMatrix
+    , testPropertyDZ "mulMatrixAddMatrixWithScales" prop_mulMatrixAddMatrixWithScales prop_mulMatrixAddMatrixWithScales    
+
     ]
 
 
@@ -281,3 +291,156 @@ prop_conj t x =
     conjMatrix x === mapMatrix conj x
   where
     _ = typed t x
+
+
+-------------------------- Linear Algebra --------------------------
+
+prop_trans t a =
+    transMatrix a
+        ===
+        matrix (swap $ dimMatrix a) [ (swap ij, e) | (ij,e) <- assocsMatrix a ]
+  where
+    swap (i,j) = (j,i)
+    _ = typed t a
+    
+prop_conjTrans t a =
+    conjTransMatrix a === conjMatrix (transMatrix a)
+  where
+    _ = typed t a
+
+prop_rank1Update t alpha a =
+    forAll (Test.vector m) $ \x ->
+    forAll (Test.vector n) $ \y -> let y' = conjVector y in
+        rank1UpdateMatrix alpha x y a
+            ~==
+            matrix (m,n) [ ((i,j), alpha * atVector x i * atVector y' j + e)
+                         | ((i,j),e) <- assocsMatrix a
+                         ]
+  where
+    (m,n)= dimMatrix a
+    _ = typed t a
+
+data MulMatrixAddVector e =
+    MulMatrixAddVector Trans (Matrix e) (Vector e) (Vector e) deriving (Show)
+    
+instance (Storable e, Arbitrary e) => Arbitrary (MulMatrixAddVector e) where
+    arbitrary = do
+        transa <- arbitrary
+        a <- arbitrary
+        let (ma,na) = dimMatrix a
+            (m,n) = case transa of NoTrans -> (ma,na)
+                                   _       -> (na,ma)
+        x <- Test.vector n
+        y <- Test.vector m
+        return $ MulMatrixAddVector transa a x y
+        
+data MulMatrixVector e =
+    MulMatrixVector Trans (Matrix e) (Vector e) deriving (Show)
+instance (Storable e, Arbitrary e) => Arbitrary (MulMatrixVector e) where
+    arbitrary = do
+        (MulMatrixAddVector transa a x _) <- arbitrary
+        return $ MulMatrixVector transa a x
+        
+prop_mulMatrixVector t (MulMatrixVector transa a x) =
+    mulMatrixVector transa a x
+        ~==
+        case transa of
+            NoTrans   -> listVector (fst $ dimMatrix a)
+                                    [ dotVector x (conjVector r)
+                                    | r <- rowsMatrix a ]
+                                    
+            ConjTrans -> listVector (snd $ dimMatrix a)
+                                    [ dotVector x c
+                                    | c <- colsMatrix a ]
+  where
+    _ = typed t a
+
+prop_mulMatrixVectorWithScale t alpha (MulMatrixVector transa a x) =
+    mulMatrixVectorWithScale alpha transa a x
+        ~==
+        mulMatrixVector transa a (scaleVector alpha x)
+  where
+    _ = typed t a
+
+prop_mulMatrixAddVector t (MulMatrixAddVector transa a x y) =
+    mulMatrixAddVector transa a x y
+        ~==
+        addVector (mulMatrixVector transa a x) y
+  where
+    _ = typed t a
+
+prop_mulMatrixAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
+    mulMatrixAddVectorWithScales alpha transa a x beta y
+        ~==
+        addVector (mulMatrixVectorWithScale alpha transa a x)
+                  (scaleVector beta y)
+  where
+    _ = typed t a
+
+data MulMatrixAddMatrix e =
+    MulMatrixAddMatrix Trans (Matrix e) Trans (Matrix e) (Matrix e) deriving (Show)
+    
+instance (Storable e, Arbitrary e) => Arbitrary (MulMatrixAddMatrix e) where
+    arbitrary = do
+        transa <- arbitrary
+        transb <- arbitrary
+        c <- arbitrary
+        k <- fst `fmap` Test.dim2
+        
+        let (m,n) = dimMatrix c
+            (ma,na) = case transa of NoTrans -> (m,k)
+                                     _       -> (k,m)
+            (mb,nb) = case transb of NoTrans -> (k,n)
+                                     _       -> (n,k)
+        a <- Test.matrix (ma,na)
+        b <- Test.matrix (mb,nb)
+        
+        return $ MulMatrixAddMatrix transa a transb b c
+
+data MulMatrixMatrix e =
+    MulMatrixMatrix Trans (Matrix e) Trans (Matrix e) deriving (Show)
+instance (Storable e, Arbitrary e) => Arbitrary (MulMatrixMatrix e) where
+    arbitrary = do
+        (MulMatrixAddMatrix transa a transb b _) <- arbitrary
+        return $ MulMatrixMatrix transa a transb b
+
+prop_mulMatrixMatrix t (MulMatrixMatrix transa a transb b) =
+    mulMatrixMatrix transa a transb b
+        ~==
+        colListMatrix (m,n) [ mulMatrixVector transa a x | x <- colsMatrix b' ]
+  where
+    m = case transa of NoTrans -> (fst $ dimMatrix a)
+                       _       -> (snd $ dimMatrix a)
+    n = case transb of NoTrans -> (snd $ dimMatrix b)
+                       _       -> (fst $ dimMatrix b)
+    b' = case transb of NoTrans -> b
+                        _       -> conjTransMatrix b
+    _ = typed t a
+
+prop_mulMatrixMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
+    mulMatrixMatrixWithScale alpha transa a transb b
+        ~==
+        scaleMatrix alpha (mulMatrixMatrix transa a transb b)
+  where
+    _ = typed t a
+
+prop_mulMatrixAddMatrix t (MulMatrixAddMatrix transa a transb b c) =
+    mulMatrixAddMatrix transa a transb b c
+        ~==
+        addMatrix (mulMatrixMatrix transa a transb b) c
+  where
+    _ = typed t a
+
+prop_mulMatrixAddMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
+    mulMatrixAddMatrixWithScales alpha transa a transb b beta c
+        ~==
+        addMatrixWithScale alpha (mulMatrixMatrix transa a transb b)
+                           beta c
+  where
+    _ = typed t a
+
+
+
+testAEq a b =
+    if a ~== b then True
+               else trace ("expected: " ++ show b ++ "\nactual: " ++ show a) False
