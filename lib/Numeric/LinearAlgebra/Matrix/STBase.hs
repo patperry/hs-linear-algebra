@@ -673,7 +673,7 @@ mulMatrixAddToVectorWithScales alpha transa a x beta y y'
                   ] = error $
         printf ("mulMatrixAddToVectorWithScales _"
                 ++ " %s <matrix with dim (%d,%d)>" 
-                ++ " %s <vector with dim %d>"
+                ++ " <vector with dim %d>"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>: dimension mismatch")
