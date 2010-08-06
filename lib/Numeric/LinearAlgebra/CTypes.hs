@@ -76,8 +76,8 @@ nonUnit = CBLASDiag 131
 unit    = CBLASDiag 132
 
 cblasDiag :: Diag -> CBLASDiag
-cblasDiag NonUnit = CBLASDiag 131
-cblasDiag Unit    = CBLASDiag 132
+cblasDiag NonUnitDiag = CBLASDiag 131
+cblasDiag UnitDiag    = CBLASDiag 132
 
 leftSide, rightSide :: CBLASSide
 leftSide  = CBLASSide 141
