@@ -31,7 +31,6 @@ module Numeric.LinearAlgebra.CTypes (
     leftSide,
     rightSide,
 
-    cblasOrder,
     cblasTrans,
     cblasUpLo,
     cblasDiag,
@@ -49,10 +48,6 @@ newtype CBLASSide  = CBLASSide  Int deriving (Eq, Show)
 rowMajor, colMajor :: CBLASOrder
 rowMajor = CBLASOrder 101
 colMajor = CBLASOrder 102
-
-cblasOrder :: Order -> CBLASOrder
-cblasOrder RowMajor = CBLASOrder 101
-cblasOrder ColMajor = CBLASOrder 102
 
 noTrans, trans, conjTrans :: CBLASTrans
 noTrans   = CBLASTrans 111

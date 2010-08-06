@@ -11,9 +11,6 @@
 module Numeric.LinearAlgebra.Types (
     HasVectorView(..),
 
-    Order(..),
-    flipOrder,
-
     Trans(..),
     isNoTrans,
     isConjTrans,
@@ -39,14 +36,6 @@ module Numeric.LinearAlgebra.Types (
 -- | Types that can be viewed as vectors.
 class HasVectorView (a :: * -> *) where
     type VectorView a :: * -> *
-
--- | Matrix element storage order.
-data Order = RowMajor | ColMajor deriving (Eq, Show)
-
--- | Exchange @RowMajor@ and @ColMajor@.
-flipOrder :: Order -> Order
-flipOrder RowMajor = ColMajor
-flipOrder ColMajor = RowMajor
 
 -- | Transpose type.
 data Trans = NoTrans | ConjTrans deriving (Eq, Show)
