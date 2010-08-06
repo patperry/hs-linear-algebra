@@ -1,0 +1,106 @@
+{-# OPTIONS_HADDOCK hide #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module     : Numeric.LinearAlgebra.Types.Enums
+-- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
+-- License    : BSD3
+-- Maintainer : Patrick Perry <patperry@gmail.com>
+-- Stability  : experimental
+--
+
+module Numeric.LinearAlgebra.Types.Enums (
+    Trans(..),
+    isNoTrans,
+    isConjTrans,
+    flipTrans,
+
+    Uplo(..),
+    isLower,
+    isUpper,
+    flipUplo,
+
+    Diag(..),
+    isUnitDiag,
+    isNonUnitDiag,
+    flipDiag,
+
+    Side(..),
+    isLeftSide,
+    isRightSide,
+    flipSide,
+    ) where
+
+-- | Transpose type.
+data Trans = NoTrans | ConjTrans deriving (Eq, Show)
+
+-- | Indicates if the value is @NoTrans@.
+isNoTrans :: Trans -> Bool
+isNoTrans NoTrans = True
+isNoTrans _       = False
+
+-- | Indicates if the value is @ConjTrans@.
+isConjTrans :: Trans -> Bool
+isConjTrans ConjTrans = True
+isConjTrans _         = False
+
+-- | Exchange @NoTrans@ and @ConjTrans@.
+flipTrans :: Trans -> Trans
+flipTrans NoTrans = ConjTrans
+flipTrans ConjTrans = NoTrans
+
+
+-- | Lower or upper triangular storage.
+data Uplo = Upper | Lower deriving (Eq, Show)
+
+-- | Indicates if the value is @Lower@.
+isLower :: Uplo -> Bool
+isLower Lower = True
+isLower _     = False
+
+-- | Indicates if the value is @Upper@.
+isUpper :: Uplo -> Bool
+isUpper Upper = True
+isUpper _     = False
+
+-- | Exchange @Upper@ and @Lower@.
+flipUplo :: Uplo -> Uplo
+flipUplo Upper = Lower
+flipUplo Lower = Upper
+
+
+-- | Diagonal storage.
+data Diag = UnitDiag | NonUnitDiag deriving (Eq, Show)
+
+-- | Indicates if the value is @UnitDiag@.
+isUnitDiag :: Diag -> Bool
+isUnitDiag UnitDiag = True
+isUnitDiag _        = False
+
+-- | Indicates if the value is @NonUnitDiag@.
+isNonUnitDiag :: Diag -> Bool
+isNonUnitDiag NonUnitDiag = True
+isNonUnitDiag _           = False
+
+-- | Exchange @UnitDiag@ and @NonUnitDiag@.
+flipDiag :: Diag -> Diag
+flipDiag UnitDiag    = NonUnitDiag
+flipDiag NonUnitDiag = UnitDiag
+
+
+-- | Multiplication side.
+data Side = LeftSide | RightSide deriving (Eq, Show)
+
+-- | Indicates if the value is @LeftSide@.
+isLeftSide :: Side -> Bool
+isLeftSide LeftSide = True
+isLeftSide _        = False
+
+-- | Indicates if the value is @RightSide@.
+isRightSide :: Side -> Bool
+isRightSide RightSide = True
+isRightSide _         = False
+
+-- | Exchange @LeftSide@ and @RigthSide@.
+flipSide :: Side -> Side
+flipSide LeftSide  = RightSide
+flipSide RightSide = LeftSide

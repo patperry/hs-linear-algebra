@@ -18,11 +18,8 @@ import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff )
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Elem
-import qualified Numeric.LinearAlgebra.Elem.BLAS1 as BLAS
-import qualified Numeric.LinearAlgebra.Elem.BLAS2 as BLAS
-import qualified Numeric.LinearAlgebra.Elem.BLAS3 as BLAS
-import Numeric.LinearAlgebra.Types( HasVectorView(..), Trans(..) )
+import Numeric.LinearAlgebra.Types
+import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
 import Numeric.LinearAlgebra.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:

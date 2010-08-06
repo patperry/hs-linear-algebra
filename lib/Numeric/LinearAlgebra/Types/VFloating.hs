@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.VFloating
+-- Module     : Numeric.LinearAlgebra.Types.VFloating
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,16 +10,16 @@
 -- Vector operations.
 --
 
-module Numeric.LinearAlgebra.Elem.VFloating (
+module Numeric.LinearAlgebra.Types.VFloating (
     VFloating(..)
     ) where
      
 import Foreign( Ptr, Storable, peek, poke, advancePtr )
 import Data.Complex( Complex(..) )
 
-import Numeric.LinearAlgebra.Elem.VFractional
-import Numeric.LinearAlgebra.Elem.Double  
-import Numeric.LinearAlgebra.Elem.Zomplex
+import Numeric.LinearAlgebra.Types.VFractional
+import Numeric.LinearAlgebra.Types.Double  
+import Numeric.LinearAlgebra.Types.Zomplex
 
 -- | Types with vectorized 'Floating' operations.
 class (VFractional a, Floating a) => VFloating a where

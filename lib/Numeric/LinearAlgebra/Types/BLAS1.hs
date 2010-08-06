@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.BLAS1
+-- Module     : Numeric.LinearAlgebra.Types.BLAS1
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,15 +10,15 @@
 -- Vector operations.
 --
 
-module Numeric.LinearAlgebra.Elem.BLAS1
+module Numeric.LinearAlgebra.Types.BLAS1
     where
      
 import Foreign( Storable, Ptr, peek, with )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
-import Numeric.LinearAlgebra.Elem.Double  
-import Numeric.LinearAlgebra.Elem.Zomplex
+import Numeric.LinearAlgebra.Types.Double  
+import Numeric.LinearAlgebra.Types.Zomplex
         
 -- | Types with vector-vector operations.
 class (Storable a, Fractional a) => BLAS1 a where

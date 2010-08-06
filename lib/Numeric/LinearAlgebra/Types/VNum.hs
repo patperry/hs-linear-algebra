@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, BangPatterns #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.VNum
+-- Module     : Numeric.LinearAlgebra.Types.VNum
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,15 +10,15 @@
 -- Vector operations.
 --
 
-module Numeric.LinearAlgebra.Elem.VNum
+module Numeric.LinearAlgebra.Types.VNum
     where
      
 import Foreign( Storable, Ptr, with, peek, advancePtr )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
-import Numeric.LinearAlgebra.Elem.Double  
-import Numeric.LinearAlgebra.Elem.Zomplex
+import Numeric.LinearAlgebra.Types.Double  
+import Numeric.LinearAlgebra.Types.Zomplex
         
 -- | Types with vectorized 'Num' operations.
 class (Storable a, Num a) => VNum a where

@@ -2,19 +2,19 @@
 {-# CFILES cbits/BLAS-double.c cbits/vectorOps-double.c #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.Zomplex
+-- Module     : Numeric.LinearAlgebra.Types.Zomplex
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module Numeric.LinearAlgebra.Elem.Zomplex
+module Numeric.LinearAlgebra.Types.Zomplex
     where
         
 import Data.Complex ( Complex )
 import Foreign.Ptr  ( Ptr )
-import Numeric.LinearAlgebra.CTypes
+import Numeric.LinearAlgebra.Types.CEnums
 
 foreign import ccall unsafe "vectorOps.h zVectorConj"
     vzConj :: Int -> Ptr (Complex Double) -> Ptr (Complex Double) -> IO ()

@@ -7,107 +7,43 @@
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
+-- Basic type classes and enums.
+--
 
 module Numeric.LinearAlgebra.Types (
+
+    -- * Vector math types
+    VNum,
+    VFractional,
+    VFloating,
+
+    -- * BLAS element types
+    BLAS1,
+    BLAS2,
+    BLAS3,
+    
+    -- * Matrix types
     HasVectorView(..),
 
-    Trans(..),
-    isNoTrans,
-    isConjTrans,
-    flipTrans,
+    -- * Enums
+    module Numeric.LinearAlgebra.Types.Enums,
 
-    Uplo(..),
-    isLower,
-    isUpper,
-    flipUplo,
+    -- * Re-export of Complex from Data.Complex
+    module Data.Complex,
 
-    Diag(..),
-    isUnitDiag,
-    isNonUnitDiag,
-    flipDiag,
-
-    Side(..),
-    isLeftSide,
-    isRightSide,
-    flipSide,
+    -- * Re-export of Storable from Foreign.Storable
+    module Foreign.Storable,
         
     ) where
+
+import Numeric.LinearAlgebra.Types.Enums
+import Numeric.LinearAlgebra.Types.VMath( VNum, VFractional, VFloating )
+import Numeric.LinearAlgebra.Types.BLAS( BLAS1, BLAS2, BLAS3 )
+import Data.Complex( Complex(..) )
+import Foreign.Storable( Storable() )
+
 
 -- | Types that can be viewed as vectors.
 class HasVectorView (a :: * -> *) where
     type VectorView a :: * -> *
 
--- | Transpose type.
-data Trans = NoTrans | ConjTrans deriving (Eq, Show)
-
--- | Indicates if the value is @NoTrans@.
-isNoTrans :: Trans -> Bool
-isNoTrans NoTrans = True
-isNoTrans _       = False
-
--- | Indicates if the value is @ConjTrans@.
-isConjTrans :: Trans -> Bool
-isConjTrans ConjTrans = True
-isConjTrans _         = False
-
--- | Exchange @NoTrans@ and @ConjTrans@.
-flipTrans :: Trans -> Trans
-flipTrans NoTrans = ConjTrans
-flipTrans ConjTrans = NoTrans
-
-
--- | Lower or upper triangular storage.
-data Uplo = Upper | Lower deriving (Eq, Show)
-
--- | Indicates if the value is @Lower@.
-isLower :: Uplo -> Bool
-isLower Lower = True
-isLower _     = False
-
--- | Indicates if the value is @Upper@.
-isUpper :: Uplo -> Bool
-isUpper Upper = True
-isUpper _     = False
-
--- | Exchange @Upper@ and @Lower@.
-flipUplo :: Uplo -> Uplo
-flipUplo Upper = Lower
-flipUplo Lower = Upper
-
-
--- | Diagonal storage.
-data Diag = UnitDiag | NonUnitDiag deriving (Eq, Show)
-
--- | Indicates if the value is @UnitDiag@.
-isUnitDiag :: Diag -> Bool
-isUnitDiag UnitDiag = True
-isUnitDiag _        = False
-
--- | Indicates if the value is @NonUnitDiag@.
-isNonUnitDiag :: Diag -> Bool
-isNonUnitDiag NonUnitDiag = True
-isNonUnitDiag _           = False
-
--- | Exchange @UnitDiag@ and @NonUnitDiag@.
-flipDiag :: Diag -> Diag
-flipDiag UnitDiag    = NonUnitDiag
-flipDiag NonUnitDiag = UnitDiag
-
-
--- | Multiplication side.
-data Side = LeftSide | RightSide deriving (Eq, Show)
-
--- | Indicates if the value is @LeftSide@.
-isLeftSide :: Side -> Bool
-isLeftSide LeftSide = True
-isLeftSide _        = False
-
--- | Indicates if the value is @RightSide@.
-isRightSide :: Side -> Bool
-isRightSide RightSide = True
-isRightSide _         = False
-
--- | Exchange @LeftSide@ and @RigthSide@.
-flipSide :: Side -> Side
-flipSide LeftSide  = RightSide
-flipSide RightSide = LeftSide

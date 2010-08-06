@@ -1,14 +1,14 @@
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.CTypes
+-- Module     : Numeric.LinearAlgebra.Types.CEnums
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module Numeric.LinearAlgebra.CTypes (
+module Numeric.LinearAlgebra.Types.CEnums (
     CBLASOrder,
     CBLASTrans,
     CBLASUplo,
@@ -37,7 +37,7 @@ module Numeric.LinearAlgebra.CTypes (
     cblasSide,
     ) where
         
-import Numeric.LinearAlgebra.Types
+import Numeric.LinearAlgebra.Types.Enums
         
 newtype CBLASOrder = CBLASOrder Int deriving (Eq, Show)
 newtype CBLASTrans = CBLASTrans Int deriving (Eq, Show)

@@ -9,8 +9,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Numeric.LinearAlgebra.Elem
-import Numeric.LinearAlgebra.Vector
+import Numeric.LinearAlgebra
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim(..), Assocs(..),
     VectorPair(..) )

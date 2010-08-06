@@ -76,7 +76,7 @@ import Data.Maybe( fromJust )
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Numeric.LinearAlgebra.Types( Trans(..) )
+import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, sliceVector )
 import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
 -- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
@@ -87,7 +87,6 @@ import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix 
 --     diagViewBanded )
 -- import Data.Matrix.Herm
 -- import Data.Matrix.Tri
-import Numeric.LinearAlgebra.Elem
 
 instance Arbitrary (Complex Double) where
     arbitrary = do

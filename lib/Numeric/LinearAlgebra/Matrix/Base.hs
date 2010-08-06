@@ -21,7 +21,6 @@ import Foreign( peekElemOff )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
-import Numeric.LinearAlgebra.Elem
 import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 
 import Numeric.LinearAlgebra.Types

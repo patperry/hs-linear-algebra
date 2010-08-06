@@ -59,11 +59,9 @@ Library
     hs-source-dirs:     lib
     exposed-modules:    
                         Numeric.LinearAlgebra
-                        Numeric.LinearAlgebra.Elem
-                        Numeric.LinearAlgebra.Elem.BLAS                        
-                        Numeric.LinearAlgebra.Elem.VMath                        
-
                         Numeric.LinearAlgebra.Types
+                        Numeric.LinearAlgebra.Types.BLAS                        
+                        Numeric.LinearAlgebra.Types.VMath                        
 
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Herm                        
@@ -74,16 +72,17 @@ Library
                         Test.QuickCheck.LinearAlgebra
                         
     other-modules:      
-                        Numeric.LinearAlgebra.Elem.Double
-                        Numeric.LinearAlgebra.Elem.BLAS1
-                        Numeric.LinearAlgebra.Elem.BLAS2
-                        Numeric.LinearAlgebra.Elem.BLAS3
-                        Numeric.LinearAlgebra.Elem.VNum                        
-                        Numeric.LinearAlgebra.Elem.VFractional                        
-                        Numeric.LinearAlgebra.Elem.VFloating
-                        Numeric.LinearAlgebra.Elem.Zomplex
+                        Numeric.LinearAlgebra.Types.BLAS1
+                        Numeric.LinearAlgebra.Types.BLAS2
+                        Numeric.LinearAlgebra.Types.BLAS3
+                        Numeric.LinearAlgebra.Types.CEnums
+                        Numeric.LinearAlgebra.Types.Double
+                        Numeric.LinearAlgebra.Types.Enums
+                        Numeric.LinearAlgebra.Types.VNum                        
+                        Numeric.LinearAlgebra.Types.VFractional                        
+                        Numeric.LinearAlgebra.Types.VFloating
+                        Numeric.LinearAlgebra.Types.Zomplex
                         Numeric.LinearAlgebra.Internal
-                        Numeric.LinearAlgebra.CTypes
                         Numeric.LinearAlgebra.Matrix.Base
                         Numeric.LinearAlgebra.Matrix.STBase
                         Numeric.LinearAlgebra.Vector.Base

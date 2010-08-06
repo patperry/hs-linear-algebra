@@ -2,18 +2,18 @@
 {-# CFILES cbits/BLAS-double.c cbits/vectorOps-double.c #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.Double
+-- Module     : Numeric.LinearAlgebra.Types.Double
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
 
-module Numeric.LinearAlgebra.Elem.Double 
+module Numeric.LinearAlgebra.Types.Double 
     where
         
 import Foreign.Ptr ( Ptr )
-import Numeric.LinearAlgebra.CTypes
+import Numeric.LinearAlgebra.Types.CEnums
 
 ---------------------------- Vector Routines --------------------------------
 

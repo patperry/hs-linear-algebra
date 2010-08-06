@@ -103,11 +103,11 @@ import Data.Vector.Storable.Mutable( STVector )
 import qualified Data.Vector.Storable.Mutable as STVector
 
 import Numeric.LinearAlgebra.Internal( clearArray )
-import Numeric.LinearAlgebra.Elem( Complex, VNum, VFractional, VFloating, BLAS1 )
-import qualified Numeric.LinearAlgebra.Elem.BLAS as BLAS
-import qualified Numeric.LinearAlgebra.Elem.VNum as VNum
-import qualified Numeric.LinearAlgebra.Elem.VFractional as VFractional
-import qualified Numeric.LinearAlgebra.Elem.VFloating as VFloating
+import Numeric.LinearAlgebra.Types
+import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
+import qualified Numeric.LinearAlgebra.Types.VNum as VNum
+import qualified Numeric.LinearAlgebra.Types.VFractional as VFractional
+import qualified Numeric.LinearAlgebra.Types.VFloating as VFloating
 
 
 -- | Read-only vectors

@@ -93,7 +93,7 @@ import qualified Data.Vector.Storable.Mutable as STVector
 
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Elem
+import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector.STBase
 
 infixr 8 `powVector`

@@ -1,4 +1,3 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Numeric.LinearAlgebra.Matrix.Herm
@@ -17,6 +16,8 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     uploHerm,
     
     -- * Herm Matrix operations
+    copyToHermMatrix,
+    
     -- ** Immutable Matrix-Vector
     mulHermMatrixVector,
     mulHermMatrixVectorWithScale,
@@ -51,8 +52,7 @@ import Numeric.LinearAlgebra.Vector.STBase
 import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Elem.BLAS( BLAS2, BLAS3 )
-import qualified Numeric.LinearAlgebra.Elem.BLAS as BLAS
+import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
 
 -- | A hermitian view of an underlying matrix.  The view can either be
 -- of the upper or lower triangular part of the matrix.  The type arguments
@@ -72,6 +72,11 @@ withHerm f (Herm _ m) = f m
 uploHerm :: Herm m e -> Uplo
 uploHerm (Herm u _) = u
 
+copyToHermMatrix :: (Storable e, RMatrix m)
+                 => Herm m e
+                 -> Herm (STMatrix s) e
+                 -> ST s ()
+copyToHermMatrix = undefined
 
 -- | @mulHermMatrixVector a x@ returns @a * x@.
 mulHermMatrixVector :: (BLAS2 e)

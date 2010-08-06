@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Elem.VFractional
+-- Module     : Numeric.LinearAlgebra.Types.VFractional
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -10,15 +10,15 @@
 -- Vector operations.
 --
 
-module Numeric.LinearAlgebra.Elem.VFractional
+module Numeric.LinearAlgebra.Types.VFractional
     where
      
 import Foreign( Ptr )
 import Data.Complex( Complex(..) )
 
-import Numeric.LinearAlgebra.Elem.VNum
-import Numeric.LinearAlgebra.Elem.Double  
-import Numeric.LinearAlgebra.Elem.Zomplex
+import Numeric.LinearAlgebra.Types.VNum
+import Numeric.LinearAlgebra.Types.Double  
+import Numeric.LinearAlgebra.Types.Zomplex
         
 -- | Types with vectorized 'Fractional' operations.
 class (VNum a, Fractional a) => VFractional a where
