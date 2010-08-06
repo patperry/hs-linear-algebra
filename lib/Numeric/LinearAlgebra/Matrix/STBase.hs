@@ -22,7 +22,7 @@ import Numeric.LinearAlgebra.Elem
 import qualified Numeric.LinearAlgebra.Elem.BLAS1 as BLAS
 import qualified Numeric.LinearAlgebra.Elem.BLAS2 as BLAS
 import qualified Numeric.LinearAlgebra.Elem.BLAS3 as BLAS
-import Numeric.LinearAlgebra.Types( HasVectorView(..), TransEnum(..) )
+import Numeric.LinearAlgebra.Types( HasVectorView(..), Trans(..) )
 import Numeric.LinearAlgebra.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
@@ -620,7 +620,7 @@ conjTransToMatrix a a' = do
 -- | @mulMatrixToVectorWith transa a x y@
 -- sets @y := op(a) * x@, where @op(a)@ is determined by @transa@.                   
 mulMatrixToVector :: (RMatrix m, RVector v, BLAS2 e)
-                  => TransEnum -> m e
+                  => Trans -> m e
                   -> v e
                   -> STVector s e
                   -> ST s ()
@@ -630,7 +630,7 @@ mulMatrixToVector = mulMatrixToVectorWithScale 1
 -- sets @y := alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
 mulMatrixToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
                            => e
-                           -> TransEnum -> m e
+                           -> Trans -> m e
                            -> v e
                            -> STVector s e
                            -> ST s ()
@@ -640,7 +640,7 @@ mulMatrixToVectorWithScale alpha t a x y =
 -- | @mulMatrixAddToVector transa a x y y'@
 -- sets @y' := op(a) * x + y@, where @op(a)@ is determined by @transa@.                   
 mulMatrixAddToVector :: (RMatrix m, RVector v1, RVector v2, BLAS2 e)
-                     => TransEnum -> m e
+                     => Trans -> m e
                      -> v1 e
                      -> v2 e
                      -> STVector s e
@@ -653,7 +653,7 @@ mulMatrixAddToVector t a x y y' =
 -- determined by @transa@.
 mulMatrixAddToVectorWithScales :: (RMatrix m, RVector v1, RVector v2, BLAS2 e)
                                => e
-                               -> TransEnum -> m e
+                               -> Trans -> m e
                                -> v1 e
                                -> e
                                -> v2 e
@@ -694,8 +694,8 @@ mulMatrixAddToVectorWithScales alpha transa a x beta y y'
 -- sets @c := op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
 -- by @transa@ and @transb@.                   
 mulMatrixToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
-                  => TransEnum -> m1 e
-                  -> TransEnum -> m2 e
+                  => Trans -> m1 e
+                  -> Trans -> m2 e
                   -> STMatrix s e
                   -> ST s ()
 mulMatrixToMatrix = mulMatrixToMatrixWithScale 1
@@ -705,8 +705,8 @@ mulMatrixToMatrix = mulMatrixToMatrixWithScale 1
 -- by @transa@ and @transb@.                   
 mulMatrixToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
                            => e
-                           -> TransEnum -> m1 e
-                           -> TransEnum -> m2 e
+                           -> Trans -> m1 e
+                           -> Trans -> m2 e
                            -> STMatrix s e
                            -> ST s ()
 mulMatrixToMatrixWithScale alpha ta a tb b c =
@@ -717,8 +717,8 @@ mulMatrixToMatrixWithScale alpha ta a tb b c =
 -- sets @c' := op(a) * op(b) + c@, where @op(a)@ and @op(b)@ are determined
 -- by @transa@ and @transb@.                   
 mulMatrixAddToMatrix :: (RMatrix m1, RMatrix m2, RMatrix m3, BLAS3 e)
-                     => TransEnum -> m1 e
-                     -> TransEnum -> m2 e
+                     => Trans -> m1 e
+                     -> Trans -> m2 e
                      -> m3 e
                      -> STMatrix s e
                      -> ST s ()
@@ -730,8 +730,8 @@ mulMatrixAddToMatrix ta a tb b c c' =
 -- @op(b)@ are determined by @transa@ and @transb@.
 mulMatrixAddToMatrixWithScales :: (RMatrix m1, RMatrix m2, RMatrix m3, BLAS3 e)
                                => e
-                               -> TransEnum -> m1 e
-                               -> TransEnum -> m2 e
+                               -> Trans -> m1 e
+                               -> Trans -> m2 e
                                -> e
                                -> m3 e
                                -> STMatrix s e

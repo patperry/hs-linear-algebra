@@ -11,22 +11,19 @@
 module Numeric.LinearAlgebra.Types (
     HasVectorView(..),
 
-    OrderEnum(..),
+    Order(..),
     flipOrder,
 
-    TransEnum(..),
+    Trans(..),
     flipTrans,
 
-    UpLoEnum(..),
+    UpLo(..),
     flipUpLo,
 
-    DiagEnum(..),
+    Diag(..),
 
-    SideEnum(..),
+    Side(..),
     flipSide,
-
-    ConjEnum(..),
-    flipConj,
         
     ) where
 
@@ -35,44 +32,36 @@ class HasVectorView (a :: * -> *) where
     type VectorView a :: * -> *
 
 -- | Matrix element storage order.
-data OrderEnum = RowMajor | ColMajor deriving (Eq, Show)
+data Order = RowMajor | ColMajor deriving (Eq, Show)
 
 -- | Exchange @RowMajor@ and @ColMajor@.
-flipOrder :: OrderEnum -> OrderEnum
+flipOrder :: Order -> Order
 flipOrder RowMajor = ColMajor
 flipOrder ColMajor = RowMajor
 
 -- | Transpose type.
-data TransEnum = NoTrans | ConjTrans deriving (Eq, Show)
+data Trans = NoTrans | ConjTrans deriving (Eq, Show)
 
 -- | Exchange @NoTrans@ and @ConjTrans@.
-flipTrans :: TransEnum -> TransEnum
+flipTrans :: Trans -> Trans
 flipTrans NoTrans = ConjTrans
 flipTrans ConjTrans = NoTrans
 
 -- | Lower or upper triangular storage.
-data UpLoEnum = Upper | Lower deriving (Eq, Show)
+data UpLo = Upper | Lower deriving (Eq, Show)
 
 -- | Exchange @Upper@ and @Lower@.
-flipUpLo :: UpLoEnum -> UpLoEnum
+flipUpLo :: UpLo -> UpLo
 flipUpLo Upper = Lower
 flipUpLo Lower = Upper
 
 -- | Diagonal storage.
-data DiagEnum = Unit | NonUnit deriving (Eq, Show)
+data Diag = Unit | NonUnit deriving (Eq, Show)
 
 -- | Multiplication side.
-data SideEnum = LeftSide | RightSide deriving (Eq, Show)
+data Side = LeftSide | RightSide deriving (Eq, Show)
 
 -- | Exchange @LeftSide@ and @RigthSide@.
-flipSide :: SideEnum -> SideEnum
+flipSide :: Side -> Side
 flipSide LeftSide  = RightSide
 flipSide RightSide = LeftSide
-
--- | Vector conjugacy
-data ConjEnum = NoConj | Conj deriving (Eq, Show)
-
--- | Exchange @NoConj@ and @Conj@.
-flipConj :: ConjEnum -> ConjEnum
-flipConj NoConj = Conj
-flipConj Conj   = NoConj

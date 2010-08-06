@@ -24,15 +24,15 @@ import Numeric.LinearAlgebra.Elem.Zomplex
         
 -- | Types with matrix-matrix operations.        
 class (BLAS2 a) => BLAS3 a where
-    gemm  :: TransEnum -> TransEnum -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    symm  :: SideEnum -> UpLoEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hemm  :: SideEnum -> UpLoEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmm  :: SideEnum -> UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsm  :: SideEnum -> UpLoEnum -> TransEnum -> DiagEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    syrk  :: UpLoEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    syr2k :: UpLoEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    herk  :: UpLoEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    her2k :: UpLoEnum -> TransEnum -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gemm  :: Trans -> Trans -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    symm  :: Side -> UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hemm  :: Side -> UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    trmm  :: Side -> UpLo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsm  :: Side -> UpLo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    syrk  :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    syr2k :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    herk  :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    her2k :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     
     
 instance BLAS3 Double where
