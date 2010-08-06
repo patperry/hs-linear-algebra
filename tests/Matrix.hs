@@ -45,7 +45,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "shiftDiag" prop_shiftDiag prop_shiftDiag
     , testPropertyDZ "shiftDiagWithScale" prop_shiftDiagWithScale prop_shiftDiagWithScale
     , testPropertyDZ "add" prop_add prop_add
-    , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
+    , testPropertyDZ "addWithScales" prop_addWithScales prop_addWithScales
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
     , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
@@ -248,8 +248,8 @@ prop_add t (MatrixPair x y) =
   where
     _ = typed t x
 
-prop_addWithScale t a b (MatrixPair x y) =
-    addMatrixWithScale a x b y ~== 
+prop_addWithScales t a b (MatrixPair x y) =
+    addMatrixWithScales a x b y ~== 
         zipWithMatrix (+) (mapMatrix (a*) x) (mapMatrix (b*) y)
   where
     _ = typed t x
@@ -434,8 +434,8 @@ prop_mulMatrixAddMatrix t (MulMatrixAddMatrix transa a transb b c) =
 prop_mulMatrixAddMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
     mulMatrixAddMatrixWithScales alpha transa a transb b beta c
         ~==
-        addMatrixWithScale alpha (mulMatrixMatrix transa a transb b)
-                           beta c
+        addMatrixWithScales alpha (mulMatrixMatrix transa a transb b)
+                            beta c
   where
     _ = typed t a
 

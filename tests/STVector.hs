@@ -50,7 +50,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "kroneckerTo" prop_kroneckerTo prop_kroneckerTo
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
+    , testPropertyDZ "addToWithScales" prop_addToWithScales prop_addToWithScales
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
@@ -224,9 +224,9 @@ prop_shiftTo t e = binaryProp t
     
 prop_addTo t = ternaryProp t addVector addToVector
 
-prop_addToWithScale t e f = ternaryProp t
-    (\x y -> addVectorWithScale e x f y)
-    (\mx my mz -> addToVectorWithScale e mx f my mz)
+prop_addToWithScales t e f = ternaryProp t
+    (\x y -> addVectorWithScales e x f y)
+    (\mx my mz -> addToVectorWithScales e mx f my mz)
     
 prop_subTo t = ternaryProp t subVector subToVector
 

@@ -64,7 +64,7 @@ module Numeric.LinearAlgebra.Vector.STBase (
     
     shiftToVector,
     addToVector,
-    addToVectorWithScale,
+    addToVectorWithScales,
     subToVector,
     scaleToVector,
     mulToVector,
@@ -509,15 +509,15 @@ scaleToVector alpha = checkVectorOp2 "scaleToVector _" $
     vectorCall2 (flip VNum.vScale alpha)
 {-# INLINE scaleToVector #-}
 
--- | @addToVectorWithScale alpha x beta y z@ replaces @z@ with
+-- | @addToVectorWithScales alpha x beta y z@ replaces @z@ with
 -- @alpha * x + beta * y@.
-addToVectorWithScale :: (RVector v1, RVector v2, VNum e)
-                     => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
-addToVectorWithScale alpha x beta y z =
-    checkVectorOp3 "addToVectorWithScale"
+addToVectorWithScales :: (RVector v1, RVector v2, VNum e)
+                      => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
+addToVectorWithScales alpha x beta y z =
+    checkVectorOp3 "addToVectorWithScales"
         (vectorCall3 (\n v1 v2 v3 -> VNum.vAxpby n alpha v1 beta v2 v3))
         x y z
-{-# INLINE addToVectorWithScale #-}
+{-# INLINE addToVectorWithScales #-}
 
 -- | @addToVector x y z@ replaces @z@ with @x+y@.
 addToVector :: (RVector v1, RVector v2, VNum e)

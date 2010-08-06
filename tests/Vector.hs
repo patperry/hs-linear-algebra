@@ -42,7 +42,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "kronecker" prop_kronecker prop_kronecker
     , testPropertyDZ "shift" prop_shift prop_shift
     , testPropertyDZ "add" prop_add prop_add
-    , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
+    , testPropertyDZ "addWithScales" prop_addWithScales prop_addWithScales
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
     , testPropertyDZ "mul" prop_mul prop_mul
@@ -192,8 +192,8 @@ prop_add t (VectorPair x y) =
   where
     _ = typed t x
 
-prop_addWithScale t a b (VectorPair x y) =
-    addVectorWithScale a x b y ~== 
+prop_addWithScales t a b (VectorPair x y) =
+    addVectorWithScales a x b y ~== 
         zipWithVector (+) (mapVector (a*) x) (mapVector (b*) y)
   where
     _ = typed t x

@@ -53,7 +53,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     
     shiftVector,
     addVector,
-    addVectorWithScale,
+    addVectorWithScales,
     subVector,
     scaleVector,
     mulVector,
@@ -347,10 +347,10 @@ shiftVector k = resultVector $ shiftToVector k
 addVector :: (VNum e) => Vector e -> Vector e -> Vector e
 addVector = resultVector2 addToVector
 
--- | @addVectorWithScale a x b y@ returns @a*x + b*y@.
-addVectorWithScale :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
-addVectorWithScale a x b y =
-    (resultVector2 $ \x' y' -> addToVectorWithScale a x' b y') x y
+-- | @addVectorWithScales a x b y@ returns @a*x + b*y@.
+addVectorWithScales :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
+addVectorWithScales a x b y =
+    (resultVector2 $ \x' y' -> addToVectorWithScales a x' b y') x y
 
 -- | @subVector x y@ returns @x - y@.
 subVector :: (VNum e) => Vector e -> Vector e -> Vector e

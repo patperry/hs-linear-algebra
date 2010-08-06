@@ -56,7 +56,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     shiftDiagToMatrix,
     shiftDiagToMatrixWithScale,    
     addToMatrix,
-    addToMatrixWithScale,
+    addToMatrixWithScales,
     subToMatrix,
     scaleToMatrix,
     scaleRowsToMatrix,

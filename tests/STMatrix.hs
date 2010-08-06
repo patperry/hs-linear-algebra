@@ -54,7 +54,7 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "shiftDiagToWithScale (2)"
         prop_shiftDiagToWithScale2 prop_shiftDiagToWithScale2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addToWithScale" prop_addToWithScale prop_addToWithScale
+    , testPropertyDZ "addToWithScales" prop_addToWithScales prop_addToWithScales
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
@@ -204,9 +204,9 @@ prop_shiftDiagToWithScale2 t e (MatrixPair a b) =
 
 prop_addTo t = ternaryProp t addMatrix addToMatrix
 
-prop_addToWithScale t e f = ternaryProp t
-    (\x y -> addMatrixWithScale e x f y)
-    (\mx my mz -> addToMatrixWithScale e mx f my mz)
+prop_addToWithScales t e f = ternaryProp t
+    (\x y -> addMatrixWithScales e x f y)
+    (\mx my mz -> addToMatrixWithScales e mx f my mz)
     
 prop_subTo t = ternaryProp t subMatrix subToMatrix
 

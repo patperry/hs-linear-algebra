@@ -50,7 +50,7 @@ module Numeric.LinearAlgebra.Matrix (
     shiftDiagMatrix,
     shiftDiagMatrixWithScale,    
     addMatrix,
-    addMatrixWithScale,
+    addMatrixWithScales,
     subMatrix,
     scaleMatrix,
     scaleRowsMatrix,

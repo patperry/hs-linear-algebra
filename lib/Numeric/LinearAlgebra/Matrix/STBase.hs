@@ -502,11 +502,11 @@ addToMatrix :: (RMatrix m1, RMatrix m2, VNum e)
 addToMatrix = checkMatrixOp3 "addToMatrix" $ matrixVectorOp3 addToVector
 
 -- | Add two matrices with the given scales.
-addToMatrixWithScale :: (RMatrix m1, RMatrix m2, VNum e)
-                     => e -> m1 e -> e -> m2 e -> STMatrix s e -> ST s ()
-addToMatrixWithScale alpha a beta b c =
-    (checkMatrixOp3 "addToMatrixWithScale" $
-        matrixVectorOp3 (\x y z -> addToVectorWithScale alpha x beta y z))
+addToMatrixWithScales :: (RMatrix m1, RMatrix m2, VNum e)
+                      => e -> m1 e -> e -> m2 e -> STMatrix s e -> ST s ()
+addToMatrixWithScales alpha a beta b c =
+    (checkMatrixOp3 "addToMatrixWithScales" $
+        matrixVectorOp3 (\x y z -> addToVectorWithScales alpha x beta y z))
         a b c
 
 -- | Subtract two matrices.

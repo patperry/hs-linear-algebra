@@ -287,10 +287,10 @@ shiftDiagMatrixWithScale e s = resultMatrix $ shiftDiagToMatrixWithScale e s
 addMatrix :: (VNum e) => Matrix e -> Matrix e -> Matrix e
 addMatrix = resultMatrix2 addToMatrix
 
--- | @addMatrixWithScale alpha a beta b@ returns @alpha*a + beta*b@.
-addMatrixWithScale :: (VNum e) => e -> Matrix e -> e -> Matrix e -> Matrix e
-addMatrixWithScale alpha a beta b =
-    (resultMatrix2 $ \a' b' -> addToMatrixWithScale alpha a' beta b') a b
+-- | @addMatrixWithScales alpha a beta b@ returns @alpha*a + beta*b@.
+addMatrixWithScales :: (VNum e) => e -> Matrix e -> e -> Matrix e -> Matrix e
+addMatrixWithScales alpha a beta b =
+    (resultMatrix2 $ \a' b' -> addToMatrixWithScales alpha a' beta b') a b
 
 -- | @subMatrix a b@ returns @a - b@.
 subMatrix :: (VNum e) => Matrix e -> Matrix e -> Matrix e

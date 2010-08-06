@@ -59,7 +59,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- ** Num
     shiftToVector,
     addToVector,
-    addToVectorWithScale,
+    addToVectorWithScales,
     subToVector,
     scaleToVector,
     mulToVector,

@@ -50,7 +50,7 @@ module Numeric.LinearAlgebra.Vector (
     -- ** Num
     shiftVector,
     addVector,
-    addVectorWithScale,
+    addVectorWithScales,
     subVector,
     scaleVector,
     mulVector,
