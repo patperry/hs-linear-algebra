@@ -355,11 +355,13 @@ readMatrix a (i,j)
         unsafeReadMatrix a (i,j)
   where
     (m,n) = dimMatrix a
+{-# INLINE readMatrix #-}
 
 unsafeReadMatrix :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
 unsafeReadMatrix a (i,j) = unsafeIOToST $
     unsafeWithMatrix a $ \p lda ->
         peekElemOff p (i + j * lda)
+{-# INLINE unsafeReadMatrix #-}
 
 -- | Set the element stored at the given index.
 writeMatrix :: (Storable e)
@@ -372,12 +374,14 @@ writeMatrix a (i,j)
         unsafeWriteMatrix a (i,j)
   where
     (m,n) = dimMatrix a
+{-# INLINE writeMatrix #-}
 
 unsafeWriteMatrix :: (Storable e)
                   => STMatrix s e -> (Int,Int) -> e -> ST s ()
 unsafeWriteMatrix a (i,j) e = unsafeIOToST $
     unsafeWithMatrix a $ \p lda ->
         pokeElemOff p (i + j * lda) e
+{-# INLINE unsafeWriteMatrix #-}
 
 -- | Update the element stored at the given index.
 updateMatrix :: (Storable e)
@@ -390,6 +394,7 @@ updateMatrix a (i,j)
         unsafeUpdateMatrix a (i,j)
   where
     (m,n) = dimMatrix a
+{-# INLINE updateMatrix #-}
 
 unsafeUpdateMatrix :: (Storable e)
                    => STMatrix s e -> (Int,Int) -> (e -> e) -> ST s ()
