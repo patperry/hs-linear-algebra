@@ -316,6 +316,163 @@ negateMatrix = resultMatrix negateToMatrix
 conjMatrix :: (VNum e) => Matrix e -> Matrix e
 conjMatrix = resultMatrix conjToMatrix
 
+-- | @transMatrix a@ retunrs @trans(a)@.
+transMatrix :: (BLAS1 e)
+            => Matrix e
+            -> Matrix e
+transMatrix a = let
+    (m,n) = dimMatrix a
+    in runMatrix $ do
+        a' <- newMatrix_ (n,m)
+        transToMatrix a a'
+        return a'
+
+-- | @conjTransMatrix a@ retunrs @conj(trans(a))@.
+conjTransMatrix :: (BLAS1 e, VNum e)
+                => Matrix e
+                -> Matrix e
+conjTransMatrix a = let
+    (m,n) = dimMatrix a
+    in runMatrix $ do
+        a' <- newMatrix_ (n,m)
+        conjTransToMatrix a a'
+        return a'
+
+-- | @rank1UpdateMatrix alpha x y a@ returns @alpha * x * y^H + a@.
+rank1UpdateMatrix :: (BLAS2 e)
+                  => e
+                  -> Vector e
+                  -> Vector e
+                  -> Matrix e
+                  -> Matrix e
+rank1UpdateMatrix alpha x y a =
+    runMatrix $ do
+        a' <- newMatrix_ (dimMatrix a)
+        rank1UpdateToMatrix alpha x y a a'
+        return a'
+
+-- | @mulMatrixVector transa a x@
+-- returns @op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulMatrixVector :: (BLAS2 e)
+                => Trans -> Matrix e
+                -> Vector e
+                -> Vector e
+mulMatrixVector transa a x = let
+    m = case transa of NoTrans -> (fst . dimMatrix) a
+                       _       -> (snd . dimMatrix) a
+    in runVector $ do
+        y <- newVector_ m
+        mulMatrixToVector transa a x y
+        return y
+
+-- | @mulMatrixVectorWithScale alpha transa a x@
+-- retunrs @alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulMatrixVectorWithScale :: (BLAS2 e)
+                         => e
+                         -> Trans -> Matrix e
+                         -> Vector e
+                         -> Vector e
+mulMatrixVectorWithScale alpha transa a x = let
+    m = case transa of NoTrans -> (fst . dimMatrix) a
+                       _       -> (snd . dimMatrix) a
+    in runVector $ do
+        y <- newVector_ m
+        mulMatrixToVectorWithScale alpha transa a x y
+        return y
+                       
+-- | @mulMatrixAddVector transa a x y@
+-- returns @op(a) * x + y@, where @op(a)@ is determined by @transa@.                   
+mulMatrixAddVector :: (BLAS2 e)
+                   => Trans -> Matrix e
+                   -> Vector e
+                   -> Vector e
+                   -> Vector e
+mulMatrixAddVector transa a x y =
+    runVector $ do
+        y' <- newVector_ (dimVector y)
+        mulMatrixAddToVector transa a x y y'
+        return y'
+
+-- | @mulMatrixAddVectorWithScales alpha transa a x beta y@
+-- returns @alpha * op(a) * x + beta * y@, where @op(a)@ is
+-- determined by @transa@.
+mulMatrixAddVectorWithScales :: (BLAS2 e)
+                             => e
+                             -> Trans -> Matrix e
+                             -> Vector e
+                             -> e
+                             -> Vector e
+                             -> Vector e
+mulMatrixAddVectorWithScales alpha transa a x beta y =
+    runVector $ do
+        y' <- newVector_ (dimVector y)
+        mulMatrixAddToVectorWithScales alpha transa a x beta y y'
+        return y'
+
+-- | @mulMatrixMatrix transa a transb b@
+-- returns @op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixMatrix :: (BLAS3 e)
+                => Trans -> Matrix e
+                -> Trans -> Matrix e
+                -> Matrix e
+mulMatrixMatrix transa a transb b = let
+    m = case transa of NoTrans -> (fst . dimMatrix) a
+                       _       -> (snd . dimMatrix) a
+    n = case transb of NoTrans -> (snd . dimMatrix) b
+                       _       -> (fst . dimMatrix) b
+    in runMatrix $ do
+        c <- newMatrix_ (m,n)
+        mulMatrixToMatrix transa a transb b c
+        return c
+
+-- | @mulMatrixMatrixWithScale alpha transa a transb b@
+-- returns @alpha * op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixMatrixWithScale :: (BLAS3 e)
+                         => e
+                         -> Trans -> Matrix e
+                         -> Trans -> Matrix e
+                         -> Matrix e
+mulMatrixMatrixWithScale alpha transa a transb b = let
+    m = case transa of NoTrans -> (fst . dimMatrix) a
+                       _       -> (snd . dimMatrix) a
+    n = case transb of NoTrans -> (snd . dimMatrix) b
+                       _       -> (fst . dimMatrix) b
+    in runMatrix $ do
+        c <- newMatrix_ (m,n)
+        mulMatrixToMatrixWithScale alpha transa a transb b c
+        return c
+
+-- | @mulMatrixAddMatrix transa a transb b c@
+-- returns @op(a) * op(b) + c@, where @op(a)@ and @op(b)@ are determined
+-- by @transa@ and @transb@.                   
+mulMatrixAddMatrix :: (BLAS3 e)
+                   => Trans -> Matrix e
+                   -> Trans -> Matrix e
+                   -> Matrix e
+                   -> Matrix e
+mulMatrixAddMatrix transa a transb b c =
+    runMatrix $ do
+        c' <- newMatrix_ (dimMatrix c)
+        mulMatrixAddToMatrix transa a transb b c c'
+        return c'
+
+-- | @mulMatrixAddMatrixWithScales alpha transa a transb b beta c@
+-- returns @alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
+-- @op(b)@ are determined by @transa@ and @transb@.
+mulMatrixAddMatrixWithScales :: (BLAS3 e)
+                             => e
+                             -> Trans -> Matrix e
+                             -> Trans -> Matrix e
+                             -> e
+                             -> Matrix e
+                             -> Matrix e
+mulMatrixAddMatrixWithScales alpha transa a transb b beta c = 
+    runMatrix $ do
+        c' <- newMatrix_ (dimMatrix c)
+        mulMatrixAddToMatrixWithScales alpha transa a transb b beta c c'
+        return c'
 
 compareMatrixWith :: (Storable e, Storable e')
                   => (e -> e' -> Bool)

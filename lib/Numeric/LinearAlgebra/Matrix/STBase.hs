@@ -617,7 +617,7 @@ conjTransToMatrix a a' = do
     transToMatrix a a'
     conjToMatrix a' a'
 
--- | @mulMatrixToVectorWith transa a x y@
+-- | @mulMatrixToVector transa a x y@
 -- sets @y := op(a) * x@, where @op(a)@ is determined by @transa@.                   
 mulMatrixToVector :: (RMatrix m, RVector v, BLAS2 e)
                   => Trans -> m e
@@ -711,7 +711,6 @@ mulMatrixToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
                            -> ST s ()
 mulMatrixToMatrixWithScale alpha ta a tb b c =
     mulMatrixAddToMatrixWithScales alpha ta a tb b 0 c c
-
 
 -- | @mulMatrixAddToMatrix transa a transb b c c'@
 -- sets @c' := op(a) * op(b) + c@, where @op(a)@ and @op(b)@ are determined

@@ -58,6 +58,23 @@ module Numeric.LinearAlgebra.Matrix (
     negateMatrix,
     conjMatrix,
 
+    -- * Linear algebra
+    transMatrix,
+    conjTransMatrix,
+    rank1UpdateMatrix,
+    
+    -- ** Matrix-Vector multiplication
+    mulMatrixVector,
+    mulMatrixVectorWithScale,
+    mulMatrixAddVector,
+    mulMatrixAddVectorWithScales,
+    
+    -- ** Matrix-Matrix multiplication
+    mulMatrixMatrix,
+    mulMatrixMatrixWithScale,
+    mulMatrixAddMatrix,
+    mulMatrixAddMatrixWithScales,
+
     ) where
 
 import Numeric.LinearAlgebra.Matrix.Base
