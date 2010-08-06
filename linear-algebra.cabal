@@ -66,6 +66,7 @@ Library
                         Numeric.LinearAlgebra.Types
 
                         Numeric.LinearAlgebra.Matrix
+                        Numeric.LinearAlgebra.Matrix.Herm                        
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
