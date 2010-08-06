@@ -11,7 +11,7 @@
 module Numeric.LinearAlgebra.CTypes (
     CBLASOrder,
     CBLASTrans,
-    CBLASUpLo,
+    CBLASUplo,
     CBLASDiag,
     CBLASSide,
 
@@ -32,7 +32,7 @@ module Numeric.LinearAlgebra.CTypes (
     rightSide,
 
     cblasTrans,
-    cblasUpLo,
+    cblasUplo,
     cblasDiag,
     cblasSide,
     ) where
@@ -41,7 +41,7 @@ import Numeric.LinearAlgebra.Types
         
 newtype CBLASOrder = CBLASOrder Int deriving (Eq, Show)
 newtype CBLASTrans = CBLASTrans Int deriving (Eq, Show)
-newtype CBLASUpLo  = CBLASUpLo  Int deriving (Eq, Show)
+newtype CBLASUplo  = CBLASUplo  Int deriving (Eq, Show)
 newtype CBLASDiag  = CBLASDiag  Int deriving (Eq, Show)
 newtype CBLASSide  = CBLASSide  Int deriving (Eq, Show)
 
@@ -58,13 +58,13 @@ cblasTrans :: Trans -> CBLASTrans
 cblasTrans NoTrans   = CBLASTrans 111
 cblasTrans ConjTrans = CBLASTrans 113
 
-upper, lower :: CBLASUpLo
-upper = CBLASUpLo 121
-lower = CBLASUpLo 122
+upper, lower :: CBLASUplo
+upper = CBLASUplo 121
+lower = CBLASUplo 122
 
-cblasUpLo :: UpLo -> CBLASUpLo
-cblasUpLo Upper = CBLASUpLo 121
-cblasUpLo Lower = CBLASUpLo 122
+cblasUplo :: Uplo -> CBLASUplo
+cblasUplo Upper = CBLASUplo 121
+cblasUplo Lower = CBLASUplo 122
 
 nonUnit, unit :: CBLASDiag
 nonUnit = CBLASDiag 131

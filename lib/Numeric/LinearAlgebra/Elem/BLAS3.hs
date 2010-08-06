@@ -25,26 +25,26 @@ import Numeric.LinearAlgebra.Elem.Zomplex
 -- | Types with matrix-matrix operations.        
 class (BLAS2 a) => BLAS3 a where
     gemm  :: Trans -> Trans -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    symm  :: Side -> UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hemm  :: Side -> UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmm  :: Side -> UpLo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsm  :: Side -> UpLo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    syrk  :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    syr2k :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    herk  :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    her2k :: UpLo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    symm  :: Side -> Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hemm  :: Side -> Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    trmm  :: Side -> Uplo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsm  :: Side -> Uplo -> Trans -> Diag -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    syrk  :: Uplo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    syr2k :: Uplo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    herk  :: Uplo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    her2k :: Uplo -> Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     
     
 instance BLAS3 Double where
     gemm ta tb = dgemm (cblasTrans ta) (cblasTrans tb)
-    symm  s u = dsymm (cblasSide s) (cblasUpLo u) 
-    hemm  s u = dsymm (cblasSide s) (cblasUpLo u) 
-    trmm  s u t d = dtrmm (cblasSide s) (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    trsm  s u t d = dtrsm (cblasSide s) (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    syrk  u t = dsyrk  (cblasUpLo u) (cblasTrans t)
-    syr2k u t = dsyr2k (cblasUpLo u) (cblasTrans t)
-    herk  u t = dsyrk  (cblasUpLo u) (cblasTrans t)
-    her2k u t = dsyr2k (cblasUpLo u) (cblasTrans t)
+    symm  s u = dsymm (cblasSide s) (cblasUplo u) 
+    hemm  s u = dsymm (cblasSide s) (cblasUplo u) 
+    trmm  s u t d = dtrmm (cblasSide s) (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    trsm  s u t d = dtrsm (cblasSide s) (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    syrk  u t = dsyrk  (cblasUplo u) (cblasTrans t)
+    syr2k u t = dsyr2k (cblasUplo u) (cblasTrans t)
+    herk  u t = dsyrk  (cblasUplo u) (cblasTrans t)
+    her2k u t = dsyr2k (cblasUplo u) (cblasTrans t)
     
     
 instance BLAS3 (Complex Double) where
@@ -54,32 +54,32 @@ instance BLAS3 (Complex Double) where
     
     symm side uplo m n alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsymm (cblasSide side) (cblasUpLo uplo) m n pAlpha pA ldA pB ldB pBeta pC ldC
+            zsymm (cblasSide side) (cblasUplo uplo) m n pAlpha pA ldA pB ldB pBeta pC ldC
 
     hemm side uplo m n alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zhemm (cblasSide side) (cblasUpLo uplo) m n pAlpha pA ldA pB ldB pBeta pC ldC
+            zhemm (cblasSide side) (cblasUplo uplo) m n pAlpha pA ldA pB ldB pBeta pC ldC
     
     trmm side uplo transA diag m n alpha pA ldA pB ldB =
         with alpha $ \pAlpha -> 
-            ztrmm (cblasSide side) (cblasUpLo uplo) (cblasTrans transA) (cblasDiag diag) m n pAlpha pA ldA pB ldB
+            ztrmm (cblasSide side) (cblasUplo uplo) (cblasTrans transA) (cblasDiag diag) m n pAlpha pA ldA pB ldB
             
     trsm side uplo transA diag m n alpha pA ldA pB ldB =
         with alpha $ \pAlpha -> 
-            ztrsm (cblasSide side) (cblasUpLo uplo) (cblasTrans transA) (cblasDiag diag) m n pAlpha pA ldA pB ldB
+            ztrsm (cblasSide side) (cblasUplo uplo) (cblasTrans transA) (cblasDiag diag) m n pAlpha pA ldA pB ldB
             
     syrk uplo transA n k alpha pA ldA beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsyrk (cblasUpLo uplo) (cblasTrans transA) n k pAlpha pA ldA pBeta pC ldC
+            zsyrk (cblasUplo uplo) (cblasTrans transA) n k pAlpha pA ldA pBeta pC ldC
             
     syr2k uplo transA n k alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zsyr2k (cblasUpLo uplo) (cblasTrans transA) n k pAlpha pA ldA pB ldB pBeta pC ldC
+            zsyr2k (cblasUplo uplo) (cblasTrans transA) n k pAlpha pA ldA pB ldB pBeta pC ldC
 
     herk uplo transA n k alpha pA ldA beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zherk (cblasUpLo uplo) (cblasTrans transA) n k pAlpha pA ldA pBeta pC ldC
+            zherk (cblasUplo uplo) (cblasTrans transA) n k pAlpha pA ldA pBeta pC ldC
             
     her2k uplo transA n k alpha pA ldA pB ldB beta pC ldC =
         with alpha $ \pAlpha -> with beta $ \pBeta ->
-            zher2k (cblasUpLo uplo) (cblasTrans transA) n k pAlpha pA ldA pB ldB pBeta pC ldC
+            zher2k (cblasUplo uplo) (cblasTrans transA) n k pAlpha pA ldA pB ldB pBeta pC ldC

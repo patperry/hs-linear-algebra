@@ -26,30 +26,30 @@ import Numeric.LinearAlgebra.Elem.Zomplex
 class (BLAS1 a) => BLAS2 a where
     gemv :: Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: Trans -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmv :: UpLo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbmv :: UpLo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsv :: UpLo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbsv :: UpLo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    hemv :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hbmv :: UpLo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    trmv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbmv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbsv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    hemv :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hbmv :: Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gerc :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     geru :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    her  :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    her2 :: UpLo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    her  :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    her2 :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 instance BLAS2 Double where
     gemv t = dgemv (cblasTrans t)
     gbmv t = dgbmv (cblasTrans t)
-    trmv u t d = dtrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    tbmv u t d = dtbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    trsv u t d = dtrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    tbsv u t d = dtbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d)
-    hemv u = dsymv (cblasUpLo u)
-    hbmv u = dsbmv (cblasUpLo u)
+    trmv u t d = dtrmv (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    tbmv u t d = dtbmv (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    trsv u t d = dtrsv (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    tbsv u t d = dtbsv (cblasUplo u) (cblasTrans t) (cblasDiag d)
+    hemv u = dsymv (cblasUplo u)
+    hbmv u = dsbmv (cblasUplo u)
     gerc = dger
     geru = dger    
-    her  u = dsyr  (cblasUpLo u)
-    her2 u = dsyr2 (cblasUpLo u)
+    her  u = dsyr  (cblasUplo u)
+    her2 u = dsyr2 (cblasUplo u)
     
 instance BLAS2 (Complex Double) where
     gemv transA m n alpha pA ldA pX incX beta pY incY =
@@ -61,24 +61,24 @@ instance BLAS2 (Complex Double) where
              zgbmv (cblasTrans transA) m n kl ku pAlpha pA ldA pX incX pBeta pY incY
 
     trmv u t d n pA ldA pX incX =
-        ztrmv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
+        ztrmv (cblasUplo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
             
     tbmv u t d n k pA ldA pX incX =
-        ztbmv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n k pA ldA pX incX
+        ztbmv (cblasUplo u) (cblasTrans t) (cblasDiag d) n k pA ldA pX incX
 
     trsv u t d n pA ldA pX incX =
-        ztrsv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
+        ztrsv (cblasUplo u) (cblasTrans t) (cblasDiag d) n pA ldA pX incX
 
     tbsv u t d n k pA ldA pX incX =
-        ztbsv (cblasUpLo u) (cblasTrans t) (cblasDiag d) n k pA ldA pX incX
+        ztbsv (cblasUplo u) (cblasTrans t) (cblasDiag d) n k pA ldA pX incX
     
     hemv uplo n alpha pA ldA pX incX beta pY incY =
         with alpha $ \pAlpha -> with beta $ \pBeta -> 
-            zhemv (cblasUpLo uplo) n pAlpha pA ldA pX incX pBeta pY incY
+            zhemv (cblasUplo uplo) n pAlpha pA ldA pX incX pBeta pY incY
     
     hbmv uplo n k alpha pA ldA pX incX beta pY incY =
         with alpha $ \pAlpha -> with beta $ \pBeta -> 
-            zhbmv (cblasUpLo uplo) n k pAlpha pA ldA pX incX pBeta pY incY
+            zhbmv (cblasUplo uplo) n k pAlpha pA ldA pX incX pBeta pY incY
 
     gerc m n alpha pX incX pY incY pA ldA = 
         with alpha $ \pAlpha ->
@@ -90,8 +90,8 @@ instance BLAS2 (Complex Double) where
             
     her uplo n alpha pX incX pA ldA = 
         with alpha $ \pAlpha -> 
-            zher (cblasUpLo uplo) n pAlpha pX incX pA ldA
+            zher (cblasUplo uplo) n pAlpha pX incX pA ldA
     
     her2 uplo n alpha pX incX pY incY pA ldA = 
         with alpha $ \pAlpha ->
-            zher2 (cblasUpLo uplo) n pAlpha pX incX pY incY pA ldA
+            zher2 (cblasUplo uplo) n pAlpha pX incX pY incY pA ldA

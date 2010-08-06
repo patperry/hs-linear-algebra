@@ -16,10 +16,10 @@ module Numeric.LinearAlgebra.Types (
     isConjTrans,
     flipTrans,
 
-    UpLo(..),
+    Uplo(..),
     isLower,
     isUpper,
-    flipUpLo,
+    flipUplo,
 
     Diag(..),
     isUnitDiag,
@@ -57,22 +57,22 @@ flipTrans ConjTrans = NoTrans
 
 
 -- | Lower or upper triangular storage.
-data UpLo = Upper | Lower deriving (Eq, Show)
+data Uplo = Upper | Lower deriving (Eq, Show)
 
 -- | Indicates if the value is @Lower@.
-isLower :: UpLo -> Bool
+isLower :: Uplo -> Bool
 isLower Lower = True
 isLower _     = False
 
 -- | Indicates if the value is @Upper@.
-isUpper :: UpLo -> Bool
+isUpper :: Uplo -> Bool
 isUpper Upper = True
 isUpper _     = False
 
 -- | Exchange @Upper@ and @Lower@.
-flipUpLo :: UpLo -> UpLo
-flipUpLo Upper = Lower
-flipUpLo Lower = Upper
+flipUplo :: Uplo -> Uplo
+flipUplo Upper = Lower
+flipUplo Lower = Upper
 
 
 -- | Diagonal storage.
