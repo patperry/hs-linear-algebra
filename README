@@ -6,9 +6,9 @@ use the standard cabal commands:
     runhaskell Setup.lhs build
     runhaskell Setup.lhs install
     
-The package uses a script to find what BLAS library to link with.  To link
-with a custom BLAS, add the "--with-blas=<lib>" argument to --configure-option,
-e.g
+The package uses a script to find what BLAS and LAPACK libraries to link with.
+To link with a custom BLAS or LAPACK, add the "--with-blas=<lib>" 
+or "--with-lapack=<lib>" argument to --configure-option.  For example,
 
     runhaskell Setup.lhs configure --configure-option="--with-blas=<lib>"
 
