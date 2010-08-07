@@ -40,6 +40,7 @@ Library
     hs-source-dirs:     lib
     exposed-modules:    
                         Foreign.BLAS
+                        Foreign.LAPACK
                         Foreign.VMath
                         
                         Numeric.LinearAlgebra
@@ -59,6 +60,9 @@ Library
                         Foreign.BLAS.Level3
                         Foreign.BLAS.Double
                         Foreign.BLAS.Zomplex
+
+                        Foreign.LAPACK.Double
+                        Foreign.LAPACK.Zomplex
                         
                         Foreign.VMath.VNum
                         Foreign.VMath.VFractional

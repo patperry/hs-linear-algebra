@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Foreign.BLAS.Types
@@ -24,8 +25,11 @@ module Foreign.BLAS.Types (
     Side(..),
     withSide,
     
+    LAInt,
     ) where
 
+import Foreign
+import Foreign.C.Types
 import Foreign.C.String
 
 newtype BLASTrans = BLASTrans CString
@@ -60,3 +64,5 @@ withDiag :: Diag -> (BLASDiag -> IO a) -> IO a
 withDiag diag f = flip withCString (f . BLASDiag) $ case diag of
     NonUnit -> "N"
     Unit    -> "U"
+
+newtype LAInt = LAInt CInt deriving (Eq, Show, Enum, Num, Storable)

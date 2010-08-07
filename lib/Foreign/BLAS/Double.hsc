@@ -17,99 +17,98 @@ import Foreign.BLAS.Types
 #include "config.h"
 #include "f77_func-hsc.h"
 
-#define la_int int
 
 ---------------------------- Level 1 Routines -------------------------------
 
 foreign import ccall unsafe #f77_func ddot
-    ddot :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO Double
+    ddot :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO Double
 
 foreign import ccall unsafe #f77_func dnrm2
-    dnrm2  :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO Double
+    dnrm2  :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO Double
 
 foreign import ccall unsafe #f77_func dasum
-    dasum  :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO Double
+    dasum  :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO Double
 
 foreign import ccall unsafe #f77_func idamax
-    idamax :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO (#type la_int)
+    idamax :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO LAInt
 
 foreign import ccall unsafe #f77_func dscal
-    dscal  :: Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dscal  :: Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dswap
-    dswap  :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dswap  :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dcopy
-    dcopy  :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dcopy  :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func daxpy
-    daxpy  :: Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    daxpy  :: Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func drotg
     drotg  :: Ptr Double -> Ptr Double -> Ptr Double -> Ptr Double -> IO ()
 
 foreign import ccall unsafe #f77_func drot
-    drot :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> IO ()
+    drot :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> IO ()
 
 foreign import ccall unsafe #f77_func drotmg
     drotmg :: Ptr Double -> Ptr Double -> Ptr Double -> Ptr Double -> Ptr Double -> IO ()
 
 foreign import ccall unsafe #f77_func drotm
-    drotm :: Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> IO ()
+    drotm :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> IO ()
 
 
 ---------------------------- Level 2 Routines -------------------------------
 
 foreign import ccall unsafe #f77_func dgemv
-    dgemv :: BLASTrans -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dgemv :: BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dgbmv
-    dgbmv ::  BLASTrans -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dgbmv ::  BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dtrmv
-    dtrmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtrmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dtbmv
-    dtbmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtbmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
                  
 foreign import ccall unsafe #f77_func dtrsv
-    dtrsv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtrsv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dtbsv
-    dtbsv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtbsv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
     
 foreign import ccall unsafe #f77_func dsymv
-    dsymv ::  BLASUplo -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsymv ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
     
 foreign import ccall unsafe #f77_func dsbmv
-    dsbmv ::  BLASUplo -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsbmv ::  BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
     
 foreign import ccall unsafe #f77_func dger
-    dger  ::  Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dger  ::  Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
         
 foreign import ccall unsafe #f77_func dsyr
-    dsyr  ::  BLASUplo -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsyr  ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dsyr2
-    dsyr2 ::  BLASUplo -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsyr2 ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 
 ---------------------------- Level 3 Routines -------------------------------
 
 foreign import ccall unsafe #f77_func dgemm
-    dgemm  ::  BLASTrans -> BLASTrans -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dgemm  ::  BLASTrans -> BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dsymm
-    dsymm  ::  BLASSide -> BLASUplo -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsymm  ::  BLASSide -> BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dtrmm
-    dtrmm  ::  BLASSide -> BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtrmm  ::  BLASSide -> BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dtrsm
-    dtrsm  ::  BLASSide -> BLASUplo -> BLASTrans -> BLASDiag -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dtrsm  ::  BLASSide -> BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func dsyrk
-    dsyrk  ::  BLASUplo -> BLASTrans -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsyrk  ::  BLASUplo -> BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
            
 foreign import ccall unsafe #f77_func dsyr2k           
-    dsyr2k ::  BLASUplo -> BLASTrans -> Ptr (#type la_int) -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr (#type la_int) -> Ptr Double -> Ptr Double -> Ptr (#type la_int) -> IO ()
+    dsyr2k ::  BLASUplo -> BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
