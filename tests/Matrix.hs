@@ -57,11 +57,9 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "rank1Update" prop_rank1Update prop_rank1Update
     , testPropertyDZ "mulMatrixVector" prop_mulMatrixVector prop_mulMatrixVector
     , testPropertyDZ "mulMatrixVectorWithScale" prop_mulMatrixVectorWithScale prop_mulMatrixVectorWithScale
-    , testPropertyDZ "mulMatrixAddVector" prop_mulMatrixAddVector prop_mulMatrixAddVector
     , testPropertyDZ "mulMatrixAddVectorWithScales" prop_mulMatrixAddVectorWithScales prop_mulMatrixAddVectorWithScales    
     , testPropertyDZ "mulMatrixMatrix" prop_mulMatrixMatrix prop_mulMatrixMatrix
     , testPropertyDZ "mulMatrixMatrixWithScale" prop_mulMatrixMatrixWithScale prop_mulMatrixMatrixWithScale
-    , testPropertyDZ "mulMatrixAddMatrix" prop_mulMatrixAddMatrix prop_mulMatrixAddMatrix
     , testPropertyDZ "mulMatrixAddMatrixWithScales" prop_mulMatrixAddMatrixWithScales prop_mulMatrixAddMatrixWithScales    
 
     ]
@@ -366,13 +364,6 @@ prop_mulMatrixVectorWithScale t alpha (MulMatrixVector transa a x) =
   where
     _ = typed t a
 
-prop_mulMatrixAddVector t (MulMatrixAddVector transa a x y) =
-    mulMatrixAddVector transa a x y
-        ~==
-        addVector (mulMatrixVector transa a x) y
-  where
-    _ = typed t a
-
 prop_mulMatrixAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
     mulMatrixAddVectorWithScales alpha transa a x beta y
         ~==
@@ -426,13 +417,6 @@ prop_mulMatrixMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
     mulMatrixMatrixWithScale alpha transa a transb b
         ~==
         scaleMatrix alpha (mulMatrixMatrix transa a transb b)
-  where
-    _ = typed t a
-
-prop_mulMatrixAddMatrix t (MulMatrixAddMatrix transa a transb b c) =
-    mulMatrixAddMatrix transa a transb b c
-        ~==
-        addMatrix (mulMatrixMatrix transa a transb b) c
   where
     _ = typed t a
 

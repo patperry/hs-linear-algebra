@@ -66,13 +66,11 @@ module Numeric.LinearAlgebra.Matrix (
     -- ** Matrix-Vector multiplication
     mulMatrixVector,
     mulMatrixVectorWithScale,
-    mulMatrixAddVector,
     mulMatrixAddVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
     mulMatrixMatrix,
     mulMatrixMatrixWithScale,
-    mulMatrixAddMatrix,
     mulMatrixAddMatrixWithScales,
 
     ) where

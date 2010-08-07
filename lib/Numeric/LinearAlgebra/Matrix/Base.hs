@@ -379,19 +379,6 @@ mulMatrixVectorWithScale alpha transa a x = let
         mulMatrixToVectorWithScale alpha transa a x y
         return y
                        
--- | @mulMatrixAddVector transa a x y@
--- returns @op(a) * x + y@, where @op(a)@ is determined by @transa@.                   
-mulMatrixAddVector :: (BLAS2 e)
-                   => Trans -> Matrix e
-                   -> Vector e
-                   -> Vector e
-                   -> Vector e
-mulMatrixAddVector transa a x y =
-    runVector $ do
-        y' <- newVector_ (dimVector y)
-        mulMatrixAddToVector transa a x y y'
-        return y'
-
 -- | @mulMatrixAddVectorWithScales alpha transa a x beta y@
 -- returns @alpha * op(a) * x + beta * y@, where @op(a)@ is
 -- determined by @transa@.
@@ -404,8 +391,8 @@ mulMatrixAddVectorWithScales :: (BLAS2 e)
                              -> Vector e
 mulMatrixAddVectorWithScales alpha transa a x beta y =
     runVector $ do
-        y' <- newVector_ (dimVector y)
-        mulMatrixAddToVectorWithScales alpha transa a x beta y y'
+        y' <- newCopyVector y
+        mulMatrixAddToVectorWithScales alpha transa a x beta y'
         return y'
 
 -- | @mulMatrixMatrix transa a transb b@
@@ -443,20 +430,6 @@ mulMatrixMatrixWithScale alpha transa a transb b = let
         mulMatrixToMatrixWithScale alpha transa a transb b c
         return c
 
--- | @mulMatrixAddMatrix transa a transb b c@
--- returns @op(a) * op(b) + c@, where @op(a)@ and @op(b)@ are determined
--- by @transa@ and @transb@.                   
-mulMatrixAddMatrix :: (BLAS3 e)
-                   => Trans -> Matrix e
-                   -> Trans -> Matrix e
-                   -> Matrix e
-                   -> Matrix e
-mulMatrixAddMatrix transa a transb b c =
-    runMatrix $ do
-        c' <- newMatrix_ (dimMatrix c)
-        mulMatrixAddToMatrix transa a transb b c c'
-        return c'
-
 -- | @mulMatrixAddMatrixWithScales alpha transa a transb b beta c@
 -- returns @alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
 -- @op(b)@ are determined by @transa@ and @transb@.
@@ -469,8 +442,8 @@ mulMatrixAddMatrixWithScales :: (BLAS3 e)
                              -> Matrix e
 mulMatrixAddMatrixWithScales alpha transa a transb b beta c = 
     runMatrix $ do
-        c' <- newMatrix_ (dimMatrix c)
-        mulMatrixAddToMatrixWithScales alpha transa a transb b beta c c'
+        c' <- newCopyMatrix c
+        mulMatrixAddToMatrixWithScales alpha transa a transb b beta c'
         return c'
 
 compareMatrixWith :: (Storable e, Storable e')

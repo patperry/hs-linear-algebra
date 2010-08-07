@@ -72,13 +72,11 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- ** Matrix-Vector multiplication
     mulMatrixToVector,
     mulMatrixToVectorWithScale,
-    mulMatrixAddToVector,
     mulMatrixAddToVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
     mulMatrixToMatrix,
     mulMatrixToMatrixWithScale,
-    mulMatrixAddToMatrix,
     mulMatrixAddToMatrixWithScales,
 
     -- * Conversions between mutable and immutable matrices
