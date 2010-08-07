@@ -26,7 +26,10 @@ module Numeric.LinearAlgebra.Types (
     HasVectorView(..),
 
     -- * Enums
-    module Numeric.LinearAlgebra.Types.Enums,
+    Trans(..),
+    Uplo(..),
+    Side(..),
+    Diag(..),
 
     -- * Re-export of Complex from Data.Complex
     module Data.Complex,
@@ -36,12 +39,10 @@ module Numeric.LinearAlgebra.Types (
         
     ) where
 
-import Numeric.LinearAlgebra.Types.Enums
-import Numeric.LinearAlgebra.Types.VMath( VNum, VFractional, VFloating )
-import Numeric.LinearAlgebra.Types.BLAS( BLAS1, BLAS2, BLAS3 )
+import Foreign.VMath( VNum, VFractional, VFloating )
+import Foreign.BLAS( Trans(..), Uplo(..), Side(..), Diag(..), BLAS1, BLAS2, BLAS3 )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )
-
 
 -- | Types that can be viewed as vectors.
 class HasVectorView (a :: * -> *) where

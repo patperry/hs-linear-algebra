@@ -19,7 +19,7 @@ import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
-import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
+import qualified Foreign.BLAS as BLAS
 import Numeric.LinearAlgebra.Vector.STBase
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:

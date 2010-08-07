@@ -1,17 +1,25 @@
 
+#include "config.h"
 #include <math.h>
 #include <string.h>
-#include "BLAS.h"
-#include "vectorOps.h"
+#include "vmath.h"
+
+#define la_int int
+
+extern void
+F77_FUNC(daxpy) (const la_int *n, const double *da, const double *dx,
+	         const la_int *incx, double *dy, const la_int *incy);
+
+
 
 static void
-dVectorClear (int n, double *z)
+vdClear (int n, double *z)
 {
         memset(z, 0, n * sizeof(double));
 }
 
 static void
-dVectorCopy (int n, const double *x, double *z)
+vdCopy (int n, const double *x, double *z)
 {
         if (x != z) {
                 memcpy(z, x, n * sizeof(double));
@@ -19,12 +27,12 @@ dVectorCopy (int n, const double *x, double *z)
 }
 
 void
-dVectorScale (int n, double alpha, const double *x, double *z)
+vdScale (int n, double alpha, const double *x, double *z)
 {
         if (alpha == 1) {
-                dVectorCopy(n, x, z);
+                vdCopy(n, x, z);
         } else if (alpha == 0) {
-                dVectorClear(n, z);
+                vdClear(n, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -37,10 +45,10 @@ dVectorScale (int n, double alpha, const double *x, double *z)
 }
 
 void
-dVectorShift (int n, double alpha, const double *x, double *z)
+vdShift (int n, double alpha, const double *x, double *z)
 {
         if (alpha == 0) {
-                dVectorCopy(n, x, z);
+                vdCopy(n, x, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -50,7 +58,7 @@ dVectorShift (int n, double alpha, const double *x, double *z)
 }
 
 void
-dVectorNeg (int n, const double *x, double *z)
+vdNeg (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -59,7 +67,7 @@ dVectorNeg (int n, const double *x, double *z)
 }
 
 void
-dVectorAbs (int n, const double *x, double *z)
+vdAbs (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -78,7 +86,7 @@ dsgn (double x)
 }
 
 void
-dVectorSgn (int n, const double *x, double *z)
+vdSgn (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -87,7 +95,7 @@ dVectorSgn (int n, const double *x, double *z)
 }
 
 void
-dVectorInv (int n, const double *x, double *z)
+vdInv (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -96,14 +104,17 @@ dVectorInv (int n, const double *x, double *z)
 }
 
 static void
-dVectorAxpy (int n, double alpha, const double *x, const double *y, double *z)
+vdAxpy (int n, double alpha, const double *x, const double *y, double *z)
 {
+        la_int one = 1;
+        double done = 1.0;
+        
         if (alpha == 0) {
-                dVectorCopy(n, y, z);
+                vdCopy(n, y, z);
         } else if (y == z) {
-                blas_daxpy(n, alpha, x, 1, z, 1);
+                F77_FUNC(daxpy) (&n, &alpha, x, &one, z, &one);
         } else if (alpha == 1 && x == z) {
-                blas_daxpy(n, 1, y, 1, z, 1);
+                F77_FUNC(daxpy) (&n, &done, y, &one, z, &one);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -113,16 +124,16 @@ dVectorAxpy (int n, double alpha, const double *x, const double *y, double *z)
 }
 
 void
-dVectorAxpby (int n, double alpha, const double *x, double beta, const double *y, double *z)
+vdAxpby (int n, double alpha, const double *x, double beta, const double *y, double *z)
 {
         if (alpha == 0) {
-                dVectorScale(n, beta, y, z);
+                vdScale(n, beta, y, z);
         } else if (alpha == 1) {
-                dVectorAxpy(n, beta, y, x, z);
+                vdAxpy(n, beta, y, x, z);
         } else if (beta == 0) {
-                dVectorScale(n, alpha, x, z);
+                vdScale(n, alpha, x, z);
         } else if (beta == 1) {
-                dVectorAxpy(n, alpha, x, y, z);
+                vdAxpy(n, alpha, x, y, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -132,18 +143,18 @@ dVectorAxpby (int n, double alpha, const double *x, double beta, const double *y
 }
 
 void
-dVectorAdd (int n, const double *x, const double *y, double *z)
+vdAdd (int n, const double *x, const double *y, double *z)
 {
-        dVectorAxpy(n, 1, x, y, z);
+        vdAxpy(n, 1, x, y, z);
 }
 
-void dVectorSub (int n, const double *x, const double *y, double *z)
+void vdSub (int n, const double *x, const double *y, double *z)
 {
-        dVectorAxpy(n, -1, y, x, z);
+        vdAxpy(n, -1, y, x, z);
 }
 
 void
-dVectorMul (int n, const double *x, const double *y, double *z)
+vdMul (int n, const double *x, const double *y, double *z)
 {
         /* Note: using dtbmv sometimes gives different answers in the lower
          * bits of precision */
@@ -163,7 +174,7 @@ dVectorMul (int n, const double *x, const double *y, double *z)
 }
 
 void
-dVectorDiv (int n, const double *x, const double *y, double *z)
+vdDiv (int n, const double *x, const double *y, double *z)
 {
         /* Note: using dtbsv gives slightly different answers
          */
@@ -186,7 +197,7 @@ dVectorDiv (int n, const double *x, const double *y, double *z)
 }
 
 void
-dVectorExp (int n, const double *x, double *z)
+vdExp (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -195,7 +206,7 @@ dVectorExp (int n, const double *x, double *z)
 }
 
 void
-dVectorSqrt (int n, const double *x, double *z)
+vdSqrt (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -204,7 +215,7 @@ dVectorSqrt (int n, const double *x, double *z)
 }
 
 void
-dVectorLog (int n, const double *x, double *z)
+vdLog (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -213,7 +224,7 @@ dVectorLog (int n, const double *x, double *z)
 }
 
 void
-dVectorPow (int n, const double *x, const double *y, double *z)
+vdPow (int n, const double *x, const double *y, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -222,7 +233,7 @@ dVectorPow (int n, const double *x, const double *y, double *z)
 }
 
 void
-dVectorSin (int n, const double *x, double *z)
+vdSin (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -231,7 +242,7 @@ dVectorSin (int n, const double *x, double *z)
 }
 
 void
-dVectorCos (int n, const double *x, double *z)
+vdCos (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -240,7 +251,7 @@ dVectorCos (int n, const double *x, double *z)
 }
 
 void
-dVectorTan (int n, const double *x, double *z)
+vdTan (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -249,7 +260,7 @@ dVectorTan (int n, const double *x, double *z)
 }
 
 void
-dVectorASin (int n, const double *x, double *z)
+vdASin (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -258,7 +269,7 @@ dVectorASin (int n, const double *x, double *z)
 }
 
 void
-dVectorACos (int n, const double *x, double *z)
+vdACos (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -267,7 +278,7 @@ dVectorACos (int n, const double *x, double *z)
 }
 
 void
-dVectorATan (int n, const double *x, double *z)
+vdATan (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -276,7 +287,7 @@ dVectorATan (int n, const double *x, double *z)
 }
 
 void
-dVectorSinh (int n, const double *x, double *z)
+vdSinh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -285,7 +296,7 @@ dVectorSinh (int n, const double *x, double *z)
 }
 
 void
-dVectorCosh (int n, const double *x, double *z)
+vdCosh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -294,7 +305,7 @@ dVectorCosh (int n, const double *x, double *z)
 }
 
 void
-dVectorTanh (int n, const double *x, double *z)
+vdTanh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -303,7 +314,7 @@ dVectorTanh (int n, const double *x, double *z)
 }
 
 void
-dVectorASinh (int n, const double *x, double *z)
+vdASinh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -312,7 +323,7 @@ dVectorASinh (int n, const double *x, double *z)
 }
 
 void
-dVectorACosh (int n, const double *x, double *z)
+vdACosh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -321,7 +332,7 @@ dVectorACosh (int n, const double *x, double *z)
 }
 
 void
-dVectorATanh (int n, const double *x, double *z)
+vdATanh (int n, const double *x, double *z)
 {
         int i;
         for (i = 0; i < n; i++) {

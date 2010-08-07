@@ -1,24 +1,25 @@
 {-# LANGUAGE FlexibleInstances, BangPatterns #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Types.VNum
+-- Module     : Foreign.VMath.VNum
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
--- Vector operations.
+-- Vector Num operations.
 --
 
-module Numeric.LinearAlgebra.Types.VNum
+module Foreign.VMath.VNum
     where
      
 import Foreign( Storable, Ptr, with, peek, advancePtr )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
-import Numeric.LinearAlgebra.Types.Double  
-import Numeric.LinearAlgebra.Types.Zomplex
+import Foreign.BLAS( copy )
+import Foreign.VMath.Double
+import Foreign.VMath.Zomplex
         
 -- | Types with vectorized 'Num' operations.
 class (Storable a, Num a) => VNum a where
@@ -55,7 +56,7 @@ instance VNum Double where
     {-# INLINE vScale #-}
     vMul = vdMul
     {-# INLINE vMul #-}
-    vConj n src dst = dcopy n src 1 dst 1
+    vConj n src dst = copy n src 1 dst 1
     {-# INLINE vConj #-}
     vNeg = vdNeg
     {-# INLINE vNeg #-}

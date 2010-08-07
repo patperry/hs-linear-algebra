@@ -52,7 +52,7 @@ import Numeric.LinearAlgebra.Vector.STBase
 import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase
 import Numeric.LinearAlgebra.Types
-import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
+import qualified Foreign.BLAS as BLAS
 
 -- | A hermitian view of an underlying matrix.  The view can either be
 -- of the upper or lower triangular part of the matrix.  The type arguments

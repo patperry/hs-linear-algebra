@@ -1,8 +1,15 @@
 
+#include "config.h"
 #include <complex.h>
 #include <string.h>
-#include "BLAS.h"
-#include "vectorOps.h"
+#include "vmath.h"
+
+#define la_int int
+
+extern void
+F77_FUNC(zaxpy) (const la_int *n, const void *za, const void *zx,
+	         const la_int *incx, void *zy, const la_int *incy);
+
 
 static double complex
 complex_mul (double complex x, double complex y)
@@ -17,13 +24,13 @@ complex_mul (double complex x, double complex y)
 
 
 static void
-zVectorClear (int n, double complex *z)
+vzClear (int n, double complex *z)
 {
         memset(z, 0, n * 2 * sizeof(double));
 }
 
 static void
-zVectorCopy (int n, const double complex *x, double complex *z)
+vzCopy (int n, const double complex *x, double complex *z)
 {
         if (x != z) {
                 memcpy(z, x, n * 2 * sizeof(double));
@@ -31,7 +38,7 @@ zVectorCopy (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorConj (int n, const double complex *x, double complex *z)
+vzConj (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -40,14 +47,14 @@ zVectorConj (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorScale (int n, const double complex *palpha, const double complex *x, double complex *z)
+vzScale (int n, const double complex *palpha, const double complex *x, double complex *z)
 {
         double complex alpha = *palpha;
         
         if (alpha == 1) {
-                zVectorCopy(n, x, z);
+                vzCopy(n, x, z);
         } else if (alpha == 0) {
-                zVectorClear(n, z);
+                vzClear(n, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -60,12 +67,12 @@ zVectorScale (int n, const double complex *palpha, const double complex *x, doub
 }
 
 void
-zVectorShift (int n, const double complex *palpha, const double complex *x, double complex *z)
+vzShift (int n, const double complex *palpha, const double complex *x, double complex *z)
 {
         double complex alpha = *palpha;
         
         if (alpha == 0) {
-                zVectorCopy(n, x, z);
+                vzCopy(n, x, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -75,7 +82,7 @@ zVectorShift (int n, const double complex *palpha, const double complex *x, doub
 }
 
 void
-zVectorNeg (int n, const double complex *x, double complex *z)
+vzNeg (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -84,7 +91,7 @@ zVectorNeg (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorAbs (int n, const double complex *x, double complex *z)
+vzAbs (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -104,7 +111,7 @@ zsgn (const double complex x, double complex *z)
 }
 
 void
-zVectorSgn (int n, const double complex *x, double complex *z)
+vzSgn (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -113,7 +120,7 @@ zVectorSgn (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorInv (int n, const double complex *x, double complex *z)
+vzInv (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -122,16 +129,17 @@ zVectorInv (int n, const double complex *x, double complex *z)
 }
 
 static void
-zVectorAxpy (int n, const double complex *palpha, const double complex *x, const double complex *y, double complex *z)
+vzAxpy (int n, const double complex *palpha, const double complex *x, const double complex *y, double complex *z)
 {
         double complex alpha = *palpha;
+        la_int one = 1;
         
         if (alpha == 0) {
-                zVectorCopy(n, y, z);
+                vzCopy(n, y, z);
         } else if (y == z) {
-                blas_zaxpy(n, palpha, x, 1, z, 1);
+                F77_FUNC(zaxpy) (&n, palpha, x, &one, z, &one);
         } else if (alpha == 1 && x == z) {
-                blas_zaxpy(n, palpha, y, 1, z, 1);
+                F77_FUNC(zaxpy) (&n, palpha, y, &one, z, &one);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -141,19 +149,19 @@ zVectorAxpy (int n, const double complex *palpha, const double complex *x, const
 }
 
 void
-zVectorAxpby (int n, const double complex *palpha, const double complex *x, const double complex *pbeta, const double complex *y, double complex *z)
+vzAxpby (int n, const double complex *palpha, const double complex *x, const double complex *pbeta, const double complex *y, double complex *z)
 {
         double complex alpha = *palpha;
         double complex beta = *pbeta;        
                 
         if (alpha == 0) {
-                zVectorScale(n, pbeta, y, z);
+                vzScale(n, pbeta, y, z);
         } else if (alpha == 1) {
-                zVectorAxpy(n, pbeta, y, x, z);
+                vzAxpy(n, pbeta, y, x, z);
         } else if (beta == 0) {
-                zVectorScale(n, palpha, x, z);
+                vzScale(n, palpha, x, z);
         } else if (beta == 1) {
-                zVectorAxpy(n, palpha, x, y, z);
+                vzAxpy(n, palpha, x, y, z);
         } else {
                 int i;
                 for (i = 0; i < n; i++) {
@@ -163,18 +171,18 @@ zVectorAxpby (int n, const double complex *palpha, const double complex *x, cons
 }
 
 void
-zVectorAdd (int n, const double complex *x, const double complex *y, double complex *z)
+vzAdd (int n, const double complex *x, const double complex *y, double complex *z)
 {
-        dVectorAdd(2 * n, (const double *)x, (const double *)y, (double *)z);
+        vdAdd(2 * n, (const double *)x, (const double *)y, (double *)z);
 }
 
-void zVectorSub (int n, const double complex *x, const double complex *y, double complex *z)
+void vzSub (int n, const double complex *x, const double complex *y, double complex *z)
 {
-        dVectorSub(2 * n, (const double *)x, (const double *)y, (double *)z);
+        vdSub(2 * n, (const double *)x, (const double *)y, (double *)z);
 }
 
 void
-zVectorMul (int n, const double complex *x, const double complex *y, double complex *z)
+vzMul (int n, const double complex *x, const double complex *y, double complex *z)
 {
         /* Note: using ztbmv sometimes gives different answers in the lower
          * bits of precision */
@@ -193,7 +201,7 @@ zVectorMul (int n, const double complex *x, const double complex *y, double comp
 }
 
 void
-zVectorDiv (int n, const double complex *x, const double complex *y, double complex *z)
+vzDiv (int n, const double complex *x, const double complex *y, double complex *z)
 {
         /* Note: using dtbsv gives slightly different answers
          */
@@ -216,7 +224,7 @@ zVectorDiv (int n, const double complex *x, const double complex *y, double comp
 }
 
 void
-zVectorExp (int n, const double complex *x, double complex *z)
+vzExp (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -225,7 +233,7 @@ zVectorExp (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorSqrt (int n, const double complex *x, double complex *z)
+vzSqrt (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -234,7 +242,7 @@ zVectorSqrt (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorLog (int n, const double complex *x, double complex *z)
+vzLog (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -243,7 +251,7 @@ zVectorLog (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorPow (int n, const double complex *x, const double complex *y, double complex *z)
+vzPow (int n, const double complex *x, const double complex *y, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -252,7 +260,7 @@ zVectorPow (int n, const double complex *x, const double complex *y, double comp
 }
 
 void
-zVectorSin (int n, const double complex *x, double complex *z)
+vzSin (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -261,7 +269,7 @@ zVectorSin (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorCos (int n, const double complex *x, double complex *z)
+vzCos (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -270,7 +278,7 @@ zVectorCos (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorTan (int n, const double complex *x, double complex *z)
+vzTan (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -279,7 +287,7 @@ zVectorTan (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorASin (int n, const double complex *x, double complex *z)
+vzASin (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -288,7 +296,7 @@ zVectorASin (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorACos (int n, const double complex *x, double complex *z)
+vzACos (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -297,7 +305,7 @@ zVectorACos (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorATan (int n, const double complex *x, double complex *z)
+vzATan (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -306,7 +314,7 @@ zVectorATan (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorSinh (int n, const double complex *x, double complex *z)
+vzSinh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -315,7 +323,7 @@ zVectorSinh (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorCosh (int n, const double complex *x, double complex *z)
+vzCosh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -324,7 +332,7 @@ zVectorCosh (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorTanh (int n, const double complex *x, double complex *z)
+vzTanh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -333,7 +341,7 @@ zVectorTanh (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorASinh (int n, const double complex *x, double complex *z)
+vzASinh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -342,7 +350,7 @@ zVectorASinh (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorACosh (int n, const double complex *x, double complex *z)
+vzACosh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {
@@ -351,7 +359,7 @@ zVectorACosh (int n, const double complex *x, double complex *z)
 }
 
 void
-zVectorATanh (int n, const double complex *x, double complex *z)
+vzATanh (int n, const double complex *x, double complex *z)
 {
         int i;
         for (i = 0; i < n; i++) {

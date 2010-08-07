@@ -348,6 +348,10 @@ prop_mulMatrixVector t (MulMatrixVector transa a x) =
             NoTrans   -> listVector (fst $ dimMatrix a)
                                     [ dotVector x (conjVector r)
                                     | r <- rowsMatrix a ]
+
+            Trans     -> listVector (snd $ dimMatrix a)
+                                    [ dotVector x (conjVector c)
+                                    | c <- colsMatrix a ]
                                     
             ConjTrans -> listVector (snd $ dimMatrix a)
                                     [ dotVector x c
@@ -413,8 +417,9 @@ prop_mulMatrixMatrix t (MulMatrixMatrix transa a transb b) =
                        _       -> (snd $ dimMatrix a)
     n = case transb of NoTrans -> (snd $ dimMatrix b)
                        _       -> (fst $ dimMatrix b)
-    b' = case transb of NoTrans -> b
-                        _       -> conjTransMatrix b
+    b' = case transb of NoTrans   -> b
+                        Trans     -> transMatrix b
+                        ConjTrans -> conjTransMatrix b
     _ = typed t a
 
 prop_mulMatrixMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =

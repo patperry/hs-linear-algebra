@@ -27,29 +27,10 @@ tested-with:     GHC == 6.12.2
 extra-source-files:     NEWS README TODO configure.ac configure
                         aclocal.m4 m4/ax_check_blas.m4
                         linear-algebra.buildinfo.in cbits/config.h.in
-                        cbits/BLAS.h cbits/vectorOps.h tests/Makefile.in
+                        tests/Makefile.in
                         
                         examples/LU.hs
                         
-                        tests/Test/Vector/Dense.hs
-                        tests/Test/Matrix/Banded.hs
-                        tests/Test/Matrix/Dense.hs
-                        tests/Test/Matrix/Herm/Banded.hs
-                        tests/Test/Matrix/Herm/Dense.hs
-                        tests/Test/Matrix/Tri/Banded.hs
-                        tests/Test/Matrix/Tri/Dense.hs
-                        tests/Main.hs
-                        tests/Driver.hs
-                        tests/Monadic.hs
-                        tests/Vector.hs
-                        tests/STVector.hs
-                        tests/Matrix.hs
-                        tests/STMatrix.hs
-                        tests/Banded.hs
-                        tests/HermMatrix.hs
-                        tests/HermBanded.hs
-                        tests/TriBanded.hs
-                        tests/TriMatrix.hs
                                             
 extra-tmp-files:        config.log config.status autom4te.cache
                         linear-algebra.buildinfo cbits/config.h
@@ -58,44 +39,46 @@ extra-tmp-files:        config.log config.status autom4te.cache
 Library
     hs-source-dirs:     lib
     exposed-modules:    
+                        Foreign.BLAS
+                        Foreign.VMath
+                        
                         Numeric.LinearAlgebra
                         Numeric.LinearAlgebra.Types
-                        Numeric.LinearAlgebra.Types.BLAS                        
-                        Numeric.LinearAlgebra.Types.VMath                        
-
+                        Numeric.LinearAlgebra.Vector
+                        Numeric.LinearAlgebra.Vector.ST
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Herm                        
                         Numeric.LinearAlgebra.Matrix.ST
-                        Numeric.LinearAlgebra.Vector
-                        Numeric.LinearAlgebra.Vector.ST
                         
                         Test.QuickCheck.LinearAlgebra
                         
     other-modules:      
-                        Numeric.LinearAlgebra.Types.BLAS1
-                        Numeric.LinearAlgebra.Types.BLAS2
-                        Numeric.LinearAlgebra.Types.BLAS3
-                        Numeric.LinearAlgebra.Types.CEnums
-                        Numeric.LinearAlgebra.Types.Double
-                        Numeric.LinearAlgebra.Types.Enums
-                        Numeric.LinearAlgebra.Types.VNum                        
-                        Numeric.LinearAlgebra.Types.VFractional                        
-                        Numeric.LinearAlgebra.Types.VFloating
-                        Numeric.LinearAlgebra.Types.Zomplex
+                        Foreign.BLAS.Types
+                        Foreign.BLAS.Level1
+                        Foreign.BLAS.Level2
+                        Foreign.BLAS.Level3
+                        Foreign.BLAS.Double
+                        Foreign.BLAS.Zomplex
+                        
+                        Foreign.VMath.VNum
+                        Foreign.VMath.VFractional
+                        Foreign.VMath.VFloating
+                        Foreign.VMath.Double
+                        Foreign.VMath.Zomplex
+                        
                         Numeric.LinearAlgebra.Internal
-                        Numeric.LinearAlgebra.Matrix.Base
-                        Numeric.LinearAlgebra.Matrix.STBase
                         Numeric.LinearAlgebra.Vector.Base
-                        Numeric.LinearAlgebra.Vector.STBase
+                        Numeric.LinearAlgebra.Vector.STBase                        
+                        Numeric.LinearAlgebra.Matrix.Base
+                        Numeric.LinearAlgebra.Matrix.STBase                        
     
     includes:           cbits/config.h
-                        cbits/BLAS.h
-                        cbits/vectorOps.h                        
+                        cbits/f77_func-hsc.h
+                        cbits/vmath.h
     include-dirs:       cbits
-    c-sources:          cbits/BLAS-double.c
-                        cbits/BLAS-zomplex.c
-                        cbits/vectorOps-double.c
-                        cbits/vectorOps-zomplex.c                                                
+
+    c-sources:          cbits/vmath-double.c
+                        cbits/vmath-zomplex.c
                         
     ghc-options:        -Wall
     
@@ -120,16 +103,17 @@ Executable test-hs-linear-algebra
                         Matrix,
                         STMatrix,
                         Typed
+                        Foreign.BLAS.Double
+                        Foreign.BLAS.Zomplex
 
     includes:           cbits/config.h
-                        cbits/BLAS.h
-                        cbits/vectorOps.h                        
+                        cbits/f77_func-hsc.h
+                        cbits/vmath.h
     include-dirs:       cbits
-    c-sources:          cbits/BLAS-double.c
-                        cbits/BLAS-zomplex.c
-                        cbits/vectorOps-double.c
-                        cbits/vectorOps-zomplex.c                                                
-    
+
+    c-sources:          cbits/vmath-double.c
+                        cbits/vmath-zomplex.c
+
     extensions:         Rank2Types, ScopedTypeVariables
     
     build-depends:      base,

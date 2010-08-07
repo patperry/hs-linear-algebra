@@ -357,7 +357,7 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
             return $ MatrixTriple x y z
 
 instance Arbitrary Trans where
-    arbitrary = elements [ NoTrans, ConjTrans ]
+    arbitrary = elements [ NoTrans, Trans, ConjTrans ]
 {-
 
 -- | Generate a triangular dense matrix.

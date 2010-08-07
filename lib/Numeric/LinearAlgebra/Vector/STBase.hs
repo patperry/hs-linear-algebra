@@ -104,10 +104,8 @@ import qualified Data.Vector.Storable.Mutable as STVector
 
 import Numeric.LinearAlgebra.Internal( clearArray )
 import Numeric.LinearAlgebra.Types
-import qualified Numeric.LinearAlgebra.Types.BLAS as BLAS
-import qualified Numeric.LinearAlgebra.Types.VNum as VNum
-import qualified Numeric.LinearAlgebra.Types.VFractional as VFractional
-import qualified Numeric.LinearAlgebra.Types.VFloating as VFloating
+import qualified Foreign.BLAS as BLAS
+import qualified Foreign.VMath as VMath
 
 
 -- | Read-only vectors
@@ -474,19 +472,19 @@ clearVector x = unsafeIOToST $ unsafeWithVector x $ \p -> clearArray p n
 -- | @negateToVector x z@ replaces @z@ with @negate(x)@.
 negateToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
 negateToVector = checkVectorOp2 "negateToVector" $
-    vectorCall2 VNum.vNeg
+    vectorCall2 VMath.vNeg
 {-# INLINE negateToVector #-}
 
 -- | @absToVector x z@ replaces @z@ with @abs(x)@.
 absToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
 absToVector = checkVectorOp2 "absToVector" $
-    vectorCall2 VNum.vAbs
+    vectorCall2 VMath.vAbs
 {-# INLINE absToVector #-}
 
 -- | @signumToVector x z@ replaces @z@ with @signum(x)@.
 signumToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
 signumToVector = checkVectorOp2 "signumToVector" $
-    vectorCall2 VNum.vSgn
+    vectorCall2 VMath.vSgn
 {-# INLINE signumToVector #-}
 
 
@@ -494,19 +492,19 @@ signumToVector = checkVectorOp2 "signumToVector" $
 -- | @conjToVector x z@ replaces @z@ with @conj(x)@.
 conjToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
 conjToVector = checkVectorOp2 "conjToVector" $
-    vectorCall2 VNum.vConj
+    vectorCall2 VMath.vConj
 {-# INLINE conjToVector #-}
 
 -- | @shiftToVector alpha x z@ replaces @z@ with @alpha + x@.
 shiftToVector :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
 shiftToVector alpha = checkVectorOp2 "shiftToVector _" $
-    vectorCall2 (flip VNum.vShift alpha)
+    vectorCall2 (flip VMath.vShift alpha)
 {-# INLINE shiftToVector #-}
 
 -- | @scaleToVector alpha x z@ replaces @z@ with @alpha * x@.
 scaleToVector :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
 scaleToVector alpha = checkVectorOp2 "scaleToVector _" $
-    vectorCall2 (flip VNum.vScale alpha)
+    vectorCall2 (flip VMath.vScale alpha)
 {-# INLINE scaleToVector #-}
 
 -- | @addToVectorWithScales alpha x beta y z@ replaces @z@ with
@@ -515,140 +513,140 @@ addToVectorWithScales :: (RVector v1, RVector v2, VNum e)
                       => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
 addToVectorWithScales alpha x beta y z =
     checkVectorOp3 "addToVectorWithScales"
-        (vectorCall3 (\n v1 v2 v3 -> VNum.vAxpby n alpha v1 beta v2 v3))
+        (vectorCall3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3))
         x y z
 {-# INLINE addToVectorWithScales #-}
 
 -- | @addToVector x y z@ replaces @z@ with @x+y@.
 addToVector :: (RVector v1, RVector v2, VNum e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
-addToVector = checkVectorOp3 "addToVector" $ vectorCall3 VNum.vAdd
+addToVector = checkVectorOp3 "addToVector" $ vectorCall3 VMath.vAdd
 {-# INLINE addToVector #-}
 
 -- | @subToVector x y z@ replaces @z@ with @x-y@.
 subToVector :: (RVector v1, RVector v2, VNum e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
-subToVector = checkVectorOp3 "subToVector" $ vectorCall3 VNum.vSub
+subToVector = checkVectorOp3 "subToVector" $ vectorCall3 VMath.vSub
 {-# INLINE subToVector #-}
 
 -- | @mulToVector x y z@ replaces @z@ with @x*y@.
 mulToVector :: (RVector v1, RVector v2, VNum e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
-mulToVector = checkVectorOp3 "mulToVector" $ vectorCall3 VNum.vMul
+mulToVector = checkVectorOp3 "mulToVector" $ vectorCall3 VMath.vMul
 {-# INLINE mulToVector #-}
  
 -- | @divToVector x y z@ replaces @z@ with @x/y@.
 divToVector :: (RVector v1, RVector v2, VFractional e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
-divToVector = checkVectorOp3 "divToVector" $ vectorCall3 VFractional.vDiv
+divToVector = checkVectorOp3 "divToVector" $ vectorCall3 VMath.vDiv
 {-# INLINE divToVector #-}
 
 -- | @recipToVector x z@ replaces @z@ with @1/x@.
 recipToVector :: (RVector v, VFractional e)
               => v e -> STVector s e -> ST s ()
-recipToVector = checkVectorOp2 "recipToVector" $ vectorCall2 VFractional.vInv
+recipToVector = checkVectorOp2 "recipToVector" $ vectorCall2 VMath.vInv
 {-# INLINE recipToVector #-}
 
 -- | @sqrtToVector x z@ replaces @z@ with @sqrt(x)@.
 sqrtToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 sqrtToVector = checkVectorOp2 "sqrtToVector" $
-    vectorCall2 VFloating.vSqrt
+    vectorCall2 VMath.vSqrt
 {-# INLINE sqrtToVector #-}
 
 -- | @expToVector x z@ replaces @z@ with @exp(x)@.
 expToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 expToVector = checkVectorOp2 "expToVector" $
-    vectorCall2 VFloating.vExp
+    vectorCall2 VMath.vExp
 {-# INLINE expToVector #-}
 
 -- | @logToVector x z@ replaces @z@ with @log(x)@.
 logToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 logToVector = checkVectorOp2 "logToVector" $
-    vectorCall2 VFloating.vLog
+    vectorCall2 VMath.vLog
 {-# INLINE logToVector #-}
 
 -- | @powToVector x y z@ replaces @z@ with @x ** y@.
 powToVector :: (RVector v1, RVector v2, VFloating e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
 powToVector = checkVectorOp3 "powToVector" $
-    vectorCall3 VFloating.vPow
+    vectorCall3 VMath.vPow
 {-# INLINE powToVector #-}
 
 -- | @sinToVector x z@ replaces @z@ with @sin(x)@.
 sinToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 sinToVector = checkVectorOp2 "sinToVector" $
-    vectorCall2 VFloating.vSin
+    vectorCall2 VMath.vSin
 {-# INLINE sinToVector #-}
 
 -- | @cosToVector x z@ replaces @z@ with @cos(x)@.
 cosToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 cosToVector = checkVectorOp2 "cosToVector" $
-    vectorCall2 VFloating.vCos
+    vectorCall2 VMath.vCos
 {-# INLINE cosToVector #-}
 
 -- | @tanToVector x z@ replaces @z@ with @tan(x)@.
 tanToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 tanToVector = checkVectorOp2 "tanToVector" $
-    vectorCall2 VFloating.vTan
+    vectorCall2 VMath.vTan
 {-# INLINE tanToVector #-}
 
 -- | @asinToVector x z@ replaces @z@ with @asin(x)@.
 asinToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 asinToVector = checkVectorOp2 "asinToVector" $
-    vectorCall2 VFloating.vASin
+    vectorCall2 VMath.vASin
 {-# INLINE asinToVector #-}
 
 -- | @acosToVector x z@ replaces @z@ with @acos(x)@.
 acosToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 acosToVector = checkVectorOp2 "acosToVector" $
-    vectorCall2 VFloating.vACos
+    vectorCall2 VMath.vACos
 {-# INLINE acosToVector #-}
 
 -- | @atanToVector x z@ replaces @z@ with @atan(x)@.
 atanToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 atanToVector = checkVectorOp2 "atanToVector" $
-    vectorCall2 VFloating.vATan
+    vectorCall2 VMath.vATan
 {-# INLINE atanToVector #-}
 
 -- | @sinhToVector x z@ replaces @z@ with @sinh(x)@.
 sinhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 sinhToVector = checkVectorOp2 "sinhToVector" $
-    vectorCall2 VFloating.vSinh
+    vectorCall2 VMath.vSinh
 {-# INLINE sinhToVector #-}
 
 -- | @coshToVector x z@ replaces @z@ with @cosh(x)@.
 coshToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 coshToVector = checkVectorOp2 "coshToVector" $
-    vectorCall2 VFloating.vCosh
+    vectorCall2 VMath.vCosh
 {-# INLINE coshToVector #-}
 
 -- | @tanhToVector x z@ replaces @z@ with @tanh(x)@.
 tanhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 tanhToVector = checkVectorOp2 "tanhToVector" $
-    vectorCall2 VFloating.vTanh
+    vectorCall2 VMath.vTanh
 {-# INLINE tanhToVector #-}
 
 -- | @asinhToVector x z@ replaces @z@ with @asinh(x)@.
 asinhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 asinhToVector = checkVectorOp2 "asinhToVector" $
-    vectorCall2 VFloating.vASinh
+    vectorCall2 VMath.vASinh
 {-# INLINE asinhToVector #-}
 
 -- | @acoshToVector x z@ replaces @z@ with @acosh(x)@.
 acoshToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 acoshToVector = checkVectorOp2 "acoshToVector" $
-    vectorCall2 VFloating.vACosh
+    vectorCall2 VMath.vACosh
 {-# INLINE acoshToVector #-}
 
 -- | @atanhToVector x z@ replaces @z@ with @atanh(x)@.
 atanhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
 atanhToVector = checkVectorOp2 "atanhToVector" $
-    vectorCall2 VFloating.vATanh
+    vectorCall2 VMath.vATanh
 {-# INLINE atanhToVector #-}
 
 -- | Gets the sum of the vector entries.
 getSumVector :: (RVector v, VNum e) => v e -> ST s e
-getSumVector = vectorCall VNum.vSum
+getSumVector = vectorCall VMath.vSum
 {-# INLINE getSumVector #-}
 
 -- | Gets the sum of the absolute values of the vector entries.
