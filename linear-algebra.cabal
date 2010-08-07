@@ -45,12 +45,13 @@ Library
                         Foreign.VMath
                         
                         Numeric.LinearAlgebra
+                        Numeric.LinearAlgebra.Factor.Cholesky
                         Numeric.LinearAlgebra.Types
-                        Numeric.LinearAlgebra.Vector
-                        Numeric.LinearAlgebra.Vector.ST
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Herm                        
                         Numeric.LinearAlgebra.Matrix.ST
+                        Numeric.LinearAlgebra.Vector
+                        Numeric.LinearAlgebra.Vector.ST
                         
                         Test.QuickCheck.LinearAlgebra
                         
