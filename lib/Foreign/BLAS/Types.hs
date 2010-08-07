@@ -28,35 +28,35 @@ module Foreign.BLAS.Types (
 
 import Foreign.C.String
 
-type BLASTrans = CString
+newtype BLASTrans = BLASTrans CString
 data Trans = NoTrans | Trans | ConjTrans deriving (Eq, Show)
 
 withTrans :: Trans -> (BLASTrans -> IO a) -> IO a
-withTrans trans = withCString $ case trans of
+withTrans trans f = flip withCString (f . BLASTrans) $ case trans of
     NoTrans   -> "N"
     Trans     -> "T"
     ConjTrans -> "C"
 
-type BLASUplo = CString
+newtype BLASUplo = BLASUplo CString
 data Uplo = Upper | Lower deriving (Eq, Show)
 
 withUplo :: Uplo -> (BLASUplo -> IO a) -> IO a
-withUplo uplo = withCString $ case uplo of
+withUplo uplo f = flip withCString (f . BLASUplo) $ case uplo of
     Upper -> "U"
     Lower -> "L"
 
-type BLASSide = CString
+newtype BLASSide = BLASSide CString
 data Side = LeftSide | RightSide deriving (Eq, Show)
 
 withSide :: Side -> (BLASSide -> IO a) -> IO a
-withSide side = withCString $ case side of
+withSide side f = flip withCString (f . BLASSide) $ case side of
     LeftSide  -> "L"
     RightSide -> "R"
 
-type BLASDiag = CString
+newtype BLASDiag = BLASDiag CString
 data Diag = NonUnit | Unit deriving (Eq, Show)
 
 withDiag :: Diag -> (BLASDiag -> IO a) -> IO a
-withDiag diag = withCString $ case diag of
+withDiag diag f = flip withCString (f . BLASDiag) $ case diag of
     NonUnit -> "N"
     Unit    -> "U"
