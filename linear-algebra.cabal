@@ -26,6 +26,7 @@ tested-with:     GHC == 6.12.2
 
 extra-source-files:     NEWS README TODO configure.ac configure
                         aclocal.m4 m4/ax_check_blas.m4
+                        m4/ax_check_lapack.m4
                         linear-algebra.buildinfo.in cbits/config.h.in
                         tests/Makefile.in
                         
@@ -109,6 +110,8 @@ Executable test-hs-linear-algebra
                         Typed
                         Foreign.BLAS.Double
                         Foreign.BLAS.Zomplex
+                        Foreign.LAPACK.Double
+                        Foreign.LAPACK.Zomplex
 
     includes:           cbits/config.h
                         cbits/f77_func-hsc.h

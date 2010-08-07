@@ -8,13 +8,12 @@ AC_ARG_WITH(compiler,
     [AC_HELP_STRING([--with-compiler=<cmd>], [use Haskell compiler <cmd>])])
 
 # Checks for programs
-AC_PROG_CC_C99
 
 # Checks for libraries
 AC_CHECK_LIB([m],[cos])
-AX_CHECK_BLAS
+AX_CHECK_LAPACK
 
-if test "$ax_blas_ok" = yes; then
+if test "$ax_lapack_ok" = yes; then
   BUILD_PACKAGE_BOOL=True
 else 
   BUILD_PACKAGE_BOOL=False
