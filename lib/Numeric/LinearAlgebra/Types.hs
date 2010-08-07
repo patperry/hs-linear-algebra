@@ -22,6 +22,9 @@ module Numeric.LinearAlgebra.Types (
     BLAS2,
     BLAS3,
     
+    -- * LAPACK element types
+    LAPACK,
+    
     -- * Matrix types
     HasVectorView(..),
 
@@ -41,6 +44,7 @@ module Numeric.LinearAlgebra.Types (
 
 import Foreign.VMath( VNum, VFractional, VFloating )
 import Foreign.BLAS( Trans(..), Uplo(..), Side(..), Diag(..), BLAS1, BLAS2, BLAS3 )
+import Foreign.LAPACK( LAPACK )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )
 
