@@ -15,7 +15,8 @@ module Numeric.LinearAlgebra.Matrix.STBase
 import Control.Monad( forM_, zipWithM_ )
 import Control.Monad.ST( ST, unsafeIOToST )
 import Data.Typeable( Typeable )
-import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff )
+import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff,
+    mallocForeignPtrArray )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
@@ -47,26 +48,41 @@ class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
     unsafeSliceMatrix :: (Storable e)
                       => (Int,Int) -> (Int,Int) -> m e -> m e
 
-    -- | Execute an 'IO' action with a pointer to the first element in the
-    -- matrix and the leading dimension (lda).
-    unsafeWithMatrix :: (Storable e) => m e -> (Ptr e -> Int -> IO a) -> IO a
+    unsafeColMatrix :: (Storable e) => m e -> Int -> VectorView m e
 
-    unsafeMatrixViewVector :: (Storable e) => VectorView m e -> (Int,Int) -> m e
-    
     -- | Possibly view a matrix as a vector.  This only succeeds if the
     -- matrix is stored contiguously in memory, i.e. if the matrix contains
     -- a single column or the "lda" of the matrix is equal to the number
     -- of rows.
     maybeVectorViewMatrix :: (Storable e) => m e -> Maybe (VectorView m e)
 
-    unsafeColMatrix :: (Storable e)
-                    => m e
-                    -> Int
-                    -> VectorView m e
+    -- | Execute an 'IO' action with a pointer to the first element in the
+    -- matrix and the leading dimension (lda).
+    unsafeWithMatrix :: (Storable e) => m e -> (Ptr e -> Int -> IO a) -> IO a
+
+    -- | Convert a vector to a @ForeignPtr@, and offset, dimensions,
+    -- and leading dimension (lda).
+    unsafeMatrixToForeignPtr :: (Storable e)
+                             => m e -> (ForeignPtr e, Int, (Int,Int), Int)
+                             
+    -- | Cast a @ForeignPtr@ to a matrix.
+    unsafeMatrixFromForeignPtr :: (Storable e)
+                               => ForeignPtr e -- ^ the pointer
+                               -> Int          -- ^ the offset
+                               -> (Int,Int)    -- ^ the dimensions
+                               -> Int          -- ^ the leading dimension
+                               -> m e
+
 
 instance RMatrix (STMatrix s) where
     dimMatrix (STMatrix _ m n _) = (m,n)
     {-# INLINE dimMatrix #-}
+
+    unsafeColMatrix (STMatrix a m _ lda) j = let
+        o = j * lda
+        x = unsafeSliceVector o m a
+        in x
+    {-# INLINE unsafeColMatrix #-}
 
     unsafeSliceMatrix (i,j) (m',n') (STMatrix a _ _ lda) = let
         o = i + j*lda
@@ -77,35 +93,100 @@ instance RMatrix (STMatrix s) where
         in STMatrix a' m' n' lda
     {-# INLINE unsafeSliceMatrix #-}
     
-    unsafeWithMatrix (STMatrix a _ _ lda) f =
-        unsafeWithVector a $ \p -> f p lda
-    {-# INLINE unsafeWithMatrix #-}
-
-    unsafeMatrixViewVector x (m,n) = (STMatrix x m n lda)
-        where lda = max 1 m
-    {-# INLINE unsafeMatrixViewVector #-}
-
     maybeVectorViewMatrix (STMatrix a m n lda) | lda == max 1 m = Just a
                                                | n == 1 = Just a
                                                | otherwise = Nothing
     {-# INLINE maybeVectorViewMatrix #-}
 
-    unsafeColMatrix (STMatrix a m _ lda) j = let
-        o = j * lda
-        x = unsafeSliceVector o m a
-        in x
-    {-# INLINE unsafeColMatrix #-}
+    unsafeWithMatrix (STMatrix a _ _ lda) f =
+        unsafeWithVector a $ \p -> f p lda
+    {-# INLINE unsafeWithMatrix #-}
 
--- | View a vector as a matrix with the given dimensions.
+    unsafeMatrixToForeignPtr (STMatrix a m n lda) = let
+        (f,o,_) = unsafeVectorToForeignPtr a
+        in (f, o, (m,n), lda)
+    {-# INLINE unsafeMatrixToForeignPtr #-}
+
+    unsafeMatrixFromForeignPtr f o (m,n) lda = let
+        a = unsafeVectorFromForeignPtr f o (lda * n)
+        in (STMatrix a m n lda)
+    {-# INLINE unsafeMatrixFromForeignPtr #-}
+
+
+-- | Case a vector to a matrix of the given shape.  This function will
+-- only work on concrate types.  Try 'withMatrixViewVector' if the
+-- compiler complains about non-injective type functions.
 matrixViewVector :: (RMatrix m, Storable e)
-                 => VectorView m e -> (Int,Int) -> m e
-matrixViewVector x mn@(m,n)
-    | dimVector x /= m*n = error $
+                 => VectorView m e
+                 -> (Int,Int)
+                 -> m e
+matrixViewVector v mn@(m,n)
+    | dimVector v /= m*n = error $
         printf ("matrixViewVector <vector with dim %d> (%d,%d):"
-                ++ " incorrect number of elements") (dimVector x) m n
+                ++ " dimension mismatch") (dimVector v) m n
     | otherwise =
-        unsafeMatrixViewVector x mn
+        cast v
+  where
+    cast x = let
+        (fptr,o,_) = unsafeVectorToForeignPtr x
+        lda = max 1 m
+        in unsafeMatrixFromForeignPtr fptr o mn lda
 {-# INLINE matrixViewVector #-}
+
+-- | Cast a vector to a matrix with one column and pass it to
+-- the specified function.  See also 'withMatrixViewColVector'.
+matrixViewColVector :: (RMatrix m, Storable e)
+                    => VectorView m e
+                    -> m e
+matrixViewColVector v = matrixViewVector v (dimVector v, 1)
+{-# INLINE matrixViewColVector #-}
+
+-- | Cast a vector to a matrix with one column and pass it to
+-- the specified function.  See also 'withMatrixViewRowVector'.
+matrixViewRowVector :: (RMatrix m, Storable e)
+                    => VectorView m e
+                    -> m e
+matrixViewRowVector v = matrixViewVector v (dimVector v, 1)
+{-# INLINE matrixViewRowVector #-}
+
+-- | Cast a vector to a matrix of the given shape and pass it to
+-- the specified function.
+withMatrixViewVector :: (RVector v, Storable e)
+                     => v e
+                     -> (Int,Int)
+                     -> (forall m . RMatrix m => m e -> a)
+                     -> a
+withMatrixViewVector v mn@(m,n) f
+    | dimVector v /= m*n = error $
+        printf ("withMatrixViewVector <vector with dim %d> (%d,%d):"
+                ++ " dimension mismatch") (dimVector v) m n
+    | otherwise =
+        f (cast v)
+  where
+    cast :: (RVector v, Storable e) => v e -> STMatrix s e
+    cast x = let
+        (fptr,o,_) = unsafeVectorToForeignPtr x
+        lda = max 1 m
+        in unsafeMatrixFromForeignPtr fptr o mn lda
+{-# INLINE withMatrixViewVector #-}
+
+-- | Cast a vector to a matrix with one column and pass it to
+-- the specified function.
+withMatrixViewColVector :: (RVector v, Storable e)
+                        => v e
+                        -> (forall m . RMatrix m => m e -> a)
+                        -> a
+withMatrixViewColVector v = withMatrixViewVector v (dimVector v, 1)
+{-# INLINE withMatrixViewColVector #-}
+
+-- | Cast a vector to a matrix with one row and pass it to
+-- the specified function.
+withMatrixViewRowVector :: (RVector v, Storable e)
+                        => v e
+                        -> (forall m . RMatrix m => m e -> a)
+                        -> a
+withMatrixViewRowVector v = withMatrixViewVector v (1, dimVector v)
+{-# INLINE withMatrixViewRowVector #-}
 
 -- | Get a view of a matrix column.
 colMatrix :: (RMatrix m, Storable e)
@@ -147,26 +228,14 @@ sliceMatrix (i,j) (m',n') a
     (m,n) = dimMatrix a
 {-# INLINE sliceMatrix #-}
 
--- | View an array in memory as a matrix.
-matrixViewArray :: (Storable e)
-                => ForeignPtr e 
-                -> Int          -- ^ offset
-                -> (Int,Int)    -- ^ dimension
-                -> STMatrix s e
-matrixViewArray f o (m,n) = let
-    x   = vectorViewArray f o (m*n)
-    lda = max 1 m
-    in STMatrix x m n lda
-{-# INLINE matrixViewArray #-}
-
 -- | Create a new matrix of given shape, but do not initialize the elements.
 newMatrix_ :: (Storable e) => (Int,Int) -> ST s (STMatrix s e)
 newMatrix_ (m,n) 
     | m < 0 || n < 0 = error $
         printf "newMatrix_ (%d,%d): invalid dimensions" m n
-    | otherwise =  do
-        x <- newVector_ (m*n)
-        return $ unsafeMatrixViewVector x (m,n)
+    | otherwise = unsafeIOToST $ do
+        f <- mallocForeignPtrArray (m*n)
+        return $ unsafeMatrixFromForeignPtr f 0 (m,n) (max 1 m)
 
 -- | Create a matrix with every element initialized to the same value.
 newMatrix :: (Storable e) => (Int,Int) -> e -> ST s (STMatrix s e)

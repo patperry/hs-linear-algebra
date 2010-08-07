@@ -14,7 +14,8 @@ module Numeric.LinearAlgebra.Vector.ST (
     runVector,
     
     -- * Read-only Dense vector type class
-    RVector( dimVector, unsafeWithVector ),
+    RVector( dimVector, unsafeWithVector, unsafeVectorToForeignPtr,
+        unsafeVectorFromForeignPtr ),
     
     -- * Creating new vectors
     newVector_,
@@ -94,9 +95,6 @@ module Numeric.LinearAlgebra.Vector.ST (
     freezeVector,
     unsafeFreezeVector,
     
-    -- * Vector views of arrays
-    vectorViewArray,
-
     ) where
 
 import Numeric.LinearAlgebra.Vector.Base

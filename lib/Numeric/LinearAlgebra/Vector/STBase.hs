@@ -18,8 +18,6 @@ module Numeric.LinearAlgebra.Vector.STBase (
     takeVector,
     splitVectorAt,
     
-    vectorViewArray,
-    
     newVector_,
     newVector,
     newCopyVector,
@@ -120,6 +118,16 @@ class RVector v where
     -- vector.
     unsafeWithVector :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
 
+    -- | Convert a vector to a @ForeignPtr@, and offset, and a length
+    unsafeVectorToForeignPtr :: (Storable e)
+                             => v e -> (ForeignPtr e, Int, Int)
+                             
+    -- | Cast a @ForeignPtr@ to a vector.
+    unsafeVectorFromForeignPtr :: (Storable e)
+                               => ForeignPtr e -- ^ the pointer
+                               -> Int          -- ^ the offset
+                               -> Int          -- ^ the dimension
+                               -> v e
 
 
 instance RVector (STVector s) where
@@ -133,6 +141,11 @@ instance RVector (STVector s) where
         STVector.unsafeWith (unsafeCoerce v) f
     {-# INLINE unsafeWithVector #-}
 
+    unsafeVectorToForeignPtr = STVector.unsafeToForeignPtr
+    {-# INLINE unsafeVectorToForeignPtr #-}
+    
+    unsafeVectorFromForeignPtr = STVector.unsafeFromForeignPtr
+    {-# INLINE unsafeVectorFromForeignPtr #-}
 
 
 -- | @sliceVector i n v@ creates a subvector view of @v@ starting at
@@ -163,15 +176,6 @@ takeVector :: (RVector v, Storable e) => Int -> v e -> v e
 takeVector n = sliceVector 0 n
 {-# INLINE takeVector #-}
 
--- | View an array in memory as a vector.
-vectorViewArray :: (Storable e)
-                => ForeignPtr e -- ^ pointer
-                -> Int          -- ^ offset
-                -> Int          -- ^ length
-                -> STVector s e
-vectorViewArray = STVector.unsafeFromForeignPtr
-{-# INLINE vectorViewArray #-}
-
 -- | Creates a new vector of the given length.  The elements will be
 -- uninitialized.
 newVector_ :: (Storable e) => Int -> ST s (STVector s e)
@@ -180,7 +184,7 @@ newVector_ n
         printf "newVector_ %d: invalid dimension" n
     | otherwise = unsafeIOToST $ do
         f <- mallocForeignPtrArray n
-        return $ vectorViewArray f 0 n
+        return $ unsafeVectorFromForeignPtr f 0 n
 
 -- | Create a vector with every element initialized to the same value.
 newVector :: (Storable e) => Int -> e -> ST s (STVector s e)
