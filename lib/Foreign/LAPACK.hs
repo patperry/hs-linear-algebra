@@ -26,7 +26,7 @@ class (BLAS3 e) => LAPACK e where
     geqrf :: Int -> Int -> Ptr e -> Int -> Ptr e -> IO ()
     gelqf :: Int -> Int -> Ptr e -> Int -> Ptr e -> IO ()
     larfg :: Int -> Ptr e -> Ptr e -> Int -> IO e
-    potrf :: Uplo -> Int -> Ptr e -> Int -> IO (Either Int ())
+    potrf :: Uplo -> Int -> Ptr e -> Int -> IO Int
     potrs :: Uplo -> Int -> Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
     
     unmqr :: Side -> Trans -> Int -> Int -> Int -> Ptr e -> Int -> Ptr e -> Ptr e -> Int -> IO ()
@@ -100,8 +100,7 @@ instance LAPACK Double where
         alloca $ \pinfo -> do
             dpotrf puplo pn pa plda pinfo
             info <- fromEnum `fmap` peek pinfo
-            checkInfo info
-            return $ if info > 0 then Left info else Right ()
+            assert (info >= 0) $ return info            
 
     potrs uplo n nrhs pa lda pb ldb =
         withUplo uplo $ \puplo ->
@@ -161,8 +160,7 @@ instance LAPACK (Complex Double) where
         alloca $ \pinfo -> do
             zpotrf puplo pn pa plda pinfo
             info <- fromEnum `fmap` peek pinfo
-            checkInfo info
-            return $ if info > 0 then Left info else Right ()
+            assert (info >= 0) $ return info
 
     potrs uplo n nrhs pa lda pb ldb =
         withUplo uplo $ \puplo ->

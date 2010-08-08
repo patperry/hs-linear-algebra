@@ -92,10 +92,9 @@ cholFactorToHermMatrix (Herm uplo a)
     | otherwise =
         unsafeIOToST $
             unsafeWithMatrix a $ \pa lda -> do
-                LAPACK.potrf uplo n pa lda
-                    >>= either (return . Left) (\_ ->
-                            return $ Right (Chol uplo a)
-                            )
+                info <- LAPACK.potrf uplo n pa lda
+                return $ if info > 0 then Left info
+                                     else Right (Chol uplo a)
   where
     (ma,na) = dimMatrix a
     n = na
