@@ -25,6 +25,10 @@ foreign import ccall unsafe #f77_func dgelqf
     dgelqf :: Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double
            -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()
 
+foreign import ccall unsafe #f77_func dlarfg
+    dlarfg :: Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double
+           -> IO ()
+
 foreign import ccall unsafe #f77_func dormqr
     dormqr :: BLASSide -> BLASTrans -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt
            -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt
@@ -35,6 +39,10 @@ foreign import ccall unsafe #f77_func dormlq
            -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt
            -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()
 
-foreign import ccall unsafe #f77_func dlarfg
-    dlarfg :: Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double
+foreign import ccall unsafe #f77_func dpotrf
+    dpotrf :: BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr LAInt
            -> IO ()
+           
+foreign import ccall unsafe #f77_func dpotrs
+    dpotrs :: BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt
+           -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()

@@ -15,6 +15,8 @@ module Numeric.LinearAlgebra (
     module Numeric.LinearAlgebra.Vector.ST,
     module Numeric.LinearAlgebra.Matrix,
     module Numeric.LinearAlgebra.Matrix.ST,
+    module Numeric.LinearAlgebra.Matrix.Herm,
+    module Numeric.LinearAlgebra.Factor.Cholesky,
     ) where
 
 import Numeric.LinearAlgebra.Types
@@ -25,4 +27,5 @@ import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.ST hiding ( dimMatrix, indicesMatrix,
     colMatrix, colsMatrix, sliceMatrix, splitRowsMatrixAt, 
     splitColsMatrixAt )
-
+import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Factor.Cholesky

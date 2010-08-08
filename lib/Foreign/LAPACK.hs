@@ -25,9 +25,12 @@ import Foreign.LAPACK.Zomplex
 class (BLAS3 e) => LAPACK e where
     geqrf :: Int -> Int -> Ptr e -> Int -> Ptr e -> IO ()
     gelqf :: Int -> Int -> Ptr e -> Int -> Ptr e -> IO ()
+    larfg :: Int -> Ptr e -> Ptr e -> Int -> IO e
+    potrf :: Uplo -> Int -> Ptr e -> Int -> IO (Either Int ())
+    potrs :: Uplo -> Int -> Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    
     unmqr :: Side -> Trans -> Int -> Int -> Int -> Ptr e -> Int -> Ptr e -> Ptr e -> Int -> IO ()
     unmlq :: Side -> Trans -> Int -> Int -> Int -> Ptr e -> Int -> Ptr e -> Ptr e -> Int -> IO ()
-    larfg :: Int -> Ptr e -> Ptr e -> Int -> IO e
 
 
 callWithWork :: (Storable e) => (Ptr e -> Ptr LAInt -> Ptr LAInt -> IO ()) -> IO LAInt
@@ -42,7 +45,7 @@ callWithWork call =
                 call pwork plwork pinfo
                 peek pinfo
 
-checkInfo :: LAInt -> IO ()
+checkInfo :: (Num info) => info -> IO ()
 checkInfo info = assert (info == 0) $ return ()
 
 withEnum :: (Enum a, Storable a) => Int -> (Ptr a -> IO b) -> IO b
@@ -90,6 +93,26 @@ instance LAPACK Double where
             dlarfg pn palpha px pincx ptau
             peek ptau
 
+    potrf uplo n pa lda =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum lda $ \plda ->
+        alloca $ \pinfo -> do
+            dpotrf puplo pn pa plda pinfo
+            info <- fromEnum `fmap` peek pinfo
+            checkInfo info
+            return $ if info > 0 then Left info else Right ()
+
+    potrs uplo n nrhs pa lda pb ldb =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum nrhs $ \pnrhs ->
+        withEnum lda $ \plda ->
+        withEnum ldb $ \pldb ->
+        alloca $ \pinfo -> do
+            dpotrs puplo pn pnrhs pa plda pb pldb pinfo
+            checkInfo =<< peek pinfo
+
 
 instance LAPACK (Complex Double) where
     geqrf m n pa lda ptau =
@@ -130,3 +153,23 @@ instance LAPACK (Complex Double) where
         alloca $ \ptau -> do
             zlarfg pn palpha px pincx ptau
             peek ptau
+
+    potrf uplo n pa lda =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum lda $ \plda ->
+        alloca $ \pinfo -> do
+            zpotrf puplo pn pa plda pinfo
+            info <- fromEnum `fmap` peek pinfo
+            checkInfo info
+            return $ if info > 0 then Left info else Right ()
+
+    potrs uplo n nrhs pa lda pb ldb =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum nrhs $ \pnrhs ->
+        withEnum lda $ \plda ->
+        withEnum ldb $ \pldb ->
+        alloca $ \pinfo -> do
+            zpotrs puplo pn pnrhs pa plda pb pldb pinfo
+            checkInfo =<< peek pinfo
