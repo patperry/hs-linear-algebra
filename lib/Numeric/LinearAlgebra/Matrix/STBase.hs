@@ -108,7 +108,8 @@ instance RMatrix (STMatrix s) where
     {-# INLINE unsafeMatrixToForeignPtr #-}
 
     unsafeMatrixFromForeignPtr f o (m,n) lda = let
-        a = unsafeVectorFromForeignPtr f o (lda * n)
+        d = if m == 0 then 0 else lda * n
+        a = unsafeVectorFromForeignPtr f o d
         in (STMatrix a m n lda)
     {-# INLINE unsafeMatrixFromForeignPtr #-}
 
