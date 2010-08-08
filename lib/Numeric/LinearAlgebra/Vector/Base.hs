@@ -108,6 +108,10 @@ instance RVector Vector where
     {-# INLINE unsafeSliceVector #-}
     unsafeWithVector = Vector.unsafeWith
     {-# INLINE unsafeWithVector #-}
+    unsafeVectorFromForeignPtr = Vector.unsafeFromForeignPtr
+    {-# INLINE unsafeVectorFromForeignPtr #-}
+    unsafeVectorToForeignPtr = Vector.unsafeToForeignPtr
+    {-# INLINE unsafeVectorToForeignPtr #-}
 
 
 -- | A safe way to create and work with a mutable vector before returning 
