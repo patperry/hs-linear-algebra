@@ -118,13 +118,13 @@ instance RMatrix (STMatrix s) where
 -- only work on concrate types.  Try 'withMatrixViewVector' if the
 -- compiler complains about non-injective type functions.
 matrixViewVector :: (RMatrix m, Storable e)
-                 => VectorView m e
-                 -> (Int,Int)
+                 => (Int,Int)
+                 -> VectorView m e
                  -> m e
-matrixViewVector v mn@(m,n)
+matrixViewVector mn@(m,n) v
     | dimVector v /= m*n = error $
-        printf ("matrixViewVector <vector with dim %d> (%d,%d):"
-                ++ " dimension mismatch") (dimVector v) m n
+        printf ("matrixViewVector (%d,%d) <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector v)
     | otherwise =
         cast v
   where
@@ -139,7 +139,7 @@ matrixViewVector v mn@(m,n)
 matrixViewColVector :: (RMatrix m, Storable e)
                     => VectorView m e
                     -> m e
-matrixViewColVector v = matrixViewVector v (dimVector v, 1)
+matrixViewColVector v = matrixViewVector (dimVector v, 1) v
 {-# INLINE matrixViewColVector #-}
 
 -- | Cast a vector to a matrix with one column and pass it to
@@ -147,20 +147,20 @@ matrixViewColVector v = matrixViewVector v (dimVector v, 1)
 matrixViewRowVector :: (RMatrix m, Storable e)
                     => VectorView m e
                     -> m e
-matrixViewRowVector v = matrixViewVector v (dimVector v, 1)
+matrixViewRowVector v = matrixViewVector (dimVector v, 1) v
 {-# INLINE matrixViewRowVector #-}
 
 -- | Cast a vector to a matrix of the given shape and pass it to
 -- the specified function.
 withMatrixViewVector :: (RVector v, Storable e)
-                     => v e
-                     -> (Int,Int)
+                     => (Int,Int)
+                     -> v e
                      -> (forall m . RMatrix m => m e -> a)
                      -> a
-withMatrixViewVector v mn@(m,n) f
+withMatrixViewVector mn@(m,n) v f
     | dimVector v /= m*n = error $
-        printf ("withMatrixViewVector <vector with dim %d> (%d,%d):"
-                ++ " dimension mismatch") (dimVector v) m n
+        printf ("withMatrixViewVector (%d,%d) <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector v)
     | otherwise =
         f (cast v)
   where
@@ -177,7 +177,7 @@ withMatrixViewColVector :: (RVector v, Storable e)
                         => v e
                         -> (forall m . RMatrix m => m e -> a)
                         -> a
-withMatrixViewColVector v = withMatrixViewVector v (dimVector v, 1)
+withMatrixViewColVector v = withMatrixViewVector (dimVector v, 1) v
 {-# INLINE withMatrixViewColVector #-}
 
 -- | Cast a vector to a matrix with one row and pass it to
@@ -186,7 +186,7 @@ withMatrixViewRowVector :: (RVector v, Storable e)
                         => v e
                         -> (forall m . RMatrix m => m e -> a)
                         -> a
-withMatrixViewRowVector v = withMatrixViewVector v (1, dimVector v)
+withMatrixViewRowVector v = withMatrixViewVector (1, dimVector v) v
 {-# INLINE withMatrixViewRowVector #-}
 
 -- | Get a view of a matrix column.
