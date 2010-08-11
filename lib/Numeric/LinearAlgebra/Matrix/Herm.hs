@@ -15,29 +15,46 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     withHerm,
     uploHerm,
     
-    -- * Herm Matrix operations
-    -- ** Immutable Matrix-Vector
+    -- * Immutable interface
+    
+    -- ** Matrix-Vector multiplication
     mulHermMatrixVector,
     mulHermMatrixVectorWithScale,
     mulHermMatrixAddVectorWithScales,
     
-    -- ** Immutable Matrix-Matrix
+    -- ** Matrix-Matrix  multiplication
     mulHermMatrixMatrix,
     mulHermMatrixMatrixWithScale,
     mulHermMatrixAddMatrixWithScales,
 
-    -- ** Mutable Matrix-Vector
+    -- ** Updates
+    rank1UpdateHermMatrix,
+    rank2UpdateHermMatrix,
+    rankKUpdateHermMatrix,   
+    rank2KUpdateHermMatrix,    
+
+    
+    -- * Mutable interface
+    
+    -- ** Matrix-Vector multiplication
     mulHermMatrixToVector,
     mulHermMatrixToVectorWithScale,
     mulHermMatrixAddToVectorWithScales,
     
-    -- ** Mutable Matrix-Matrix
+    -- ** Matrix-Matrix multiplication
     mulHermMatrixToMatrix,
     mulHermMatrixToMatrixWithScale,
     mulHermMatrixAddToMatrixWithScales,
+
+    -- ** Updates
+    rank1UpdateToHermMatrix,
+    rank2UpdateToHermMatrix,
+    rankKUpdateToHermMatrix,  
+    rank2KUpdateToHermMatrix,
+    
     ) where
 
-import Control.Monad.ST( ST, unsafeIOToST )
+import Control.Monad.ST( ST, runST, unsafeIOToST )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Vector.Base
@@ -64,6 +81,160 @@ withHerm f (Herm _ m) = f m
 -- | Returns the @Uplo@ enum of the herm.
 uploHerm :: Herm m e -> Uplo
 uploHerm (Herm u _) = u
+
+-- | @rank1UpdateToHermMatrix alpha x a@ returns
+-- @alpha * x * x^H + a@.
+rank1UpdateHermMatrix :: (BLAS2 e)
+                      => e -> Vector e -> Herm Matrix e -> Herm Matrix e
+rank1UpdateHermMatrix alpha x (Herm uplo a) = runST $ do
+    ma' <- newCopyMatrix a
+    rank1UpdateToHermMatrix alpha x (Herm uplo ma')
+    a' <- unsafeFreezeMatrix ma'
+    return $ Herm uplo a'
+
+-- | @rank2UpdateToHermMatrix alpha x y a@ returns
+-- @alpha * x * y^H + conj(alpha) * y * x^H + a@.
+rank2UpdateHermMatrix :: (BLAS2 e)
+                      => e -> Vector e -> Vector e -> Herm Matrix e
+                      -> Herm Matrix e
+rank2UpdateHermMatrix alpha x y (Herm uplo a) = runST $ do
+    ma' <- newCopyMatrix a
+    rank2UpdateToHermMatrix alpha x y (Herm uplo ma')
+    a' <- unsafeFreezeMatrix ma'
+    return $ Herm uplo a'
+
+-- | @rankKUpdateHermMatrix alpha trans a beta c@ returns
+-- @c := alpha * a * a^H + beta * c@ when @trans@ is @NoTrans@ and
+-- @c := alpha * a^H * a + beta * c@ when @trans@ is @ConjTrans@.  The
+-- function signals an error when @trans@ is @Trans@.
+rankKUpdateHermMatrix :: (BLAS3 e)
+                      => e -> Trans -> Matrix e -> e -> Herm Matrix e
+                      -> Herm Matrix e
+rankKUpdateHermMatrix alpha trans a beta (Herm uplo c) = runST $ do
+    mc' <- newCopyMatrix c
+    rankKUpdateToHermMatrix alpha trans a beta (Herm uplo mc')
+    c' <- unsafeFreezeMatrix mc'
+    return $ Herm uplo c'
+
+-- | @rank2KUpdateHermMatrix alpha trans a b beta c@ returns
+-- @c := alpha * a * b^H + conj(alpha) * b * a^H + beta * c@ when @trans@ is
+-- @NoTrans@ and @c := alpha * b^H * a + conj(alpha) * a^H * b + beta * c@
+-- when @trans@ is @ConjTrans@.  The function signals an error when @trans@
+-- is @Trans@.
+rank2KUpdateHermMatrix :: (BLAS3 e)
+                       => e -> Trans -> Matrix e -> Matrix e -> e -> Herm Matrix e
+                       -> Herm Matrix e
+rank2KUpdateHermMatrix alpha trans a b beta (Herm uplo c) = runST $ do
+    mc' <- newCopyMatrix c
+    rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo mc')
+    c' <- unsafeFreezeMatrix mc'
+    return $ Herm uplo c'
+
+-- | @rank1UpdateToHermMatrix alpha x a@ sets
+-- @a := alpha * x * x^H + a@.
+rank1UpdateToHermMatrix :: (RVector v, BLAS2 e)
+                        => e -> v e -> Herm (STMatrix s) e -> ST s ()
+rank1UpdateToHermMatrix alpha x (Herm uplo a)
+    | (not . and) [ nx == n, (ma,na) == (n,n) ] = error $
+        printf ("rank1UpdateToHermMatrix _ <vector with dim %d>"
+                 ++ " (Herm _ <matrix with dim (%d,%d)>):"
+                 ++ " invalid dimensions") nx ma na
+    | otherwise =
+        unsafeIOToST $
+        unsafeWithVector x $ \px ->
+        unsafeWithMatrix a $ \pa lda ->
+            BLAS.her uplo n alpha px 1 pa lda
+  where
+    nx = dimVector x
+    (ma,na) = dimMatrix a
+    n = nx
+
+-- | @rank2UpdateToHermMatrix alpha x y a@ sets
+-- @a := alpha * x * y^H + conj(alpha) * y * x^H + a@.
+rank2UpdateToHermMatrix :: (RVector v1, RVector v2, BLAS2 e)
+                        => e -> v1 e -> v2 e -> Herm (STMatrix s) e -> ST s ()
+rank2UpdateToHermMatrix alpha x y (Herm uplo a)
+    | (not . and) [ nx == n, ny == n, (ma,na) == (n,n) ] = error $
+        printf ("rank2UpdateToHermMatrix _ <vector with dim %d>"
+                 ++ " <vector with dim %d>"
+                 ++ " (Herm _ <matrix with dim (%d,%d)>):"
+                 ++ " invalid dimensions") nx ny ma na
+    | otherwise =
+        unsafeIOToST $
+        unsafeWithVector x $ \px ->
+        unsafeWithVector x $ \py ->        
+        unsafeWithMatrix a $ \pa lda ->
+            BLAS.her2 uplo n alpha px 1 py 1 pa lda
+  where
+    nx = dimVector x
+    ny = dimVector y
+    (ma,na) = dimMatrix a
+    n = nx
+
+-- | @rankKUpdateToHermMatrix alpha trans a beta c@ sets
+-- @c := alpha * a * a^H + beta * c@ when @trans@ is @NoTrans@ and
+-- @c := alpha * a^H * a + beta * c@ when @trans@ is @ConjTrans@.  The
+-- function signals an error when @trans@ is @Trans@.
+rankKUpdateToHermMatrix :: (RMatrix m, BLAS3 e)
+                        => e -> Trans -> m e -> e -> Herm (STMatrix s) e
+                        -> ST s ()
+rankKUpdateToHermMatrix alpha trans a beta (Herm uplo c)
+    | trans == Trans = error $
+        printf ("rankKUpdateToHermMatrix _ %s:"
+                 ++ " trans argument must be NoTrans or ConjTrans")
+               (show trans)
+    | (not . and) [ (mc,nc) == (n,n)
+                  , case trans of NoTrans -> (ma,na) == (n,k)
+                                  _       -> (ma,na) == (k,n)
+                  ] = error $
+            printf ("rankKUpdateToHermMatrix _ %s <matrix with dim (%d,%d)> _"
+                    ++ " (Herm _ <matrix with dim (%d,%d)>):"
+                    ++ " invalid dimensions") (show trans) ma na mc nc
+    | otherwise =
+        unsafeIOToST $
+        unsafeWithMatrix a $ \pa lda ->
+        unsafeWithMatrix c $ \pc ldc ->
+            BLAS.herk uplo trans n k alpha pa lda beta pc ldc
+  where
+    (ma,na) = dimMatrix a
+    (mc,nc) = dimMatrix c
+    (n,k) = if trans == NoTrans then (ma,na) else (na,ma)
+
+
+-- | @rank2KUpdateToHermMatrix alpha trans a b beta c@ sets
+-- @c := alpha * a * b^H + conj(alpha) * b * a^H + beta * c@ when @trans@ is
+-- @NoTrans@ and @c := alpha * b^H * a + conj(alpha) * a^H * b + beta * c@
+-- when @trans@ is @ConjTrans@.  The function signals an error when @trans@
+-- is @Trans@.
+rank2KUpdateToHermMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                         => e -> Trans -> m1 e -> m2 e -> e -> Herm (STMatrix s) e
+                         -> ST s ()
+rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo c)
+    | trans == Trans = error $
+        printf ("rank2KUpdateToHermMatrix _ %s:"
+                 ++ " trans argument must be NoTrans or ConjTrans")
+               (show trans)
+    | (not . and) [ (mc,nc) == (n,n)
+                  , (mb,nb) == (ma,na)
+                  , case trans of NoTrans -> (ma,na) == (n,k)
+                                  _       -> (ma,na) == (k,n)
+                  ] = error $
+            printf ("rank2KUpdateToHermMatrix _ %s <matrix with dim (%d,%d)>"
+                    ++ " <matrix with dim (%d,%d)> _"
+                    ++ " (Herm _ <matrix with dim (%d,%d)>):"
+                    ++ " invalid dimensions") (show trans) ma na mb nb mc nc
+    | otherwise =
+        unsafeIOToST $
+        unsafeWithMatrix a $ \pa lda ->
+        unsafeWithMatrix b $ \pb ldb ->
+        unsafeWithMatrix c $ \pc ldc ->
+            BLAS.her2k uplo trans n k alpha pa lda pb ldb beta pc ldc
+  where
+    (ma,na) = dimMatrix a
+    (mb,nb) = dimMatrix b
+    (mc,nc) = dimMatrix c
+    (n,k) = if trans == NoTrans then (ma,na) else (na,ma)
+
 
 -- | @mulHermMatrixVector a x@ returns @a * x@.
 mulHermMatrixVector :: (BLAS2 e)
