@@ -2,8 +2,9 @@ module Typed(
     typed,
     
     testPropertyI,
-    testPropertyDZ,
+    testPropertyD,
     testPropertyZ,
+    testPropertyDZ,
     
     immutableVector,
     immutableMatrix,
@@ -44,6 +45,13 @@ testPropertyDZ str propd propz =
         [ testProperty "Double" $ propd undefined
         , testProperty "Complex Double" $ propz undefined
         ]
+
+testPropertyD :: (Testable a)
+              => TestName
+              -> (Double -> a)
+              -> Test
+testPropertyD str prop =
+    testProperty str $ prop undefined
 
 testPropertyZ :: (Testable a)
               => TestName

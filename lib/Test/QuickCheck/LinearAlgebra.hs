@@ -46,6 +46,8 @@ module Test.QuickCheck.LinearAlgebra (
     vector,
     VectorPair(..),
     VectorTriple(..),
+    VectorList(..),
+    NonEmptyVectorList(..),
     
     --  ** Matrices
     matrix,
@@ -78,9 +80,6 @@ import qualified Test.QuickCheck as QC
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, sliceVector )
 import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
--- import Data.Matrix.Dense( Matrix, listMatrix, herm, submatrix  )
--- import Data.Matrix.Dense.ST( runSTMatrix, setElems, diagView,
---     unsafeThawMatrix )
 -- import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
 -- import Data.Matrix.Banded.ST( runSTBanded, unsafeThawBanded, 
 --     diagViewBanded )
@@ -297,7 +296,22 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
             y <- vector (dimVector x)
             z <- vector (dimVector x)
             return $ VectorTriple x y z
-            
+
+-- | A nonempty list of vectors with the same dimension.
+data NonEmptyVectorList e = NonEmptyVectorList [Vector e] deriving (Eq, Show)
+instance (Arbitrary e, Storable e) => Arbitrary (NonEmptyVectorList e) where
+    arbitrary = do
+        x <- arbitrary
+        n <- choose (0,20)
+        xs <- replicateM n $ vector (dimVector x)
+        return $ NonEmptyVectorList $ x:xs
+        
+-- | A nonempty list of vectors with the same dimension.
+data VectorList e = VectorList [Vector e] deriving (Eq, Show)
+instance (Arbitrary e, Storable e) => Arbitrary (VectorList e) where
+    arbitrary = do
+        (NonEmptyVectorList (_:xs)) <- arbitrary
+        return $ VectorList xs
 
 -- | Generate a random matrix of the given size.
 matrix :: (Arbitrary e, Storable e) => (Int,Int) -> Gen (Matrix e)

@@ -52,7 +52,6 @@ module Numeric.LinearAlgebra.Vector.STBase (
     zipWithToVector,
     unsafeZipWithToVector,
     
-    getSumVector,    
     getSumAbsVector,
     getNorm2Vector,
     getWhichMaxAbsVector,
@@ -648,10 +647,6 @@ atanhToVector = checkVectorOp2 "atanhToVector" $
     vectorCall2 VMath.vATanh
 {-# INLINE atanhToVector #-}
 
--- | Gets the sum of the vector entries.
-getSumVector :: (RVector v, VNum e) => v e -> ST s e
-getSumVector = vectorCall VMath.vSum
-{-# INLINE getSumVector #-}
 
 -- | Gets the sum of the absolute values of the vector entries.
 getSumAbsVector :: (RVector v, BLAS1 e) => v e -> ST s Double
@@ -705,6 +700,7 @@ kroneckerToVector x y z
     m = dimVector x
     n = dimVector y
 
+{-
 vectorCall :: (RVector x, Storable e)
            => (Int -> Ptr e -> IO a) 
            ->  x e -> ST s a
@@ -714,6 +710,7 @@ vectorCall f x =
            unsafeWithVector x $ \pX ->
                f n pX
 {-# INLINE vectorCall #-}
+-}
 
 vectorCall2 :: (RVector x, RVector y, Storable e, Storable f)
             => (Int -> Ptr e -> Ptr f -> IO a) 

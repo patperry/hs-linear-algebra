@@ -43,14 +43,13 @@ module Numeric.LinearAlgebra.Vector.Base (
     dropVector,
     takeVector,
     
-    sumVector,
     sumAbsVector,    
     norm2Vector,
     whichMaxAbsVector,
     dotVector,
     unsafeDotVector,
     kroneckerVector,
-    
+
     shiftVector,
     addVector,
     addVectorWithScales,
@@ -289,11 +288,6 @@ unsafeZipWithVector f v v' =
     listVector (dimVector v) $ zipWith f (elemsVector v) (elemsVector v')
 {-# INLINE unsafeZipWithVector #-}
 
--- | Compute the sum of the entries in the vector.
-sumVector :: (VNum e) => Vector e -> e
-sumVector v = runST $ getSumVector v
-{-# INLINE sumVector #-}
-
 -- | Compute the sum of absolute values of entries in the vector.
 sumAbsVector :: (BLAS1 e) => Vector e -> Double
 sumAbsVector v = runST $ getSumAbsVector v
@@ -326,6 +320,7 @@ kroneckerVector x y = runVector $ do
     z <- newVector_ (dimVector x * dimVector y)
     kroneckerToVector x y z
     return z
+
 
 instance (Storable e, AEq e) => AEq (Vector e) where
     (===) = compareVectorWith (===)

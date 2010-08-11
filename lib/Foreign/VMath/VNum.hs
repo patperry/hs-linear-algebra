@@ -13,7 +13,7 @@
 module Foreign.VMath.VNum
     where
      
-import Foreign( Storable, Ptr, with, peek, advancePtr )
+import Foreign( Storable, Ptr, with, )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
@@ -23,7 +23,6 @@ import Foreign.VMath.Zomplex
         
 -- | Types with vectorized 'Num' operations.
 class (Storable a, Num a) => VNum a where
-    vSum :: Int -> Ptr a -> IO a
     vShift :: Int -> a -> Ptr a -> Ptr a -> IO ()        
     vAdd :: Int -> Ptr a -> Ptr a -> Ptr a -> IO ()
     vSub :: Int -> Ptr a -> Ptr a -> Ptr a -> IO ()
@@ -37,11 +36,6 @@ class (Storable a, Num a) => VNum a where
     vAbs :: Int -> Ptr a -> Ptr a -> IO ()
     vSgn :: Int -> Ptr a -> Ptr a -> IO ()
 
-    vSum = vSumAcc 0
-      where vSumAcc !acc n p | n <= 0    = return acc
-                             | otherwise = do
-                                 e <- peek p
-                                 vSumAcc (acc+e) (n-1) (p `advancePtr` 1)
 
 instance VNum Double where
     vShift = vdShift    

@@ -39,7 +39,6 @@ module Numeric.LinearAlgebra.Vector (
     takeVector,
 
     -- * Vector properties
-    sumVector,
     sumAbsVector,    
     norm2Vector,
     whichMaxAbsVector,

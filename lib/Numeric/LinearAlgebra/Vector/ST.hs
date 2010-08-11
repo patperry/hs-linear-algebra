@@ -49,7 +49,6 @@ module Numeric.LinearAlgebra.Vector.ST (
     zipWithToVector,
 
     -- * Vector properties
-    getSumVector,    
     getSumAbsVector,
     getNorm2Vector,
     getWhichMaxAbsVector,
@@ -94,6 +93,11 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- * Conversions between mutable and immutable vectors
     freezeVector,
     unsafeFreezeVector,
+    
+    -- * Unsafe operations
+    unsafeCopyToVector,
+    unsafeReadVector,
+    unsafeWriteVector,
     
     ) where
 

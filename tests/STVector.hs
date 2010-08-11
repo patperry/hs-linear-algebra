@@ -41,7 +41,6 @@ tests_STVector = testGroup "STVector"
     , testPropertyI "setAssocs" prop_setAssocs
     , testPropertyI "mapTo" prop_mapTo
     , testPropertyI "zipWithTo" prop_zipWithTo
-    , testPropertyDZ "getSum" prop_getSum prop_getSum
     , testPropertyDZ "getSumAbs" prop_getSumAbs prop_getSumAbs
     , testPropertyDZ "getNorm2" prop_getNorm2 prop_getNorm2
     , testPropertyDZ "getDot" prop_getDot prop_getDot
@@ -177,13 +176,6 @@ prop_mapTo t (Blind f) = binaryProp t
 prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> zipWithVector f x y)
     (\mx my mz -> zipWithToVector f mx my mz)
-
-prop_getSum t x = runST $
-    x `readOnlyVector` \mx -> do
-        s <- getSumVector mx
-        return $ s === sumVector x
-  where
-    _ = typed t x
 
 prop_getSumAbs t x = runST $
     x `readOnlyVector` \mx -> do
