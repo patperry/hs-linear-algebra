@@ -346,8 +346,8 @@ rank1UpdateMatrix :: (BLAS2 e)
                   -> Matrix e
 rank1UpdateMatrix alpha x y a =
     runMatrix $ do
-        a' <- newMatrix_ (dimMatrix a)
-        rank1UpdateToMatrix alpha x y a a'
+        a' <- newCopyMatrix a
+        rank1UpdateToMatrix alpha x y a'
         return a'
 
 -- | @mulMatrixVector transa a x@

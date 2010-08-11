@@ -637,25 +637,23 @@ scaleColsToMatrix s a b
   where
     (m,n) = dimMatrix b
 
--- | @rank1UpdateToMatrix alpha x y a c@ sets @c := alpha * x * y^H + a@.
-rank1UpdateToMatrix :: (RVector v1, RVector v2, RMatrix m, BLAS2 e)
-                    => e -> v1 e -> v2 e -> m e -> STMatrix s e -> ST s ()
-rank1UpdateToMatrix alpha x y a c
-    | dimVector x /= m || dimVector y /= n || dimMatrix a /= (m,n) = error $
+-- | @rank1UpdateToMatrix alpha x y a@ sets @a := alpha * x * y' + a@.
+rank1UpdateToMatrix :: (RVector v1, RVector v2, BLAS2 e)
+                    => e -> v1 e -> v2 e -> STMatrix s e -> ST s ()
+rank1UpdateToMatrix alpha x y a
+    | dimVector x /= m || dimVector y /= n = error $
         printf ("rank1UpdateToMatrix _ <vector with dim %d>"
-                ++ " <vector with dim %d> <matrix with dim (%d,%d)>"
-                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
-                (dimVector x) (dimVector y) (fst $ dimMatrix a)
-                (snd $ dimMatrix a) m n
+                ++ " <vector with dim %d> <matrix with dim (%d,%d)>:"
+                ++ " dimension mismatch")
+                (dimVector x) (dimVector y) m n
     | otherwise = do
-        unsafeCopyToMatrix a c
         unsafeIOToST $
             unsafeWithVector x $ \px ->
             unsafeWithVector y $ \py ->
-            unsafeWithMatrix c $ \pc ldc ->
-                BLAS.gerc m n alpha px 1 py 1 pc ldc
+            unsafeWithMatrix a $ \pa lda ->
+                BLAS.gerc m n alpha px 1 py 1 pa lda
   where
-    (m,n) = dimMatrix c
+    (m,n) = dimMatrix a
 
 
 -- | @transToMatrix a c@ sets @c := trans(a)@.
