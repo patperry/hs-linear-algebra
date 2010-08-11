@@ -14,12 +14,12 @@ module Numeric.LinearAlgebra.Factor.Cholesky (
     Chol(..),
     
     -- * Immutable interface
-    cholFactorHermMatrix,
+    cholFactorMatrix,
     cholMatrixSolveVector,
     cholMatrixSolveMatrix,
 
     -- * Mutable interface
-    cholFactorToHermMatrix,
+    cholFactorToMatrix,
     cholMatrixSolveToVector,
     cholMatrixSolveToMatrix,
     ) where
@@ -40,16 +40,16 @@ import Numeric.LinearAlgebra.Vector.ST
 -- | A Cholesky decomposition view of a matrix.
 data Chol m e = Chol Uplo (m e) deriving (Show)
 
--- | @cholFactorHermMatrix a@ tries to compute the Cholesky
+-- | @cholFactorMatrix a@ tries to compute the Cholesky
 -- factorization of @a@.  If @a@ is positive-definite then the routine
 -- returns @Right@ with the factorization.  If the leading minor of order @i@
 -- is not positive-definite then the routine returns @Left i@.
-cholFactorHermMatrix :: (LAPACK e)
-                     => Herm Matrix e
-                     -> Either Int (Chol Matrix e)
-cholFactorHermMatrix (Herm uplo a) = runST $ do
+cholFactorMatrix :: (LAPACK e)
+                 => Herm Matrix e
+                 -> Either Int (Chol Matrix e)
+cholFactorMatrix (Herm uplo a) = runST $ do
     ma <- newCopyMatrix a
-    cholFactorToHermMatrix (Herm uplo ma)
+    cholFactorToMatrix (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
                 a' <- unsafeFreezeMatrix ma'
                 return $ Right (Chol uplo' a')
@@ -75,18 +75,18 @@ cholMatrixSolveMatrix a c = runMatrix $ do
     cholMatrixSolveToMatrix a c c'
     return c'
 
--- | @cholFactorToHermMatrix a@ tries to compute the Cholesky
+-- | @cholFactorToMatrix a@ tries to compute the Cholesky
 -- factorization of @a@ in place.  If @a@ is positive-definite then the
 -- routine returns @Right@ with the factorization, stored in the same
 -- memory as @a@.  If the leading minor of order @i@ is not
 -- positive-definite then the routine returns @Left i@.
 -- In either case, the original storage of @a@ is destroyed.
-cholFactorToHermMatrix :: (LAPACK e)
-                       => Herm (STMatrix s) e
-                       -> ST s (Either Int (Chol (STMatrix s) e))
-cholFactorToHermMatrix (Herm uplo a)
+cholFactorToMatrix :: (LAPACK e)
+                   => Herm (STMatrix s) e
+                   -> ST s (Either Int (Chol (STMatrix s) e))
+cholFactorToMatrix (Herm uplo a)
     | not $ (ma,na) == (n,n) = error $
-        printf ("cholFactorToHermMatrix"
+        printf ("cholFactorToMatrix"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | otherwise =
