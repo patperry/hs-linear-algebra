@@ -10,37 +10,41 @@
 --
 
 module Numeric.LinearAlgebra.Statistics (
-    -- * Sums and means
-    -- ** Immutable interface
+    -- * Immutable interface
+    
+    -- ** Sums and means
     sumVector,
     meanVector,
     weightedSumVector,
     weightedMeanVector,
 
-    -- ** Mutable interface
-    sumToVector,
-    meanToVector,
-    weightedSumToVector,
-    weightedMeanToVector,
-    
-    -- * Covariance matrices
+    -- ** Covariance matrices
     CovType(..),
-    
-    -- ** Immutable interface
     covMatrix,
     covMatrixWithMean,
     weightedCovMatrix,
     weightedCovMatrixWithMean,
 
-    -- ** Mutable interface
+
+    -- * Mutable interface
+    
+    -- ** Sums and means
+    sumToVector,
+    meanToVector,
+    weightedSumToVector,
+    weightedMeanToVector,
+        
+    -- ** Covariance matrices
     covToMatrix,
     covToMatrixWithMean,
     weightedCovToMatrix,
     weightedCovToMatrixWithMean,
+    
     ) where
 
-import Control.Monad( forM_ )
+import Control.Monad( forM_, zipWithM_ )
 import Control.Monad.ST( ST )
+import Data.List( foldl' )
 
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector
@@ -145,11 +149,11 @@ covMatrixWithMean :: (BLAS3 e)
                   => Vector e -> CovType -> [Vector e] -> Herm Matrix e
 covMatrixWithMean = undefined
 
-weightedCovMatrix :: (BLAS3 e)
+weightedCovMatrix :: (VFloating e, BLAS3 e)
                   => CovType -> [(e, Vector e)] -> Herm Matrix e
 weightedCovMatrix = undefined
 
-weightedCovMatrixWithMean :: (BLAS3 e)
+weightedCovMatrixWithMean :: (VFloating e, BLAS3 e)
                           => Vector e -> CovType -> [(e, Vector e)] -> Herm Matrix e
 weightedCovMatrixWithMean = undefined
 
@@ -159,12 +163,41 @@ covToMatrix = undefined
 
 covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                     => v1 e -> CovType -> [v2 e] -> Herm (STMatrix s) e -> ST s ()
-covToMatrixWithMean = undefined
+covToMatrixWithMean mu t xs cov = do
+    one <- newVector n 1
+    xt <- newMatrix_ (p,n)
+    zipWithM_ copyToVector xs $ colsMatrix xt
 
-weightedCovToMatrix :: (RVector v, BLAS3 e)
+    rank1UpdateToMatrix (-1) mu one xt
+    rankKUpdateToHermMatrix (1/df) NoTrans xt 0 cov
+  where
+    p = dimVector mu
+    n = length xs
+    df = realToFrac $ if t == CovML then n else n - 1
+
+weightedCovToMatrix :: (RVector v, VFloating e, BLAS3 e)
                     => CovType -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
 weightedCovToMatrix = undefined
 
-weightedCovToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
+weightedCovToMatrixWithMean :: (RVector v1, RVector v2, VFloating e, BLAS3 e)
                             => v1 e -> CovType -> [(e, v2 e)] -> Herm (STMatrix s) e -> ST s ()
-weightedCovToMatrixWithMean = undefined
+weightedCovToMatrixWithMean mu t wxs cov = do
+    one <- newVector n 1
+    w_sqrt <- newVector n 1
+    w_sqrt `setElemsVector` ws
+    sqrtToVector w_sqrt w_sqrt
+
+    xt <- newMatrix_ (p,n)
+    zipWithM_ copyToVector xs $ colsMatrix xt
+    
+    rank1UpdateToMatrix (-1) mu one xt
+    scaleColsToMatrix w_sqrt xt xt
+    rankKUpdateToHermMatrix scale NoTrans xt 0 cov
+  where
+    (ws0,xs) = unzip wxs
+    w_sum = foldl' (+) 0 ws0
+    ws = map (/w_sum) ws0
+    scale = if t == CovML then 1
+                          else recip $ foldl' (+) 0 $ map (^^(2::Int)) ws
+    n = length ws0
+    p = dimVector mu
