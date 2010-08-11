@@ -306,7 +306,7 @@ instance (Arbitrary e, Storable e) => Arbitrary (NonEmptyVectorList e) where
         xs <- replicateM n $ vector (dimVector x)
         return $ NonEmptyVectorList $ x:xs
         
--- | A nonempty list of vectors with the same dimension.
+-- | A list of vectors with the same dimension.
 data VectorList e = VectorList [Vector e] deriving (Eq, Show)
 instance (Arbitrary e, Storable e) => Arbitrary (VectorList e) where
     arbitrary = do
