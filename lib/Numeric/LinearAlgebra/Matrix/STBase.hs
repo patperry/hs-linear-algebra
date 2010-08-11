@@ -52,7 +52,7 @@ class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
 
     -- | Possibly view a matrix as a vector.  This only succeeds if the
     -- matrix is stored contiguously in memory, i.e. if the matrix contains
-    -- a single column or the "lda" of the matrix is equal to the number
+    -- a single column or the \"lda\" of the matrix is equal to the number
     -- of rows.
     maybeVectorViewMatrix :: (Storable e) => m e -> Maybe (VectorView m e)
 
@@ -114,8 +114,8 @@ instance RMatrix (STMatrix s) where
     {-# INLINE unsafeMatrixFromForeignPtr #-}
 
 
--- | Case a vector to a matrix of the given shape.  This function will
--- only work on concrate types.  Try 'withMatrixViewVector' if the
+-- | Cast a vector to a matrix of the given shape.  This function will
+-- only work on concrete types.  Try 'withMatrixViewVector' if the
 -- compiler complains about non-injective type functions.
 matrixViewVector :: (RMatrix m, Storable e)
                  => (Int,Int)
