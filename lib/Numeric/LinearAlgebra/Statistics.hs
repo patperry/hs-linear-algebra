@@ -22,14 +22,32 @@ module Numeric.LinearAlgebra.Statistics (
     meanToVector,
     weightedSumToVector,
     weightedMeanToVector,
+    
+    -- * Covariance matrices
+    CovType(..),
+    
+    -- ** Immutable interface
+    covMatrix,
+    covMatrixWithMean,
+    weightedCovMatrix,
+    weightedCovMatrixWithMean,
+
+    -- ** Mutable interface
+    covToMatrix,
+    covToMatrixWithMean,
+    weightedCovToMatrix,
+    weightedCovToMatrixWithMean,
     ) where
 
 import Control.Monad( forM_ )
 import Control.Monad.ST( ST )
 
-import Foreign.VMath( VNum )
+import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector
 import Numeric.LinearAlgebra.Vector.ST
+import Numeric.LinearAlgebra.Matrix
+import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Matrix.ST
 
 
 -- | Returns the sum of the vectors.  The list must be nonempty.
@@ -116,3 +134,37 @@ weightedMeanToVector wxs m = let
   where
     n = dimVector m
 {-# INLINE weightedMeanToVector #-}
+
+data CovType = CovUnbiased | CovML deriving (Eq, Show)
+
+covMatrix :: (BLAS3 e)
+          => CovType -> [Vector e] -> Herm Matrix e
+covMatrix = undefined
+
+covMatrixWithMean :: (BLAS3 e)
+                  => Vector e -> CovType -> [Vector e] -> Herm Matrix e
+covMatrixWithMean = undefined
+
+weightedCovMatrix :: (BLAS3 e)
+                  => CovType -> [(e, Vector e)] -> Herm Matrix e
+weightedCovMatrix = undefined
+
+weightedCovMatrixWithMean :: (BLAS3 e)
+                          => Vector e -> CovType -> [(e, Vector e)] -> Herm Matrix e
+weightedCovMatrixWithMean = undefined
+
+covToMatrix :: (RVector v, BLAS3 e)
+            => CovType -> [v e] -> Herm (STMatrix s) e -> ST s ()
+covToMatrix = undefined
+
+covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
+                    => v1 e -> CovType -> [v2 e] -> Herm (STMatrix s) e -> ST s ()
+covToMatrixWithMean = undefined
+
+weightedCovToMatrix :: (RVector v, BLAS3 e)
+                    => CovType -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
+weightedCovToMatrix = undefined
+
+weightedCovToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
+                            => v1 e -> CovType -> [(e, v2 e)] -> Herm (STMatrix s) e -> ST s ()
+weightedCovToMatrixWithMean = undefined
