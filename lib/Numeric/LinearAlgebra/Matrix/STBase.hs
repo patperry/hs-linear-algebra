@@ -637,7 +637,7 @@ scaleColsToMatrix s a b
   where
     (m,n) = dimMatrix b
 
--- | @rank1UpdateToMatrix alpha x y a@ sets @a := alpha * x * y' + a@.
+-- | @rank1UpdateToMatrix alpha x y a@ sets @a := alpha * x * y^H + a@.
 rank1UpdateToMatrix :: (RVector v1, RVector v2, BLAS2 e)
                     => e -> v1 e -> v2 e -> STMatrix s e -> ST s ()
 rank1UpdateToMatrix alpha x y a
