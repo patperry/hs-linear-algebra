@@ -43,7 +43,7 @@ module Numeric.LinearAlgebra.Statistics (
     ) where
 
 import Control.Monad( forM_, zipWithM_ )
-import Control.Monad.ST( ST )
+import Control.Monad.ST( ST, runST )
 import Data.List( foldl' )
 
 import Numeric.LinearAlgebra.Types
@@ -61,7 +61,6 @@ sumVector xs | null xs = error "sumVector of empty list"
                  s <- newVector_ (dimVector $ head xs)
                  sumToVector xs s
                  return s
-{-# INLINE sumVector #-}
 
 -- | Returns the mean of the vectors.  The list must be nonempty.
 meanVector :: (VNum e, Fractional e) => [Vector e] -> Vector e
@@ -70,7 +69,6 @@ meanVector xs | null xs = error "meanVector of empty list"
                   m <- newVector_ (dimVector $ head xs)
                   meanToVector xs m
                   return m
-{-# INLINE meanVector #-}
 
 -- | Returns the weighted sum of the vectors.  The list must be nonempty.
 weightedSumVector :: (VNum e) => [(e,Vector e)] -> Vector e
@@ -79,7 +77,6 @@ weightedSumVector wxs | null wxs = error "weightedSumVector of empty list"
                           s <- newVector_ (dimVector $ snd $ head wxs)
                           weightedSumToVector wxs s
                           return s
-{-# INLINE weightedSumVector #-}
 
 -- | Returns the weighted mean of the vectors.  The list must be nonempty.
 weightedMeanVector :: (VNum e, Fractional e) => [(e,Vector e)] -> Vector e
@@ -88,18 +85,15 @@ weightedMeanVector wxs | null wxs = error "weightedMeanVector of empty list"
                            s <- newVector_ (dimVector $ snd $ head wxs)
                            weightedMeanToVector wxs s
                            return s
-{-# INLINE weightedMeanVector #-}
 
 -- | Sets the target vector to the sum of the vectors.
 sumToVector :: (RVector v, VNum e) => [v e] -> STVector s e -> ST s ()
 sumToVector = weightedSumToVector . zip (repeat 1)
-{-# INLINE sumToVector #-}
 
 -- | Sets the target vector to the mean of the vectors.
 meanToVector :: (RVector v, VNum e, Fractional e)
              => [v e] -> STVector s e -> ST s()
 meanToVector = weightedMeanToVector . zip (repeat 1)
-{-# INLINE meanToVector #-}
 
 -- | Sets the target vector to the weigthed sum of the vectors.
 weightedSumToVector :: (RVector v, VNum e) => [(e, v e)] -> STVector s e -> ST s ()
@@ -107,18 +101,19 @@ weightedSumToVector wxs s = do
     err <- newVector n 0
     old_s <- newVector_ n
     diff <- newVector_ n
+    val <- newVector_ n
     
     setElemsVector s (replicate n 0)
     forM_ wxs $ \(w,x) -> do
-        unsafeCopyToVector s old_s
-        addToVectorWithScales 1 err w x err  -- err  := err + val
-        addToVector s err s                  -- sum  := sum + err
+        unsafeCopyToVector s old_s -- old_s := s
+        scaleToVector w x val      -- val := w * x
+        addToVector err val err    -- err := err + val
+        addToVector s err s        -- s := s + err
         
-        subToVector old_s s diff             
-        addToVectorWithScales 1 diff w x err -- err  := (old_sum - sum) + val    
+        subToVector old_s s diff   -- diff := old_s - s
+        addToVector diff val err   -- err := diff - val
   where
     n = dimVector s
-{-# INLINE weightedSumToVector #-}
 
 -- | Sets the target vector to the weighted mean of the vectors.
 weightedMeanToVector :: (RVector v, VNum e, Fractional e)
@@ -137,29 +132,58 @@ weightedMeanToVector wxs m = let
         go diff 0 wxs
   where
     n = dimVector m
-{-# INLINE weightedMeanToVector #-}
+
 
 data CovType = CovUnbiased | CovML deriving (Eq, Show)
 
-covMatrix :: (BLAS3 e)
+covMatrix :: (VNum e, BLAS3 e)
           => CovType -> [Vector e] -> Herm Matrix e
-covMatrix = undefined
+covMatrix t xs = runST $ do
+    ma <- newMatrix_ (p,p)
+    covToMatrix t xs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
+  where
+    p = dimVector $ head xs
 
 covMatrixWithMean :: (BLAS3 e)
                   => Vector e -> CovType -> [Vector e] -> Herm Matrix e
-covMatrixWithMean = undefined
+covMatrixWithMean mu t xs = runST $ do
+    ma <- newMatrix_ (p,p)
+    covToMatrixWithMean mu t xs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
+  where
+    p = dimVector mu
 
 weightedCovMatrix :: (VFloating e, BLAS3 e)
                   => CovType -> [(e, Vector e)] -> Herm Matrix e
-weightedCovMatrix = undefined
+weightedCovMatrix t wxs = runST $ do
+    ma <- newMatrix_ (p,p)
+    weightedCovToMatrix t wxs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
+  where
+    p = dimVector $ snd $ head wxs
 
 weightedCovMatrixWithMean :: (VFloating e, BLAS3 e)
                           => Vector e -> CovType -> [(e, Vector e)] -> Herm Matrix e
-weightedCovMatrixWithMean = undefined
+weightedCovMatrixWithMean mu t wxs = runST $ do
+    ma <- newMatrix_ (p,p)
+    weightedCovToMatrixWithMean mu t wxs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
+  where
+    p = dimVector mu
 
-covToMatrix :: (RVector v, BLAS3 e)
+covToMatrix :: (RVector v, VNum e, BLAS3 e)
             => CovType -> [v e] -> Herm (STMatrix s) e -> ST s ()
-covToMatrix = undefined
+covToMatrix t xs cov@(Herm _ a) = do
+    mu <- newVector p 1
+    meanToVector xs mu
+    covToMatrixWithMean mu t xs cov
+  where
+    (p,_) = dimMatrix a
 
 covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                     => v1 e -> CovType -> [v2 e] -> Herm (STMatrix s) e -> ST s ()
@@ -177,7 +201,12 @@ covToMatrixWithMean mu t xs cov = do
 
 weightedCovToMatrix :: (RVector v, VFloating e, BLAS3 e)
                     => CovType -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
-weightedCovToMatrix = undefined
+weightedCovToMatrix t wxs cov@(Herm _ a) = do
+    mu <- newVector p 1
+    weightedMeanToVector wxs mu
+    weightedCovToMatrixWithMean mu t wxs cov
+  where
+    (p,_) = dimMatrix a
 
 weightedCovToMatrixWithMean :: (RVector v1, RVector v2, VFloating e, BLAS3 e)
                             => v1 e -> CovType -> [(e, v2 e)] -> Herm (STMatrix s) e -> ST s ()
@@ -189,7 +218,7 @@ weightedCovToMatrixWithMean mu t wxs cov = do
 
     xt <- newMatrix_ (p,n)
     zipWithM_ copyToVector xs $ colsMatrix xt
-    
+
     rank1UpdateToMatrix (-1) mu one xt
     scaleColsToMatrix w_sqrt xt xt
     rankKUpdateToHermMatrix scale NoTrans xt 0 cov
@@ -197,7 +226,8 @@ weightedCovToMatrixWithMean mu t wxs cov = do
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0
     ws = map (/w_sum) ws0
+    w2s_sum = foldl' (+) 0 $ map (^^(2::Int)) ws
     scale = if t == CovML then 1
-                          else recip $ foldl' (+) 0 $ map (^^(2::Int)) ws
+                          else if w2s_sum == 0 then 0 else recip w2s_sum
     n = length ws0
     p = dimVector mu
