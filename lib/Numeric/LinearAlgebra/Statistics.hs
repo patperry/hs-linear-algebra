@@ -10,6 +10,8 @@
 --
 
 module Numeric.LinearAlgebra.Statistics (
+    CovMethod(..),
+
     -- * Immutable interface
     
     -- ** Sums and means
@@ -19,7 +21,6 @@ module Numeric.LinearAlgebra.Statistics (
     weightedMeanVector,
 
     -- ** Covariance matrices
-    CovType(..),
     covMatrix,
     covMatrixWithMean,
     weightedCovMatrix,
@@ -39,7 +40,7 @@ module Numeric.LinearAlgebra.Statistics (
     covToMatrixWithMean,
     weightedCovToMatrix,
     weightedCovToMatrixWithMean,
-    
+
     ) where
 
 import Control.Monad( forM_, zipWithM_ )
@@ -52,6 +53,9 @@ import Numeric.LinearAlgebra.Vector.ST
 import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.ST
+
+
+data CovMethod = UnbiasedCov | MLCov deriving (Eq, Show)
 
 
 -- | Returns the sum of the vectors.  The list must be nonempty.
@@ -134,10 +138,9 @@ weightedMeanToVector wxs m = let
     n = dimVector m
 
 
-data CovType = CovUnbiased | CovML deriving (Eq, Show)
 
 covMatrix :: (VNum e, BLAS3 e)
-          => CovType -> [Vector e] -> Herm Matrix e
+          => CovMethod -> [Vector e] -> Herm Matrix e
 covMatrix t xs = runST $ do
     ma <- newMatrix_ (p,p)
     covToMatrix t xs (Herm Upper ma)
@@ -147,7 +150,7 @@ covMatrix t xs = runST $ do
     p = dimVector $ head xs
 
 covMatrixWithMean :: (BLAS3 e)
-                  => Vector e -> CovType -> [Vector e] -> Herm Matrix e
+                  => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrixWithMean mu t xs = runST $ do
     ma <- newMatrix_ (p,p)
     covToMatrixWithMean mu t xs (Herm Upper ma)
@@ -157,7 +160,7 @@ covMatrixWithMean mu t xs = runST $ do
     p = dimVector mu
 
 weightedCovMatrix :: (VFloating e, BLAS3 e)
-                  => CovType -> [(e, Vector e)] -> Herm Matrix e
+                  => CovMethod -> [(e, Vector e)] -> Herm Matrix e
 weightedCovMatrix t wxs = runST $ do
     ma <- newMatrix_ (p,p)
     weightedCovToMatrix t wxs (Herm Upper ma)
@@ -167,7 +170,7 @@ weightedCovMatrix t wxs = runST $ do
     p = dimVector $ snd $ head wxs
 
 weightedCovMatrixWithMean :: (VFloating e, BLAS3 e)
-                          => Vector e -> CovType -> [(e, Vector e)] -> Herm Matrix e
+                          => Vector e -> CovMethod -> [(e, Vector e)] -> Herm Matrix e
 weightedCovMatrixWithMean mu t wxs = runST $ do
     ma <- newMatrix_ (p,p)
     weightedCovToMatrixWithMean mu t wxs (Herm Upper ma)
@@ -177,7 +180,7 @@ weightedCovMatrixWithMean mu t wxs = runST $ do
     p = dimVector mu
 
 covToMatrix :: (RVector v, VNum e, BLAS3 e)
-            => CovType -> [v e] -> Herm (STMatrix s) e -> ST s ()
+            => CovMethod -> [v e] -> Herm (STMatrix s) e -> ST s ()
 covToMatrix t xs cov@(Herm _ a) = do
     mu <- newVector p 1
     meanToVector xs mu
@@ -186,7 +189,7 @@ covToMatrix t xs cov@(Herm _ a) = do
     (p,_) = dimMatrix a
 
 covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
-                    => v1 e -> CovType -> [v2 e] -> Herm (STMatrix s) e -> ST s ()
+                    => v1 e -> CovMethod -> [v2 e] -> Herm (STMatrix s) e -> ST s ()
 covToMatrixWithMean mu t xs cov = do
     one <- newVector n 1
     xt <- newMatrix_ (p,n)
@@ -197,10 +200,10 @@ covToMatrixWithMean mu t xs cov = do
   where
     p = dimVector mu
     n = length xs
-    df = realToFrac $ if t == CovML then n else n - 1
+    df = realToFrac $ if t == MLCov then n else n - 1
 
 weightedCovToMatrix :: (RVector v, VFloating e, BLAS3 e)
-                    => CovType -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
+                    => CovMethod -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
 weightedCovToMatrix t wxs cov@(Herm _ a) = do
     mu <- newVector p 1
     weightedMeanToVector wxs mu
@@ -209,7 +212,7 @@ weightedCovToMatrix t wxs cov@(Herm _ a) = do
     (p,_) = dimMatrix a
 
 weightedCovToMatrixWithMean :: (RVector v1, RVector v2, VFloating e, BLAS3 e)
-                            => v1 e -> CovType -> [(e, v2 e)] -> Herm (STMatrix s) e -> ST s ()
+                            => v1 e -> CovMethod -> [(e, v2 e)] -> Herm (STMatrix s) e -> ST s ()
 weightedCovToMatrixWithMean mu t wxs cov = do
     one <- newVector n 1
     w_sqrt <- newVector n 1
@@ -227,7 +230,7 @@ weightedCovToMatrixWithMean mu t wxs cov = do
     w_sum = foldl' (+) 0 ws0
     ws = map (/w_sum) ws0
     w2s_sum = foldl' (+) 0 $ map (^^(2::Int)) ws
-    scale = if t == CovML then 1
+    scale = if t == MLCov then 1
                           else if w2s_sum == 0 then 0 else recip w2s_sum
     n = length ws0
     p = dimVector mu
