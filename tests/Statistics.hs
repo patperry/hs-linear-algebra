@@ -132,9 +132,11 @@ prop_weightedCovMatrix t (NonEmptyVectorList xs) =
 
         xbar = weightedMeanVector wxs
         wys = [ (w, subVector x xbar) | (w,x) <- zip ws' xs ]
-        cov' = foldl' (flip $ \(w,y) -> rank1UpdateMatrix (scale*w) y y)
-                      (constantMatrix (p,p) 0)
-                      wys
+        cov' = if w_sum == 0
+                    then constantMatrix (p,p) 0
+                    else foldl' (flip $ \(w,y) -> rank1UpdateMatrix (scale*w) y y)
+                                (constantMatrix (p,p) 0)
+                                wys
 
         cov = weightedCovMatrix method wxs
 
