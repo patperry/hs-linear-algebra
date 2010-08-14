@@ -200,7 +200,7 @@ covToMatrixWithMean mu t xs cov = do
   where
     p = dimVector mu
     n = length xs
-    df = realToFrac $ if t == MLCov then n else n - 1
+    df = fromIntegral $ case t of { MLCov -> n ; UnbiasedCov -> n - 1 }
 
 weightedCovToMatrix :: (RVector v, VFloating e, BLAS3 e)
                     => CovMethod -> [(e, v e)] -> Herm (STMatrix s) e -> ST s ()
@@ -230,7 +230,8 @@ weightedCovToMatrixWithMean mu t wxs cov = do
     w_sum = foldl' (+) 0 ws0
     ws = map (/w_sum) ws0
     w2s_sum = foldl' (+) 0 $ map (^^(2::Int)) ws
-    scale = if t == MLCov then 1
-                          else if w2s_sum == 0 then 0 else recip w2s_sum
+    scale = case t of 
+                MLCov -> 1
+                UnbiasedCov -> 1/(1 - w2s_sum)
     n = length ws0
     p = dimVector mu
