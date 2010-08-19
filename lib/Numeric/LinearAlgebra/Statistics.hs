@@ -68,37 +68,37 @@ data CovMethod =
     deriving (Eq, Show)
 
 
--- | Returns the sum of the vectors.  The list must be nonempty.
-sumVector :: (VNum e) => [Vector e] -> Vector e
-sumVector xs | null xs = error "sumVector []: empty vector list"
-             | otherwise = runVector $ do
-                 s <- newVector_ (dimVector $ head xs)
-                 sumToVector xs s
-                 return s
+-- | Returns the sum of the vectors.  The first argument gives the dimension
+-- of the vectors.
+sumVector :: (VNum e) => Int -> [Vector e] -> Vector e
+sumVector p xs = runVector $ do
+    s <- newVector_ p
+    sumToVector xs s
+    return s
 
--- | Returns the mean of the vectors.  The list must be nonempty.
-meanVector :: (VNum e, Fractional e) => [Vector e] -> Vector e
-meanVector xs | null xs = error "meanVector []: empty vector list"
-              | otherwise = runVector $ do
-                  m <- newVector_ (dimVector $ head xs)
-                  meanToVector xs m
-                  return m
+-- | Returns the mean of the vectors.  The first argument gives the dimension
+-- of the vectors.
+meanVector :: (VNum e, Fractional e) => Int -> [Vector e] -> Vector e
+meanVector p xs = runVector $ do
+      m <- newVector_ p
+      meanToVector xs m
+      return m
 
--- | Returns the weighted sum of the vectors.  The list must be nonempty.
-weightedSumVector :: (VNum e) => [(e,Vector e)] -> Vector e
-weightedSumVector wxs | null wxs = error "weightedSumVector []: empty vector list"
-                      | otherwise = runVector $ do
-                          s <- newVector_ (dimVector $ snd $ head wxs)
-                          weightedSumToVector wxs s
-                          return s
+-- | Returns the weighted sum of the vectors.  The first argument gives the
+-- dimension of the vectors.
+weightedSumVector :: (VNum e) => Int -> [(e, Vector e)] -> Vector e
+weightedSumVector p wxs = runVector $ do
+    s <- newVector_ p
+    weightedSumToVector wxs s
+    return s
 
--- | Returns the weighted mean of the vectors.  The list must be nonempty.
-weightedMeanVector :: (VNum e, Fractional e) => [(e,Vector e)] -> Vector e
-weightedMeanVector wxs | null wxs = error "weightedMeanVector []: empty vector list"
-                       | otherwise = runVector $ do
-                           s <- newVector_ (dimVector $ snd $ head wxs)
-                           weightedMeanToVector wxs s
-                           return s
+-- | Returns the weighted mean of the vectors.  The first argument gives the
+-- dimension of the vectors.
+weightedMeanVector :: (VNum e, Fractional e) => Int -> [(e, Vector e)] -> Vector e
+weightedMeanVector p wxs = runVector $ do
+       s <- newVector_ p
+       weightedMeanToVector wxs s
+       return s
 
 -- | Sets the target vector to the sum of the vectors.
 sumToVector :: (RVector v, VNum e) => [v e] -> STVector s e -> ST s ()
@@ -148,18 +148,14 @@ weightedMeanToVector wxs m = let
     n = dimVector m
 
 -- | Returns the sample covariance matrix as an 'Upper' hermitian matrix.
+-- The first argument gives the dimension of the vectors.
 covMatrix :: (VNum e, BLAS3 e)
-          => CovMethod -> [Vector e] -> Herm Matrix e
-covMatrix t xs
-    | null xs = error $
-        printf "covMatrix _ []: empty vector list"
-    | otherwise = runST $ do
-        ma <- newMatrix_ (p,p)
-        covToMatrix t xs (Herm Upper ma)
-        a <- unsafeFreezeMatrix ma
-        return $ Herm Upper a
-  where
-    p = dimVector $ head xs
+          => Int -> CovMethod -> [Vector e] -> Herm Matrix e
+covMatrix p t xs = runST $ do
+    ma <- newMatrix_ (p,p)
+    covToMatrix t xs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
 
 -- | Given the pre-computed mean, returns the sample covariance matrix
 -- as an 'Upper' hermitian matrix.
@@ -174,19 +170,14 @@ covMatrixWithMean mu t xs = runST $ do
     p = dimVector mu
 
 -- | Returns the weighed sample covariance matrix as an 'Upper' hermitian
--- matrix.
+-- matrix.  The first argument gives the dimension of the vectors.
 weightedCovMatrix :: (VFloating e, BLAS3 e)
-                  => CovMethod -> [(e, Vector e)] -> Herm Matrix e
-weightedCovMatrix t wxs
-    | null wxs = error $
-        printf "weightedCovMatrix _ []: empty vector list"
-    | otherwise = runST $ do
-        ma <- newMatrix_ (p,p)
-        weightedCovToMatrix t wxs (Herm Upper ma)
-        a <- unsafeFreezeMatrix ma
-        return $ Herm Upper a
-  where
-    p = dimVector $ snd $ head wxs
+                  => Int -> CovMethod -> [(e, Vector e)] -> Herm Matrix e
+weightedCovMatrix p t wxs = runST $ do
+    ma <- newMatrix_ (p,p)
+    weightedCovToMatrix t wxs (Herm Upper ma)
+    a <- unsafeFreezeMatrix ma
+    return $ Herm Upper a
 
 -- | Given the pre-computed mean, returns the weighed sample covariance matrix
 -- as an 'Upper' hermitian matrix.

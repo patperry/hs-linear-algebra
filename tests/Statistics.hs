@@ -13,7 +13,7 @@ import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
 
-import Test.QuickCheck.LinearAlgebra( NonEmptyVectorList(..) )
+import Test.QuickCheck.LinearAlgebra( VectorList(..), WeightedVectorList(..) )
 import qualified Test.QuickCheck.LinearAlgebra as Test
 
 import Typed
@@ -40,97 +40,88 @@ tests_Statistics = testGroup "Statistics"
     ]
 
 
-prop_sumVector t (NonEmptyVectorList xs) =
-    sumVector xs ~== foldl' addVector (constantVector p 0) xs
+prop_sumVector t (VectorList p xs) =
+    sumVector p xs ~== foldl' addVector (constantVector p 0) xs
   where
-    p = dimVector (head xs)
     _ = typed t (head xs)
 
-prop_weightedSumVector t (NonEmptyVectorList xs) =
-    forAll (replicateM n $ fmap abs arbitrary) $ \ws ->
-        weightedSumVector (zip ws xs)
-            ~== sumVector (zipWith scaleVector ws xs)
+prop_weightedSumVector t (WeightedVectorList p wxs) =
+    weightedSumVector p wxs
+            ~== sumVector p (map (uncurry scaleVector) wxs)
   where
-    n = length xs
+    n = length wxs
+    _ = typed t (snd $ head wxs)
+
+prop_meanVector t (VectorList p xs) =
+    meanVector p xs ~== scaleVector (1/n) (sumVector p xs)
+  where
+    n = fromIntegral $ max (length xs) 1
     _ = typed t (head xs)
 
-prop_meanVector t (NonEmptyVectorList xs) =
-    meanVector xs ~== scaleVector (1/n) (sumVector xs)
-  where
-    n = fromIntegral $ length xs
-    _ = typed t (head xs)
-
-prop_weightedMeanVector_eqw t (NonEmptyVectorList xs) = let
+prop_weightedMeanVector_eqw t (VectorList p xs) = let
     wxs = zip (repeat 1) xs
-    in weightedMeanVector wxs ~== meanVector xs
+    in weightedMeanVector p wxs ~== meanVector p xs
   where
     _ = typed t (head xs)
     
-prop_weightedMeanVector t (NonEmptyVectorList xs) =
-    forAll (replicateM n $ fmap abs arbitrary) $ \ws -> let
-        wxs = zip ws xs
-        w_sum = sum ws
-        in weightedMeanVector wxs
+prop_weightedMeanVector t (WeightedVectorList p wxs) = let
+        w_sum = (sum . fst . unzip) wxs
+        in weightedMeanVector p wxs
             ~== if w_sum == 0 then constantVector p 0
-                              else scaleVector (1/w_sum) (weightedSumVector wxs)
+                              else scaleVector (1/w_sum) (weightedSumVector p wxs)
   where
-    n = length xs
-    p = dimVector (head xs)
-    _ = typed t (head xs)
+    n = length wxs
+    _ = typed t (snd $ head wxs)
 
-prop_covMatrix t (NonEmptyVectorList xs) =
+prop_covMatrix t (VectorList p xs) =
     forAll (Test.vector p) $ \z ->
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
-        xbar = meanVector xs
+        xbar = meanVector p xs
         ys = [ subVector x xbar | x <- xs ]
         scale = case method of { UnbiasedCov -> 1/(n-1) ; MLCov -> 1/n }
         cov' = foldl' (flip $ \y -> rank1UpdateMatrix scale y y)
                       (constantMatrix (p,p) 0)
                       ys
-        cov = covMatrix method xs
+        cov = covMatrix p method xs
 
         in mulHermMatrixVector cov z ~== mulMatrixVector NoTrans cov' z
   where
     n = fromIntegral $ length xs
-    p = dimVector $ head xs
     _ = typed t $ head xs
 
-prop_covMatrixWithMean t (NonEmptyVectorList xs) =
+prop_covMatrixWithMean t (VectorList p xs) =
     forAll (Test.vector p) $ \z ->
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
-        xbar = meanVector xs
+        xbar = meanVector p xs
         cov' = covMatrixWithMean xbar method xs
-        cov = covMatrix method xs
+        cov = covMatrix p method xs
         in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
   where
     n = fromIntegral $ length xs
-    p = dimVector $ head xs
     _ = typed t $ head xs
 
-prop_weightedCovMatrix_eqw t (NonEmptyVectorList xs) =
+prop_weightedCovMatrix_eqw t (VectorList p xs) =
     forAll (Test.vector p) $ \z ->
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
         wxs = zip (repeat 1) xs
-        cov = weightedCovMatrix method wxs
-        cov' = covMatrix method xs
+        cov = weightedCovMatrix p method wxs
+        cov' = covMatrix p method xs
         in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
   where
     n = fromIntegral $ length xs
-    p = dimVector $ head xs
     _ = typed t $ head xs
 
-prop_weightedCovMatrix t (NonEmptyVectorList xs) =
-    forAll (replicateM n $ fmap abs arbitrary) $ \ws ->
+prop_weightedCovMatrix t (WeightedVectorList p wxs) =
     forAll (Test.vector p) $ \z ->
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
-        wxs = zip ws xs
+        (ws,xs) = unzip wxs
         
         w_sum = sum ws
         ws' = [ w / w_sum | w <- ws ]
         w2_sum = sum [ w*w | w <- ws' ]
         scale = case method of { UnbiasedCov -> 1/(1-w2_sum) ; MLCov -> 1 }
 
-        xbar = weightedMeanVector wxs
+        xbar = weightedMeanVector p wxs
         wys = [ (w, subVector x xbar) | (w,x) <- zip ws' xs ]
         cov' = if w_sum == 0
                     then constantMatrix (p,p) 0
@@ -138,24 +129,20 @@ prop_weightedCovMatrix t (NonEmptyVectorList xs) =
                                 (constantMatrix (p,p) 0)
                                 wys
 
-        cov = weightedCovMatrix method wxs
+        cov = weightedCovMatrix p method wxs
 
         in mulHermMatrixVector cov z ~== mulMatrixVector NoTrans cov' z
   where
-    n = fromIntegral $ length xs
-    p = dimVector $ head xs
-    _ = typed t $ head xs
+    n = fromIntegral $ length wxs
+    _ = typed t $ snd $ head wxs
 
-prop_weightedCovMatrixWithMean t (NonEmptyVectorList xs) =
-    forAll (replicateM n $ fmap abs arbitrary) $ \ws ->
+prop_weightedCovMatrixWithMean t (WeightedVectorList p wxs) =
     forAll (Test.vector p) $ \z ->
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
-        wxs = zip ws xs
-        xbar = weightedMeanVector wxs
-        cov' = weightedCovMatrix method wxs
+        xbar = weightedMeanVector p wxs
+        cov' = weightedCovMatrix p method wxs
         cov = weightedCovMatrixWithMean xbar method wxs
         in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
   where
-    n = fromIntegral $ length xs
-    p = dimVector $ head xs
-    _ = typed t $ head xs
+    n = fromIntegral $ length wxs
+    _ = typed t $ snd $ head wxs

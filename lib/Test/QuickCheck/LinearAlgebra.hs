@@ -47,7 +47,9 @@ module Test.QuickCheck.LinearAlgebra (
     VectorPair(..),
     VectorTriple(..),
     VectorList(..),
+    WeightedVectorList(..),
     NonEmptyVectorList(..),
+    NonEmptyWeightedVectorList(..),
     
     --  ** Matrices
     matrix,
@@ -298,20 +300,40 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
             return $ VectorTriple x y z
 
 -- | A nonempty list of vectors with the same dimension.
-data NonEmptyVectorList e = NonEmptyVectorList [Vector e] deriving (Eq, Show)
+data NonEmptyVectorList e = NonEmptyVectorList Int [Vector e] deriving (Eq, Show)
 instance (Arbitrary e, Storable e) => Arbitrary (NonEmptyVectorList e) where
     arbitrary = do
         x <- arbitrary
         n <- choose (0,20)
-        xs <- replicateM n $ vector (dimVector x)
-        return $ NonEmptyVectorList $ x:xs
+        let p = dimVector x
+        xs <- replicateM n $ vector p
+        return $ NonEmptyVectorList p $ x:xs
+
+-- | A nonempty list of (weight, vector) pairs, with the weights all non-negative
+-- and the vectors all having the same dimension.
+data NonEmptyWeightedVectorList e = NonEmptyWeightedVectorList Int [(e, Vector e)]
+    deriving (Eq, Show)
+instance (Arbitrary e, Storable e, Num e) => Arbitrary (NonEmptyWeightedVectorList e) where
+    arbitrary = do
+        (NonEmptyVectorList p xs) <- arbitrary
+        ws <- replicateM (length xs) $ fmap abs arbitrary
+        return $ NonEmptyWeightedVectorList p $ zip ws xs
         
 -- | A list of vectors with the same dimension.
-data VectorList e = VectorList [Vector e] deriving (Eq, Show)
+data VectorList e = VectorList Int [Vector e] deriving (Eq, Show)
 instance (Arbitrary e, Storable e) => Arbitrary (VectorList e) where
     arbitrary = do
-        (NonEmptyVectorList (_:xs)) <- arbitrary
-        return $ VectorList xs
+        (NonEmptyVectorList p (_:xs)) <- arbitrary
+        return $ VectorList p xs
+
+-- | A list of (weight, vector) pairs, with the weights all non-negative
+-- and the vectors all having the same dimension.
+data WeightedVectorList e = WeightedVectorList Int [(e, Vector e)]
+    deriving (Eq, Show)
+instance (Arbitrary e, Storable e, Num e) => Arbitrary (WeightedVectorList e) where
+    arbitrary = do
+        (NonEmptyWeightedVectorList p (_:wxs)) <- arbitrary
+        return $ WeightedVectorList p wxs
 
 -- | Generate a random matrix of the given size.
 matrix :: (Arbitrary e, Storable e) => (Int,Int) -> Gen (Matrix e)
