@@ -30,6 +30,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyI "accum" prop_accum
     , testPropertyI "map" prop_map
     , testPropertyI "zipWith" prop_zipWith
+    , testPropertyI "concat" prop_concat
     , testPropertyI "slice" prop_slice
     , testPropertyI "splitAt" prop_splitAt
     , testPropertyDZ "sumAbs" prop_sumAbs prop_sumAbs    
@@ -155,6 +156,10 @@ prop_zipWith t (Blind f) (VectorPair x y) =
     _ = typed t y    
     _ = typed t $ zipWithVector f x y
 
+prop_concat t xs =
+    elemsVector (concatVectors xs) === concatMap elemsVector xs
+  where
+    _ = typed t $ head xs
 
 ------------------------------ Vector Views-- --------------------------------
 

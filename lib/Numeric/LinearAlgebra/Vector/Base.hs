@@ -37,6 +37,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     
     mapVector,
     zipWithVector,
+    concatVectors,
     
     sliceVector,
     splitVectorAt,
@@ -85,6 +86,7 @@ module Numeric.LinearAlgebra.Vector.Base (
 import Control.Monad
 import Control.Monad.ST
 import Data.AEq( AEq(..) )
+import Data.List( mapAccumL )
 
 import Data.Vector.Storable( Vector )
 import qualified Data.Vector.Storable as Vector
@@ -287,6 +289,17 @@ unsafeZipWithVector :: (Storable e, Storable e', Storable f)
 unsafeZipWithVector f v v' =
     listVector (dimVector v) $ zipWith f (elemsVector v) (elemsVector v')
 {-# INLINE unsafeZipWithVector #-}
+
+-- | Create a new vector by concatenating a list of vectors.
+concatVectors :: (Storable e) => [Vector e] -> Vector e
+concatVectors xs = let
+    (n_tot,onxs) = mapAccumL (\o x -> let n = dimVector x 
+                                      in o `seq` (o + n, (o,n,x))) 0 xs
+    in runVector $ do
+        y <- newVector_ n_tot
+        forM_ onxs $ \(o,n,x) ->
+            unsafeCopyToVector x (unsafeSliceVector o n y)
+        return y
 
 -- | Compute the sum of absolute values of entries in the vector.
 sumAbsVector :: (BLAS1 e) => Vector e -> Double

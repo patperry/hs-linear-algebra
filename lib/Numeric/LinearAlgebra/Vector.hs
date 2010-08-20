@@ -31,6 +31,7 @@ module Numeric.LinearAlgebra.Vector (
     -- * Derived vectors
     mapVector,
     zipWithVector,
+    concatVectors,
 
     -- * Vector views
     sliceVector,
