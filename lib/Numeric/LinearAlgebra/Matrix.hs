@@ -20,13 +20,13 @@ module Numeric.LinearAlgebra.Matrix (
     rowListMatrix,
     constantMatrix,
 
-    -- * Accessing Matrixs
+    -- * Accessing matrices
     atMatrix,
     indicesMatrix,
     elemsMatrix,
     assocsMatrix,
 
-    -- * Incremental Matrix updates
+    -- * Incremental matrix updates
     replaceMatrix,
     accumMatrix,
 
