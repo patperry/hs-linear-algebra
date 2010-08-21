@@ -43,8 +43,8 @@ module Numeric.LinearAlgebra.Vector.STBase (
     unsafeReadVector,
     writeVector,
     unsafeWriteVector,
-    updateVector,
-    unsafeUpdateVector,
+    modifyVector,
+    unsafeModifyVector,
     unsafeSwapElemsVector,
 
     mapToVector,
@@ -370,25 +370,25 @@ unsafeWriteVector x i e =
 {-# SPECIALIZE INLINE unsafeWriteVector :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
 
 -- | Modify the element stored at the given index.
-updateVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
-updateVector x i f
+modifyVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
+modifyVector x i f
     | i < 0 || i >= n = error $
-        printf ("updateVector <vector with dim %d> %d:"
+        printf ("modifyVector <vector with dim %d> %d:"
                 ++ " invalid index") n i
     | otherwise =
-        unsafeUpdateVector x i f
+        unsafeModifyVector x i f
   where
     n = dimVector x
-{-# SPECIALIZE INLINE updateVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
-{-# SPECIALIZE INLINE updateVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
+{-# SPECIALIZE INLINE modifyVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
+{-# SPECIALIZE INLINE modifyVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
 
-unsafeUpdateVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
-unsafeUpdateVector x i f =
+unsafeModifyVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
+unsafeModifyVector x i f =
     unsafeIOToST $ unsafeWithVector x $ \p -> do
         e <- peekElemOff p i
         pokeElemOff p i $ f e
-{-# SPECIALIZE INLINE unsafeUpdateVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
-{-# SPECIALIZE INLINE unsafeUpdateVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeModifyVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeModifyVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
 
 unsafeSwapElemsVector :: (Storable e) => STVector s e -> Int -> Int -> ST s ()
 unsafeSwapElemsVector x i1 i2 = unsafeIOToST $ unsafeWithVector x $ \p ->

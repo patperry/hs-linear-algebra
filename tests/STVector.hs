@@ -32,7 +32,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "swap" prop_swap prop_swap
     , testPropertyI "read" prop_read
     , testPropertyI "write" prop_write
-    , testPropertyI "update" prop_update
+    , testPropertyI "modify" prop_modify
     , testPropertyI "getElems" prop_getElems
     , testPropertyI "getElems'" prop_getElems'
     , testPropertyI "getAssocs" prop_getAssocs
@@ -114,11 +114,11 @@ prop_write t (Index n i) e =
   where
     _ = e == t
 
-prop_update t (Index n i) (Blind f) =
+prop_modify t (Index n i) (Blind f) =
     forAll (Test.vector n) $ \x -> runST $
         x `mutatesToVector`
             (typed t $ x `replaceVector` [(i, f $ atVector x i)]) $ \mx ->
-                updateVector mx i f
+                modifyVector mx i f
 
 prop_getElems t x =
     forAll arbitrary $ \(Blind f) -> runST $

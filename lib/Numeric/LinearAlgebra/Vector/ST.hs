@@ -35,7 +35,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- * Reading and writing vector elements
     readVector,
     writeVector,
-    updateVector,
+    modifyVector,
     indicesVector,
     getElemsVector,
     getElemsVector',
@@ -98,6 +98,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     unsafeCopyToVector,
     unsafeReadVector,
     unsafeWriteVector,
+    unsafeModifyVector,
     
     ) where
 
