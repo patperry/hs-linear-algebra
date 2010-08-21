@@ -41,6 +41,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "slice" prop_slice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
+    , testPropertyI "matrixViewVector" prop_matrixViewVector
     , testPropertyDZ "shift" prop_shift prop_shift
     , testPropertyDZ "shiftDiag" prop_shiftDiag prop_shiftDiag
     , testPropertyDZ "shiftDiagWithScale" prop_shiftDiagWithScale prop_shiftDiagWithScale
@@ -216,7 +217,11 @@ prop_splitColsAt t a =
   where
     (m,n) = dimMatrix a
     _  = typed t $ immutableMatrix a
-    
+
+prop_matrixViewVector t (Dim2 (m,n)) =
+    forAll (Test.vector $ m*n) $ \x -> let _ = typed t x in
+        elemsMatrix (matrixViewVector (m,n) x) === elemsVector x
+
 
 -------------------------- Num Matrix Operations --------------------------
 
