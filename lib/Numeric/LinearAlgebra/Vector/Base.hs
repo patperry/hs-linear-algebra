@@ -198,8 +198,9 @@ atVector v i
     n = dimVector v
 {-# INLINE atVector #-}
 
+-- | Same as 'atVector' but does not range-check argument.
 unsafeAtVector :: (Storable e) => Vector e -> Int -> e
-unsafeAtVector v i = (Vector.unsafeIndex) v i
+unsafeAtVector v i = Vector.unsafeIndex v i
 {-# INLINE unsafeAtVector #-}
 
 -- | Returns a list of the elements of a vector, in the same order as their

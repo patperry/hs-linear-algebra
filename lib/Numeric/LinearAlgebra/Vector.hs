@@ -20,6 +20,7 @@ module Numeric.LinearAlgebra.Vector (
 
     -- * Accessing vectors
     atVector,
+    unsafeAtVector,
     indicesVector,
     elemsVector,
     assocsVector,
