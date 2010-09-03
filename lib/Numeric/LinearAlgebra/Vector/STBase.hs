@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -11,6 +10,7 @@
 
 module Numeric.LinearAlgebra.Vector.STBase (
     STVector,
+    IOVector,
     RVector(..),
     
     sliceVector,
@@ -96,7 +96,7 @@ import System.IO.Unsafe( unsafeInterleaveIO )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
-import Data.Vector.Storable.Mutable( STVector )
+import Data.Vector.Storable.Mutable( STVector, IOVector, MVector )
 import qualified Data.Vector.Storable.Mutable as STVector
 
 import Numeric.LinearAlgebra.Internal( clearArray )
@@ -129,7 +129,7 @@ class RVector v where
                                -> v e
 
 
-instance RVector (STVector s) where
+instance RVector (MVector s) where
     dimVector = STVector.length
     {-# INLINE dimVector #-}
 

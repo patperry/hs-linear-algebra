@@ -11,6 +11,7 @@
 module Numeric.LinearAlgebra.Vector.ST (
     -- * The @STVector@ data type
     STVector,
+    IOVector,
     runVector,
     
     -- * Read-only Dense vector type class

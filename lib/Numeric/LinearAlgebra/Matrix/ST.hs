@@ -11,6 +11,7 @@
 module Numeric.LinearAlgebra.Matrix.ST (
     -- * The @STMatrix@ data type
     STMatrix,
+    IOMatrix,
     runMatrix,
     
     -- * Read-only Dense matrix type class

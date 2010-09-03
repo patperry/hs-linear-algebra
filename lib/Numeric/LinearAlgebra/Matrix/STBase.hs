@@ -13,7 +13,7 @@ module Numeric.LinearAlgebra.Matrix.STBase
     where
       
 import Control.Monad( forM_, zipWithM_ )
-import Control.Monad.ST( ST, unsafeIOToST )
+import Control.Monad.ST( ST, RealWorld, unsafeIOToST )
 import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff,
     mallocForeignPtrArray )
@@ -36,6 +36,8 @@ data STMatrix s e =
                {-# UNPACK #-} !Int            -- leading dimension
   deriving (Typeable)
 
+-- | Dense matrices in the 'IO' monad.
+type IOMatrix = STMatrix RealWorld
 
 instance HasVectorView (STMatrix s) where
     type VectorView (STMatrix s) = STVector s
