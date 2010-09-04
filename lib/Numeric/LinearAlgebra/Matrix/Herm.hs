@@ -168,7 +168,7 @@ rank2UpdateToHermMatrix alpha x y (Herm uplo a)
     | otherwise =
         unsafeIOToST $
         unsafeWithVector x $ \px ->
-        unsafeWithVector x $ \py ->        
+        unsafeWithVector y $ \py ->
         unsafeWithMatrix a $ \pa lda ->
             BLAS.her2 uplo n alpha px 1 py 1 pa lda
   where
