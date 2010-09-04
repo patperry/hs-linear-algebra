@@ -13,7 +13,6 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Hermitian views of matrices
     Herm(..),
     withHerm,
-    uploHerm,
     
     -- * Immutable interface
     
@@ -74,13 +73,10 @@ import qualified Foreign.BLAS as BLAS
 --
 data Herm m e = Herm Uplo (m e) deriving (Show)
 
--- | Apply a function to the unerlying matrix.
-withHerm :: (m e -> a) -> Herm m e -> a
-withHerm f (Herm _ m) = f m
+-- | Apply a function to the unerlying 'Uplo' and matrix.
+withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
+withHerm (Herm u m) f = f u m
 
--- | Returns the @Uplo@ enum of the herm.
-uploHerm :: Herm m e -> Uplo
-uploHerm (Herm u _) = u
 
 -- | @rank1UpdateToHermMatrix alpha x a@ returns
 -- @alpha * x * x^H + a@.
