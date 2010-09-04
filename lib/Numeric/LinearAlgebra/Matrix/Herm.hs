@@ -13,6 +13,7 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Hermitian views of matrices
     Herm(..),
     withHerm,
+    runHermMatrix,
     
     -- * Immutable interface
     
@@ -77,6 +78,15 @@ data Herm m e = Herm Uplo (m e) deriving (Show)
 withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
 withHerm (Herm u m) f = f u m
 
+-- | A safe way to create and work with a mutable herm matrix before returning 
+-- an immutable one matrix for later perusal.
+runHermMatrix :: (Storable e)
+              => (forall s. ST s (Herm (STMatrix s) e))
+              -> Herm Matrix e
+runHermMatrix mh = runST $ do
+    (Herm u ma) <- mh
+    a <- unsafeFreezeMatrix ma
+    return $ Herm u a
 
 -- | @rank1UpdateToHermMatrix alpha x a@ returns
 -- @alpha * x * x^H + a@.
