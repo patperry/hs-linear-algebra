@@ -185,7 +185,7 @@ runHermPacked stmh = runST $ do
     p <- unsafeFreezePacked mp
     return $ Herm u p
 
--- | @rank1UpdateToHermPacked alpha x a@ returns
+-- | @rank1UpdateHermPacked alpha x a@ returns
 -- @alpha * x * x^H + a@.
 rank1UpdateHermPacked :: (BLAS2 e)
                       => Double -> Vector e -> Herm Packed e -> Herm Packed e
@@ -194,7 +194,7 @@ rank1UpdateHermPacked alpha x (Herm uplo ap) = runHermPacked $ do
     rank1UpdateToHermPacked alpha x hp'
     return hp'
 
--- | @rank2UpdateToHermPacked alpha x y a@ returns
+-- | @rank2UpdateHermPacked alpha x y a@ returns
 -- @alpha * x * y^H + conj(alpha) * y * x^H + a@.
 rank2UpdateHermPacked :: (BLAS2 e)
                       => e -> Vector e -> Vector e -> Herm Packed e
@@ -236,7 +236,7 @@ rank2UpdateToHermPacked alpha x y (Herm uplo a)
     | otherwise =
         unsafeIOToST $
         unsafeWithVector x $ \px ->
-        unsafeWithVector x $ \py ->        
+        unsafeWithVector y $ \py ->        
         unsafeWithPacked a $ \pa ->
             BLAS.hpr2 uplo n alpha px 1 py 1 pa
   where
