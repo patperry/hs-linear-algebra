@@ -44,6 +44,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     getAssocsVector',
     setElemsVector,
     setAssocsVector,    
+    clearVector,
 
     -- * List-like operations
     mapToVector,
