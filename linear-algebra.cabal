@@ -47,7 +47,8 @@ Library
                         Numeric.LinearAlgebra
                         Numeric.LinearAlgebra.Factor.Cholesky
                         Numeric.LinearAlgebra.Matrix
-                        Numeric.LinearAlgebra.Matrix.Herm                        
+                        Numeric.LinearAlgebra.Matrix.Herm
+                        Numeric.LinearAlgebra.Matrix.Packed                        
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Statistics                        
                         Numeric.LinearAlgebra.Types

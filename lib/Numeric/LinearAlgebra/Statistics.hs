@@ -125,7 +125,7 @@ weightedSumToVector wxs s = do
         addToVector s err s        -- s := s + err
         
         subToVector old_s s diff   -- diff := old_s - s
-        addToVector diff val err   -- err := diff - val
+        addToVector diff val err   -- err := diff + val
   where
     n = dimVector s
 

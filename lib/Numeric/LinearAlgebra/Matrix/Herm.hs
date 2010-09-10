@@ -13,7 +13,6 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Hermitian views of matrices
     Herm(..),
     withHerm,
-    runHermMatrix,
     
     -- * Immutable interface
     
@@ -35,6 +34,7 @@ module Numeric.LinearAlgebra.Matrix.Herm (
 
     
     -- * Mutable interface
+    runHermMatrix,
     
     -- ** Matrix-Vector multiplication
     mulHermMatrixToVector,
@@ -78,8 +78,8 @@ data Herm m e = Herm Uplo (m e) deriving (Show)
 withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
 withHerm (Herm u m) f = f u m
 
--- | A safe way to create and work with a mutable herm matrix before returning 
--- an immutable one matrix for later perusal.
+-- | A safe way to create and work with a mutable Herm Matrix before returning 
+-- an immutable one for later perusal.
 runHermMatrix :: (Storable e)
               => (forall s. ST s (Herm (STMatrix s) e))
               -> Herm Matrix e
@@ -88,17 +88,17 @@ runHermMatrix mh = runST $ do
     a <- unsafeFreezeMatrix ma
     return $ Herm u a
 
--- | @rank1UpdateToHermMatrix alpha x a@ returns
+-- | @rank1UpdateHermMatrix alpha x a@ returns
 -- @alpha * x * x^H + a@.
 rank1UpdateHermMatrix :: (BLAS2 e)
-                      => e -> Vector e -> Herm Matrix e -> Herm Matrix e
+                      => Double -> Vector e -> Herm Matrix e -> Herm Matrix e
 rank1UpdateHermMatrix alpha x (Herm uplo a) = runST $ do
     ma' <- newCopyMatrix a
     rank1UpdateToHermMatrix alpha x (Herm uplo ma')
     a' <- unsafeFreezeMatrix ma'
     return $ Herm uplo a'
 
--- | @rank2UpdateToHermMatrix alpha x y a@ returns
+-- | @rank2UpdateHermMatrix alpha x y a@ returns
 -- @alpha * x * y^H + conj(alpha) * y * x^H + a@.
 rank2UpdateHermMatrix :: (BLAS2 e)
                       => e -> Vector e -> Vector e -> Herm Matrix e
@@ -139,7 +139,7 @@ rank2KUpdateHermMatrix alpha trans a b beta (Herm uplo c) = runST $ do
 -- | @rank1UpdateToHermMatrix alpha x a@ sets
 -- @a := alpha * x * x^H + a@.
 rank1UpdateToHermMatrix :: (RVector v, BLAS2 e)
-                        => e -> v e -> Herm (STMatrix s) e -> ST s ()
+                        => Double -> v e -> Herm (STMatrix s) e -> ST s ()
 rank1UpdateToHermMatrix alpha x (Herm uplo a)
     | (not . and) [ nx == n, (ma,na) == (n,n) ] = error $
         printf ("rank1UpdateToHermMatrix _ <vector with dim %d>"

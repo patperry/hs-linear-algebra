@@ -89,10 +89,19 @@ foreign import ccall unsafe #f77_func zgerc
     zgerc  ::  Ptr LAInt -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO ()
         
 foreign import ccall unsafe #f77_func zher
-    zher  ::  BLASUplo -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO ()
+    zher  ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func zher2
     zher2 ::  BLASUplo -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func zhpmv
+    zhpmv ::  BLASUplo -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func zhpr
+    zhpr  ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> IO ()
+
+foreign import ccall unsafe #f77_func zhpr2
+    zhpr2 ::  BLASUplo -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> Ptr (Complex Double) -> IO ()
 
 
 ---------------------------- Level 3 Routines -------------------------------

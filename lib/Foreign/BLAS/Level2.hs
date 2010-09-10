@@ -34,8 +34,11 @@ class (BLAS1 a) => BLAS2 a where
     hbmv :: Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gerc :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     geru :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    her  :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    her  :: Uplo -> Int -> Double -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     her2 :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    hpmv :: Uplo -> Int -> a -> Ptr a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()    
+    hpr  :: Uplo -> Int -> Double -> Ptr a -> Int -> Ptr a -> IO ()
+    hpr2 :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> IO ()
 
 
 withEnum :: (Enum a, Storable a) => Int -> (Ptr a -> IO b) -> IO b
@@ -165,6 +168,33 @@ instance BLAS2 Double where
         withEnum lda $ \plda ->
             dsyr2 puplo pn palpha px pincx py pincy pa plda
     {-# INLINE her2 #-}
+
+    hpmv uplo n alpha pap px incx beta py incy =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+        with beta $ \pbeta ->
+        withEnum incy $ \pincy ->
+            dspmv puplo pn palpha pap px pincx pbeta py pincy
+    {-# INLINE hpmv #-}
+
+    hpr uplo n alpha px incx pap =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+            dspr puplo pn palpha px pincx pap
+    {-# INLINE hpr #-}
+
+    hpr2 uplo n alpha px incx py incy pap =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+        withEnum incy $ \pincy ->
+            dspr2 puplo pn palpha px pincx py pincy pap
+    {-# INLINE hpr2 #-}
     
 
 instance BLAS2 (Complex Double) where
@@ -297,3 +327,30 @@ instance BLAS2 (Complex Double) where
         withEnum lda $ \plda ->
             zher2 puplo pn palpha px pincx py pincy pa plda
     {-# INLINE her2 #-}
+
+    hpmv uplo n alpha pap px incx beta py incy =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+        with beta $ \pbeta ->
+        withEnum incy $ \pincy ->
+            zhpmv puplo pn palpha pap px pincx pbeta py pincy
+    {-# INLINE hpmv #-}
+
+    hpr uplo n alpha px incx pap =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+            zhpr puplo pn palpha px pincx pap
+    {-# INLINE hpr #-}
+
+    hpr2 uplo n alpha px incx py incy pap =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        with alpha $ \palpha ->
+        withEnum incx $ \pincx ->
+        withEnum incy $ \pincy ->
+            zhpr2 puplo pn palpha px pincx py pincy pap
+    {-# INLINE hpr2 #-}

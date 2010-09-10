@@ -92,6 +92,15 @@ foreign import ccall unsafe #f77_func dsyr
 foreign import ccall unsafe #f77_func dsyr2
     dsyr2 ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
+foreign import ccall unsafe #f77_func dspmv
+    dspmv ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func dspr
+    dspr  ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> IO ()
+
+foreign import ccall unsafe #f77_func dspr2
+    dspr2 ::  BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> IO ()
+
 
 ---------------------------- Level 3 Routines -------------------------------
 
