@@ -37,6 +37,11 @@ tests_Statistics = testGroup "Statistics"
     , testPropertyD "weightedCovMatrix (equal weights)" prop_weightedCovMatrix_eqw
     , testPropertyD "weightedCovMatrix" prop_weightedCovMatrix
     , testPropertyD "weightedCovMatrixWithMean" prop_weightedCovMatrixWithMean
+    , testPropertyD "covPacked" prop_covPacked
+    , testPropertyD "covPackedWithMean" prop_covPackedWithMean
+    , testPropertyD "weightedCovPacked (equal weights)" prop_weightedCovPacked_eqw
+    , testPropertyD "weightedCovPacked" prop_weightedCovPacked
+    , testPropertyD "weightedCovPackedWithMean" prop_weightedCovPackedWithMean
     ]
 
 
@@ -143,6 +148,59 @@ prop_weightedCovMatrixWithMean t (WeightedVectorList p wxs) =
         cov' = weightedCovMatrix p method wxs
         cov = weightedCovMatrixWithMean xbar method wxs
         in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
+  where
+    n = fromIntegral $ length wxs
+    _ = typed t $ snd $ head wxs
+
+prop_covPacked t (VectorList p xs) =
+    forAll (Test.vector p) $ \z ->
+    forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
+        cov' = covMatrix p method xs
+        cov = covPacked p method xs
+        in mulHermPackedVector cov z ~== mulHermMatrixVector cov' z
+  where
+    n = fromIntegral $ length xs
+    _ = typed t $ head xs
+
+prop_covPackedWithMean t (VectorList p xs) =
+    forAll (Test.vector p) $ \z ->
+    forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
+        xbar = meanVector p xs
+        cov = covPackedWithMean xbar method xs
+        cov' = covPacked p method xs
+        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
+  where
+    n = fromIntegral $ length xs
+    _ = typed t $ head xs
+
+prop_weightedCovPacked_eqw t (VectorList p xs) =
+    forAll (Test.vector p) $ \z ->
+    forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
+        wxs = zip (repeat 1) xs
+        cov = weightedCovPacked p method wxs
+        cov' = covPacked p method xs
+        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
+  where
+    n = fromIntegral $ length xs
+    _ = typed t $ head xs
+
+prop_weightedCovPacked t (WeightedVectorList p wxs) =
+    forAll (Test.vector p) $ \z ->
+    forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
+        cov' = weightedCovMatrix p method wxs
+        cov = weightedCovPacked p method wxs
+        in mulHermPackedVector cov z ~== mulHermMatrixVector cov' z
+  where
+    n = fromIntegral $ length wxs
+    _ = typed t $ snd $ head wxs
+
+prop_weightedCovPackedWithMean t (WeightedVectorList p wxs) =
+    forAll (Test.vector p) $ \z ->
+    forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
+        xbar = weightedMeanVector p wxs
+        cov' = weightedCovPacked p method wxs
+        cov = weightedCovPackedWithMean xbar method wxs
+        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs
