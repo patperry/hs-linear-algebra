@@ -46,3 +46,11 @@ foreign import ccall unsafe #f77_func dpotrf
 foreign import ccall unsafe #f77_func dpotrs
     dpotrs :: BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt
            -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func dpptrf
+    dpptrf :: BLASUplo -> Ptr LAInt -> Ptr Double -> Ptr LAInt
+           -> IO ()
+           
+foreign import ccall unsafe #f77_func dpptrs
+    dpptrs :: BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double
+           -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()

@@ -35,6 +35,7 @@ module Numeric.LinearAlgebra.Matrix.Packed (
     rank2UpdateHermPacked,
 
     -- * Mutable interface
+    newCopyPacked,
     runHermPacked,
 
     -- ** Herm Packed-Vector multiplication

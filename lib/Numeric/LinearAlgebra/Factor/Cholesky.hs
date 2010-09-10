@@ -14,14 +14,26 @@ module Numeric.LinearAlgebra.Factor.Cholesky (
     Chol(..),
     
     -- * Immutable interface
+    -- ** Matrix
     cholFactorMatrix,
     cholMatrixSolveVector,
     cholMatrixSolveMatrix,
+    
+    -- ** Packed
+    cholFactorPacked,
+    cholPackedSolveVector,
+    cholPackedSolveMatrix,
 
     -- * Mutable interface
+    -- ** Matrix
     cholFactorToMatrix,
     cholMatrixSolveToVector,
     cholMatrixSolveToMatrix,
+    
+    -- ** Packed
+    cholFactorToPacked,
+    cholPackedSolveToVector,
+    cholPackedSolveToMatrix,
     ) where
 
 import Control.Monad.ST( ST, runST, unsafeIOToST )
@@ -32,6 +44,7 @@ import qualified Foreign.LAPACK as LAPACK
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Matrix.Packed
 import Numeric.LinearAlgebra.Matrix.ST
 import Numeric.LinearAlgebra.Matrix.STBase
 import Numeric.LinearAlgebra.Vector
@@ -135,6 +148,99 @@ cholMatrixSolveToMatrix (Chol uplo a) b b'
                 LAPACK.potrs uplo n nrhs pa lda pb ldb
   where
     (ma,na) = dimMatrix a
+    (mb,nb) = dimMatrix b
+    (mb',nb') = dimMatrix b
+    (n,nrhs) = (mb',nb')
+
+-- | @cholFactorPacked a@ tries to compute the Cholesky
+-- factorization of @a@.  If @a@ is positive-definite then the routine
+-- returns @Right@ with the factorization.  If the leading minor of order @i@
+-- is not positive-definite then the routine returns @Left i@.
+cholFactorPacked :: (LAPACK e)
+                 => Herm Packed e
+                 -> Either Int (Chol Packed e)
+cholFactorPacked (Herm uplo a) = runST $ do
+    ma <- newCopyPacked a
+    cholFactorToPacked (Herm uplo ma)
+        >>= either (return . Left) (\(Chol uplo' ma') -> do
+                a' <- unsafeFreezePacked ma'
+                return $ Right (Chol uplo' a')
+                )
+
+-- | @cholPackedSolveVector a x@ returns @a \\ x@.
+cholPackedSolveVector :: (LAPACK e)
+                      => Chol Packed e
+                      -> Vector e
+                      -> Vector e
+cholPackedSolveVector a x = runVector $ do
+    y <- newVector_ (dimVector x)
+    cholPackedSolveToVector a x y
+    return y
+
+-- | @cholPackedSolveMatrix a b@ returns @a \\ b@.
+cholPackedSolveMatrix :: (LAPACK e)
+                      => Chol Packed e
+                      -> Matrix e
+                      -> Matrix e
+cholPackedSolveMatrix a c = runMatrix $ do
+    c' <- newMatrix_ (dimMatrix c)
+    cholPackedSolveToMatrix a c c'
+    return c'
+
+-- | @cholFactorToPacked a@ tries to compute the Cholesky
+-- factorization of @a@ in place.  If @a@ is positive-definite then the
+-- routine returns @Right@ with the factorization, stored in the same
+-- memory as @a@.  If the leading minor of order @i@ is not
+-- positive-definite then the routine returns @Left i@.
+-- In either case, the original storage of @a@ is destroyed.
+cholFactorToPacked :: (LAPACK e)
+                   => Herm (STPacked s) e
+                   -> ST s (Either Int (Chol (STPacked s) e))
+cholFactorToPacked (Herm uplo a) =
+    unsafeIOToST $
+        unsafeWithPacked a $ \pa -> do
+            info <- LAPACK.pptrf uplo n pa
+            return $ if info > 0 then Left info
+                                 else Right (Chol uplo a)
+  where
+    n = dimPacked a
+
+-- | @cholPackedSolveToVector a x x'@ sets
+-- @x' := a \\ x@.  Arguments @x@ and @x'@ can be the same.
+cholPackedSolveToVector :: (LAPACK e, RPacked p, RVector v)
+                        => Chol p e
+                        -> v e
+                        -> STVector s e
+                        -> ST s ()
+cholPackedSolveToVector a x y =
+    withMatrixViewColVector x $ \x' ->
+        cholPackedSolveToMatrix a x' (matrixViewColVector y)
+
+-- | @cholPackedSolveToMatrix a b b'@ sets
+-- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
+cholPackedSolveToMatrix :: (LAPACK e, RPacked p, RMatrix m)
+                        => Chol p e
+                        -> m e
+                        -> STMatrix s e
+                        -> ST s ()
+cholPackedSolveToMatrix (Chol uplo a) b b'
+    | (not . and) [ na == n
+                  , (mb,nb) == (n,nrhs)
+                  , (mb',nb') == (n,nrhs)
+                  ] = error $
+        printf ("cholPackedSolveToMatrix"
+                ++ " (Chol _ <packed matrix with dim %d>)"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+               na mb nb mb' nb'
+    | otherwise = do
+        unsafeCopyToMatrix b b'
+        unsafeIOToST $
+            unsafeWithPacked a $ \pa ->
+            unsafeWithMatrix b' $ \pb ldb ->
+                LAPACK.pptrs uplo n nrhs pa pb ldb
+  where
+    na = dimPacked a
     (mb,nb) = dimMatrix b
     (mb',nb') = dimMatrix b
     (n,nrhs) = (mb',nb')

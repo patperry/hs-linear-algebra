@@ -28,6 +28,8 @@ class (BLAS3 e) => LAPACK e where
     larfg :: Int -> Ptr e -> Ptr e -> Int -> IO e
     potrf :: Uplo -> Int -> Ptr e -> Int -> IO Int
     potrs :: Uplo -> Int -> Int -> Ptr e -> Int -> Ptr e -> Int -> IO ()
+    pptrf :: Uplo -> Int -> Ptr e -> IO Int
+    pptrs :: Uplo -> Int -> Int -> Ptr e -> Ptr e -> Int -> IO ()
     
     unmqr :: Side -> Trans -> Int -> Int -> Int -> Ptr e -> Int -> Ptr e -> Ptr e -> Int -> IO ()
     unmlq :: Side -> Trans -> Int -> Int -> Int -> Ptr e -> Int -> Ptr e -> Ptr e -> Int -> IO ()
@@ -112,6 +114,23 @@ instance LAPACK Double where
             dpotrs puplo pn pnrhs pa plda pb pldb pinfo
             checkInfo =<< peek pinfo
 
+    pptrf uplo n pa =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        alloca $ \pinfo -> do
+            dpptrf puplo pn pa pinfo
+            info <- fromEnum `fmap` peek pinfo
+            assert (info >= 0) $ return info            
+
+    pptrs uplo n nrhs pa pb ldb =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum nrhs $ \pnrhs ->
+        withEnum ldb $ \pldb ->
+        alloca $ \pinfo -> do
+            dpptrs puplo pn pnrhs pa pb pldb pinfo
+            checkInfo =<< peek pinfo
+
 
 instance LAPACK (Complex Double) where
     geqrf m n pa lda ptau =
@@ -170,4 +189,21 @@ instance LAPACK (Complex Double) where
         withEnum ldb $ \pldb ->
         alloca $ \pinfo -> do
             zpotrs puplo pn pnrhs pa plda pb pldb pinfo
+            checkInfo =<< peek pinfo
+
+    pptrf uplo n pa =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        alloca $ \pinfo -> do
+            zpptrf puplo pn pa pinfo
+            info <- fromEnum `fmap` peek pinfo
+            assert (info >= 0) $ return info
+
+    pptrs uplo n nrhs pa pb ldb =
+        withUplo uplo $ \puplo ->
+        withEnum n $ \pn ->
+        withEnum nrhs $ \pnrhs ->
+        withEnum ldb $ \pldb ->
+        alloca $ \pinfo -> do
+            zpptrs puplo pn pnrhs pa pb pldb pinfo
             checkInfo =<< peek pinfo

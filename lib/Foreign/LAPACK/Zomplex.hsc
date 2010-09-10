@@ -41,6 +41,15 @@ foreign import ccall unsafe #f77_func zpotrs
            -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> Ptr LAInt
            -> IO ()
 
+foreign import ccall unsafe #f77_func zpptrf
+    zpptrf :: BLASUplo -> Ptr LAInt -> Ptr (Complex Double)
+           -> Ptr LAInt -> IO ()
+           
+foreign import ccall unsafe #f77_func zpptrs
+    zpptrs :: BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr (Complex Double)
+           -> Ptr (Complex Double) -> Ptr LAInt -> Ptr LAInt
+           -> IO ()
+
 foreign import ccall unsafe #f77_func zunmqr
     zunmqr :: BLASSide -> BLASTrans -> Ptr LAInt -> Ptr LAInt
            -> Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt
