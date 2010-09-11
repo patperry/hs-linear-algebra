@@ -55,7 +55,7 @@ module Numeric.LinearAlgebra.Statistics (
 
     ) where
 
-import Control.Monad( forM_, zipWithM_ )
+import Control.Monad( forM_ )
 import Control.Monad.ST( ST )
 import Data.List( foldl' )
 import Text.Printf( printf )
@@ -191,7 +191,7 @@ covPacked p t xs = runHermPacked $ do
 
 -- | Given the pre-computed mean, returns the sample covariance matrix
 -- with storage scheme equal to 'defaultCovUplo'.
-covMatrixWithMean :: (BLAS3 e)
+covMatrixWithMean :: (VNum e, BLAS3 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrixWithMean mu t xs = runHermMatrix $ do
     cov <- Herm uplo `fmap` newMatrix_ (p,p)
@@ -203,7 +203,7 @@ covMatrixWithMean mu t xs = runHermMatrix $ do
 
 -- | Given the pre-computed mean, returns the sample covariance matrix
 -- (in packed form) with storage scheme equal to 'defaultCovUplo'.
-covPackedWithMean :: (BLAS2 e)
+covPackedWithMean :: (VNum e, BLAS2 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Packed e
 covPackedWithMean mu t xs = runHermPacked $ do
     cov <- (Herm uplo . unsafeToPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
@@ -286,7 +286,7 @@ covToPacked t xs cov@(Herm _ a) = do
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix to the given destination.
-covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
+covToMatrixWithMean :: (RVector v1, RVector v2, VNum e, BLAS3 e)
                     => v1 e -> CovMethod -> [v2 e] -> Herm (STMatrix s) e
                     -> ST s ()
 covToMatrixWithMean mu t xs cov@(Herm _ a)
@@ -295,11 +295,10 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
                 ++ " <matrix with dim %s>: dimension mismatch")
                n (show $ dimMatrix a)
     | otherwise = do
-        one <- newVector n 1
         xt <- newMatrix_ (p,n)
-        zipWithM_ copyToVector xs $ colsMatrix xt
-
-        rank1UpdateToMatrix (-1) mu one xt
+        sequence_ [ subToVector x mu x'
+                  | (x,x') <- zip xs (colsMatrix xt)
+                  ]
         rankKUpdateToHermMatrix (1/df) NoTrans xt 0 cov
   where
     p = dimVector mu
@@ -308,7 +307,7 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix (in packed form) to the given destination.
-covToPackedWithMean :: (RVector v1, RVector v2, BLAS2 e)
+covToPackedWithMean :: (RVector v1, RVector v2, VNum e, BLAS2 e)
                     => v1 e -> CovMethod -> [v2 e] -> Herm (STPacked s) e
                     -> ST s ()
 covToPackedWithMean mu t xs cov@(Herm _ a)
@@ -318,11 +317,10 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
                 ++ " dimension mismatch")
                n (dimPacked a)
     | otherwise = do
-        one <- newVector n 1
         xt <- newMatrix_ (p,n)
-        zipWithM_ copyToVector xs $ colsMatrix xt
-
-        rank1UpdateToMatrix (-1) mu one xt
+        sequence_ [ subToVector x mu x'
+                  | (x,x') <- zip xs (colsMatrix xt)
+                  ]
         clearVector (unPacked a)
         forM_ (colsMatrix xt) $ \x ->
             rank1UpdateToHermPacked scale x cov
@@ -368,25 +366,20 @@ weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
                 ++ " dimension mismatch")
                n (show $ dimMatrix a)
     | otherwise = do
-        one <- newVector n 1
-        w_sqrt <- newVector n 1
-        w_sqrt `setElemsVector` (map realToFrac ws)
-        sqrtToVector w_sqrt w_sqrt
-
         xt <- newMatrix_ (p,n)
-        zipWithM_ copyToVector xs $ colsMatrix xt
-
-        rank1UpdateToMatrix (-1) mu one xt
-        scaleColsToMatrix w_sqrt xt xt
-        rankKUpdateToHermMatrix (realToFrac scale) NoTrans xt 0 cov
+        sequence_ [  subToVector x mu x'
+                  >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
+                  |  (w,x,x') <- zip3 ws xs (colsMatrix xt)
+                  ]
+        rankKUpdateToHermMatrix 1 NoTrans xt 0 cov
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0
     ws = if w_sum == 0 then ws0 else map (/w_sum) ws0
     w2s_sum = foldl' (+) 0 $ map (^^(2::Int)) ws
-    scale = case t of 
-                MLCov -> 1
-                UnbiasedCov -> 1/(1 - w2s_sum)
+    invscale = case t of 
+                   MLCov -> 1
+                   UnbiasedCov -> (1 - w2s_sum)
     n = length ws0
     p = dimVector mu
 
@@ -402,26 +395,21 @@ weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)
                 ++ " dimension mismatch")
                n (dimPacked a)
     | otherwise = do
-        one <- newVector n 1
-        w_sqrt <- newVector n 1
-        w_sqrt `setElemsVector` (map realToFrac ws)
-        sqrtToVector w_sqrt w_sqrt
-
         xt <- newMatrix_ (p,n)
-        zipWithM_ copyToVector xs $ colsMatrix xt
-
-        rank1UpdateToMatrix (-1) mu one xt
-        scaleColsToMatrix w_sqrt xt xt
+        sequence_ [  subToVector x mu x'
+                  >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
+                  |  (w,x,x') <- zip3 ws xs (colsMatrix xt)
+                  ]
         clearVector (unPacked a)
         forM_ (colsMatrix xt) $ \x ->
-            rank1UpdateToHermPacked scale x cov
+            rank1UpdateToHermPacked 1 x cov
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0
     ws = if w_sum == 0 then ws0 else map (/w_sum) ws0
     w2s_sum = foldl' (+) 0 $ map (^^(2::Int)) ws
-    scale = case t of 
-                MLCov -> 1
-                UnbiasedCov -> 1/(1 - w2s_sum)
+    invscale = case t of 
+                   MLCov -> 1
+                   UnbiasedCov -> (1 - w2s_sum)
     n = length ws0
     p = dimVector mu
