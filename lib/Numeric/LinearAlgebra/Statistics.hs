@@ -296,9 +296,10 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
                n (show $ dimMatrix a)
     | otherwise = do
         xt <- newMatrix_ (p,n)
-        sequence_ [ subToVector x mu x'
-                  | (x,x') <- zip xs (colsMatrix xt)
-                  ]
+        withColsMatrixST xt $ \xs' ->
+            sequence_ [ subToVector x mu x'
+                      | (x,x') <- zip xs xs'
+                      ]
         rankKUpdateToHermMatrix (1/df) NoTrans xt 0 cov
   where
     p = dimVector mu
@@ -318,12 +319,13 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
                n (dimPacked a)
     | otherwise = do
         xt <- newMatrix_ (p,n)
-        sequence_ [ subToVector x mu x'
-                  | (x,x') <- zip xs (colsMatrix xt)
-                  ]
+        withColsMatrixST xt $ \xs' ->
+            sequence_ [ subToVector x mu x'
+                      | (x,x') <- zip xs xs'
+                      ]
         clearVector (unPacked a)
-        forM_ (colsMatrix xt) $ \x ->
-            rank1UpdateToHermPacked scale x cov
+        withColsMatrixST xt $ \xs' ->
+            sequence_ [ rank1UpdateToHermPacked scale x' cov | x' <- xs' ]
   where
     p = dimVector mu
     n = length xs
@@ -367,10 +369,11 @@ weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
                n (show $ dimMatrix a)
     | otherwise = do
         xt <- newMatrix_ (p,n)
-        sequence_ [  subToVector x mu x'
-                  >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
-                  |  (w,x,x') <- zip3 ws xs (colsMatrix xt)
-                  ]
+        withColsMatrixST xt $ \xs' ->
+            sequence_ [  subToVector x mu x'
+                      >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
+                      |  (w,x,x') <- zip3 ws xs xs'
+                      ]
         rankKUpdateToHermMatrix 1 NoTrans xt 0 cov
   where
     (ws0,xs) = unzip wxs
@@ -396,13 +399,14 @@ weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)
                n (dimPacked a)
     | otherwise = do
         xt <- newMatrix_ (p,n)
-        sequence_ [  subToVector x mu x'
-                  >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
-                  |  (w,x,x') <- zip3 ws xs (colsMatrix xt)
-                  ]
+        withColsMatrixST xt $ \xs' ->
+            sequence_ [  subToVector x mu x'
+                      >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
+                      |  (w,x,x') <- zip3 ws xs xs'
+                      ]
         clearVector (unPacked a)
-        forM_ (colsMatrix xt) $ \x ->
-            rank1UpdateToHermPacked 1 x cov
+        withColsMatrix xt $ \xs' ->
+            sequence_ [ rank1UpdateToHermPacked 1 x' cov | x' <- xs' ]
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0

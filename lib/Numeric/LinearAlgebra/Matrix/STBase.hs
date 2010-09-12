@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, Rank2Types #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -14,10 +14,12 @@ module Numeric.LinearAlgebra.Matrix.STBase
       
 import Control.Monad( forM_, zipWithM_ )
 import Control.Monad.ST( ST, RealWorld, unsafeIOToST )
+import Data.Maybe( fromMaybe )
 import Data.Typeable( Typeable )
 import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff,
     mallocForeignPtrArray )
 import Text.Printf( printf )
+import Unsafe.Coerce( unsafeCoerce )
 
 import Numeric.LinearAlgebra.Types
 import qualified Foreign.BLAS as BLAS
@@ -39,24 +41,34 @@ data STMatrix s e =
 -- | Dense matrices in the 'IO' monad.
 type IOMatrix = STMatrix RealWorld
 
-instance HasVectorView (STMatrix s) where
-    type VectorView (STMatrix s) = STVector s
-
 -- | Read-only matrices
-class (HasVectorView m, RVector (VectorView m)) => RMatrix m where
+class RMatrix m where
     -- | The dimensions of the matrix (number of rows and columns).
     dimMatrix :: (Storable e) => m e -> (Int,Int)
     
     unsafeSliceMatrix :: (Storable e)
                       => (Int,Int) -> (Int,Int) -> m e -> m e
 
-    unsafeColMatrix :: (Storable e) => m e -> Int -> VectorView m e
+    unsafeWithColMatrix :: (Storable e)
+                        => m e
+                        -> Int 
+                        -> (forall v . RVector v => v e -> ST s a)
+                        -> ST s a
 
-    -- | Possibly view a matrix as a vector.  This only succeeds if the
-    -- matrix is stored contiguously in memory, i.e. if the matrix contains
-    -- a single column or the \"lda\" of the matrix is equal to the number
-    -- of rows.
-    maybeVectorViewMatrix :: (Storable e) => m e -> Maybe (VectorView m e)
+    -- | Perform an action with a list of views of the matrix columns.
+    withColsMatrix :: (Storable e)
+                   => m e
+                   -> (forall v . RVector v => [v e] -> ST s a)
+                   -> ST s a
+
+    -- | Possibly view a matrix as a vector and perform an action on the
+    -- view.  This only succeeds if the matrix is stored contiguously in
+    -- memory, i.e. if the matrix contains a single column or the \"lda\"
+    -- of the matrix is equal to the number of rows.
+    maybeWithVectorViewMatrix :: (Storable e)
+                              => m e
+                              -> (forall v . RVector v => v e -> ST s a)
+                              -> Maybe (ST s a)
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- matrix and the leading dimension (lda).
@@ -80,11 +92,17 @@ instance RMatrix (STMatrix s) where
     dimMatrix (STMatrix _ m n _) = (m,n)
     {-# INLINE dimMatrix #-}
 
-    unsafeColMatrix (STMatrix a m _ lda) j = let
-        o = j * lda
-        x = unsafeSliceVector o m a
-        in x
-    {-# INLINE unsafeColMatrix #-}
+    unsafeWithColMatrix a j f = cast $ unsafeWithColMatrixST a j (cast . f)
+      where
+        cast :: ST s' a -> ST s a
+        cast = unsafeCoerce
+    {-# INLINE unsafeWithColMatrix #-}
+
+    withColsMatrix a f = cast $ withColsMatrixST a (cast . f)
+      where
+        cast :: ST s' a -> ST s a
+        cast = unsafeCoerce
+    {-# INLINE withColsMatrix #-}
 
     unsafeSliceMatrix (i,j) (m',n') (STMatrix a _ _ lda) = let
         o = i + j*lda
@@ -95,10 +113,12 @@ instance RMatrix (STMatrix s) where
         in STMatrix a' m' n' lda
     {-# INLINE unsafeSliceMatrix #-}
     
-    maybeVectorViewMatrix (STMatrix a m n lda) | lda == max 1 m = Just a
-                                               | n == 1 = Just a
-                                               | otherwise = Nothing
-    {-# INLINE maybeVectorViewMatrix #-}
+    maybeWithVectorViewMatrix a f =
+        cast `fmap` maybeWithVectorViewMatrixST a (cast . f)
+      where
+        cast :: ST s' a -> ST s a
+        cast = unsafeCoerce
+    {-# INLINE maybeWithVectorViewMatrix #-}
 
     unsafeWithMatrix (STMatrix a _ _ lda) f =
         unsafeWithVector a $ \p -> f p lda
@@ -116,16 +136,72 @@ instance RMatrix (STMatrix s) where
     {-# INLINE unsafeMatrixFromForeignPtr #-}
 
 
--- | Cast a vector to a matrix of the given shape.  This function will
--- only work on concrete types.  Try 'withMatrixViewVector' if the
--- compiler complains about non-injective type functions.
-matrixViewVector :: (RMatrix m, Storable e)
-                 => (Int,Int)
-                 -> VectorView m e
-                 -> m e
-matrixViewVector mn@(m,n) v
+unsafeColMatrixST :: (Storable e)
+                  => STMatrix s e
+                  -> Int
+                  -> STVector s e
+unsafeColMatrixST (STMatrix a m _ lda) j = let
+    o = j * lda
+    in unsafeSliceVector o m a
+{-# INLINE unsafeColMatrixST #-}
+
+-- | Perform an action with a view of a matrix column (no index checking).
+unsafeWithColMatrixST :: (Storable e)
+                      => STMatrix s e
+                      -> Int
+                      -> (STVector s e -> ST s a)
+                      -> ST s a
+unsafeWithColMatrixST a j f = f $ unsafeColMatrixST a j
+{-# INLINE unsafeWithColMatrixST #-}
+
+-- | Get a list of views of the matrix columns.
+colsMatrixST :: (Storable e)
+             => STMatrix s e
+             -> [STVector s e]
+colsMatrixST (STMatrix a m n lda) = let
+    os = take n $ [ 0, lda .. ]
+    xs = [ unsafeSliceVector o m a | o <- os ]
+    in xs
+{-# INLINE colsMatrixST #-}
+
+-- | Perform an action with a list of views of the matrix columns.
+withColsMatrixST :: (Storable e)
+                 => STMatrix s e
+                 -> ([STVector s e] -> ST s a)
+                 -> ST s a
+withColsMatrixST a f = f $ colsMatrixST a
+{-# INLINE withColsMatrixST #-}
+
+-- | Possibly view a matrix as a vector.  This only succeeds if the
+-- matrix is stored contiguously in memory, i.e. if the matrix contains
+-- a single column or the \"lda\" of the matrix is equal to the number
+-- of rows.
+maybeVectorViewMatrixST :: (Storable e)
+                        => STMatrix s e
+                        -> Maybe (STVector s e)
+maybeVectorViewMatrixST (STMatrix a m n lda) | lda == max 1 m = Just a
+                                             | n   == 1       = Just a
+                                             | otherwise      = Nothing
+{-# INLINE maybeVectorViewMatrixST #-}
+
+-- | Possibly view a matrix as a vector and perform an action on the
+-- view.  This only succeeds when 'maybeVectorViewMatrixST' does.
+maybeWithVectorViewMatrixST :: (Storable e)
+                            => STMatrix s e
+                            -> (STVector s e -> ST s a)
+                            -> Maybe (ST s a)
+maybeWithVectorViewMatrixST a f = f `fmap` maybeVectorViewMatrixST a
+{-# INLINE maybeWithVectorViewMatrixST #-}
+
+-- | Cast a vector to a matrix of the given shape.  See also
+-- 'withMatrixViewVector'.
+matrixViewVectorST :: (Storable e)
+                   => (Int,Int)
+                   -> STVector s e
+                   -> STMatrix s e
+matrixViewVectorST mn@(m,n) v
     | dimVector v /= m*n = error $
-        printf ("matrixViewVector (%d,%d) <vector with dim %d>:"
+        printf ("matrixViewVectorST (%d,%d) <vector with dim %d>:"
                 ++ " dimension mismatch") m n (dimVector v)
     | otherwise =
         cast v
@@ -134,23 +210,23 @@ matrixViewVector mn@(m,n) v
         (fptr,o,_) = unsafeVectorToForeignPtr x
         lda = max 1 m
         in unsafeMatrixFromForeignPtr fptr o mn lda
-{-# INLINE matrixViewVector #-}
+{-# INLINE matrixViewVectorST #-}
 
--- | Cast a vector to a matrix with one column and pass it to
--- the specified function.  See also 'withMatrixViewColVector'.
-matrixViewColVector :: (RMatrix m, Storable e)
-                    => VectorView m e
-                    -> m e
-matrixViewColVector v = matrixViewVector (dimVector v, 1) v
-{-# INLINE matrixViewColVector #-}
+-- | Cast a vector to a matrix with one column.  See also
+-- 'withMatrixViewColVector'.
+matrixViewColVectorST :: (Storable e)
+                      => STVector s e
+                      -> STMatrix s e
+matrixViewColVectorST v = matrixViewVectorST (dimVector v, 1) v
+{-# INLINE matrixViewColVectorST #-}
 
--- | Cast a vector to a matrix with one column and pass it to
--- the specified function.  See also 'withMatrixViewRowVector'.
-matrixViewRowVector :: (RMatrix m, Storable e)
-                    => VectorView m e
-                    -> m e
-matrixViewRowVector v = matrixViewVector (dimVector v, 1) v
-{-# INLINE matrixViewRowVector #-}
+-- | Cast a vector to a matrix with one row.  See also
+-- 'withMatrixViewRowVector'.
+matrixViewRowVectorST :: (Storable e)
+                      => STVector s e
+                      -> STMatrix s e
+matrixViewRowVectorST v = matrixViewVectorST (dimVector v, 1) v
+{-# INLINE matrixViewRowVectorST #-}
 
 -- | Cast a vector to a matrix of the given shape and pass it to
 -- the specified function.
@@ -191,27 +267,37 @@ withMatrixViewRowVector :: (RVector v, Storable e)
 withMatrixViewRowVector v = withMatrixViewVector (1, dimVector v) v
 {-# INLINE withMatrixViewRowVector #-}
 
--- | Get a view of a matrix column.
-colMatrix :: (RMatrix m, Storable e)
-          => m e
-          -> Int
-          -> VectorView m e
-colMatrix a j
+-- | Perform an action with a view of a matrix column.
+withColMatrix :: (RMatrix m, Storable e)
+              => m e
+              -> Int
+              -> (forall v . RVector v => v e -> ST s a)
+              -> ST s a
+withColMatrix a j f
     | j < 0 || j >= n = error $
-        printf ("colMatrix <matrix with dim (%d,%d)> %d:"
+        printf ("withColMatrix <matrix with dim (%d,%d)> %d:"
                 ++ " index out of range") m n j
     | otherwise =
-        unsafeColMatrix a j
+        unsafeWithColMatrix a j f
   where
     (m,n) = dimMatrix a
-{-# INLINE colMatrix #-}
+{-# INLINE withColMatrix #-}
 
--- | Get a list of views of the matrix columns.
-colsMatrix :: (RMatrix m, Storable e)
-           => m e
-           -> [VectorView m e]
-colsMatrix a = [ unsafeColMatrix a j | j <- [ 0..n-1 ] ]
-  where n = (snd . dimMatrix) a
+-- | Perform an action with a view of a mutable matrix column.
+withColMatrixST :: (Storable e)
+                => STMatrix s e
+                -> Int
+                -> (STVector s e -> ST s a)
+                -> ST s a
+withColMatrixST a j f
+    | j < 0 || j >= n = error $
+        printf ("withColMatrixST <matrix with dim (%d,%d)> %d:"
+                ++ " index out of range") m n j
+    | otherwise =
+        unsafeWithColMatrixST a j f
+  where
+    (m,n) = dimMatrix a
+{-# INLINE withColMatrixST #-}
 
 -- | @sliceMatrix (i,j) (m,n) a@ creates a submatrix view of @a@ starting at
 -- element @(i,j)@ and having dimensions @(m,n)@.
@@ -305,23 +391,17 @@ indicesMatrix a = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
   
 -- | Lazily get the elements of the matrix, in column-major order.  
 getElemsMatrix :: (RMatrix m, Storable e) => m e -> ST s [e]
-getElemsMatrix a = case maybeVectorViewMatrix a of
-    Just x -> getElemsVector x
-    Nothing -> concat `fmap` sequence [ getElemsVector (colMatrix a j)
-                                      | j <- [ 0..n-1 ]
-                                      ]
-  where
-    n = (snd . dimMatrix) a
+getElemsMatrix a = case maybeWithVectorViewMatrix a getElemsVector of
+    Just es -> es
+    Nothing -> withColsMatrix a $ \xs ->
+                   concat `fmap` mapM getElemsVector xs
 
 -- | Get the elements of the matrix, in column-major order.
 getElemsMatrix' :: (RMatrix m, Storable e) => m e -> ST s [e]
-getElemsMatrix' a = case maybeVectorViewMatrix a of
-    Just x -> getElemsVector' x
-    Nothing -> concat `fmap` sequence [ getElemsVector' (colMatrix a j)
-                                      | j <- [ 0..n-1 ]
-                                      ]
-  where
-    n = (snd . dimMatrix) a
+getElemsMatrix' a = case maybeWithVectorViewMatrix a getElemsVector' of
+    Just es -> es
+    Nothing -> withColsMatrix a $ \xs ->
+                   concat `fmap` mapM getElemsVector' xs
 
 -- | Lazily get the association list of the matrix, in column-major order.
 getAssocsMatrix :: (RMatrix m, Storable e) => m e -> ST s [((Int,Int),e)]
@@ -338,9 +418,10 @@ getAssocsMatrix' a = do
 -- | Set all of the values of the matrix from the elements in the list,
 -- in column-major order.
 setElemsMatrix :: (Storable e) => STMatrix s e -> [e] -> ST s ()
-setElemsMatrix a es = case maybeVectorViewMatrix a of
-    Just x  -> setElemsVector x es
-    Nothing -> go 0 es
+setElemsMatrix a es =
+    case maybeWithVectorViewMatrixST a (`setElemsVector` es) of
+        Just st  -> st
+        Nothing -> go 0 es
   where
     (m,n) = dimMatrix a
     go j [] | j == n = return ()
@@ -350,7 +431,7 @@ setElemsMatrix a es = case maybeVectorViewMatrix a of
     go j es' =
         let (es1', es2') = splitAt m es'
         in do
-            setElemsVector (colMatrix a j) es1'
+            withColMatrixST a j (`setElemsVector` es1')
             go (j+1) es2'
 
 -- | Set the given values in the matrix.  If an index is repeated twice,
@@ -490,12 +571,15 @@ unsafeMapToMatrix :: (RMatrix m, Storable e, Storable f)
                   -> STMatrix s f
                   -> ST s ()
 unsafeMapToMatrix f a c =
-    case (maybeVectorViewMatrix a, maybeVectorViewMatrix c) of
-        (Just x, Just z) -> unsafeMapToVector f x z
-        _ -> sequence_ [ unsafeMapToVector f x z 
-                       | (x,z) <- zip (colsMatrix a) (colsMatrix c)
-                       ]
-{-# INLINE unsafeMapToMatrix #-}
+    fromMaybe colwise $ maybeWithVectorViewMatrix a $ \x ->
+    fromMaybe colwise $ maybeWithVectorViewMatrixST c $ \z ->
+        unsafeMapToVector f x z
+  where
+    colwise = withColsMatrix   a $ \xs ->
+              withColsMatrixST c $ \zs ->
+                  sequence_ [ unsafeMapToVector f x z
+                            | (x,z) <- zip xs zs
+                            ]
 
 -- | @zipWithToMatrix f a b c@ replaces @c@ elementwise with @f(a, b)@.
 zipWithToMatrix :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
@@ -515,21 +599,25 @@ unsafeZipWithToMatrix :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Stor
                       -> STMatrix s f
                       -> ST s ()
 unsafeZipWithToMatrix f a b c =
-    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b,
-          maybeVectorViewMatrix c) of
-        (Just x, Just y, Just z) -> unsafeZipWithToVector f x y z
-        _ -> sequence_ [ unsafeZipWithToVector f x y z
-                       | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c)
-                       ]
-{-# INLINE unsafeZipWithToMatrix #-}
+    fromMaybe colwise $ maybeWithVectorViewMatrix a $ \x ->
+    fromMaybe colwise $ maybeWithVectorViewMatrix b $ \y ->
+    fromMaybe colwise $ maybeWithVectorViewMatrixST c $ \z ->
+        unsafeZipWithToVector f x y z
+  where
+    colwise = withColsMatrix   a $ \xs ->
+              withColsMatrix   b $ \ys ->
+              withColsMatrixST c $ \zs ->
+                  sequence_ [ unsafeZipWithToVector f x y z
+                            | (x,y,z) <- zip3 xs ys zs
+                            ]
 
 -- | Set every element in the matrix to a default value.  For
 -- standard numeric types (including 'Double', 'Complex Double', and 'Int'),
 -- the default value is '0'.
 clearMatrix :: (Storable e) => STMatrix s e -> ST s ()
-clearMatrix a = case maybeVectorViewMatrix a of
-    Just x -> clearVector x
-    Nothing -> sequence_ [ clearVector x | x <- colsMatrix a ]
+clearMatrix a = case maybeVectorViewMatrixST a of
+    Just x  -> clearVector x
+    Nothing -> withColsMatrixST a $ mapM_ clearVector
 
 -- | Add a constant to all entries of a matrix.
 shiftToMatrix :: (RMatrix m, VNum e)
@@ -616,8 +704,10 @@ scaleRowsToMatrix s a b
                 ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
                 ++ " dimension mismatch") (dimVector s)
                 (fst $ dimMatrix a) (snd $ dimMatrix a) m n
-    | otherwise = do
-        zipWithM_ (mulToVector s) (colsMatrix a) (colsMatrix b)
+    | otherwise =
+        withColsMatrix   a $ \xs ->
+        withColsMatrixST b $ \ys ->
+            zipWithM_ (mulToVector s) xs ys
   where
     (m,n) = dimMatrix b
 
@@ -631,11 +721,13 @@ scaleColsToMatrix s a b
                 ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
                 ++ " dimension mismatch") (dimVector s)
                 (fst $ dimMatrix a) (snd $ dimMatrix a) m n
-    | otherwise = do
-        es <- getElemsVector s
-        sequence_ [ scaleToVector e x y
-                  | (e,x,y) <- zip3 es (colsMatrix a) (colsMatrix b)
-                  ]
+    | otherwise =
+        getElemsVector   s >>= \es ->
+        withColsMatrix   a $ \xs ->
+        withColsMatrixST b $ \ys ->
+            sequence_ [ scaleToVector e x y
+                      | (e,x,y) <- zip3 es xs ys
+                      ]
   where
     (m,n) = dimMatrix b
 
@@ -846,24 +938,32 @@ checkMatrixOp3 str f x y z
 {-# INLINE checkMatrixOp3 #-}
 
 matrixVectorOp2 :: (RMatrix m, Storable e, Storable f)
-                => (VectorView m e -> STVector s f -> ST s ())
+                => (forall v . RVector v => v e -> STVector s f -> ST s ())
                 -> m e -> STMatrix s f -> ST s ()
-matrixVectorOp2 f a b =
-    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b) of
-        (Just x, Just y) -> f x y
-        _ -> zipWithM_ f (colsMatrix a) (colsMatrix b)
+matrixVectorOp2 f a c =
+    fromMaybe colwise $ maybeWithVectorViewMatrix   a $ \x ->
+    fromMaybe colwise $ maybeWithVectorViewMatrixST c $ \z ->
+        f x z
+  where
+    colwise = withColsMatrix   a $ \xs ->
+              withColsMatrixST c $ \zs ->
+                  sequence_ [ f x z | (x,z) <- zip xs zs ]
 {-# INLINE matrixVectorOp2 #-}
 
 matrixVectorOp3 :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
-                => (VectorView m1 e1 -> VectorView m2 e2 -> STVector s f -> ST s ())
+                => (forall v1 v2 . (RVector v1, RVector v2) => 
+                    v1 e1 -> v2 e2 -> STVector s f -> ST s ())
                 -> m1 e1 -> m2 e2 -> STMatrix s f -> ST s ()
 matrixVectorOp3 f a b c =
-    case (maybeVectorViewMatrix a, maybeVectorViewMatrix b,
-            maybeVectorViewMatrix c) of
-        (Just x, Just y, Just z) -> f x y z
-        _ -> sequence_
-            [ f x y z
-            | (x,y,z) <- zip3 (colsMatrix a) (colsMatrix b) (colsMatrix c) ]
+    fromMaybe colwise $ maybeWithVectorViewMatrix   a $ \x ->
+    fromMaybe colwise $ maybeWithVectorViewMatrix   b $ \y ->
+    fromMaybe colwise $ maybeWithVectorViewMatrixST c $ \z ->
+        f x y z
+  where
+    colwise = withColsMatrix   a $ \xs ->
+              withColsMatrix   b $ \ys ->
+              withColsMatrixST c $ \zs ->
+                  sequence_ [ f x y z | (x,y,z) <- zip3 xs ys zs ]
 {-# INLINE matrixVectorOp3 #-}
 
 newResultMatrix :: (RMatrix m, Storable e, Storable f)

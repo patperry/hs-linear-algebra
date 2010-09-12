@@ -137,7 +137,10 @@ instance RVector (MVector s) where
     {-# INLINE unsafeSliceVector #-}
 
     unsafeWithVector v f =
-        STVector.unsafeWith (unsafeCoerce v) f
+        STVector.unsafeWith (cast v) f
+      where
+        cast :: a s e -> a RealWorld e
+        cast = unsafeCoerce
     {-# INLINE unsafeWithVector #-}
 
     -- This is a workaround for a bug in vector-0.6.0.2 and below:

@@ -35,15 +35,20 @@ module Numeric.LinearAlgebra.Matrix (
     zipWithMatrix,
 
     -- * Matrix views
-    colMatrix,
-    colsMatrix,
     sliceMatrix,
     splitRowsMatrixAt,
     splitColsMatrixAt,
 
-    -- * Matrix rows
+    -- * Matrix rows and columns
+    colMatrix,
+    colsMatrix,
     rowMatrix,
     rowsMatrix,
+    
+    -- * Vector views
+    matrixViewVector,
+    matrixViewColVector,
+    matrixViewRowVector,
 
     -- * Matrix math operations
     shiftMatrix,

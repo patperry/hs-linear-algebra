@@ -15,8 +15,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     runMatrix,
     
     -- * Read-only Dense matrix type class
-    RMatrix( dimMatrix, maybeVectorViewMatrix, unsafeWithMatrix,
-        unsafeMatrixToForeignPtr, unsafeMatrixFromForeignPtr ),
+    RMatrix(..),
     
     -- * Creating new matrices
     newMatrix_,
@@ -33,9 +32,10 @@ module Numeric.LinearAlgebra.Matrix.ST (
     splitRowsMatrixAt,
     splitColsMatrixAt,
     
-    -- * Matrix rows
+    -- * Matrix rows and columns
     getRowMatrix,
-    setRowMatrix,   
+    setRowMatrix,
+    withColsMatrixST,
 
     -- * Reading and writing matrix elements
     readMatrix,
@@ -86,12 +86,13 @@ module Numeric.LinearAlgebra.Matrix.ST (
     unsafeFreezeMatrix,
     
     -- * Matrix views of vectors
-    matrixViewVector,
-    matrixViewColVector,
-    matrixViewRowVector,
     withMatrixViewVector,
     withMatrixViewColVector,
     withMatrixViewRowVector,
+
+    matrixViewVectorST,
+    matrixViewColVectorST,
+    matrixViewRowVectorST,
     
     ) where
 

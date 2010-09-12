@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, Rank2Types, TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Numeric.LinearAlgebra.Matrix.Packed

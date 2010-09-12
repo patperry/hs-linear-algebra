@@ -12,6 +12,8 @@
 
 module Numeric.LinearAlgebra.Vector.Base (
     Vector,
+    unVector,
+    unSTVector,
     dimVector,
     
     vector,
@@ -93,6 +95,7 @@ import qualified Data.Vector.Storable as Vector
 import qualified Data.Vector.Storable.Mutable as STVector
 
 import Text.Printf( printf )
+import Unsafe.Coerce( unsafeCoerce )
 
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector.STBase
@@ -101,6 +104,14 @@ infixr 8 `powVector`
 infixl 7 `divVector`
 infixl 7 `mulVector`, `scaleVector`, `kroneckerVector`
 infixl 6 `addVector`, `shiftVector`, `subVector`
+
+unVector :: Vector e -> STVector RealWorld e
+unVector = unsafeCoerce
+{-# INLINE unVector #-}
+
+unSTVector :: STVector s e -> Vector e
+unSTVector = unsafeCoerce
+{-# INLINE unSTVector #-}
 
 instance RVector Vector where
     dimVector = Vector.length

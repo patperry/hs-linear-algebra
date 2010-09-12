@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, Rank2Types #-}
 module STVector (
     tests_STVector,
     mutatesToVector,

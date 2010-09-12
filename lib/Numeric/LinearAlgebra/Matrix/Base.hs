@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, Rank2Types,
-        TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, Rank2Types #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -41,8 +40,9 @@ infixl 6 `addMatrix`, `shiftMatrix`, `shiftDiagMatrix`, `subMatrix`
 newtype Matrix e = Matrix { unMatrix :: STMatrix RealWorld e }
     deriving (RMatrix, Typeable)
 
-instance HasVectorView Matrix where
-    type VectorView Matrix = Vector
+unSTMatrix :: STMatrix s e -> Matrix e
+unSTMatrix = Matrix . unsafeCoerce
+{-# INLINE unSTMatrix #-}
 
 -- | A safe way to create and work with a mutable matrix before returning 
 -- an immutable matrix for later perusal. This function avoids copying
@@ -55,7 +55,7 @@ runMatrix mx = runST $ mx >>= unsafeFreezeMatrix
 -- | Converts a mutable matrix to an immutable one by taking a complete
 -- copy of it.
 freezeMatrix :: (Storable e) => STMatrix s e -> ST s (Matrix e)
-freezeMatrix = fmap Matrix . unsafeCoerce . newCopyMatrix
+freezeMatrix = fmap unSTMatrix . newCopyMatrix
 {-# INLINE freezeMatrix #-}
 
 -- | Converts a mutable matrix into an immutable matrix. This simply casts
@@ -65,7 +65,7 @@ freezeMatrix = fmap Matrix . unsafeCoerce . newCopyMatrix
 -- the immutable version. It is safe to use, therefore, if the mutable
 -- version is never modified after the freeze operation.
 unsafeFreezeMatrix :: (Storable e) => STMatrix s e -> ST s (Matrix e)
-unsafeFreezeMatrix = return . Matrix . unsafeCoerce
+unsafeFreezeMatrix = return . unSTMatrix
 {-# INLINE unsafeFreezeMatrix #-}
 
 
@@ -105,7 +105,7 @@ listMatrix mn es = runMatrix $ do
 colListMatrix :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 colListMatrix mn cs = runMatrix $ do
     a <- newMatrix_ mn
-    zipWithM_ copyToVector cs (colsMatrix a)
+    withColsMatrixST a $ zipWithM_ copyToVector cs
     return a
 
 -- | Create a matrix of the given dimension with the given vectors as
@@ -233,6 +233,27 @@ unsafeZipWithMatrix f a a' =
     listMatrix (dimMatrix a') $ zipWith f (elemsMatrix a) (elemsMatrix a')
 {-# INLINE unsafeZipWithMatrix #-}
 
+-- | Get the given column of the matrix.
+colMatrix :: (Storable e) => Matrix e -> Int -> Vector e
+colMatrix a j
+    | j < 0 || j >= n = error $
+        printf ("colMatrix <matrix with dim (%d,%d)> %d:"
+                ++ " index out of range") m n j
+    | otherwise =
+        unsafeColMatrix a j
+  where
+    (m,n) = dimMatrix a
+{-# INLINE colMatrix #-}
+
+unsafeColMatrix :: (Storable e) => Matrix e -> Int -> Vector e
+unsafeColMatrix a j = unSTVector $ unsafeColMatrixST (unMatrix a) j
+{-# INLINE unsafeColMatrix #-}
+
+-- | Get a list of the columns of the matrix.
+colsMatrix :: (Storable e) => Matrix e -> [Vector e]
+colsMatrix a = map unSTVector $ colsMatrixST (unMatrix a)
+{-# INLINE colsMatrix #-}
+
 -- | Get the given row of the matrix.
 rowMatrix :: (Storable e) => Matrix e -> Int -> Vector e
 rowMatrix a i = runVector $ do
@@ -255,6 +276,26 @@ rowsMatrix :: (Storable e) => Matrix e -> [Vector e]
 rowsMatrix a = [ unsafeRowMatrix a i | i <- [ 0..m-1 ] ]
   where
     (m,_) = dimMatrix a
+{-# INLINE rowsMatrix #-}
+
+-- | Cast a vector to a matrix of the given shape.
+matrixViewVector :: (Storable e)
+                 => (Int,Int)
+                 -> Vector e
+                 -> Matrix e
+matrixViewVector mn v = unSTMatrix $ matrixViewVectorST mn (unVector v)
+
+-- | Cast a vector to a matrix with one column.
+matrixViewColVector :: (Storable e)
+                    => Vector e
+                    -> Matrix e
+matrixViewColVector v = unSTMatrix $ matrixViewColVectorST (unVector v)
+
+-- | Cast a vector to a matrix with one row.
+matrixViewRowVector :: (Storable e)
+                    => Vector e
+                    -> Matrix e
+matrixViewRowVector v = unSTMatrix $ matrixViewRowVectorST (unVector v)
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "listMatrix " ++ show (dimMatrix x) ++ " " ++ show (elemsMatrix x)
