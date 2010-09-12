@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Numeric.LinearAlgebra.Types
@@ -25,9 +24,6 @@ module Numeric.LinearAlgebra.Types (
     -- * LAPACK element types
     LAPACK,
     
-    -- * Matrix types
-    HasVectorView(..),
-
     -- * Enums
     Trans(..),
     Uplo(..),
@@ -47,8 +43,3 @@ import Foreign.BLAS( Trans(..), Uplo(..), Side(..), Diag(..), BLAS1, BLAS2, BLAS
 import Foreign.LAPACK( LAPACK )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )
-
--- | Types that can be viewed as vectors.
-class HasVectorView (a :: * -> *) where
-    type VectorView a :: * -> *
-

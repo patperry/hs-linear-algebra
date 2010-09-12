@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, Rank2Types, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Numeric.LinearAlgebra.Matrix.Packed
@@ -17,6 +17,12 @@ module Numeric.LinearAlgebra.Matrix.Packed (
 
     RPacked(..),
     toPacked,
+    unsafeToPacked,
+    fromPacked,
+    toSTPacked,
+    unsafeToSTPacked,
+    fromSTPacked,
+    withVectorPackedST,
     
     -- * Conversions between mutable and immutable packed matrices
     runPacked,
@@ -54,7 +60,6 @@ import Data.Typeable( Typeable )
 import Foreign( Storable, Ptr )
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Types( HasVectorView(..) )
 import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
 import Numeric.LinearAlgebra.Vector( Vector, dimVector   )
 import Numeric.LinearAlgebra.Vector.ST( STVector, RVector, freezeVector,
@@ -75,60 +80,9 @@ data STPacked s e = STPacked !Int !(STVector s e)
 -- | Mutable packed matrices in the 'IO' monad.
 type IOPacked = STPacked RealWorld
 
-
--- | Read-only packed matrices.
-class (HasVectorView p, RVector (VectorView p)) => RPacked p where
-    -- | Create a packed matrix view of a vector, wihtout checking
-    -- the dimension of the vector.
-    unsafeToPacked :: (Storable e) => Int -> VectorView p e -> p e
-    
-    -- | Returns the dimension and underlying vector storage of a
-    -- packed matrix.
-    fromPacked :: (Storable e) => p e -> (Int, VectorView p e)
-    
-    -- | Returns the dimension of the packed matrix.
-    dimPacked :: (Storable e) => p e -> Int
-
-    -- | Returns the underlying storage of the packed matrix.
-    unPacked :: (Storable e) => p e -> VectorView p e
-    
-    -- | Perform an IO action with a pointer to the first element of
-    -- the packed matrix.
-    unsafeWithPacked :: (Storable e) => p e -> (Ptr e -> IO a) -> IO a
-
-instance HasVectorView Packed where
-    type VectorView Packed = Vector
-
-instance HasVectorView (STPacked s) where
-    type VectorView (STPacked s) = STVector s
-
-instance RPacked Packed where
-    unsafeToPacked = Packed
-    {-# INLINE unsafeToPacked #-}
-    fromPacked (Packed n v) = (n,v)
-    {-# INLINE fromPacked #-}
-    dimPacked (Packed n _) = n
-    {-# INLINE dimPacked #-}
-    unPacked (Packed _ v) = v
-    {-# INLINE unPacked #-}
-    unsafeWithPacked (Packed _ v) = unsafeWithVector v
-    {-# INLINE unsafeWithPacked #-}
-
-instance RPacked (STPacked s) where
-    unsafeToPacked = STPacked
-    {-# INLINE unsafeToPacked #-}
-    fromPacked (STPacked n v) = (n,v)
-    {-# INLINE fromPacked #-}
-    dimPacked (STPacked n _) = n
-    {-# INLINE dimPacked #-}
-    unPacked (STPacked _ v) = v
-    {-# INLINE unPacked #-}
-    unsafeWithPacked (STPacked _ v) = unsafeWithVector v
-    {-# INLINE unsafeWithPacked #-}
-
 -- | Create a packed matrix view of a vector, ensurint that the
 -- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
-toPacked :: (Storable e, RPacked p) => Int -> VectorView p e -> p e
+toPacked :: (Storable e) => Int -> Vector e -> Packed e
 toPacked n x
     | not $ 2 * nx == n * (n+1) = error $
         printf ("toPacked %d <vector with dim %d>: dimension mismatch")
@@ -137,14 +91,94 @@ toPacked n x
         unsafeToPacked n x
   where
     nx = dimVector x
+{-# INLINE toPacked #-}
+
+-- | Create a packed matrix view of a vector, wihtout checking
+-- the dimension of the vector.
+unsafeToPacked :: (Storable e) => Int -> Vector e -> Packed e
+unsafeToPacked = Packed
+{-# INLINE unsafeToPacked #-}
+
+-- | Returns the dimension and underlying vector storage of a
+-- packed matrix.
+fromPacked :: (Storable e) => Packed e -> (Int, Vector e)
+fromPacked (Packed n v) = (n,v)
+{-# INLINE fromPacked #-}
+
+-- | Create a packed matrix view of a vector, ensurint that the
+-- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
+toSTPacked :: (Storable e) => Int -> STVector s e -> STPacked s e
+toSTPacked n x
+    | not $ 2 * nx == n * (n+1) = error $
+        printf ("toPackedST %d <vector with dim %d>: dimension mismatch")
+               n nx
+    | otherwise =
+        STPacked n x
+  where
+    nx = dimVector x
+{-# INLINE toSTPacked #-}
+
+-- | Create a packed matrix view of a vector, wihtout checking
+-- the dimension of the vector.
+unsafeToSTPacked :: (Storable e) => Int -> STVector s e -> STPacked s e
+unsafeToSTPacked = STPacked
+{-# INLINE unsafeToSTPacked #-}
+
+-- | Returns the dimension and underlying vector storage of a
+-- packed matrix.
+fromSTPacked :: (Storable e) => STPacked s e -> (Int, STVector s e)
+fromSTPacked (STPacked n v) = (n,v)
+{-# INLINE fromSTPacked #-}
+
+
+-- | Read-only packed matrices.
+class RPacked p where
+    -- | Returns the dimension of the packed matrix.
+    dimPacked :: (Storable e) => p e -> Int
+
+    -- | Perform an action with the underlying vector storage of
+    -- the packed matrix.
+    withVectorPacked :: (Storable e)
+                     => p e
+                     -> (forall v . RVector v => v e -> ST s a)
+                     -> ST s a
+    
+    -- | Perform an IO action with a pointer to the first element of
+    -- the packed matrix.
+    unsafeWithPacked :: (Storable e) => p e -> (Ptr e -> IO a) -> IO a
+
+-- | Perform an action with the underlying vector storage of
+-- the mutable packed matrix.
+withVectorPackedST :: (Storable e)
+                   => STPacked s e
+                   -> (STVector s e -> ST s a)
+                   -> ST s a
+withVectorPackedST (STPacked _ v) f = f v
+{-# INLINE withVectorPackedST #-}
+
+instance RPacked Packed where
+    dimPacked (Packed n _) = n
+    {-# INLINE dimPacked #-}
+    withVectorPacked (Packed _ v) f = f v
+    {-# INLINE withVectorPacked #-}
+    unsafeWithPacked (Packed _ v) = unsafeWithVector v
+    {-# INLINE unsafeWithPacked #-}
+
+instance RPacked (STPacked s) where
+    dimPacked (STPacked n _) = n
+    {-# INLINE dimPacked #-}
+    withVectorPacked (STPacked _ v) f = f v
+    {-# INLINE withVectorPacked #-}
+    unsafeWithPacked (STPacked _ v) = unsafeWithVector v
+    {-# INLINE unsafeWithPacked #-}
 
 
 -- | Create a new copy of a packed matrix.
 newCopyPacked :: (Storable e, RPacked p)
               => p e -> ST s (STPacked s e)
-newCopyPacked p = let
-    (n,v) = fromPacked p
-    in unsafeToPacked n `fmap` newCopyVector v
+newCopyPacked p =
+    withVectorPacked p $ \x ->
+        unsafeToSTPacked (dimPacked p) `fmap` newCopyVector x
 {-# INLINE newCopyPacked #-}
 
 -- | Converts a mutable packed matrix to an immutable one by taking a complete

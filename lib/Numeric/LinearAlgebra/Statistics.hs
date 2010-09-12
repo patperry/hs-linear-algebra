@@ -183,7 +183,7 @@ covMatrix p t xs = runHermMatrix $ do
 covPacked :: (VNum e, BLAS2 e)
           => Int -> CovMethod -> [Vector e] -> Herm Packed e
 covPacked p t xs = runHermPacked $ do
-    cov <- (Herm uplo . unsafeToPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
+    cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
     covToPacked t xs cov
     return cov
   where
@@ -206,7 +206,7 @@ covMatrixWithMean mu t xs = runHermMatrix $ do
 covPackedWithMean :: (VNum e, BLAS2 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Packed e
 covPackedWithMean mu t xs = runHermPacked $ do
-    cov <- (Herm uplo . unsafeToPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
+    cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
     covToPackedWithMean mu t xs cov
     return cov
   where
@@ -230,7 +230,7 @@ weightedCovMatrix p t wxs = runHermMatrix $ do
 weightedCovPacked :: (VFloating e, BLAS2 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Packed e
 weightedCovPacked p t wxs = runHermPacked $ do
-    cov <- (Herm uplo . unsafeToPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
+    cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
     weightedCovToPacked t wxs cov
     return cov
   where
@@ -255,7 +255,7 @@ weightedCovPackedWithMean :: (VFloating e, BLAS2 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Packed e
 weightedCovPackedWithMean mu t wxs = runHermPacked $ do
-    cov <- (Herm uplo . unsafeToPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
+    cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
     weightedCovToPackedWithMean mu t wxs cov
     return cov
   where
@@ -323,7 +323,7 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
             sequence_ [ subToVector x mu x'
                       | (x,x') <- zip xs xs'
                       ]
-        clearVector (unPacked a)
+        withVectorPackedST a clearVector
         withColsMatrixST xt $ \xs' ->
             sequence_ [ rank1UpdateToHermPacked scale x' cov | x' <- xs' ]
   where
@@ -404,7 +404,7 @@ weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)
                       >> scaleToVector (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
-        clearVector (unPacked a)
+        withVectorPackedST a clearVector                      
         withColsMatrix xt $ \xs' ->
             sequence_ [ rank1UpdateToHermPacked 1 x' cov | x' <- xs' ]
   where
