@@ -83,7 +83,7 @@ data CovMethod =
 
 -- | Returns the default storage scheme for covariance matrices.
 defaultCovUplo :: Uplo
-defaultCovUplo = Upper
+defaultCovUplo = Lower
 
 -- | Returns the sum of the vectors.  The first argument gives the dimension
 -- of the vectors.
