@@ -16,7 +16,7 @@ module Foreign.LAPACK (
     module Foreign.LAPACK.Types,
     ) where
 
-import Control.Monad( forM_ )
+import Control.Monad( forM_, when )
 import Control.Exception( assert )
 import Data.Complex( Complex )
 import Foreign
@@ -127,16 +127,19 @@ instance LAPACK Double where
         with abstol $ \pabstol ->
         alloca $ \pm ->
         withEnum ldz $ \pldz -> 
-        allocaArray (2 * max 1 n) $ \psuppz' -> do
+        allocaArray nsuppz $ \psuppz' -> do
             checkInfo =<<
                 (callWithWorkIWork $
                     dsyevr pjobz prange puplo pn pa plda pvl pvu pil piu
                            pabstol pm pw pz pldz psuppz')
             m <- fromEnum `fmap` peek pm
-            forM_ [ 0..2*m - 1 ] $ \i -> do
-                s <- peekElemOff psuppz' i
-                pokeElemOff psuppz i (fromEnum s)
+            when (psuppz /= nullPtr) $
+                forM_ [ 0..2*m - 1 ] $ \i -> do
+                    s <- peekElemOff psuppz' i
+                    pokeElemOff psuppz i (fromEnum s)
             return m
+      where
+        nsuppz = if psuppz == nullPtr then 0 else 2 * max 1 n
 
     unmqr side trans m n k pa lda ptau pc ldc =
         withSide side $ \pside ->
@@ -224,16 +227,19 @@ instance LAPACK (Complex Double) where
         with abstol $ \pabstol ->
         alloca $ \pm ->
         withEnum ldz $ \pldz -> 
-        allocaArray (2 * max 1 n) $ \psuppz' -> do
+        allocaArray nsuppz $ \psuppz' -> do
             checkInfo =<<
                 (callWithWorkRWorkIWork $
                     zheevr pjobz prange puplo pn pa plda pvl pvu pil piu
                            pabstol pm pw pz pldz psuppz')
             m <- fromEnum `fmap` peek pm
-            forM_ [ 0..2*m - 1 ] $ \i -> do
-                s <- peekElemOff psuppz' i
-                pokeElemOff psuppz i (fromEnum s)
+            when (psuppz /= nullPtr) $
+                forM_ [ 0..2*m - 1 ] $ \i -> do
+                    s <- peekElemOff psuppz' i
+                    pokeElemOff psuppz i (fromEnum s)
             return m
+      where
+        nsuppz = if psuppz == nullPtr then 0 else 2 * max 1 n
 
     unmqr side trans m n k pa lda ptau pc ldc =
         withSide side $ \pside ->
