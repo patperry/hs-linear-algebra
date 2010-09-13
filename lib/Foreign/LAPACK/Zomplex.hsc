@@ -14,6 +14,7 @@ module Foreign.LAPACK.Zomplex
 import Data.Complex( Complex )
 import Foreign( Ptr )
 import Foreign.BLAS.Types
+import Foreign.LAPACK.Types
 
 #include "f77_func-hsc.h"
 
@@ -27,6 +28,14 @@ foreign import ccall unsafe #f77_func zgelqf
     zgelqf :: Ptr LAInt -> Ptr LAInt -> Ptr (Complex Double)
            -> Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double)
            -> Ptr LAInt -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func zheevr
+    zheevr :: LAEigJob -> LAEigRange -> BLASUplo -> Ptr LAInt
+           -> Ptr (Complex Double) -> Ptr LAInt -> Ptr Double -> Ptr Double
+           -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double
+           -> Ptr (Complex Double) -> Ptr LAInt -> Ptr LAInt
+           -> Ptr (Complex Double) -> Ptr LAInt -> Ptr Double -> Ptr LAInt
+           -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt -> IO ()
 
 foreign import ccall unsafe #f77_func zlarfg
     zlarfg :: Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double)

@@ -10,6 +10,7 @@
 --
 
 module Foreign.VMath (
+    -- * Vector Math typeclasses
     module Foreign.VMath.VNum,
     module Foreign.VMath.VFractional,    
     module Foreign.VMath.VFloating    

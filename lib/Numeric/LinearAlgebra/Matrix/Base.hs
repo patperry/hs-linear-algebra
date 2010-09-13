@@ -368,7 +368,7 @@ transMatrix a = let
         return a'
 
 -- | @conjTransMatrix a@ retunrs @conj(trans(a))@.
-conjTransMatrix :: (BLAS1 e, VNum e)
+conjTransMatrix :: (BLAS1 e)
                 => Matrix e
                 -> Matrix e
 conjTransMatrix a = let

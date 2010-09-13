@@ -6,7 +6,7 @@
 -- Maintainer : Patrick Perry <patperry@gmail.com>
 -- Stability  : experimental
 --
--- Cholesky decompositions of symmetric (Hermitian) positive-definite
+-- Cholesky factorizations of symmetric (Hermitian) positive-definite
 -- matrices.
 --
 

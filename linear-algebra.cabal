@@ -45,7 +45,8 @@ Library
                         Foreign.VMath
                         
                         Numeric.LinearAlgebra
-                        Numeric.LinearAlgebra.Factor.Cholesky
+                        Numeric.LinearAlgebra.Factor.Eigen
+                        Numeric.LinearAlgebra.Factor.Cholesky                        
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.Packed                        
@@ -65,6 +66,7 @@ Library
                         Foreign.BLAS.Double
                         Foreign.BLAS.Zomplex
 
+                        Foreign.LAPACK.Types
                         Foreign.LAPACK.Double
                         Foreign.LAPACK.Zomplex
                         

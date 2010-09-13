@@ -18,11 +18,12 @@ import Foreign( Storable, Ptr, peek, with )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
+import Foreign.VMath.VFractional( VFractional )
 import Foreign.BLAS.Double  
 import Foreign.BLAS.Zomplex
         
 -- | Types with vector-vector operations.
-class (Storable a, Fractional a) => BLAS1 a where
+class (Storable a, VFractional a) => BLAS1 a where
     copy  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()    
     swap  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     dotc  :: Int -> Ptr a -> Int -> Ptr a -> Int -> IO a

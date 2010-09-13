@@ -30,6 +30,10 @@ module Numeric.LinearAlgebra.Types (
     Side(..),
     Diag(..),
 
+    -- ** Eigenvalue computations
+    EigJob(..),
+    EigRange(..),
+
     -- * Re-export of Complex from Data.Complex
     module Data.Complex,
 
@@ -40,6 +44,6 @@ module Numeric.LinearAlgebra.Types (
 
 import Foreign.VMath( VNum, VFractional, VFloating )
 import Foreign.BLAS( Trans(..), Uplo(..), Side(..), Diag(..), BLAS1, BLAS2, BLAS3 )
-import Foreign.LAPACK( LAPACK )
+import Foreign.LAPACK( EigJob(..), EigRange(..), LAPACK )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )

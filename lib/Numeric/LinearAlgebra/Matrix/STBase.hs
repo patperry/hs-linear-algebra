@@ -773,7 +773,7 @@ transToMatrix a a'
     (m,n) = (ma,na)
 
 -- | @conjTransToMatrix a c@ sets @c := conj(trans(a))@.
-conjTransToMatrix :: (RMatrix m, BLAS1 e, VNum e)
+conjTransToMatrix :: (RMatrix m, BLAS1 e)
                   => m e
                   -> STMatrix s e
                   -> ST s ()

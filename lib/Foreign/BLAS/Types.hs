@@ -65,4 +65,4 @@ withDiag diag f = flip withCString (f . BLASDiag) $ case diag of
     NonUnit -> "N"
     Unit    -> "U"
 
-newtype LAInt = LAInt CInt deriving (Eq, Show, Enum, Num, Storable)
+newtype LAInt = LAInt CInt deriving (Eq, Show, Enum, Num, Ord, Storable)

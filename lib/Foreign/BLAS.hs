@@ -10,10 +10,12 @@
 --
 
 module Foreign.BLAS (
-    module Foreign.BLAS.Types,    
+    -- * BLAS typeclasses
     module Foreign.BLAS.Level1,
     module Foreign.BLAS.Level2,
     module Foreign.BLAS.Level3,
+    -- * Enums
+    module Foreign.BLAS.Types,    
     ) where
 
 import Foreign.BLAS.Types

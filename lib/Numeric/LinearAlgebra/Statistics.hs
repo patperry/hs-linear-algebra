@@ -168,7 +168,7 @@ weightedMeanToVector wxs m = let
 -- | Returns the sample covariance matrix as a hermitian matrix with storage
 -- scheme equal to 'defaultCovUplo'.  The first argument gives the dimension
 -- of the vectors.
-covMatrix :: (VNum e, BLAS3 e)
+covMatrix :: (BLAS3 e)
           => Int -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrix p t xs = runHermMatrix $ do
     cov <- Herm uplo `fmap` newMatrix_ (p,p)
@@ -180,7 +180,7 @@ covMatrix p t xs = runHermMatrix $ do
 -- | Returns the sample covariance matrix hermitian matrix (in packed form)
 -- with storage scheme equal to 'defaultCovUplo'.  The first argument gives
 -- the dimension of the vectors.
-covPacked :: (VNum e, BLAS2 e)
+covPacked :: (BLAS2 e)
           => Int -> CovMethod -> [Vector e] -> Herm Packed e
 covPacked p t xs = runHermPacked $ do
     cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
@@ -191,7 +191,7 @@ covPacked p t xs = runHermPacked $ do
 
 -- | Given the pre-computed mean, returns the sample covariance matrix
 -- with storage scheme equal to 'defaultCovUplo'.
-covMatrixWithMean :: (VNum e, BLAS3 e)
+covMatrixWithMean :: (BLAS3 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrixWithMean mu t xs = runHermMatrix $ do
     cov <- Herm uplo `fmap` newMatrix_ (p,p)
@@ -203,7 +203,7 @@ covMatrixWithMean mu t xs = runHermMatrix $ do
 
 -- | Given the pre-computed mean, returns the sample covariance matrix
 -- (in packed form) with storage scheme equal to 'defaultCovUplo'.
-covPackedWithMean :: (VNum e, BLAS2 e)
+covPackedWithMean :: (BLAS2 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Packed e
 covPackedWithMean mu t xs = runHermPacked $ do
     cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
@@ -215,7 +215,7 @@ covPackedWithMean mu t xs = runHermPacked $ do
 
 -- | Returns the weighed sample covariance matrix with storage scheme equal
 -- to 'defaultCovUplo'. The first argument gives the dimension of the vectors.
-weightedCovMatrix :: (VFloating e, BLAS3 e)
+weightedCovMatrix :: (BLAS3 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Matrix e
 weightedCovMatrix p t wxs = runHermMatrix $ do
     cov <- Herm uplo `fmap` newMatrix_ (p,p)
@@ -227,7 +227,7 @@ weightedCovMatrix p t wxs = runHermMatrix $ do
 -- | Returns the weighed sample covariance matrix (in packed form) with
 -- storage scheme equal to 'defaultCovUplo'. The first argument gives the
 -- dimension of the vectors.
-weightedCovPacked :: (VFloating e, BLAS2 e)
+weightedCovPacked :: (BLAS2 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Packed e
 weightedCovPacked p t wxs = runHermPacked $ do
     cov <- (Herm uplo . unsafeToSTPacked p) `fmap` newVector_ (p*(p+1) `div` 2)
@@ -238,7 +238,7 @@ weightedCovPacked p t wxs = runHermPacked $ do
 
 -- | Given the pre-computed mean, returns the weighed sample covariance matrix
 -- with storage scheme equal to 'defaultCovUplo'.
-weightedCovMatrixWithMean :: (VFloating e, BLAS3 e)
+weightedCovMatrixWithMean :: (BLAS3 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Matrix e
 weightedCovMatrixWithMean mu t wxs = runHermMatrix $ do
@@ -251,7 +251,7 @@ weightedCovMatrixWithMean mu t wxs = runHermMatrix $ do
 
 -- | Given the pre-computed mean, returns the weighed sample covariance matrix
 -- (in packed form) with storage scheme equal to 'defaultCovUplo'.
-weightedCovPackedWithMean :: (VFloating e, BLAS2 e)
+weightedCovPackedWithMean :: (BLAS2 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Packed e
 weightedCovPackedWithMean mu t wxs = runHermPacked $ do
@@ -264,7 +264,7 @@ weightedCovPackedWithMean mu t wxs = runHermPacked $ do
 
 -- | Computes and copies the sample covariance matrix to the given
 -- destination.
-covToMatrix :: (RVector v, VNum e, BLAS3 e)
+covToMatrix :: (RVector v, BLAS3 e)
             => CovMethod -> [v e] -> Herm (STMatrix s) e -> ST s ()
 covToMatrix t xs cov@(Herm _ a) = do
     mu <- newVector p 1
@@ -275,7 +275,7 @@ covToMatrix t xs cov@(Herm _ a) = do
 
 -- | Computes and copies the sample covariance matrix (in packed form)
 -- to the given destination.
-covToPacked :: (RVector v, VNum e, BLAS2 e)
+covToPacked :: (RVector v, BLAS2 e)
             => CovMethod -> [v e] -> Herm (STPacked s) e -> ST s ()
 covToPacked t xs cov@(Herm _ a) = do
     mu <- newVector p 1
@@ -286,7 +286,7 @@ covToPacked t xs cov@(Herm _ a) = do
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix to the given destination.
-covToMatrixWithMean :: (RVector v1, RVector v2, VNum e, BLAS3 e)
+covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                     => v1 e -> CovMethod -> [v2 e] -> Herm (STMatrix s) e
                     -> ST s ()
 covToMatrixWithMean mu t xs cov@(Herm _ a)
@@ -308,7 +308,7 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix (in packed form) to the given destination.
-covToPackedWithMean :: (RVector v1, RVector v2, VNum e, BLAS2 e)
+covToPackedWithMean :: (RVector v1, RVector v2, BLAS2 e)
                     => v1 e -> CovMethod -> [v2 e] -> Herm (STPacked s) e
                     -> ST s ()
 covToPackedWithMean mu t xs cov@(Herm _ a)
@@ -334,7 +334,7 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
 
 -- | Computes and copies the weighed sample covariance matrix to the
 -- given destination.
-weightedCovToMatrix :: (RVector v, VFloating e, BLAS3 e)
+weightedCovToMatrix :: (RVector v, BLAS3 e)
                     => CovMethod -> [(Double, v e)] -> Herm (STMatrix s) e
                     -> ST s ()
 weightedCovToMatrix t wxs cov@(Herm _ a) = do
@@ -346,7 +346,7 @@ weightedCovToMatrix t wxs cov@(Herm _ a) = do
 
 -- | Computes and copies the weighed sample covariance matrix (in packed
 -- form) to the given destination.
-weightedCovToPacked :: (RVector v, VFloating e, BLAS2 e)
+weightedCovToPacked :: (RVector v, BLAS2 e)
                     => CovMethod -> [(Double, v e)] -> Herm (STPacked s) e
                     -> ST s ()
 weightedCovToPacked t wxs cov@(Herm _ a) = do
@@ -358,7 +358,7 @@ weightedCovToPacked t wxs cov@(Herm _ a) = do
 
 -- | Given the pre-computed mean, computes and copies the weighed sample
 -- covariance matrix to the given destination.
-weightedCovToMatrixWithMean :: (RVector v1, RVector v2, VFloating e, BLAS3 e)
+weightedCovToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                             => v1 e -> CovMethod -> [(Double, v2 e)]
                             -> Herm (STMatrix s) e -> ST s ()
 weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
@@ -388,7 +388,7 @@ weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
 
 -- | Given the pre-computed mean, computes and copies the weighed sample
 -- covariance matrix (in packed form) to the given destination.
-weightedCovToPackedWithMean :: (RVector v1, RVector v2, VFloating e, BLAS2 e)
+weightedCovToPackedWithMean :: (RVector v1, RVector v2, BLAS2 e)
                             => v1 e -> CovMethod -> [(Double, v2 e)]
                             -> Herm (STPacked s) e -> ST s ()
 weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)

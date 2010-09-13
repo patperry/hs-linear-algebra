@@ -13,6 +13,7 @@ module Foreign.LAPACK.Double
 
 import Foreign( Ptr )
 import Foreign.BLAS.Types
+import Foreign.LAPACK.Types
 
 #include "f77_func-hsc.h"
 
@@ -54,3 +55,10 @@ foreign import ccall unsafe #f77_func dpptrf
 foreign import ccall unsafe #f77_func dpptrs
     dpptrs :: BLASUplo -> Ptr LAInt -> Ptr LAInt -> Ptr Double
            -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func dsyevr
+    dsyevr :: LAEigJob -> LAEigRange -> BLASUplo -> Ptr LAInt -> Ptr Double
+           -> Ptr LAInt ->  Ptr Double -> Ptr Double -> Ptr LAInt -> Ptr LAInt
+           -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt
+           -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr LAInt -> Ptr LAInt
+           -> Ptr LAInt -> IO ()

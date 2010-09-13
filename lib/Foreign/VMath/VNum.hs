@@ -17,7 +17,7 @@ import Foreign( Storable, Ptr, with, )
 import Foreign.Storable.Complex()
 import Data.Complex( Complex(..) )
 
-import Foreign.BLAS( copy )
+import Foreign.BLAS.Double( dcopy )
 import Foreign.VMath.Double
 import Foreign.VMath.Zomplex
         
@@ -50,7 +50,10 @@ instance VNum Double where
     {-# INLINE vScale #-}
     vMul = vdMul
     {-# INLINE vMul #-}
-    vConj n src dst = copy n src 1 dst 1
+    vConj n src dst = 
+        with (toEnum n) $ \pn ->
+        with 1 $ \pone ->
+            dcopy pn src pone dst pone
     {-# INLINE vConj #-}
     vNeg = vdNeg
     {-# INLINE vNeg #-}
