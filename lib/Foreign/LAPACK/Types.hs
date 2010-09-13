@@ -55,14 +55,22 @@ withEigRange :: EigRange
 withEigRange eigrange f = case eigrange of
     AllEigs ->
         withCString "A" $ \pA ->
-            f (LAEigRange pA) nullPtr nullPtr nullPtr nullPtr
+        alloca $ \pvl ->
+        alloca $ \pvu ->
+        alloca $ \pil ->
+        alloca $ \piu ->
+            f (LAEigRange pA) pvl pvu pil piu
     EigValueRange vl vu ->
         withCString "V" $ \pV ->
         with vl $ \pvl ->
         with vu $ \pvu ->
-            f (LAEigRange pV) pvl pvu nullPtr nullPtr
+        alloca $ \pil ->
+        alloca $ \piu ->
+            f (LAEigRange pV) pvl pvu pil piu
     EigIndexRange il iu ->
         withCString "I" $ \pI ->
+        alloca $ \pvl ->
+        alloca $ \pvu ->
         with (toEnum $ il + 1) $ \pil ->
         with (toEnum $ iu + 1) $ \piu ->
-            f (LAEigRange pI) nullPtr nullPtr pil piu
+            f (LAEigRange pI) pvl pvu pil piu
