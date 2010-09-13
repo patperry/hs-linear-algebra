@@ -127,7 +127,7 @@ instance LAPACK Double where
         with abstol $ \pabstol ->
         alloca $ \pm ->
         withEnum ldz $ \pldz -> 
-        allocaArray (2*n) $ \psuppz' -> do
+        allocaArray (2 * max 1 n) $ \psuppz' -> do
             checkInfo =<<
                 (callWithWorkIWork $
                     dsyevr pjobz prange puplo pn pa plda pvl pvu pil piu
@@ -224,7 +224,7 @@ instance LAPACK (Complex Double) where
         with abstol $ \pabstol ->
         alloca $ \pm ->
         withEnum ldz $ \pldz -> 
-        allocaArray (2*n) $ \psuppz' -> do
+        allocaArray (2 * max 1 n) $ \psuppz' -> do
             checkInfo =<<
                 (callWithWorkRWorkIWork $
                     zheevr pjobz prange puplo pn pa plda pvl pvu pil piu
