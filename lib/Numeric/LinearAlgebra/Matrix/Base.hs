@@ -271,6 +271,16 @@ unsafeRowMatrix a i = runVector $ do
   where
     (_,n) = dimMatrix a
 
+-- | Get the diagonal of the matrix.
+diagMatrix :: (Storable e) => Matrix e -> Vector e
+diagMatrix a = runVector $ do
+    x <- newVector_ mn
+    getDiagMatrix a x
+    return x
+  where
+    (m,n) = dimMatrix a
+    mn = min m n
+
 -- | Get a list of the rows of the matrix.
 rowsMatrix :: (Storable e) => Matrix e -> [Vector e]
 rowsMatrix a = [ unsafeRowMatrix a i | i <- [ 0..m-1 ] ]

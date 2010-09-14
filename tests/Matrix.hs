@@ -38,6 +38,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "cols" prop_cols
     , testPropertyI "row" prop_row
     , testPropertyI "rows" prop_rows
+    , testPropertyI "diag" prop_diag
     , testPropertyI "slice" prop_slice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
@@ -184,6 +185,13 @@ prop_rows t a =
     rowsMatrix a === [ rowMatrix a i | i <- [ 0..m-1 ] ]
   where
     (m,_) = dimMatrix a
+    _ = typed t $ immutableMatrix a
+
+prop_diag t a =
+    diagMatrix a === listVector mn [ atMatrix a (i,i) | i <- [ 0..mn-1 ] ]
+  where
+    (m,n) = dimMatrix a
+    mn = min m n
     _ = typed t $ immutableMatrix a
 
 prop_slice t a =

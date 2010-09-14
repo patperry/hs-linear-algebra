@@ -519,6 +519,54 @@ unsafeGetRowMatrix a i x =
     (_,n) = dimMatrix a
 {-# INLINE unsafeGetRowMatrix #-}
 
+-- | Set the diagonal of the matrix to the given vector.
+setDiagMatrix :: (RVector v, Storable e)
+              => STMatrix s e -> v e -> ST s ()
+setDiagMatrix a x
+    | dimVector x /= mn = error $
+        printf ("setRowMatrix <matrix with dim (%d,%d)>"
+                ++ " <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector x)
+    | otherwise =
+        unsafeSetDiagMatrix a x
+  where
+    (m,n) = dimMatrix a
+    mn = min m n
+{-# INLINE setDiagMatrix #-}
+
+unsafeSetDiagMatrix :: (RVector v, Storable e)
+                    => STMatrix s e -> v e -> ST s ()
+unsafeSetDiagMatrix a x = do
+    ies <- getAssocsVector x
+    sequence_ [ unsafeWriteMatrix a (i,i) e | (i,e) <- ies ]
+{-# INLINE unsafeSetDiagMatrix #-}
+
+-- | Copy the diagonal of the matrix to the vector.
+getDiagMatrix :: (RMatrix m, Storable e)
+             => m e -> STVector s e -> ST s ()
+getDiagMatrix a x
+    | dimVector x /= mn = error $
+        printf ("getDiagMatrix <matrix with dim (%d,%d)>"
+                ++ " <vector with dim %d>:"
+                ++ " dimension mismatch") m n (dimVector x)
+    | otherwise =
+        unsafeGetDiagMatrix a x
+  where
+    (m,n) = dimMatrix a
+    mn = min m n
+{-# INLINE getDiagMatrix #-}
+
+unsafeGetDiagMatrix :: (RMatrix m, Storable e)
+                    => m e -> STVector s e -> ST s ()
+unsafeGetDiagMatrix a x = 
+    forM_ [ 0..mn-1 ] $ \i -> do
+        e <- unsafeReadMatrix a (i,i)
+        unsafeWriteVector x i e
+  where
+    (m,n) = dimMatrix a
+    mn = min m n
+{-# INLINE unsafeGetDiagMatrix #-}
+
 -- | Get the element stored at the given index.
 readMatrix :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
 readMatrix a (i,j)

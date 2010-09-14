@@ -44,6 +44,10 @@ module Numeric.LinearAlgebra.Matrix.ST (
     withColMatrixST,    
     withColsMatrixST,
 
+    -- * Matrix diagonals
+    getDiagMatrix,
+    setDiagMatrix,
+
     -- * Reading and writing matrix elements
     readMatrix,
     writeMatrix,

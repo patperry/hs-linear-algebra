@@ -49,6 +49,9 @@ module Numeric.LinearAlgebra.Matrix (
     rowMatrix,
     rowsMatrix,
     
+    -- * Matrix diagonals
+    diagMatrix,
+    
     -- * Vector views
     matrixViewVector,
     matrixViewColVector,
