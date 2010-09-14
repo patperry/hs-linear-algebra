@@ -27,6 +27,13 @@ Small projects
 
 * Add conversions from Tri Matrix to Matrix.
 
+* investigate test failure
+  weightedMeanVector (equal weights): [OK, passed 100 tests]
+VectorList 1 [fromList [0.0] :: Data.Vector.Storable.Vector]
+fromList [0.0] :: Data.Vector.Storable.Vector
+UnbiasedCov
+  covMatrix: [Failed]
+
 
 Medium projects
 ---------------
