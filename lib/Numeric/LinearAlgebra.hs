@@ -28,8 +28,8 @@ import Numeric.LinearAlgebra.Vector.ST hiding ( dimVector, indicesVector,
     sliceVector, splitVectorAt, dropVector, takeVector )
 import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.ST hiding ( dimMatrix, indicesMatrix,
-    colMatrix, colsMatrix, sliceMatrix, splitRowsMatrixAt, 
-    splitColsMatrixAt )
+    sliceMatrix, takeRowsMatrix, dropRowsMatrix, splitRowsMatrixAt, 
+    takeColsMatrix, dropColsMatrix, splitColsMatrixAt )
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.Packed
 import Numeric.LinearAlgebra.Factor.Cholesky

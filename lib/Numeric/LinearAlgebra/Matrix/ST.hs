@@ -15,7 +15,9 @@ module Numeric.LinearAlgebra.Matrix.ST (
     runMatrix,
     
     -- * Read-only Dense matrix type class
-    RMatrix(..),
+    RMatrix( dimMatrix, withColsMatrix, maybeWithVectorViewMatrix, 
+        unsafeWithMatrix, unsafeMatrixToForeignPtr,
+        unsafeMatrixFromForeignPtr ),
     
     -- * Creating new matrices
     newMatrix_,
@@ -26,15 +28,20 @@ module Numeric.LinearAlgebra.Matrix.ST (
     copyToMatrix,
 
     -- * Matrix views
-    colMatrix,
-    colsMatrix,
     sliceMatrix,
+    takeRowsMatrix,
+    dropRowsMatrix,
     splitRowsMatrixAt,
+    takeColsMatrix,
+    dropColsMatrix,
     splitColsMatrixAt,
     
     -- * Matrix rows and columns
     getRowMatrix,
     setRowMatrix,
+    withColMatrix,
+
+    withColMatrixST,    
     withColsMatrixST,
 
     -- * Reading and writing matrix elements

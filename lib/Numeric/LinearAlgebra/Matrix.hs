@@ -36,7 +36,11 @@ module Numeric.LinearAlgebra.Matrix (
 
     -- * Matrix views
     sliceMatrix,
+    takeRowsMatrix,
+    dropRowsMatrix,
     splitRowsMatrixAt,
+    takeColsMatrix,
+    dropColsMatrix,
     splitColsMatrixAt,
 
     -- * Matrix rows and columns

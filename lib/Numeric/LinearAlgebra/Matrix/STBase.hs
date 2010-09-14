@@ -350,8 +350,20 @@ unsafeCopyToMatrix :: (RMatrix m, Storable e) => m e -> STMatrix s e -> ST s ()
 unsafeCopyToMatrix = matrixVectorOp2 unsafeCopyToVector
 {-# INLINE unsafeCopyToMatrix #-}
 
--- | Split a matrix into two blocks and returns views into the blocks.  In
--- @(a1, a2) = splitRowsMatrixAt i a@, we have
+-- | Create a view of a matrix by taking the initial rows.
+takeRowsMatrix :: (RMatrix m, Storable e) => Int -> m e -> m e
+takeRowsMatrix i a = sliceMatrix (0,0) (i,n) a
+  where
+    (_,n) = dimMatrix a
+
+-- | Create a view of a matrix by droping the initial rows.
+dropRowsMatrix :: (RMatrix m, Storable e) => Int -> m e -> m e
+dropRowsMatrix i a = sliceMatrix (i,0) (m-i,n) a
+  where
+    (m,n) = dimMatrix a
+
+-- | Split a matrix into two blocks and returns views into the blocks.  If
+-- @(a1, a2) = splitRowsMatrixAt i a@, then
 -- @a1 = sliceMatrix (0,0) (i,n) a@ and
 -- @a2 = sliceMatrix (i,0) (m-i,n) a@, where @(m,n)@ is the dimension of @a@.
 splitRowsMatrixAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
@@ -367,8 +379,20 @@ splitRowsMatrixAt i a
     (m,n) = dimMatrix a
 {-# INLINE splitRowsMatrixAt #-}
 
--- | Split a matrix into two blocks and returns views into the blocks.  In
--- @(a1, a2) = splitColsMatrixAt j a@, we have
+-- | Create a view of a matrix by taking the initial columns.
+takeColsMatrix :: (RMatrix m, Storable e) => Int -> m e -> m e
+takeColsMatrix j a = sliceMatrix (0,0) (m,j) a
+  where
+    (m,_) = dimMatrix a
+
+-- | Create a view of a matrix by droping the initial columns.
+dropColsMatrix :: (RMatrix m, Storable e) => Int -> m e -> m e
+dropColsMatrix j a = sliceMatrix (0,j) (m,n-j) a
+  where
+    (m,n) = dimMatrix a
+
+-- | Split a matrix into two blocks and returns views into the blocks.  If
+-- @(a1, a2) = splitColsMatrixAt j a@, then
 -- @a1 = sliceMatrix (0,0) (m,j) a@ and
 -- @a2 = sliceMatrix (0,j) (m,n-j) a@, where @(m,n)@ is the dimension of @a@.
 splitColsMatrixAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
