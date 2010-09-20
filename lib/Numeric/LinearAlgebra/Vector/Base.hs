@@ -122,11 +122,7 @@ instance RVector Vector where
     {-# INLINE unsafeWithVector #-}
     unsafeVectorFromForeignPtr = Vector.unsafeFromForeignPtr
     {-# INLINE unsafeVectorFromForeignPtr #-}
-    
-    -- workaround for bug in vector-0.6.0.2 and below
-    unsafeVectorToForeignPtr v = let
-        (f,o,n) = Vector.unsafeToForeignPtr v
-        in (f,-o,n)
+    unsafeVectorToForeignPtr = Vector.unsafeToForeignPtr
     {-# INLINE unsafeVectorToForeignPtr #-}
 
 

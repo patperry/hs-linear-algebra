@@ -143,10 +143,7 @@ instance RVector (MVector s) where
         cast = unsafeCoerce
     {-# INLINE unsafeWithVector #-}
 
-    -- This is a workaround for a bug in vector-0.6.0.2 and below:
-    unsafeVectorToForeignPtr v = let
-        (f,o,n) = STVector.unsafeToForeignPtr v
-        in (f,-o,n)
+    unsafeVectorToForeignPtr = STVector.unsafeToForeignPtr
     {-# INLINE unsafeVectorToForeignPtr #-}
     
     unsafeVectorFromForeignPtr = STVector.unsafeFromForeignPtr
