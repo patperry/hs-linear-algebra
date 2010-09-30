@@ -47,8 +47,10 @@ import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.Packed
 import Numeric.LinearAlgebra.Matrix.ST
 import Numeric.LinearAlgebra.Matrix.STBase
-import Numeric.LinearAlgebra.Vector
-import Numeric.LinearAlgebra.Vector.ST
+import Numeric.LinearAlgebra.Vector( Vector )
+import qualified Numeric.LinearAlgebra.Vector as V
+import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
+import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 -- | A Cholesky decomposition view of a matrix.
 data Chol m e = Chol Uplo (m e) deriving (Show)
@@ -73,8 +75,8 @@ cholMatrixSolveVector :: (LAPACK e)
                       => Chol Matrix e
                       -> Vector e
                       -> Vector e
-cholMatrixSolveVector a x = runVector $ do
-    y <- newVector_ (dimVector x)
+cholMatrixSolveVector a x = V.create $ do
+    y <- V.new_ (V.dim x)
     cholMatrixSolveToVector a x y
     return y
 
@@ -172,8 +174,8 @@ cholPackedSolveVector :: (LAPACK e)
                       => Chol Packed e
                       -> Vector e
                       -> Vector e
-cholPackedSolveVector a x = runVector $ do
-    y <- newVector_ (dimVector x)
+cholPackedSolveVector a x = V.create $ do
+    y <- V.new_ (V.dim x)
     cholPackedSolveToVector a x y
     return y
 

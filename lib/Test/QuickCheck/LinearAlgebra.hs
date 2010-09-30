@@ -80,7 +80,8 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector( Vector, listVector, dimVector, sliceVector )
+import Numeric.LinearAlgebra.Vector( Vector )
+import qualified Numeric.LinearAlgebra.Vector as V
 import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
 -- import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
 -- import Data.Matrix.Banded.ST( runSTBanded, unsafeThawBanded, 
@@ -262,14 +263,14 @@ instance (Arbitrary e) => Arbitrary (Assocs2 e) where
 vector :: (Arbitrary e, Storable e) => Int -> Gen (Vector e)
 vector n = do
     es <- elems n
-    return $ listVector n es
+    return $ V.fromList n es
 
 instance (Arbitrary e, Storable e) => Arbitrary (Vector e) where
     arbitrary = dim >>= vector
     
     shrink x =
-        [ sliceVector 0 n x
-        | (NonNegative n) <- shrink (NonNegative $ dimVector x)
+        [ V.slice 0 n x
+        | (NonNegative n) <- shrink (NonNegative $ V.dim x)
         ]
 
 -- | Two vectors with the same dimension.
@@ -279,12 +280,12 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f) =>
     Arbitrary (VectorPair e f) where
         arbitrary = do
             x <- arbitrary
-            y <- vector (dimVector x)
+            y <- vector (V.dim x)
             return $ VectorPair x y
             
         shrink (VectorPair x y) =
-            [ VectorPair (sliceVector 0 n' x) (sliceVector 0 n' y)
-            | n' <- shrink (dimVector x)
+            [ VectorPair (V.slice 0 n' x) (V.slice 0 n' y)
+            | n' <- shrink (V.dim x)
             ]
 
 -- | Three vectors with the same dimension.
@@ -295,8 +296,8 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
     Arbitrary (VectorTriple e f g) where
         arbitrary = do
             x <- arbitrary
-            y <- vector (dimVector x)
-            z <- vector (dimVector x)
+            y <- vector (V.dim x)
+            z <- vector (V.dim x)
             return $ VectorTriple x y z
 
 -- | A nonempty list of vectors with the same dimension.
@@ -305,7 +306,7 @@ instance (Arbitrary e, Storable e) => Arbitrary (NonEmptyVectorList e) where
     arbitrary = do
         x <- arbitrary
         n <- choose (0,20)
-        let p = dimVector x
+        let p = V.dim x
         xs <- replicateM n $ vector p
         return $ NonEmptyVectorList p $ x:xs
 

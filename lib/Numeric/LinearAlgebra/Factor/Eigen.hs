@@ -25,8 +25,10 @@ import qualified Foreign.LAPACK as LAPACK
 import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.ST
-import Numeric.LinearAlgebra.Vector
-import Numeric.LinearAlgebra.Vector.ST
+import Numeric.LinearAlgebra.Vector( Vector )
+import qualified Numeric.LinearAlgebra.Vector as V
+import Numeric.LinearAlgebra.Vector.ST( STVector )
+import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 -- | Compute the eigenvalues and eigenvectors of a Hermitian matrix.
 -- Return the eigenvalues are in ascending order in the result vector; 
@@ -35,10 +37,10 @@ import Numeric.LinearAlgebra.Vector.ST
 eigenHermMatrix :: (LAPACK e) => Herm Matrix e -> (Vector Double, Matrix e)
 eigenHermMatrix (Herm uplo a) = runST $ do
     ma <- newCopyMatrix a
-    mw <- newVector_ n
+    mw <- V.new_ n
     mz <- newMatrix_ (n,n)
     eigenToHermMatrix (Herm uplo ma) mw mz
-    w <- unsafeFreezeVector mw
+    w <- V.unsafeFreeze mw
     z <- unsafeFreezeMatrix mz
     return (w,z)
   where
@@ -46,9 +48,9 @@ eigenHermMatrix (Herm uplo a) = runST $ do
 
 -- | Return the eigenvalues of a Hermitian matrix in ascending order.
 eigenvaluesHermMatrix :: (LAPACK e) => Herm Matrix e -> Vector Double
-eigenvaluesHermMatrix (Herm uplo a) = runVector $ do
+eigenvaluesHermMatrix (Herm uplo a) = V.create $ do
     ma <- newCopyMatrix a
-    w <- newVector_ n
+    w <- V.new_ n
     eigenvaluesToHermMatrix (Herm uplo ma) w
     return w
   where
@@ -79,7 +81,7 @@ eigenToHermMatrix (Herm uplo a) w z
     | otherwise =
         unsafeIOToST $
             unsafeWithMatrix a $ \pa lda ->
-            unsafeWithVector w $ \pw ->
+            V.unsafeWith w $ \pw ->
             unsafeWithMatrix z $ \pz ldz ->
             allocaArray (2*n) $ \psuppz -> do
                 _m <- LAPACK.heevr jobz range uplo n pa lda abstol pw pz ldz
@@ -89,7 +91,7 @@ eigenToHermMatrix (Herm uplo a) w z
   where
     (ma,na) = dimMatrix a
     (mz,nz) = dimMatrix z
-    nw = dimVector w
+    nw = V.dim w
     n = na
     jobz = EigVectors
     range = AllEigs
@@ -116,14 +118,14 @@ eigenvaluesToHermMatrix (Herm uplo a) w
     | otherwise =
         unsafeIOToST $
             unsafeWithMatrix a $ \pa lda ->
-            unsafeWithVector w $ \pw -> do
+            V.unsafeWith w $ \pw -> do
                 _m <- LAPACK.heevr jobz range uplo n pa lda abstol pw pz ldz
                                    psuppz
                 return ()
     
   where
     (ma,na) = dimMatrix a
-    nw = dimVector w
+    nw = V.dim w
     n = na
     jobz = NoEigVectors
     range = AllEigs

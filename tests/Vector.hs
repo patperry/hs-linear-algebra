@@ -10,6 +10,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Vector as V
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim(..), Assocs(..),
     VectorPair(..) )
@@ -19,10 +20,10 @@ import Typed
 
 
 tests_Vector = testGroup "Vector"
-    [ testPropertyI "dim/vector" prop_dim_vector
-    , testPropertyI "at/vector" prop_at_vector
-    , testPropertyI "listVector" prop_listVector
-    , testPropertyI "constantVector" prop_constantVector
+    [ testPropertyI "dim/fromAssocs" prop_dim_fromAssocs
+    , testPropertyI "at/fromAssocs" prop_at_fromAssocs
+    , testPropertyI "fromList" prop_fromList
+    , testPropertyI "constant" prop_constant
     , testPropertyI "indices" prop_indices
     , testPropertyI "elems" prop_elems
     , testPropertyI "assocs" prop_assocs
@@ -73,25 +74,25 @@ tests_Vector = testGroup "Vector"
 
 ------------------------- Vector Construction ------------------------------
 
-prop_dim_vector t (Assocs n ies) =
-    dimVector (vector n ies) === n
+prop_dim_fromAssocs t (Assocs n ies) =
+    V.dim (V.fromAssocs n ies) === n
   where
-    _ = typed t $ vector n ies
+    _ = typed t $ V.fromAssocs n ies
 
-prop_at_vector t (Assocs n ies) = let
-    x = vector n ies
+prop_at_fromAssocs t (Assocs n ies) = let
+    x = V.fromAssocs n ies
     is = (fst . unzip) ies
-    in and [ atVector x i `elem` [ e | (i',e) <- ies, i' == i ]
+    in and [ V.at x i `elem` [ e | (i',e) <- ies, i' == i ]
            | i <- is]
   where
-    _ = typed t $ vector n ies
+    _ = typed t $ V.fromAssocs n ies
 
-prop_listVector t (Dim n) =
+prop_fromList t (Dim n) =
     forAll (QC.vector n) $ \es ->
-        listVector n es === (typed t $ vector n $ zip [ 0..n-1 ] es)
+        V.fromList n es === (typed t $ V.fromAssocs n $ zip [ 0..n-1 ] es)
 
-prop_constantVector t (Dim n) e =
-    constantVector n e === listVector n (replicate n e)
+prop_constant t (Dim n) e =
+    V.constant n e === V.fromList n (replicate n e)
   where
     _ = typed t [e]
 
@@ -99,18 +100,18 @@ prop_constantVector t (Dim n) e =
 -------------------------- Accessing Vectors ------------------------------
 
 prop_indices t x =
-    indicesVector x === [ 0..((dimVector x) - 1) ]
+    V.indices x === [ 0..((V.dim x) - 1) ]
   where
     _ = immutableVector x
     _ = typed t x
 
 prop_elems t x =
-    elemsVector x === [ atVector x i | i <- indicesVector x ]
+    V.elems x === [ V.at x i | i <- V.indices x ]
   where
     _ = typed t x
     
 prop_assocs t x =
-    assocsVector x === zip (indicesVector x) (elemsVector x)
+    V.assocs x === zip (V.indices x) (V.elems x)
   where
     _ = typed t x
 
@@ -119,23 +120,23 @@ prop_assocs t x =
     
 prop_replace t (Assocs n ies) =
     forAll (typed t `fmap` Test.vector n) $ \x -> let
-        x' = replaceVector x ies
-        is = indicesVector x
+        x' = V.replace x ies
+        is = V.indices x
         is1 = (fst . unzip) ies
         is0 = [ i | i <- is, i `notElem` is1 ]
         in and $
-            [ atVector x' i `elem` [ e | (i',e) <- ies, i' == i ]
+            [ V.at x' i `elem` [ e | (i',e) <- ies, i' == i ]
             | i <- is1
             ] ++
-            [ atVector x' i === atVector x i
+            [ V.at x' i === V.at x i
             | i <- is0
             ]
 
 prop_accum t (Blind f) (Assocs n ies) =
     forAll (typed t `fmap` Test.vector n) $ \x -> let
-        x' = accumVector f x ies
-        in x' === listVector n [ foldl f e [ e' | (i',e') <- ies, i' == i]
-                               | (i,e) <- assocsVector x ]
+        x' = V.accum f x ies
+        in x' === V.fromList n [ foldl f e [ e' | (i',e') <- ies, i' == i]
+                               | (i,e) <- V.assocs x ]
   where
       _ = typed t $ (snd . unzip) ies
      
@@ -143,21 +144,21 @@ prop_accum t (Blind f) (Assocs n ies) =
 -------------------------- Derived Vectors ------------------------------
      
 prop_map t (Blind f) x =
-    mapVector f x === listVector (dimVector x) (map f $ elemsVector x)
+    V.map f x === V.fromList (V.dim x) (map f $ V.elems x)
   where
     _ = typed t x
-    _ = typed t $ mapVector f x
+    _ = typed t $ V.map f x
 
 prop_zipWith t (Blind f) (VectorPair x y) =
-    zipWithVector f x y === (listVector (dimVector x) $
-                                zipWith f (elemsVector x) (elemsVector y))
+    V.zipWith f x y === (V.fromList (V.dim x) $
+                                zipWith f (V.elems x) (V.elems y))
   where
     _ = typed t x
     _ = typed t y    
-    _ = typed t $ zipWithVector f x y
+    _ = typed t $ V.zipWith f x y
 
 prop_concat t xs =
-    elemsVector (concatVectors xs) === concatMap elemsVector xs
+    V.elems (V.concat xs) === concatMap V.elems xs
   where
     _ = typed t $ head xs
 
@@ -166,19 +167,19 @@ prop_concat t xs =
 prop_slice t x = 
     forAll (choose (0,n)) $ \n' ->
     forAll (choose (0,n-n')) $ \o ->
-        sliceVector o n' x === listVector n' (take n' $ drop o $ es)
+        V.slice o n' x === V.fromList n' (take n' $ drop o $ es)
   where
-    n  = dimVector x
-    es = elemsVector x
+    n  = V.dim x
+    es = V.elems x
     _  = typed t x
 
 prop_splitAt t x =
     forAll (choose (0,n)) $ \k ->
-        splitVectorAt k x === (listVector k $ take k es,
-                               listVector (n-k) $ drop k es)
+        V.splitAt k x === (V.fromList k $ take k es,
+                           V.fromList (n-k) $ drop k es)
   where
-    n  = dimVector x
-    es = elemsVector x
+    n  = V.dim x
+    es = V.elems x
     _  = typed t x
     
 
@@ -186,53 +187,53 @@ prop_splitAt t x =
 -------------------------- Num Vector Operations --------------------------
 
 prop_shift t k x =
-    k `shiftVector` x === mapVector (k+) x
+    k `V.shift` x === V.map (k+) x
   where
     _ = typed t x
 
 prop_add t (VectorPair x y) =
-    x `addVector` y === zipWithVector (+) x y
+    x `V.add` y === V.zipWith (+) x y
   where
     _ = typed t x
 
 prop_addWithScales t a b (VectorPair x y) =
-    addVectorWithScales a x b y ~== 
-        zipWithVector (+) (mapVector (a*) x) (mapVector (b*) y)
+    V.addWithScales a x b y ~== 
+        V.zipWith (+) (V.map (a*) x) (V.map (b*) y)
   where
     _ = typed t x
 
 prop_sub t (VectorPair x y) =
-    x `subVector` y === zipWithVector (-) x y
+    x `V.sub` y === V.zipWith (-) x y
   where
     _ = typed t x
 
 prop_scale t k x =
-    k `scaleVector` x === mapVector (k*) x
+    k `V.scale` x === V.map (k*) x
   where
     _ = typed t x
 
 prop_mul t (VectorPair x y) =
-    x `mulVector` y === zipWithVector (*) x y
+    x `V.mul` y === V.zipWith (*) x y
   where
     _ = typed t x
 
 prop_negate t x =
-    negateVector x === mapVector negate x
+    V.negate x === V.map negate x
   where
     _ = typed t x
 
 prop_conj t x =
-    conjVector x === mapVector conj x
+    V.conj x === V.map conj x
   where
     _ = typed t x
 
 prop_abs t x =
-    absVector x === mapVector abs x
+    V.abs x === V.map abs x
   where
     _ = typed t x
 
 prop_signum t x =
-    signumVector x === mapVector signum x
+    V.signum x === V.map signum x
   where
     _ = typed t x
 
@@ -240,12 +241,12 @@ prop_signum t x =
 ---------------------- Fractional Vector Operations ------------------------
 
 prop_div t (VectorPair x y) =
-    x `divVector` y ~== zipWithVector (/) x y
+    x `V.div` y ~== V.zipWith (/) x y
   where
     _ = typed t x
     
 prop_recip t x =
-    recipVector x ~== mapVector (1/) x
+    V.recip x ~== V.map (1/) x
   where
     _ = typed t x
     
@@ -253,84 +254,84 @@ prop_recip t x =
 ---------------------- Floating Vector Operations ------------------------
 
 prop_exp t x =
-    expVector x ~== mapVector exp x
+    V.exp x ~== V.map exp x
   where
     _ = typed t x
 
 prop_sqrt t x =
-    sqrtVector x ~== mapVector sqrt x
+    V.sqrt x ~== V.map sqrt x
   where
     _ = typed t x
 
 prop_log t x =
-    logVector x ~== mapVector log x
+    V.log x ~== V.map log x
   where
     _ = typed t x
 
 prop_pow t (VectorPair x y) =
-    x `powVector` y ~== zipWithVector (**) x y
+    x `V.pow` y ~== V.zipWith (**) x y
   where
     _ = typed t x
 
 prop_sin t x =
-    sinVector x ~== mapVector sin x
+    V.sin x ~== V.map sin x
   where
     _ = typed t x
 
 prop_cos t x =
-    cosVector x ~== mapVector cos x
+    V.cos x ~== V.map cos x
   where
     _ = typed t x
 
 prop_tan t x =
-    tanVector x ~== mapVector tan x
+    V.tan x ~== V.map tan x
   where
     _ = typed t x
 
 prop_asin t x =
-    -- trace (show (asinVector x) ++ "\n" ++ (show $ mapVector asin x)) $    
-    asinVector x ~== mapVector asin x
+    -- trace (show (V.asin x) ++ "\n" ++ (show $ V.map asin x)) $    
+    V.asin x ~== V.map asin x
   where
     _ = typed t x
 
 prop_acos t x =
-    acosVector x ~== mapVector acos x
+    V.acos x ~== V.map acos x
   where
     _ = typed t x
 
 prop_atan t x =
-    atanVector x ~== mapVector atan x
+    V.atan x ~== V.map atan x
   where
     _ = typed t x
 
 prop_sinh t x =
-    sinhVector x ~== mapVector sinh x
+    V.sinh x ~== V.map sinh x
   where
     _ = typed t x
 
 prop_cosh t x =
-    coshVector x ~== mapVector cosh x
+    V.cosh x ~== V.map cosh x
   where
     _ = typed t x
 
 prop_tanh t x =
-    tanhVector x ~== mapVector tanh x
+    V.tanh x ~== V.map tanh x
   where
     _ = typed t x
 
 prop_asinh t x =
-    -- trace (show (asinhVector x) ++ "\n" ++ (show $ mapVector asinh x)) $
-    asinhVector x ~== mapVector asinh x
+    -- trace (show (V.asinh x) ++ "\n" ++ (show $ V.map asinh x)) $
+    V.asinh x ~== V.map asinh x
   where
     _ = typed t x
 
 prop_acosh t x =
-    acoshVector x ~== mapVector acosh x
+    V.acosh x ~== V.map acosh x
   where
     _ = typed t x
 
 prop_atanh t x =
-    atanhVector x ~== mapVector atanh x
+    V.atanh x ~== V.map atanh x
   where
     _ = typed t x
 
@@ -338,39 +339,39 @@ prop_atanh t x =
 -------------------------- Vector Properties ---------------------------------
 
 prop_sumAbs t x =
-    sumAbsVector x ~== (sum $ map norm1 $ elemsVector x)
+    V.sumAbs x ~== (sum $ map norm1 $ V.elems x)
   where
     _ = typed t x
 
 prop_norm2 t x =
-    norm2Vector x ~== (sqrt $ sum $ map (^^2) $ map norm $ elemsVector x)
+    V.norm2 x ~== (sqrt $ sum $ map (^^2) $ map norm $ V.elems x)
   where
     _ = typed t x
 
 prop_whichMaxAbs1 t x =
-    (dimVector x > 0) && all (not . isNaN) (map norm1 $ elemsVector x) ==>
-        atVector x i === e
+    (V.dim x > 0) && all (not . isNaN) (map norm1 $ V.elems x) ==>
+        V.at x i === e
   where
-    (i,e) = whichMaxAbsVector x      
+    (i,e) = V.whichMaxAbs x      
     _     = typed t x
 
 prop_whichMaxAbs2 t x =
-    (dimVector x > 0) && all (not . isNaN) (map norm1 $ elemsVector x) ==>
-        all (<= norm1 e) $ map norm1 (elemsVector x)
+    (V.dim x > 0) && all (not . isNaN) (map norm1 $ V.elems x) ==>
+        all (<= norm1 e) $ map norm1 (V.elems x)
   where
-    (_,e) = whichMaxAbsVector x
+    (_,e) = V.whichMaxAbs x
     _     = typed t x
 
 prop_dot t (VectorPair x y) =
-    dotVector x y ~== sum (elemsVector (x * conj y))
+    V.dot x y ~== sum (V.elems (x * conj y))
   where
-    conj = conjVector
-    (*)  = mulVector
+    conj = V.conj
+    (*)  = V.mul
     _    = typed t x
 
 prop_kronecker t x y =
-    x `kroneckerVector` y ===
-        listVector (dimVector x * dimVector y)
-                   [ e*f | e <- elemsVector x, f <- elemsVector y ]
+    x `V.kronecker` y ===
+        V.fromList (V.dim x * V.dim y)
+                   [ e*f | e <- V.elems x, f <- V.elems y ]
   where
     _ = typed t x

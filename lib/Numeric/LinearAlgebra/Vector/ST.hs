@@ -12,97 +12,97 @@ module Numeric.LinearAlgebra.Vector.ST (
     -- * The @STVector@ data type
     STVector,
     IOVector,
-    runVector,
+    create,
     
     -- * Read-only Dense vector type class
-    RVector( dimVector, unsafeWithVector, unsafeVectorToForeignPtr,
-        unsafeVectorFromForeignPtr ),
+    RVector( dim, unsafeWith, unsafeToForeignPtr, unsafeFromForeignPtr ),
     
     -- * Creating new vectors
-    newVector_,
-    newVector,
+    new_,
+    new,
     
     -- * Copying vectors
-    newCopyVector,
-    copyToVector,
-    swapVector,
+    newCopy,
+    copyTo,
+    swap,
 
     -- * Vector views
-    sliceVector,
-    splitVectorAt,
-    dropVector,
-    takeVector,
+    slice,
+    splitAt,
+    drop,
+    take,
 
     -- * Reading and writing vector elements
-    readVector,
-    writeVector,
-    modifyVector,
-    indicesVector,
-    getElemsVector,
-    getElemsVector',
-    getAssocsVector,
-    getAssocsVector',
-    setElemsVector,
-    setAssocsVector,    
-    clearVector,
+    read,
+    write,
+    modify,
+    indices,
+    getElems,
+    getElems',
+    getAssocs,
+    getAssocs',
+    setElems,
+    setAssocs,    
+    clear,
 
     -- * List-like operations
-    mapToVector,
-    zipWithToVector,
+    mapTo,
+    zipWithTo,
 
     -- * Vector properties
-    getSumAbsVector,
-    getNorm2Vector,
-    getWhichMaxAbsVector,
-    getDotVector,
-    kroneckerToVector,
+    getSumAbs,
+    getNorm2,
+    getWhichMaxAbs,
+    getDot,
+    kroneckerTo,
     
     -- * Vector math operations
     -- ** Num
-    shiftToVector,
-    addToVector,
-    addToVectorWithScales,
-    subToVector,
-    scaleToVector,
-    mulToVector,
-    negateToVector,
-    conjToVector,
-    absToVector,
-    signumToVector,
+    shiftTo,
+    addTo,
+    addToWithScales,
+    subTo,
+    scaleTo,
+    mulTo,
+    negateTo,
+    conjTo,
+    absTo,
+    signumTo,
 
     -- ** Fractional
-    divToVector,
-    recipToVector,        
+    divTo,
+    recipTo,        
 
     -- ** Floating
-    sqrtToVector,
-    expToVector,
-    logToVector,
-    powToVector,
-    sinToVector,
-    cosToVector,
-    tanToVector,
-    asinToVector,
-    acosToVector,
-    atanToVector,
-    sinhToVector,
-    coshToVector,
-    tanhToVector,
-    asinhToVector,
-    acoshToVector,
-    atanhToVector,
+    sqrtTo,
+    expTo,
+    logTo,
+    powTo,
+    sinTo,
+    cosTo,
+    tanTo,
+    asinTo,
+    acosTo,
+    atanTo,
+    sinhTo,
+    coshTo,
+    tanhTo,
+    asinhTo,
+    acoshTo,
+    atanhTo,
 
     -- * Conversions between mutable and immutable vectors
-    freezeVector,
-    unsafeFreezeVector,
+    freeze,
+    unsafeFreeze,
     
     -- * Unsafe operations
-    unsafeCopyToVector,
-    unsafeReadVector,
-    unsafeWriteVector,
-    unsafeModifyVector,
+    unsafeCopyTo,
+    unsafeRead,
+    unsafeWrite,
+    unsafeModify,
     
     ) where
 
+import Prelude()
 import Numeric.LinearAlgebra.Vector.Base
 import Numeric.LinearAlgebra.Vector.STBase

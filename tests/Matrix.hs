@@ -12,6 +12,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Vector as V
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim2(..), Index2(..),
     Assocs2(..), MatrixPair(..) )
@@ -91,12 +92,12 @@ prop_listMatrix t (Dim2 (m,n)) =
 prop_colListMatrix t (Dim2 (m,n)) =
     forAll (replicateM n $ Test.vector m) $ \cs ->
         colListMatrix (m,n) cs === (typed t $ listMatrix (m,n) $
-            concatMap elemsVector cs)
+            concatMap V.elems cs)
 
 prop_rowListMatrix t (Dim2 (m,n)) =
     forAll (replicateM m $ Test.vector n) $ \rs ->
         rowListMatrix (m,n) rs === (typed t $ listMatrix (m,n) $
-            concat $ transpose $ map elemsVector rs)
+            concat $ transpose $ map V.elems rs)
 
 prop_constantMatrix t (Dim2 (m,n)) e =
     constantMatrix (m,n) e === listMatrix (m,n) (replicate (m*n) e)
@@ -169,7 +170,7 @@ prop_zipWith t (Blind f) (MatrixPair x y) =
 
 prop_col t (Index2 (m,n) (_,j)) =
     forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
-        colMatrix a j === listVector m [ atMatrix a (i,j) | i <- [ 0..m-1 ] ]
+        colMatrix a j === V.fromList m [ atMatrix a (i,j) | i <- [ 0..m-1 ] ]
 
 prop_cols t a =
     colsMatrix a === [ colMatrix a j | j <- [ 0..n-1 ] ]
@@ -179,7 +180,7 @@ prop_cols t a =
 
 prop_row t (Index2 (m,n) (i,_)) =
     forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
-        rowMatrix a i === listVector n [ atMatrix a (i,j) | j <- [ 0..n-1 ] ]
+        rowMatrix a i === V.fromList n [ atMatrix a (i,j) | j <- [ 0..n-1 ] ]
 
 prop_rows t a =
     rowsMatrix a === [ rowMatrix a i | i <- [ 0..m-1 ] ]
@@ -188,7 +189,7 @@ prop_rows t a =
     _ = typed t $ immutableMatrix a
 
 prop_diag t a =
-    diagMatrix a === listVector mn [ atMatrix a (i,i) | i <- [ 0..mn-1 ] ]
+    diagMatrix a === V.fromList mn [ atMatrix a (i,i) | i <- [ 0..mn-1 ] ]
   where
     (m,n) = dimMatrix a
     mn = min m n
@@ -200,7 +201,7 @@ prop_slice t a =
     forAll (choose (0,m-m')) $ \i ->
     forAll (choose (0,n-n')) $ \j ->
         sliceMatrix (i,j) (m',n') a
-            === colListMatrix (m',n') [ sliceVector i m' (colMatrix a j')
+            === colListMatrix (m',n') [ V.slice i m' (colMatrix a j')
                                       | j' <- [ j..j+n'-1 ] ]
   where
     (m,n) = dimMatrix a
@@ -228,7 +229,7 @@ prop_splitColsAt t a =
 
 prop_matrixViewVector t (Dim2 (m,n)) =
     forAll (Test.vector $ m*n) $ \x -> let _ = typed t x in
-        elemsMatrix (matrixViewVector (m,n) x) === elemsVector x
+        elemsMatrix (matrixViewVector (m,n) x) === V.elems x
 
 
 -------------------------- Num Matrix Operations --------------------------
@@ -241,7 +242,7 @@ prop_shift t k a =
 prop_shiftDiag t a =
     forAll (Test.vector (min m n)) $ \d ->
         d `shiftDiagMatrix` a
-            === accumMatrix (+) a [ ((i,i),e) | (i,e) <- assocsVector d ]
+            === accumMatrix (+) a [ ((i,i),e) | (i,e) <- V.assocs d ]
   where
     (m,n) = dimMatrix a
     _ = typed t a
@@ -249,7 +250,7 @@ prop_shiftDiag t a =
 prop_shiftDiagWithScale t k a =
     forAll (Test.vector (min m n)) $ \d ->
         shiftDiagMatrixWithScale k d a
-            ~== accumMatrix (+) a [ ((i,i),k * e) | (i,e) <- assocsVector d ]
+            ~== accumMatrix (+) a [ ((i,i),k * e) | (i,e) <- V.assocs d ]
   where
     (m,n) = dimMatrix a
     _ = typed t a
@@ -278,7 +279,7 @@ prop_scale t k x =
 prop_scaleRows t a =
     forAll (Test.vector m) $ \s ->
         scaleRowsMatrix s a
-            === colListMatrix (m,n) [ mulVector s x | x <- colsMatrix a ]
+            === colListMatrix (m,n) [ V.mul s x | x <- colsMatrix a ]
   where
     (m,n) = dimMatrix a
     _ = typed t a
@@ -287,8 +288,8 @@ prop_scaleCols t a =
     forAll (Test.vector n) $ \s ->
         scaleColsMatrix s a
             === colListMatrix (m,n)
-                    [ scaleVector e x 
-                    | (e,x) <- zip (elemsVector s) (colsMatrix a) ]
+                    [ V.scale e x 
+                    | (e,x) <- zip (V.elems s) (colsMatrix a) ]
   where
     (m,n) = dimMatrix a
     _ = typed t a
@@ -321,10 +322,10 @@ prop_conjTrans t a =
 
 prop_rank1Update t alpha a =
     forAll (Test.vector m) $ \x ->
-    forAll (Test.vector n) $ \y -> let y' = conjVector y in
+    forAll (Test.vector n) $ \y -> let y' = V.conj y in
         rank1UpdateMatrix alpha x y a
             ~==
-            matrix (m,n) [ ((i,j), alpha * atVector x i * atVector y' j + e)
+            matrix (m,n) [ ((i,j), alpha * V.at x i * V.at y' j + e)
                          | ((i,j),e) <- assocsMatrix a
                          ]
   where
@@ -356,16 +357,16 @@ prop_mulMatrixVector t (MulMatrixVector transa a x) =
     mulMatrixVector transa a x
         ~==
         case transa of
-            NoTrans   -> listVector (fst $ dimMatrix a)
-                                    [ dotVector x (conjVector r)
+            NoTrans   -> V.fromList (fst $ dimMatrix a)
+                                    [ V.dot x (V.conj r)
                                     | r <- rowsMatrix a ]
 
-            Trans     -> listVector (snd $ dimMatrix a)
-                                    [ dotVector x (conjVector c)
+            Trans     -> V.fromList (snd $ dimMatrix a)
+                                    [ V.dot x (V.conj c)
                                     | c <- colsMatrix a ]
                                     
-            ConjTrans -> listVector (snd $ dimMatrix a)
-                                    [ dotVector x c
+            ConjTrans -> V.fromList (snd $ dimMatrix a)
+                                    [ V.dot x c
                                     | c <- colsMatrix a ]
   where
     _ = typed t a
@@ -373,15 +374,15 @@ prop_mulMatrixVector t (MulMatrixVector transa a x) =
 prop_mulMatrixVectorWithScale t alpha (MulMatrixVector transa a x) =
     mulMatrixVectorWithScale alpha transa a x
         ~==
-        mulMatrixVector transa a (scaleVector alpha x)
+        mulMatrixVector transa a (V.scale alpha x)
   where
     _ = typed t a
 
 prop_mulMatrixAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
     mulMatrixAddVectorWithScales alpha transa a x beta y
         ~==
-        addVector (mulMatrixVectorWithScale alpha transa a x)
-                  (scaleVector beta y)
+        V.add (mulMatrixVectorWithScale alpha transa a x)
+                  (V.scale beta y)
   where
     _ = typed t a
 

@@ -13,85 +13,87 @@ module Numeric.LinearAlgebra.Vector.STBase (
     IOVector,
     RVector(..),
     
-    sliceVector,
-    dropVector,
-    takeVector,
-    splitVectorAt,
+    slice,
+    drop,
+    take,
+    splitAt,
     
-    newVector_,
-    newVector,
-    newCopyVector,
-    newResultVector,
-    newResultVector2,
+    new_,
+    new,
+    newCopy,
+    newResult,
+    newResult2,
     
-    clearVector,
-    copyToVector,
-    unsafeCopyToVector,
-    swapVector,
-    unsafeSwapVector,
+    clear,
+    copyTo,
+    unsafeCopyTo,
+    swap,
+    unsafeSwap,
     
-    indicesVector,
-    getElemsVector,
-    getElemsVector',
-    getAssocsVector,
-    getAssocsVector',
-    setElemsVector,
-    setAssocsVector,
-    unsafeSetAssocsVector,
+    indices,
+    getElems,
+    getElems',
+    getAssocs,
+    getAssocs',
+    setElems,
+    setAssocs,
+    unsafeSetAssocs,
     
-    readVector,
-    unsafeReadVector,
-    writeVector,
-    unsafeWriteVector,
-    modifyVector,
-    unsafeModifyVector,
-    unsafeSwapElemsVector,
+    read,
+    unsafeRead,
+    write,
+    unsafeWrite,
+    modify,
+    unsafeModify,
+    unsafeSwapElems,
 
-    mapToVector,
-    unsafeMapToVector,
-    zipWithToVector,
-    unsafeZipWithToVector,
+    mapTo,
+    unsafeMapTo,
+    zipWithTo,
+    unsafeZipWithTo,
     
-    getSumAbsVector,
-    getNorm2Vector,
-    getWhichMaxAbsVector,
-    getDotVector,
-    unsafeGetDotVector,
-    kroneckerToVector,
+    getSumAbs,
+    getNorm2,
+    getWhichMaxAbs,
+    getDot,
+    unsafeGetDot,
+    kroneckerTo,
     
-    shiftToVector,
-    addToVector,
-    addToVectorWithScales,
-    subToVector,
-    scaleToVector,
-    mulToVector,
-    negateToVector,
-    conjToVector,
-    absToVector,
-    signumToVector,
-    divToVector,
-    recipToVector,        
-    sqrtToVector,
-    expToVector,
-    logToVector,
-    powToVector,
-    sinToVector,
-    cosToVector,
-    tanToVector,
-    asinToVector,
-    acosToVector,
-    atanToVector,
-    sinhToVector,
-    coshToVector,
-    tanhToVector,
-    asinhToVector,
-    acoshToVector,
-    atanhToVector,
+    shiftTo,
+    addTo,
+    addToWithScales,
+    subTo,
+    scaleTo,
+    mulTo,
+    negateTo,
+    conjTo,
+    absTo,
+    signumTo,
+    divTo,
+    recipTo,        
+    sqrtTo,
+    expTo,
+    logTo,
+    powTo,
+    sinTo,
+    cosTo,
+    tanTo,
+    asinTo,
+    acosTo,
+    atanTo,
+    sinhTo,
+    coshTo,
+    tanhTo,
+    asinhTo,
+    acoshTo,
+    atanhTo,
     ) where
+
+import Prelude hiding ( drop, read, splitAt, take )
 
 import Control.Monad
 import Control.Monad.ST
-import Foreign
+import Foreign hiding ( new )
 import System.IO.Unsafe( unsafeInterleaveIO )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
@@ -109,149 +111,149 @@ import qualified Foreign.VMath as VMath
 class RVector v where
     -- | Get the dimension of the vector.  This is equal to the number of
     -- elements in the vector.                          
-    dimVector :: (Storable e) => v e -> Int
+    dim :: (Storable e) => v e -> Int
 
-    unsafeSliceVector :: (Storable e) => Int -> Int -> v e -> v e
+    unsafeSlice :: (Storable e) => Int -> Int -> v e -> v e
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- vector.
-    unsafeWithVector :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
+    unsafeWith :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
 
     -- | Convert a vector to a @ForeignPtr@, and offset, and a length
-    unsafeVectorToForeignPtr :: (Storable e)
-                             => v e -> (ForeignPtr e, Int, Int)
+    unsafeToForeignPtr :: (Storable e)
+                       => v e -> (ForeignPtr e, Int, Int)
                              
     -- | Cast a @ForeignPtr@ to a vector.
-    unsafeVectorFromForeignPtr :: (Storable e)
-                               => ForeignPtr e -- ^ the pointer
-                               -> Int          -- ^ the offset
-                               -> Int          -- ^ the dimension
-                               -> v e
+    unsafeFromForeignPtr :: (Storable e)
+                         => ForeignPtr e -- ^ the pointer
+                         -> Int          -- ^ the offset
+                         -> Int          -- ^ the dimension
+                         -> v e
 
 
 instance RVector (MVector s) where
-    dimVector = STVector.length
-    {-# INLINE dimVector #-}
+    dim = STVector.length
+    {-# INLINE dim #-}
 
-    unsafeSliceVector = STVector.unsafeSlice
-    {-# INLINE unsafeSliceVector #-}
+    unsafeSlice = STVector.unsafeSlice
+    {-# INLINE unsafeSlice #-}
 
-    unsafeWithVector v f =
+    unsafeWith v f =
         STVector.unsafeWith (cast v) f
       where
         cast :: a s e -> a RealWorld e
         cast = unsafeCoerce
-    {-# INLINE unsafeWithVector #-}
+    {-# INLINE unsafeWith #-}
 
-    unsafeVectorToForeignPtr = STVector.unsafeToForeignPtr
-    {-# INLINE unsafeVectorToForeignPtr #-}
+    unsafeToForeignPtr = STVector.unsafeToForeignPtr
+    {-# INLINE unsafeToForeignPtr #-}
     
-    unsafeVectorFromForeignPtr = STVector.unsafeFromForeignPtr
-    {-# INLINE unsafeVectorFromForeignPtr #-}
+    unsafeFromForeignPtr = STVector.unsafeFromForeignPtr
+    {-# INLINE unsafeFromForeignPtr #-}
 
 
--- | @sliceVector i n v@ creates a subvector view of @v@ starting at
+-- | @slice i n v@ creates a subvector view of @v@ starting at
 -- index @i@ and having dimension @n@.
-sliceVector :: (RVector v, Storable e)
-            => Int
-            -> Int
-            -> v e
-            -> v e            
-sliceVector i n' v
+slice :: (RVector v, Storable e)
+      => Int
+      -> Int
+      -> v e
+      -> v e            
+slice i n' v
     | i < 0 || n' < 0 || i + n' > n = error $
-        printf "sliceVector %d %d <vector with dim %d>: index out of range"
+        printf "slice %d %d <vector with dim %d>: index out of range"
                i n' n
     | otherwise =
-        unsafeSliceVector i n' v
+        unsafeSlice i n' v
   where
-    n = dimVector v
-{-# INLINE sliceVector #-}
+    n = dim v
+{-# INLINE slice #-}
 
--- | @dropVector i v@ is equal to @sliceVector i (n-i) v@, where @n@ is
+-- | @drop i v@ is equal to @slice i (n-i) v@, where @n@ is
 -- the dimension of the vector.
-dropVector :: (RVector v, Storable e) => Int -> v e -> v e
-dropVector i v = sliceVector i (dimVector v - i) v
-{-# INLINE dropVector #-}
+drop :: (RVector v, Storable e) => Int -> v e -> v e
+drop i v = slice i (dim v - i) v
+{-# INLINE drop #-}
 
--- | @takeVector n v@ is equal to @sliceVector 0 n v@.
-takeVector :: (RVector v, Storable e) => Int -> v e -> v e
-takeVector n = sliceVector 0 n
-{-# INLINE takeVector #-}
+-- | @take n v@ is equal to @slice 0 n v@.
+take :: (RVector v, Storable e) => Int -> v e -> v e
+take n = slice 0 n
+{-# INLINE take #-}
 
 -- | Creates a new vector of the given length.  The elements will be
 -- uninitialized.
-newVector_ :: (Storable e) => Int -> ST s (STVector s e)
-newVector_ n
+new_ :: (Storable e) => Int -> ST s (STVector s e)
+new_ n
     | n < 0 =  error $
-        printf "newVector_ %d: invalid dimension" n
+        printf "new_ %d: invalid dimension" n
     | otherwise = unsafeIOToST $ do
         f <- mallocForeignPtrArray n
-        return $ unsafeVectorFromForeignPtr f 0 n
+        return $ unsafeFromForeignPtr f 0 n
 
 -- | Create a vector with every element initialized to the same value.
-newVector :: (Storable e) => Int -> e -> ST s (STVector s e)
-newVector n e = do
-    x <- newVector_ n
-    setElemsVector x $ replicate n e
+new :: (Storable e) => Int -> e -> ST s (STVector s e)
+new n e = do
+    x <- new_ n
+    setElems x $ replicate n e
     return x
 
 -- | Creates a new vector by copying another one.    
-newCopyVector :: (RVector v, Storable e) => v e -> ST s (STVector s e)
-newCopyVector x = do
-    y <- newVector_ (dimVector x)
-    unsafeCopyToVector x y
+newCopy :: (RVector v, Storable e) => v e -> ST s (STVector s e)
+newCopy x = do
+    y <- new_ (dim x)
+    unsafeCopyTo x y
     return y
 
--- | @copyToVector src dst@ replaces the values in @dst@ with those in
+-- | @copyTo src dst@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyToVector :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
-copyToVector = checkVectorOp2 "copyToVector" unsafeCopyToVector
-{-# INLINE copyToVector #-}
+copyTo :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
+copyTo = checkOp2 "copyTo" unsafeCopyTo
+{-# INLINE copyTo #-}
 
-unsafeCopyToVector :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
-unsafeCopyToVector x y = unsafeIOToST $
-    unsafeWithVector x $ \px ->
-    unsafeWithVector y $ \py ->
+unsafeCopyTo :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
+unsafeCopyTo x y = unsafeIOToST $
+    unsafeWith x $ \px ->
+    unsafeWith y $ \py ->
         when (px /= py) $ copyArray py px n
   where
-    n = dimVector y
-{-# INLINE unsafeCopyToVector #-}
+    n = dim y
+{-# INLINE unsafeCopyTo #-}
 
 -- | Swap the values stored in two vectors.
-swapVector :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
-swapVector = checkVectorOp2 "swapVector" unsafeSwapVector
-{-# INLINE swapVector #-}
+swap :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
+swap = checkOp2 "swap" unsafeSwap
+{-# INLINE swap #-}
 
-unsafeSwapVector :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
-unsafeSwapVector = vectorStrideCall2 BLAS.swap
-{-# INLINE unsafeSwapVector #-}
+unsafeSwap :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
+unsafeSwap = strideCall2 BLAS.swap
+{-# INLINE unsafeSwap #-}
 
--- | Split a vector into two blocks and returns views into the blocks.  In
--- @(x1, x2) = splitVectorAt k x@, we have
--- @x1 = sliceVector 0 k x@ and
--- @x2 = sliceVector k (dimVector x - k) x@.
-splitVectorAt :: (RVector v, Storable e) => Int -> v e -> (v e, v e)
-splitVectorAt k x
+-- | Split a vector into two blocks and returns views into the blocks.  If
+-- @(x1, x2) = splitAt k x@, then
+-- @x1 = slice 0 k x@ and
+-- @x2 = slice k (dim x - k) x@.
+splitAt :: (RVector v, Storable e) => Int -> v e -> (v e, v e)
+splitAt k x
     | k < 0 || k > n = error $
-        printf "splitVectorAt %d <vector with dim %d>: invalid index" k n
+        printf "splitAt %d <vector with dim %d>: invalid index" k n
     | otherwise = let
-        x1 = unsafeSliceVector 0 k     x
-        x2 = unsafeSliceVector k (n-k) x
+        x1 = unsafeSlice 0 k     x
+        x2 = unsafeSlice k (n-k) x
     in (x1,x2)
   where
-    n = dimVector x
-{-# INLINE splitVectorAt #-}
+    n = dim x
+{-# INLINE splitAt #-}
 
 -- | Get the indices of the elements in the vector, @[ 0..n-1 ]@, where
 -- @n@ is the dimension of the vector.
-indicesVector :: (RVector v, Storable e) => v e -> [Int]
-indicesVector x = [ 0..n-1 ] where n = dimVector x
-{-# INLINE indicesVector #-}
+indices :: (RVector v, Storable e) => v e -> [Int]
+indices x = [ 0..n-1 ] where n = dim x
+{-# INLINE indices #-}
 
 -- | Lazily get the elements of the vector.
-getElemsVector :: (RVector v, Storable e) => v e -> ST s [e]
-getElemsVector v = unsafeIOToST $ unsafeWithVector v $ \p -> let
-    n   = dimVector v
+getElems :: (RVector v, Storable e) => v e -> ST s [e]
+getElems v = unsafeIOToST $ unsafeWith v $ \p -> let
+    n   = dim v
     end = p `advancePtr` n
     go p' | p' == end = do
               touchVector v
@@ -262,14 +264,14 @@ getElemsVector v = unsafeIOToST $ unsafeWithVector v $ \p -> let
               return $ e `seq` (e:es) in
     go p
   where
-    touchVector v' = unsafeWithVector v' $ const (return ())
-{-# SPECIALIZE INLINE getElemsVector :: STVector s Double -> ST s [Double] #-}
-{-# SPECIALIZE INLINE getElemsVector :: STVector s (Complex Double) -> ST s [Complex Double] #-}
+    touchVector v' = unsafeWith v' $ const (return ())
+{-# SPECIALIZE INLINE getElems :: STVector s Double -> ST s [Double] #-}
+{-# SPECIALIZE INLINE getElems :: STVector s (Complex Double) -> ST s [Complex Double] #-}
 
 -- | Get the elements of the vector.
-getElemsVector' :: (RVector v, Storable e) => v e -> ST s [e]
-getElemsVector' v = unsafeIOToST $ unsafeWithVector v $ \p -> let
-    n   = dimVector v
+getElems' :: (RVector v, Storable e) => v e -> ST s [e]
+getElems' v = unsafeIOToST $ unsafeWith v $ \p -> let
+    n   = dim v
     end = p `advancePtr` (-1)
     go p' es | p' == end =
                  return es
@@ -277,29 +279,29 @@ getElemsVector' v = unsafeIOToST $ unsafeWithVector v $ \p -> let
                  e <- peek p'
                  go (p' `advancePtr` (-1)) (e:es) in
     go (p `advancePtr` (n-1)) []
-{-# SPECIALIZE INLINE getElemsVector' :: STVector s Double -> ST s [Double] #-}
-{-# SPECIALIZE INLINE getElemsVector' :: STVector s (Complex Double) -> ST s [Complex Double] #-}
+{-# SPECIALIZE INLINE getElems' :: STVector s Double -> ST s [Double] #-}
+{-# SPECIALIZE INLINE getElems' :: STVector s (Complex Double) -> ST s [Complex Double] #-}
 
 -- | Lazily get the association list of the vector.
-getAssocsVector :: (RVector v, Storable e) => v e -> ST s [(Int,e)]
-getAssocsVector x = liftM (zip (indicesVector x)) (getElemsVector x)
-{-# INLINE getAssocsVector #-}
+getAssocs :: (RVector v, Storable e) => v e -> ST s [(Int,e)]
+getAssocs x = liftM (zip (indices x)) (getElems x)
+{-# INLINE getAssocs #-}
 
 -- | Get the association list of the vector.
-getAssocsVector' :: (RVector v, Storable e) => v e -> ST s [(Int,e)]
-getAssocsVector' x = liftM (zip (indicesVector x)) (getElemsVector' x)
-{-# INLINE getAssocsVector' #-}
+getAssocs' :: (RVector v, Storable e) => v e -> ST s [(Int,e)]
+getAssocs' x = liftM (zip (indices x)) (getElems' x)
+{-# INLINE getAssocs' #-}
 
 -- | Set all of the values of the vector from the elements in the list.
-setElemsVector  :: (Storable e) => STVector s e -> [e] -> ST s ()
-setElemsVector x es = let
-    n = dimVector x
+setElems  :: (Storable e) => STVector s e -> [e] -> ST s ()
+setElems x es = let
+    n = dim x
     go [] i _ | i < n = error $ 
-                    printf ("setElemsVector <vector with dim %d>"
+                    printf ("setElems <vector with dim %d>"
                             ++ " <list with length %d>:"
                             ++ " not enough elements") n i
     go (_:_) i _ | i == n = error $ 
-                    printf ("setElemsVector <vector with dim %d>"
+                    printf ("setElems <vector with dim %d>"
                             ++ " <list with length at least %d>:"
                             ++ " too many elements") n (i+1)
     go []     _ _ = return ()
@@ -307,91 +309,91 @@ setElemsVector x es = let
         poke p f
         go fs (i+1) (p `advancePtr` 1)
     
-    in unsafeIOToST $ unsafeWithVector x $ go es 0
+    in unsafeIOToST $ unsafeWith x $ go es 0
 
 -- | Set the given values in the vector.  If an index is repeated twice,
 -- the value is implementation-defined.
-setAssocsVector :: (Storable e) => STVector s e -> [(Int,e)] -> ST s ()
-setAssocsVector x ies =
-    let n = dimVector x
+setAssocs :: (Storable e) => STVector s e -> [(Int,e)] -> ST s ()
+setAssocs x ies =
+    let n = dim x
         go p ((i,e):ies') = do
             when (i < 0 || i >= n) $ error $
-                printf ("setAssocsVector <vector with dim %d>"
+                printf ("setAssocs <vector with dim %d>"
                         ++ " [ ..., (%d,_), ... ]: invalid index") n i
             pokeElemOff p i e
             go p ies'
         go _ [] = return ()
-    in unsafeIOToST $ unsafeWithVector x $ \p -> go p ies
+    in unsafeIOToST $ unsafeWith x $ \p -> go p ies
 
-unsafeSetAssocsVector :: (Storable e) => STVector s e -> [(Int,e)] -> ST s ()
-unsafeSetAssocsVector x ies =
+unsafeSetAssocs :: (Storable e) => STVector s e -> [(Int,e)] -> ST s ()
+unsafeSetAssocs x ies =
     let go p ((i,e):ies') = do
             pokeElemOff p i e
             go p ies'
         go _ [] = return ()
-    in unsafeIOToST $ unsafeWithVector x $ \p -> go p ies
+    in unsafeIOToST $ unsafeWith x $ \p -> go p ies
 
 -- | Get the element stored at the given index.
-readVector :: (RVector v, Storable e) => v e -> Int -> ST s e
-readVector x i
+read :: (RVector v, Storable e) => v e -> Int -> ST s e
+read x i
     | i < 0 || i >= n = error $
-        printf ("readVector <vector with dim %d> %d:"
+        printf ("read <vector with dim %d> %d:"
                 ++ " invalid index") n i
     | otherwise =
-        unsafeReadVector x i
+        unsafeRead x i
   where
-    n = dimVector x
-{-# SPECIALIZE INLINE readVector :: STVector s Double -> Int -> ST s (Double) #-}
-{-# SPECIALIZE INLINE readVector :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
+    n = dim x
+{-# SPECIALIZE INLINE read :: STVector s Double -> Int -> ST s (Double) #-}
+{-# SPECIALIZE INLINE read :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
 
-unsafeReadVector :: (RVector v, Storable e) => v e -> Int -> ST s e
-unsafeReadVector x i =
-    unsafeIOToST $ unsafeWithVector x $ \p -> peekElemOff p i
-{-# SPECIALIZE INLINE unsafeReadVector :: STVector s Double -> Int -> ST s (Double) #-}
-{-# SPECIALIZE INLINE unsafeReadVector :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
+unsafeRead :: (RVector v, Storable e) => v e -> Int -> ST s e
+unsafeRead x i =
+    unsafeIOToST $ unsafeWith x $ \p -> peekElemOff p i
+{-# SPECIALIZE INLINE unsafeRead :: STVector s Double -> Int -> ST s (Double) #-}
+{-# SPECIALIZE INLINE unsafeRead :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
 
 -- | Set the element stored at the given index.
-writeVector :: (Storable e) => STVector s e -> Int -> e -> ST s ()
-writeVector x i e
+write :: (Storable e) => STVector s e -> Int -> e -> ST s ()
+write x i e
     | i < 0 || i >= n = error $
-        printf ("writeVector <vector with dim %d> %d:"
+        printf ("write <vector with dim %d> %d:"
                 ++ " invalid index") n i
     | otherwise =
-        unsafeWriteVector x i e
+        unsafeWrite x i e
   where
-    n = dimVector x
-{-# SPECIALIZE INLINE writeVector :: STVector s Double -> Int -> Double -> ST s () #-}
-{-# SPECIALIZE INLINE writeVector :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
+    n = dim x
+{-# SPECIALIZE INLINE write :: STVector s Double -> Int -> Double -> ST s () #-}
+{-# SPECIALIZE INLINE write :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
 
-unsafeWriteVector :: (Storable e) => STVector s e -> Int -> e -> ST s ()
-unsafeWriteVector x i e =
-    unsafeIOToST $ unsafeWithVector x $ \p -> pokeElemOff p i e
-{-# SPECIALIZE INLINE unsafeWriteVector :: STVector s Double -> Int -> Double -> ST s () #-}
-{-# SPECIALIZE INLINE unsafeWriteVector :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
+unsafeWrite :: (Storable e) => STVector s e -> Int -> e -> ST s ()
+unsafeWrite x i e =
+    unsafeIOToST $ unsafeWith x $ \p -> pokeElemOff p i e
+{-# SPECIALIZE INLINE unsafeWrite :: STVector s Double -> Int -> Double -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeWrite :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
 
 -- | Modify the element stored at the given index.
-modifyVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
-modifyVector x i f
+modify :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
+modify x i f
     | i < 0 || i >= n = error $
-        printf ("modifyVector <vector with dim %d> %d:"
+        printf ("modify <vector with dim %d> %d:"
                 ++ " invalid index") n i
     | otherwise =
-        unsafeModifyVector x i f
+        unsafeModify x i f
   where
-    n = dimVector x
-{-# SPECIALIZE INLINE modifyVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
-{-# SPECIALIZE INLINE modifyVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
+    n = dim x
+{-# SPECIALIZE INLINE modify :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
+{-# SPECIALIZE INLINE modify :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
 
-unsafeModifyVector :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
-unsafeModifyVector x i f =
-    unsafeIOToST $ unsafeWithVector x $ \p -> do
+unsafeModify :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
+unsafeModify x i f =
+    unsafeIOToST $ unsafeWith x $ \p -> do
         e <- peekElemOff p i
         pokeElemOff p i $ f e
-{-# SPECIALIZE INLINE unsafeModifyVector :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
-{-# SPECIALIZE INLINE unsafeModifyVector :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeModify :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeModify :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
 
-unsafeSwapElemsVector :: (Storable e) => STVector s e -> Int -> Int -> ST s ()
-unsafeSwapElemsVector x i1 i2 = unsafeIOToST $ unsafeWithVector x $ \p ->
+unsafeSwapElems :: (Storable e) => STVector s e -> Int -> Int -> ST s ()
+unsafeSwapElems x i1 i2 = unsafeIOToST $ unsafeWith x $ \p ->
     let p1 = p `advancePtr` i1
         p2 = p `advancePtr` i2
     in do
@@ -399,24 +401,24 @@ unsafeSwapElemsVector x i1 i2 = unsafeIOToST $ unsafeWithVector x $ \p ->
         e2  <- peek p2
         poke p2 e1
         poke p1 e2
-{-# SPECIALIZE INLINE unsafeSwapElemsVector :: STVector s Double -> Int -> Int -> ST s () #-}
-{-# SPECIALIZE INLINE unsafeSwapElemsVector :: STVector s (Complex Double) -> Int -> Int -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeSwapElems :: STVector s Double -> Int -> Int -> ST s () #-}
+{-# SPECIALIZE INLINE unsafeSwapElems :: STVector s (Complex Double) -> Int -> Int -> ST s () #-}
 
--- | @mapToVector f x z@ replaces @z@ elementwise with @f(x)@.
-mapToVector :: (RVector v, Storable e, Storable f)
+-- | @mapTo f x z@ replaces @z@ elementwise with @f(x)@.
+mapTo :: (RVector v, Storable e, Storable f)
+      => (e -> f)
+      -> v e
+      -> STVector s f
+      -> ST s ()
+mapTo f = checkOp2 "mapTo _" $ unsafeMapTo f
+{-# INLINE mapTo #-}
+                            
+unsafeMapTo :: (RVector v, Storable e, Storable f)
             => (e -> f)
             -> v e
             -> STVector s f
             -> ST s ()
-mapToVector f = checkVectorOp2 "mapToVector _" $ unsafeMapToVector f
-{-# INLINE mapToVector #-}
-                            
-unsafeMapToVector :: (RVector v, Storable e, Storable f)
-                  => (e -> f)
-                  -> v e
-                  -> STVector s f
-                  -> ST s ()
-unsafeMapToVector f v mv =
+unsafeMapTo f v mv =
     let go psrc pdst end
             | pdst == end =
                 return ()
@@ -425,31 +427,31 @@ unsafeMapToVector f v mv =
                 poke pdst (f e)
                 go (psrc `advancePtr` 1) (pdst `advancePtr` 1) end
     in unsafeIOToST $
-           unsafeWithVector v $ \psrc -> 
-           unsafeWithVector mv $ \pdst ->
-               go psrc pdst (pdst `advancePtr` dimVector mv)
+           unsafeWith v $ \psrc -> 
+           unsafeWith mv $ \pdst ->
+               go psrc pdst (pdst `advancePtr` dim mv)
   where
 
-{-# INLINE unsafeMapToVector #-}
+{-# INLINE unsafeMapTo #-}
 
--- | @zipWithToVector f x y z@ replaces @z@ elementwise with @f(x, y)@.
-zipWithToVector :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
+-- | @zipWithTo f x y z@ replaces @z@ elementwise with @f(x, y)@.
+zipWithTo :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
+          => (e1 -> e2 -> f)
+          -> v1 e1
+          -> v2 e2
+          -> STVector s f
+          -> ST s ()
+zipWithTo f = checkOp3 "zipWithTo _" $
+    unsafeZipWithTo f
+{-# INLINE zipWithTo #-}
+
+unsafeZipWithTo :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
                 => (e1 -> e2 -> f)
                 -> v1 e1
                 -> v2 e2
                 -> STVector s f
                 -> ST s ()
-zipWithToVector f = checkVectorOp3 "zipWithToVector _" $
-    unsafeZipWithToVector f
-{-# INLINE zipWithToVector #-}
-
-unsafeZipWithToVector :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
-                      => (e1 -> e2 -> f)
-                      -> v1 e1
-                      -> v2 e2
-                      -> STVector s f
-                      -> ST s ()
-unsafeZipWithToVector f v1 v2 mv =
+unsafeZipWithTo f v1 v2 mv =
     let go psrc1 psrc2 pdst end
             | pdst == end = 
                 return ()
@@ -460,333 +462,333 @@ unsafeZipWithToVector f v1 v2 mv =
                 go (psrc1 `advancePtr` 1) (psrc2 `advancePtr` 1)
                    (pdst `advancePtr` 1) end
     in unsafeIOToST $
-           unsafeWithVector v1 $ \psrc1 ->
-           unsafeWithVector v2 $ \psrc2 -> 
-           unsafeWithVector mv $ \pdst ->
-               go psrc1 psrc2 pdst (pdst `advancePtr` dimVector mv)
-{-# INLINE unsafeZipWithToVector #-}
+           unsafeWith v1 $ \psrc1 ->
+           unsafeWith v2 $ \psrc2 -> 
+           unsafeWith mv $ \pdst ->
+               go psrc1 psrc2 pdst (pdst `advancePtr` dim mv)
+{-# INLINE unsafeZipWithTo #-}
 
 
 -- | Set every element in the vector to a default value.  For
 -- standard numeric types (including 'Double', 'Complex Double', and 'Int'),
 -- the default value is '0'.
-clearVector :: (Storable e) => STVector s e -> ST s ()
-clearVector x = unsafeIOToST $ unsafeWithVector x $ \p -> clearArray p n
+clear :: (Storable e) => STVector s e -> ST s ()
+clear x = unsafeIOToST $ unsafeWith x $ \p -> clearArray p n
   where
-    n = dimVector x
+    n = dim x
 
--- | @negateToVector x z@ replaces @z@ with @negate(x)@.
-negateToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-negateToVector = checkVectorOp2 "negateToVector" $
-    vectorCall2 VMath.vNeg
-{-# INLINE negateToVector #-}
+-- | @negateTo x z@ replaces @z@ with @negate(x)@.
+negateTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
+negateTo = checkOp2 "negateTo" $
+    call2 VMath.vNeg
+{-# INLINE negateTo #-}
 
--- | @absToVector x z@ replaces @z@ with @abs(x)@.
-absToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-absToVector = checkVectorOp2 "absToVector" $
-    vectorCall2 VMath.vAbs
-{-# INLINE absToVector #-}
+-- | @absTo x z@ replaces @z@ with @abs(x)@.
+absTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
+absTo = checkOp2 "absTo" $
+    call2 VMath.vAbs
+{-# INLINE absTo #-}
 
--- | @signumToVector x z@ replaces @z@ with @signum(x)@.
-signumToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-signumToVector = checkVectorOp2 "signumToVector" $
-    vectorCall2 VMath.vSgn
-{-# INLINE signumToVector #-}
+-- | @signumTo x z@ replaces @z@ with @signum(x)@.
+signumTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
+signumTo = checkOp2 "signumTo" $
+    call2 VMath.vSgn
+{-# INLINE signumTo #-}
 
 
 
--- | @conjToVector x z@ replaces @z@ with @conj(x)@.
-conjToVector :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-conjToVector = checkVectorOp2 "conjToVector" $
-    vectorCall2 VMath.vConj
-{-# INLINE conjToVector #-}
+-- | @conjTo x z@ replaces @z@ with @conj(x)@.
+conjTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
+conjTo = checkOp2 "conjTo" $
+    call2 VMath.vConj
+{-# INLINE conjTo #-}
 
--- | @shiftToVector alpha x z@ replaces @z@ with @alpha + x@.
-shiftToVector :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
-shiftToVector alpha = checkVectorOp2 "shiftToVector _" $
-    vectorCall2 (flip VMath.vShift alpha)
-{-# INLINE shiftToVector #-}
+-- | @shiftTo alpha x z@ replaces @z@ with @alpha + x@.
+shiftTo :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
+shiftTo alpha = checkOp2 "shiftTo _" $
+    call2 (flip VMath.vShift alpha)
+{-# INLINE shiftTo #-}
 
--- | @scaleToVector alpha x z@ replaces @z@ with @alpha * x@.
-scaleToVector :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
-scaleToVector alpha = checkVectorOp2 "scaleToVector _" $
-    vectorCall2 (flip VMath.vScale alpha)
-{-# INLINE scaleToVector #-}
+-- | @scaleTo alpha x z@ replaces @z@ with @alpha * x@.
+scaleTo :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
+scaleTo alpha = checkOp2 "scaleTo _" $
+    call2 (flip VMath.vScale alpha)
+{-# INLINE scaleTo #-}
 
--- | @addToVectorWithScales alpha x beta y z@ replaces @z@ with
+-- | @addToWithScales alpha x beta y z@ replaces @z@ with
 -- @alpha * x + beta * y@.
-addToVectorWithScales :: (RVector v1, RVector v2, VNum e)
-                      => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
-addToVectorWithScales alpha x beta y z =
-    checkVectorOp3 "addToVectorWithScales"
-        (vectorCall3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3))
+addToWithScales :: (RVector v1, RVector v2, VNum e)
+                => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
+addToWithScales alpha x beta y z =
+    checkOp3 "addToWithScales"
+        (call3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3))
         x y z
-{-# INLINE addToVectorWithScales #-}
+{-# INLINE addToWithScales #-}
 
--- | @addToVector x y z@ replaces @z@ with @x+y@.
-addToVector :: (RVector v1, RVector v2, VNum e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-addToVector = checkVectorOp3 "addToVector" $ vectorCall3 VMath.vAdd
-{-# INLINE addToVector #-}
+-- | @addTo x y z@ replaces @z@ with @x+y@.
+addTo :: (RVector v1, RVector v2, VNum e)
+      => v1 e -> v2 e -> STVector s e -> ST s ()
+addTo = checkOp3 "addTo" $ call3 VMath.vAdd
+{-# INLINE addTo #-}
 
--- | @subToVector x y z@ replaces @z@ with @x-y@.
-subToVector :: (RVector v1, RVector v2, VNum e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-subToVector = checkVectorOp3 "subToVector" $ vectorCall3 VMath.vSub
-{-# INLINE subToVector #-}
+-- | @subTo x y z@ replaces @z@ with @x-y@.
+subTo :: (RVector v1, RVector v2, VNum e)
+      => v1 e -> v2 e -> STVector s e -> ST s ()
+subTo = checkOp3 "subTo" $ call3 VMath.vSub
+{-# INLINE subTo #-}
 
--- | @mulToVector x y z@ replaces @z@ with @x*y@.
-mulToVector :: (RVector v1, RVector v2, VNum e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-mulToVector = checkVectorOp3 "mulToVector" $ vectorCall3 VMath.vMul
-{-# INLINE mulToVector #-}
+-- | @mulTo x y z@ replaces @z@ with @x*y@.
+mulTo :: (RVector v1, RVector v2, VNum e)
+      => v1 e -> v2 e -> STVector s e -> ST s ()
+mulTo = checkOp3 "mulTo" $ call3 VMath.vMul
+{-# INLINE mulTo #-}
  
--- | @divToVector x y z@ replaces @z@ with @x/y@.
-divToVector :: (RVector v1, RVector v2, VFractional e)
+-- | @divTo x y z@ replaces @z@ with @x/y@.
+divTo :: (RVector v1, RVector v2, VFractional e)
+      => v1 e -> v2 e -> STVector s e -> ST s ()
+divTo = checkOp3 "divTo" $ call3 VMath.vDiv
+{-# INLINE divTo #-}
+
+-- | @recipTo x z@ replaces @z@ with @1/x@.
+recipTo :: (RVector v, VFractional e)
+        => v e -> STVector s e -> ST s ()
+recipTo = checkOp2 "recipTo" $ call2 VMath.vInv
+{-# INLINE recipTo #-}
+
+-- | @sqrtTo x z@ replaces @z@ with @sqrt(x)@.
+sqrtTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+sqrtTo = checkOp2 "sqrtTo" $
+    call2 VMath.vSqrt
+{-# INLINE sqrtTo #-}
+
+-- | @expTo x z@ replaces @z@ with @exp(x)@.
+expTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+expTo = checkOp2 "expTo" $
+    call2 VMath.vExp
+{-# INLINE expTo #-}
+
+-- | @logTo x z@ replaces @z@ with @log(x)@.
+logTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+logTo = checkOp2 "logTo" $
+    call2 VMath.vLog
+{-# INLINE logTo #-}
+
+-- | @powTo x y z@ replaces @z@ with @x ** y@.
+powTo :: (RVector v1, RVector v2, VFloating e)
             => v1 e -> v2 e -> STVector s e -> ST s ()
-divToVector = checkVectorOp3 "divToVector" $ vectorCall3 VMath.vDiv
-{-# INLINE divToVector #-}
+powTo = checkOp3 "powTo" $
+    call3 VMath.vPow
+{-# INLINE powTo #-}
 
--- | @recipToVector x z@ replaces @z@ with @1/x@.
-recipToVector :: (RVector v, VFractional e)
-              => v e -> STVector s e -> ST s ()
-recipToVector = checkVectorOp2 "recipToVector" $ vectorCall2 VMath.vInv
-{-# INLINE recipToVector #-}
+-- | @sinTo x z@ replaces @z@ with @sin(x)@.
+sinTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+sinTo = checkOp2 "sinTo" $
+    call2 VMath.vSin
+{-# INLINE sinTo #-}
 
--- | @sqrtToVector x z@ replaces @z@ with @sqrt(x)@.
-sqrtToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sqrtToVector = checkVectorOp2 "sqrtToVector" $
-    vectorCall2 VMath.vSqrt
-{-# INLINE sqrtToVector #-}
+-- | @cosTo x z@ replaces @z@ with @cos(x)@.
+cosTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+cosTo = checkOp2 "cosTo" $
+    call2 VMath.vCos
+{-# INLINE cosTo #-}
 
--- | @expToVector x z@ replaces @z@ with @exp(x)@.
-expToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-expToVector = checkVectorOp2 "expToVector" $
-    vectorCall2 VMath.vExp
-{-# INLINE expToVector #-}
+-- | @tanTo x z@ replaces @z@ with @tan(x)@.
+tanTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+tanTo = checkOp2 "tanTo" $
+    call2 VMath.vTan
+{-# INLINE tanTo #-}
 
--- | @logToVector x z@ replaces @z@ with @log(x)@.
-logToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-logToVector = checkVectorOp2 "logToVector" $
-    vectorCall2 VMath.vLog
-{-# INLINE logToVector #-}
+-- | @asinTo x z@ replaces @z@ with @asin(x)@.
+asinTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+asinTo = checkOp2 "asinTo" $
+    call2 VMath.vASin
+{-# INLINE asinTo #-}
 
--- | @powToVector x y z@ replaces @z@ with @x ** y@.
-powToVector :: (RVector v1, RVector v2, VFloating e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-powToVector = checkVectorOp3 "powToVector" $
-    vectorCall3 VMath.vPow
-{-# INLINE powToVector #-}
+-- | @acosTo x z@ replaces @z@ with @acos(x)@.
+acosTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+acosTo = checkOp2 "acosTo" $
+    call2 VMath.vACos
+{-# INLINE acosTo #-}
 
--- | @sinToVector x z@ replaces @z@ with @sin(x)@.
-sinToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sinToVector = checkVectorOp2 "sinToVector" $
-    vectorCall2 VMath.vSin
-{-# INLINE sinToVector #-}
+-- | @atanTo x z@ replaces @z@ with @atan(x)@.
+atanTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+atanTo = checkOp2 "atanTo" $
+    call2 VMath.vATan
+{-# INLINE atanTo #-}
 
--- | @cosToVector x z@ replaces @z@ with @cos(x)@.
-cosToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-cosToVector = checkVectorOp2 "cosToVector" $
-    vectorCall2 VMath.vCos
-{-# INLINE cosToVector #-}
+-- | @sinhTo x z@ replaces @z@ with @sinh(x)@.
+sinhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+sinhTo = checkOp2 "sinhTo" $
+    call2 VMath.vSinh
+{-# INLINE sinhTo #-}
 
--- | @tanToVector x z@ replaces @z@ with @tan(x)@.
-tanToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-tanToVector = checkVectorOp2 "tanToVector" $
-    vectorCall2 VMath.vTan
-{-# INLINE tanToVector #-}
+-- | @coshTo x z@ replaces @z@ with @cosh(x)@.
+coshTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+coshTo = checkOp2 "coshTo" $
+    call2 VMath.vCosh
+{-# INLINE coshTo #-}
 
--- | @asinToVector x z@ replaces @z@ with @asin(x)@.
-asinToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-asinToVector = checkVectorOp2 "asinToVector" $
-    vectorCall2 VMath.vASin
-{-# INLINE asinToVector #-}
+-- | @tanhTo x z@ replaces @z@ with @tanh(x)@.
+tanhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+tanhTo = checkOp2 "tanhTo" $
+    call2 VMath.vTanh
+{-# INLINE tanhTo #-}
 
--- | @acosToVector x z@ replaces @z@ with @acos(x)@.
-acosToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-acosToVector = checkVectorOp2 "acosToVector" $
-    vectorCall2 VMath.vACos
-{-# INLINE acosToVector #-}
+-- | @asinhTo x z@ replaces @z@ with @asinh(x)@.
+asinhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+asinhTo = checkOp2 "asinhTo" $
+    call2 VMath.vASinh
+{-# INLINE asinhTo #-}
 
--- | @atanToVector x z@ replaces @z@ with @atan(x)@.
-atanToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-atanToVector = checkVectorOp2 "atanToVector" $
-    vectorCall2 VMath.vATan
-{-# INLINE atanToVector #-}
+-- | @acoshTo x z@ replaces @z@ with @acosh(x)@.
+acoshTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+acoshTo = checkOp2 "acoshTo" $
+    call2 VMath.vACosh
+{-# INLINE acoshTo #-}
 
--- | @sinhToVector x z@ replaces @z@ with @sinh(x)@.
-sinhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sinhToVector = checkVectorOp2 "sinhToVector" $
-    vectorCall2 VMath.vSinh
-{-# INLINE sinhToVector #-}
-
--- | @coshToVector x z@ replaces @z@ with @cosh(x)@.
-coshToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-coshToVector = checkVectorOp2 "coshToVector" $
-    vectorCall2 VMath.vCosh
-{-# INLINE coshToVector #-}
-
--- | @tanhToVector x z@ replaces @z@ with @tanh(x)@.
-tanhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-tanhToVector = checkVectorOp2 "tanhToVector" $
-    vectorCall2 VMath.vTanh
-{-# INLINE tanhToVector #-}
-
--- | @asinhToVector x z@ replaces @z@ with @asinh(x)@.
-asinhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-asinhToVector = checkVectorOp2 "asinhToVector" $
-    vectorCall2 VMath.vASinh
-{-# INLINE asinhToVector #-}
-
--- | @acoshToVector x z@ replaces @z@ with @acosh(x)@.
-acoshToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-acoshToVector = checkVectorOp2 "acoshToVector" $
-    vectorCall2 VMath.vACosh
-{-# INLINE acoshToVector #-}
-
--- | @atanhToVector x z@ replaces @z@ with @atanh(x)@.
-atanhToVector :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-atanhToVector = checkVectorOp2 "atanhToVector" $
-    vectorCall2 VMath.vATanh
-{-# INLINE atanhToVector #-}
+-- | @atanhTo x z@ replaces @z@ with @atanh(x)@.
+atanhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
+atanhTo = checkOp2 "atanhTo" $
+    call2 VMath.vATanh
+{-# INLINE atanhTo #-}
 
 
 -- | Gets the sum of the absolute values of the vector entries.
-getSumAbsVector :: (RVector v, BLAS1 e) => v e -> ST s Double
-getSumAbsVector = vectorStrideCall BLAS.asum
-{-# INLINE getSumAbsVector #-}
+getSumAbs :: (RVector v, BLAS1 e) => v e -> ST s Double
+getSumAbs = strideCall BLAS.asum
+{-# INLINE getSumAbs #-}
 
 -- | Gets the 2-norm of a vector.
-getNorm2Vector :: (RVector v, BLAS1 e) => v e -> ST s Double
-getNorm2Vector = vectorStrideCall BLAS.nrm2
-{-# INLINE getNorm2Vector #-}
+getNorm2 :: (RVector v, BLAS1 e) => v e -> ST s Double
+getNorm2 = strideCall BLAS.nrm2
+{-# INLINE getNorm2 #-}
 
 -- | Gets the index and norm of the element with maximum magnitude.  This is 
 -- undefined if any of the elements are @NaN@.  It will throw an exception if 
 -- the dimension of the vector is 0.
-getWhichMaxAbsVector :: (RVector v, BLAS1 e) => v e -> ST s (Int, e)
-getWhichMaxAbsVector x =
-    case (dimVector x) of
+getWhichMaxAbs :: (RVector v, BLAS1 e) => v e -> ST s (Int, e)
+getWhichMaxAbs x =
+    case (dim x) of
         0 -> error $ "getWhichMaxAbs <vector with dim 0>: empty vector"
         _ -> do
-            i <- vectorStrideCall BLAS.iamax x
-            e <- unsafeReadVector x i
+            i <- strideCall BLAS.iamax x
+            e <- unsafeRead x i
             return (i,e)
-{-# INLINE getWhichMaxAbsVector #-}
+{-# INLINE getWhichMaxAbs #-}
 
 -- | Computes the dot product of two vectors.
-getDotVector :: (RVector v, RVector v', BLAS1 e)
+getDot :: (RVector v, RVector v', BLAS1 e)
              => v e -> v' e -> ST s e
-getDotVector = checkVectorOp2 "getDotVector" unsafeGetDotVector
-{-# INLINE getDotVector #-}
+getDot = checkOp2 "getDot" unsafeGetDot
+{-# INLINE getDot #-}
 
-unsafeGetDotVector :: (RVector x, RVector y, BLAS1 e)
+unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
                    => x e -> y e -> ST s e
-unsafeGetDotVector x y = (vectorStrideCall2 BLAS.dotc) y x
-{-# INLINE unsafeGetDotVector #-}
+unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
+{-# INLINE unsafeGetDot #-}
 
--- | @kroneckerToVector x y z@ sets @z := x \otimes y@.
-kroneckerToVector :: (RVector v1, RVector v2, VNum e)
-                  => v1 e -> v2 e -> STVector s e -> ST s ()
-kroneckerToVector x y z
-    | dimVector z /= m * n = error $
-        printf ("kroneckerToVector"
+-- | @kroneckerTo x y z@ sets @z := x \otimes y@.
+kroneckerTo :: (RVector v1, RVector v2, VNum e)
+            => v1 e -> v2 e -> STVector s e -> ST s ()
+kroneckerTo x y z
+    | dim z /= m * n = error $
+        printf ("kroneckerTo"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (dimVector z)
+                ++ " dimension mismatch") m n (dim z)
     | otherwise = do
-        ies <- getAssocsVector x
+        ies <- getAssocs x
         forM_ ies $ \(i,e) ->
-            scaleToVector e y (unsafeSliceVector (i*n) n z)
+            scaleTo e y (unsafeSlice (i*n) n z)
   where
-    m = dimVector x
-    n = dimVector y
+    m = dim x
+    n = dim y
 
 {-
-vectorCall :: (RVector x, Storable e)
+call :: (RVector x, Storable e)
            => (Int -> Ptr e -> IO a) 
            ->  x e -> ST s a
-vectorCall f x = 
-    let n    = dimVector x
+call f x = 
+    let n    = dim x
     in unsafeIOToST $
-           unsafeWithVector x $ \pX ->
+           unsafeWith x $ \pX ->
                f n pX
-{-# INLINE vectorCall #-}
+{-# INLINE call #-}
 -}
 
-vectorCall2 :: (RVector x, RVector y, Storable e, Storable f)
-            => (Int -> Ptr e -> Ptr f -> IO a) 
-            -> x e -> y f -> ST s a
-vectorCall2 f x y =
-    let n    = dimVector x
+call2 :: (RVector x, RVector y, Storable e, Storable f)
+      => (Int -> Ptr e -> Ptr f -> IO a) 
+      -> x e -> y f -> ST s a
+call2 f x y =
+    let n    = dim x
     in unsafeIOToST $
-           unsafeWithVector x $ \pX ->
-           unsafeWithVector y $ \pY ->
+           unsafeWith x $ \pX ->
+           unsafeWith y $ \pY ->
                f n pX pY
-{-# INLINE vectorCall2 #-}    
+{-# INLINE call2 #-}    
 
-vectorCall3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
-            => (Int -> Ptr e -> Ptr f -> Ptr g -> IO a) 
-            -> x e -> y f -> z g -> ST s a
-vectorCall3 f x y z =
-    let n    = dimVector x
+call3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
+      => (Int -> Ptr e -> Ptr f -> Ptr g -> IO a) 
+      -> x e -> y f -> z g -> ST s a
+call3 f x y z =
+    let n    = dim x
     in unsafeIOToST $
-           unsafeWithVector x $ \pX ->
-           unsafeWithVector y $ \pY ->
-           unsafeWithVector z $ \pZ ->           
+           unsafeWith x $ \pX ->
+           unsafeWith y $ \pY ->
+           unsafeWith z $ \pZ ->           
                f n pX pY pZ
-{-# INLINE vectorCall3 #-}   
+{-# INLINE call3 #-}   
 
-vectorStrideCall :: (RVector x, Storable e)
-                 => (Int -> Ptr e -> Int -> IO a) 
-                 ->  x e -> ST s a
-vectorStrideCall f x = 
-    let n    = dimVector x
+strideCall :: (RVector x, Storable e)
+           => (Int -> Ptr e -> Int -> IO a) 
+           ->  x e -> ST s a
+strideCall f x = 
+    let n    = dim x
         incX = 1
     in unsafeIOToST $
-           unsafeWithVector x $ \pX ->
+           unsafeWith x $ \pX ->
                f n pX incX
-{-# INLINE vectorStrideCall #-}
+{-# INLINE strideCall #-}
 
-vectorStrideCall2 :: (RVector x, RVector y, Storable e, Storable f)
-                  => (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
-                  -> x e -> y f -> ST s a
-vectorStrideCall2 f x y =
-    let n    = dimVector x
+strideCall2 :: (RVector x, RVector y, Storable e, Storable f)
+            => (Int -> Ptr e -> Int -> Ptr f -> Int -> IO a) 
+            -> x e -> y f -> ST s a
+strideCall2 f x y =
+    let n    = dim x
         incX = 1
         incY = 1
     in unsafeIOToST $
-           unsafeWithVector x $ \pX ->
-           unsafeWithVector y $ \pY ->
+           unsafeWith x $ \pX ->
+           unsafeWith y $ \pY ->
                f n pX incX pY incY
-{-# INLINE vectorStrideCall2 #-}    
+{-# INLINE strideCall2 #-}    
 
-checkVectorOp2 :: (RVector x, RVector y, Storable e, Storable f)
-               => String
-               -> (x e -> y f -> a)
-               -> x e
-               -> y f
-               -> a
-checkVectorOp2 str f x y
+checkOp2 :: (RVector x, RVector y, Storable e, Storable f)
+         => String
+         -> (x e -> y f -> a)
+         -> x e
+         -> y f
+         -> a
+checkOp2 str f x y
     | n1 /= n2 = error $
         printf ("%s <vector with dim %d> <vector with dim %d>:"
                 ++ " dimension mismatch") str n1 n2
     | otherwise =
         f x y
   where
-    n1 = dimVector x
-    n2 = dimVector y        
-{-# INLINE checkVectorOp2 #-}
+    n1 = dim x
+    n2 = dim y        
+{-# INLINE checkOp2 #-}
 
-checkVectorOp3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
-               => String
-               -> (x e -> y f -> z g -> a)
-               -> x e
-               -> y f
-               -> z g
-               -> a
-checkVectorOp3 str f x y z
+checkOp3 :: (RVector x, RVector y, RVector z, Storable e, Storable f, Storable g)
+         => String
+         -> (x e -> y f -> z g -> a)
+         -> x e
+         -> y f
+         -> z g
+         -> a
+checkOp3 str f x y z
     | n1 /= n2 || n1 /= n3 = error $
         printf ("%s <vector with dim %d> <vector with dim %d>"
                 ++ " <vector with dim %d>:"
@@ -794,29 +796,29 @@ checkVectorOp3 str f x y z
     | otherwise =
         f x y z
   where
-    n1 = dimVector x
-    n2 = dimVector y        
-    n3 = dimVector z
-{-# INLINE checkVectorOp3 #-}
+    n1 = dim x
+    n2 = dim y        
+    n3 = dim z
+{-# INLINE checkOp3 #-}
 
-newResultVector :: (RVector v, Storable e, Storable f)
-                => (v e -> STVector s f -> ST s a)
-                -> v e
-                -> ST s (STVector s f)
-newResultVector f v = do
-    z <- newVector_ (dimVector v)
+newResult :: (RVector v, Storable e, Storable f)
+          => (v e -> STVector s f -> ST s a)
+          -> v e
+          -> ST s (STVector s f)
+newResult f v = do
+    z <- new_ (dim v)
     _ <- f v z
     return z
-{-# INLINE newResultVector #-}
+{-# INLINE newResult #-}
 
 
-newResultVector2 :: (RVector v1, RVector v2, Storable e, Storable f, Storable g)
-                 => (v1 e -> v2 f -> STVector s g -> ST s a)
-                 -> v1 e
-                 -> v2 f
-                 -> ST s (STVector s g)
-newResultVector2 f v1 v2 = do
-    z <- newVector_ (dimVector v1)
+newResult2 :: (RVector v1, RVector v2, Storable e, Storable f, Storable g)
+           => (v1 e -> v2 f -> STVector s g -> ST s a)
+           -> v1 e
+           -> v2 f
+           -> ST s (STVector s g)
+newResult2 f v1 v2 = do
+    z <- new_ (dim v1)
     _ <- f v1 v2 z
     return z
-{-# INLINE newResultVector2 #-}
+{-# INLINE newResult2 #-}

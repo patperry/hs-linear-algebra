@@ -23,9 +23,8 @@ module Numeric.LinearAlgebra (
     ) where
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector
-import Numeric.LinearAlgebra.Vector.ST hiding ( dimVector, indicesVector,
-    sliceVector, splitVectorAt, dropVector, takeVector )
+import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
 import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.ST hiding ( dimMatrix, indicesMatrix,
     sliceMatrix, takeRowsMatrix, dropRowsMatrix, splitRowsMatrixAt, 

@@ -11,77 +11,78 @@
 module Numeric.LinearAlgebra.Vector (
     -- * The Vector type
     Vector,
-    dimVector,
+    dim,
 
     -- * Vector construction
-    vector, 
-    listVector,
-    constantVector,
+    fromAssocs, 
+    fromList,
+    constant,
 
     -- * Accessing vectors
-    atVector,
-    unsafeAtVector,
-    indicesVector,
-    elemsVector,
-    assocsVector,
+    at,
+    unsafeAt,
+    indices,
+    elems,
+    assocs,
 
     -- * Incremental vector updates
-    replaceVector,
-    accumVector,
+    replace,
+    accum,
 
     -- * Derived vectors
-    mapVector,
-    zipWithVector,
-    concatVectors,
+    map,
+    zipWith,
+    concat,
 
     -- * Vector views
-    sliceVector,
-    splitVectorAt,
-    dropVector,
-    takeVector,
+    slice,
+    splitAt,
+    drop,
+    take,
 
     -- * Vector properties
-    sumAbsVector,    
-    norm2Vector,
-    whichMaxAbsVector,
-    dotVector,
-    kroneckerVector,
+    sumAbs,    
+    norm2,
+    whichMaxAbs,
+    dot,
+    kronecker,
 
     -- * Vector math operations
     -- ** Num
-    shiftVector,
-    addVector,
-    addVectorWithScales,
-    subVector,
-    scaleVector,
-    mulVector,
-    negateVector,
-    conjVector,
-    absVector,
-    signumVector,
+    shift,
+    add,
+    addWithScales,
+    sub,
+    scale,
+    mul,
+    negate,
+    conj,
+    abs,
+    signum,
 
     -- ** Fractional
-    divVector,
-    recipVector,        
+    div,
+    recip,        
 
     -- ** Floating
-    sqrtVector,
-    expVector,
-    logVector,
-    powVector,
-    sinVector,
-    cosVector,
-    tanVector,
-    asinVector,
-    acosVector,
-    atanVector,
-    sinhVector,
-    coshVector,
-    tanhVector,
-    asinhVector,
-    acoshVector,
-    atanhVector,
+    sqrt,
+    exp,
+    log,
+    pow,
+    sin,
+    cos,
+    tan,
+    asin,
+    acos,
+    atan,
+    sinh,
+    cosh,
+    tanh,
+    asinh,
+    acosh,
+    atanh,
 
     ) where
 
+import Prelude()
 import Numeric.LinearAlgebra.Vector.Base

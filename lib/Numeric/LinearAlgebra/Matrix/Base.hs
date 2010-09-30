@@ -23,8 +23,9 @@ import Unsafe.Coerce( unsafeCoerce )
 import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector.Base
-import Numeric.LinearAlgebra.Vector.STBase
+import Numeric.LinearAlgebra.Vector.Base( Vector, unVector, unSTVector )
+import qualified Numeric.LinearAlgebra.Vector.Base as V
+import qualified Numeric.LinearAlgebra.Vector.STBase as V
 
 import Numeric.LinearAlgebra.Matrix.STBase
 
@@ -105,7 +106,7 @@ listMatrix mn es = runMatrix $ do
 colListMatrix :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 colListMatrix mn cs = runMatrix $ do
     a <- newMatrix_ mn
-    withColsMatrixST a $ zipWithM_ copyToVector cs
+    withColsMatrixST a $ zipWithM_ V.copyTo cs
     return a
 
 -- | Create a matrix of the given dimension with the given vectors as
@@ -136,14 +137,14 @@ atMatrix a ij@(i,j)
 
 unsafeAtMatrix :: (Storable e) => Matrix e -> (Int,Int) -> e
 unsafeAtMatrix (Matrix (STMatrix a _ _ lda)) (i,j) = inlinePerformIO $ 
-    unsafeWithVector a $ \p ->
+    V.unsafeWith a $ \p ->
         peekElemOff p (i + j * lda)
 {-# INLINE unsafeAtMatrix #-}
 
 -- | Returns a list of the elements of a matrix, in the same order as their
 -- indices.
 elemsMatrix :: (Storable e) => Matrix e -> [e]
-elemsMatrix a = concatMap elemsVector (colsMatrix a)
+elemsMatrix a = concatMap V.elems (colsMatrix a)
 {-# INLINE elemsMatrix #-}
 
 -- | Returns the contents of a matrix as a list of associations.
@@ -256,16 +257,16 @@ colsMatrix a = map unSTVector $ colsMatrixST (unMatrix a)
 
 -- | Get the given row of the matrix.
 rowMatrix :: (Storable e) => Matrix e -> Int -> Vector e
-rowMatrix a i = runVector $ do
-    x <- newVector_ n
+rowMatrix a i = V.create $ do
+    x <- V.new_ n
     getRowMatrix a i x
     return x
   where
     (_,n) = dimMatrix a
 
 unsafeRowMatrix :: (Storable e) => Matrix e -> Int -> Vector e
-unsafeRowMatrix a i = runVector $ do
-    x <- newVector_ n
+unsafeRowMatrix a i = V.create $ do
+    x <- V.new_ n
     unsafeGetRowMatrix a i x
     return x
   where
@@ -273,8 +274,8 @@ unsafeRowMatrix a i = runVector $ do
 
 -- | Get the diagonal of the matrix.
 diagMatrix :: (Storable e) => Matrix e -> Vector e
-diagMatrix a = runVector $ do
-    x <- newVector_ mn
+diagMatrix a = V.create $ do
+    x <- V.new_ mn
     getDiagMatrix a x
     return x
   where
@@ -410,8 +411,8 @@ mulMatrixVector :: (BLAS2 e)
 mulMatrixVector transa a x = let
     m = case transa of NoTrans -> (fst . dimMatrix) a
                        _       -> (snd . dimMatrix) a
-    in runVector $ do
-        y <- newVector_ m
+    in V.create $ do
+        y <- V.new_ m
         mulMatrixToVector transa a x y
         return y
 
@@ -425,8 +426,8 @@ mulMatrixVectorWithScale :: (BLAS2 e)
 mulMatrixVectorWithScale alpha transa a x = let
     m = case transa of NoTrans -> (fst . dimMatrix) a
                        _       -> (snd . dimMatrix) a
-    in runVector $ do
-        y <- newVector_ m
+    in V.create $ do
+        y <- V.new_ m
         mulMatrixToVectorWithScale alpha transa a x y
         return y
                        
@@ -441,8 +442,8 @@ mulMatrixAddVectorWithScales :: (BLAS2 e)
                              -> Vector e
                              -> Vector e
 mulMatrixAddVectorWithScales alpha transa a x beta y =
-    runVector $ do
-        y' <- newCopyVector y
+    V.create $ do
+        y' <- V.newCopy y
         mulMatrixAddToVectorWithScales alpha transa a x beta y'
         return y'
 

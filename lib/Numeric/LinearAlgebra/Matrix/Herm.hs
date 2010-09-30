@@ -58,8 +58,10 @@ module Numeric.LinearAlgebra.Matrix.Herm (
 import Control.Monad.ST( ST, runST, unsafeIOToST )
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Vector.Base
-import Numeric.LinearAlgebra.Vector.STBase
+import Numeric.LinearAlgebra.Vector.Base( Vector )
+import qualified Numeric.LinearAlgebra.Vector.Base as V
+import Numeric.LinearAlgebra.Vector.STBase( STVector, RVector )
+import qualified Numeric.LinearAlgebra.Vector.STBase as V
 import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase
 import Numeric.LinearAlgebra.Types
@@ -79,7 +81,7 @@ data Herm m e = Herm Uplo (m e) deriving (Show)
 withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
 withHerm (Herm u m) f = f u m
 
--- | A safe way to create and work with a mutable Herm Matrix before returning 
+-- | A safe way to V.create and work with a mutable Herm Matrix before returning 
 -- an immutable one for later perusal.
 runHermMatrix :: (Storable e)
               => (forall s. ST s (Herm (STMatrix s) e))
@@ -148,11 +150,11 @@ rank1UpdateToHermMatrix alpha x (Herm uplo a)
                  ++ " invalid dimensions") nx ma na
     | otherwise =
         unsafeIOToST $
-        unsafeWithVector x $ \px ->
+        V.unsafeWith x $ \px ->
         unsafeWithMatrix a $ \pa lda ->
             BLAS.her uplo n alpha px 1 pa lda
   where
-    nx = dimVector x
+    nx = V.dim x
     (ma,na) = dimMatrix a
     n = nx
 
@@ -168,13 +170,13 @@ rank2UpdateToHermMatrix alpha x y (Herm uplo a)
                  ++ " invalid dimensions") nx ny ma na
     | otherwise =
         unsafeIOToST $
-        unsafeWithVector x $ \px ->
-        unsafeWithVector y $ \py ->
+        V.unsafeWith x $ \px ->
+        V.unsafeWith y $ \py ->
         unsafeWithMatrix a $ \pa lda ->
             BLAS.her2 uplo n alpha px 1 py 1 pa lda
   where
-    nx = dimVector x
-    ny = dimVector y
+    nx = V.dim x
+    ny = V.dim y
     (ma,na) = dimMatrix a
     n = nx
 
@@ -249,8 +251,8 @@ mulHermMatrixVector :: (BLAS2 e)
                     -> Vector e
                     -> Vector e
 mulHermMatrixVector a x =
-    runVector $ do
-        y <- newVector_ (dimVector x)
+    V.create $ do
+        y <- V.new_ (V.dim x)
         mulHermMatrixToVector a x y
         return y
 
@@ -261,8 +263,8 @@ mulHermMatrixVectorWithScale :: (BLAS2 e)
                              -> Vector e
                              -> Vector e
 mulHermMatrixVectorWithScale alpha a x =
-    runVector $ do
-        y <- newVector_ (dimVector x)
+    V.create $ do
+        y <- V.new_ (V.dim x)
         mulHermMatrixToVectorWithScale alpha a x y
         return y
                        
@@ -276,8 +278,8 @@ mulHermMatrixAddVectorWithScales :: (BLAS2 e)
                                  -> Vector e
                                  -> Vector e
 mulHermMatrixAddVectorWithScales alpha a x beta y =
-    runVector $ do
-        y' <- newCopyVector y
+    V.create $ do
+        y' <- V.newCopy y
         mulHermMatrixAddToVectorWithScales alpha a x beta y'
         return y'
 
@@ -377,13 +379,13 @@ mulHermMatrixAddToVectorWithScales alpha (Herm uplo a) x beta y
     | otherwise =
         unsafeIOToST $
             unsafeWithMatrix a $ \pa lda ->
-            unsafeWithVector x $ \px ->
-            unsafeWithVector y $ \py ->
+            V.unsafeWith x $ \px ->
+            V.unsafeWith y $ \py ->
                 BLAS.hemv uplo n alpha pa lda px 1 beta py 1
   where
     (ma,na) = dimMatrix a
-    nx = dimVector x
-    ny = dimVector y
+    nx = V.dim x
+    ny = V.dim y
     n = ny
 
 -- | @mulHermMatrixToMatrix side a b c@

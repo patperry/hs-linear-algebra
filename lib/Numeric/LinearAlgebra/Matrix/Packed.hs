@@ -61,10 +61,10 @@ import Foreign( Storable, Ptr )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
-import Numeric.LinearAlgebra.Vector( Vector, dimVector   )
-import Numeric.LinearAlgebra.Vector.ST( STVector, RVector, freezeVector,
-    newVector_, newCopyVector, runVector, unsafeFreezeVector,
-    unsafeWithVector )
+import Numeric.LinearAlgebra.Vector( Vector )
+import qualified Numeric.LinearAlgebra.Vector as V
+import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
+import qualified Numeric.LinearAlgebra.Vector.ST as V
 import Foreign.BLAS( BLAS2 )
 import qualified Foreign.BLAS as BLAS
 
@@ -90,7 +90,7 @@ toPacked n x
     | otherwise =
         unsafeToPacked n x
   where
-    nx = dimVector x
+    nx = V.dim x
 {-# INLINE toPacked #-}
 
 -- | Create a packed matrix view of a vector, wihtout checking
@@ -115,7 +115,7 @@ toSTPacked n x
     | otherwise =
         STPacked n x
   where
-    nx = dimVector x
+    nx = V.dim x
 {-# INLINE toSTPacked #-}
 
 -- | Create a packed matrix view of a vector, wihtout checking
@@ -161,7 +161,7 @@ instance RPacked Packed where
     {-# INLINE dimPacked #-}
     withVectorPacked (Packed _ v) f = f v
     {-# INLINE withVectorPacked #-}
-    unsafeWithPacked (Packed _ v) = unsafeWithVector v
+    unsafeWithPacked (Packed _ v) = V.unsafeWith v
     {-# INLINE unsafeWithPacked #-}
 
 instance RPacked (STPacked s) where
@@ -169,7 +169,7 @@ instance RPacked (STPacked s) where
     {-# INLINE dimPacked #-}
     withVectorPacked (STPacked _ v) f = f v
     {-# INLINE withVectorPacked #-}
-    unsafeWithPacked (STPacked _ v) = unsafeWithVector v
+    unsafeWithPacked (STPacked _ v) = V.unsafeWith v
     {-# INLINE unsafeWithPacked #-}
 
 
@@ -178,14 +178,14 @@ newCopyPacked :: (Storable e, RPacked p)
               => p e -> ST s (STPacked s e)
 newCopyPacked p =
     withVectorPacked p $ \x ->
-        unsafeToSTPacked (dimPacked p) `fmap` newCopyVector x
+        unsafeToSTPacked (dimPacked p) `fmap` V.newCopy x
 {-# INLINE newCopyPacked #-}
 
 -- | Converts a mutable packed matrix to an immutable one by taking a complete
 -- copy of it.
 freezePacked :: (Storable e) => STPacked s e -> ST s (Packed e)
 freezePacked (STPacked n mp) = do
-    p <- freezeVector mp
+    p <- V.freeze mp
     return $ Packed n p
 
 -- | Converts a mutable matrix into an immutable matrix. This simply casts
@@ -196,10 +196,10 @@ freezePacked (STPacked n mp) = do
 -- version is never modified after the freeze operation.
 unsafeFreezePacked :: (Storable e) => STPacked s e -> ST s (Packed e)
 unsafeFreezePacked (STPacked n mp) = do
-    p <- unsafeFreezeVector mp
+    p <- V.unsafeFreeze mp
     return $ Packed n p
 
--- | A safe way to create and work with a mutable Packed before returning 
+-- | A safe way to V.create and work with a mutable Packed before returning 
 -- an immutable one for later perusal.
 runPacked :: (Storable e)
           => (forall s. ST s ((STPacked s) e))
@@ -209,7 +209,7 @@ runPacked stmp = runST $ do
     unsafeFreezePacked mp
 
 
--- | A safe way to create and work with a mutable Herm Packed before returning 
+-- | A safe way to V.create and work with a mutable Herm Packed before returning 
 -- an immutable one for later perusal.
 runHermPacked :: (Storable e)
               => (forall s. ST s (Herm (STPacked s) e))
@@ -249,11 +249,11 @@ rank1UpdateToHermPacked alpha x (Herm uplo a)
                  ++ " invalid dimensions") nx na
     | otherwise =
         unsafeIOToST $
-        unsafeWithVector x $ \px ->
+        V.unsafeWith x $ \px ->
         unsafeWithPacked a $ \pa ->
             BLAS.hpr uplo n alpha px 1 pa
   where
-    nx = dimVector x
+    nx = V.dim x
     na = dimPacked a
     n = nx
 
@@ -269,13 +269,13 @@ rank2UpdateToHermPacked alpha x y (Herm uplo a)
                  ++ " invalid dimensions") nx ny na
     | otherwise =
         unsafeIOToST $
-        unsafeWithVector x $ \px ->
-        unsafeWithVector y $ \py ->        
+        V.unsafeWith x $ \px ->
+        V.unsafeWith y $ \py ->        
         unsafeWithPacked a $ \pa ->
             BLAS.hpr2 uplo n alpha px 1 py 1 pa
   where
-    nx = dimVector x
-    ny = dimVector y
+    nx = V.dim x
+    ny = V.dim y
     na = dimPacked a
     n = nx
 
@@ -285,8 +285,8 @@ mulHermPackedVector :: (BLAS2 e)
                     -> Vector e
                     -> Vector e
 mulHermPackedVector a x =
-    runVector $ do
-        y <- newVector_ (dimVector x)
+    V.create $ do
+        y <- V.new_ (V.dim x)
         mulHermPackedToVector a x y
         return y
 
@@ -297,8 +297,8 @@ mulHermPackedVectorWithScale :: (BLAS2 e)
                              -> Vector e
                              -> Vector e
 mulHermPackedVectorWithScale alpha a x =
-    runVector $ do
-        y <- newVector_ (dimVector x)
+    V.create $ do
+        y <- V.new_ (V.dim x)
         mulHermPackedToVectorWithScale alpha a x y
         return y
                        
@@ -312,8 +312,8 @@ mulHermPackedAddVectorWithScales :: (BLAS2 e)
                                  -> Vector e
                                  -> Vector e
 mulHermPackedAddVectorWithScales alpha a x beta y =
-    runVector $ do
-        y' <- newCopyVector y
+    V.create $ do
+        y' <- V.newCopy y
         mulHermPackedAddToVectorWithScales alpha a x beta y'
         return y'
 
@@ -361,11 +361,11 @@ mulHermPackedAddToVectorWithScales alpha (Herm uplo a) x beta y
     | otherwise =
         unsafeIOToST $
             unsafeWithPacked a $ \pa ->
-            unsafeWithVector x $ \px ->
-            unsafeWithVector y $ \py ->
+            V.unsafeWith x $ \px ->
+            V.unsafeWith y $ \py ->
                 BLAS.hpmv uplo n alpha pa px 1 beta py 1
   where
     na = dimPacked a
-    nx = dimVector x
-    ny = dimVector y
+    nx = V.dim x
+    ny = V.dim y
     n = ny
