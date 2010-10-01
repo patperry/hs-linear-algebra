@@ -82,7 +82,8 @@ import qualified Test.QuickCheck as QC
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
-import Numeric.LinearAlgebra.Matrix( Matrix, listMatrix, dimMatrix, sliceMatrix )
+import Numeric.LinearAlgebra.Matrix( Matrix )
+import qualified Numeric.LinearAlgebra.Matrix as M
 -- import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
 -- import Data.Matrix.Banded.ST( runSTBanded, unsafeThawBanded, 
 --     diagViewBanded )
@@ -343,11 +344,11 @@ matrix (m,n) =
   where
     raw = do
         es <- elems $ m * n
-        return $ listMatrix (m,n) es
+        return $ M.fromList (m,n) es
     sub = do
         m' <- choose (m, 2*m)
         es <- elems $ m' * n
-        return $ sliceMatrix (0,0) (m,n) (listMatrix (m',n) es)
+        return $ M.slice (0,0) (m,n) (M.fromList (m',n) es)
 
 instance (Arbitrary e, Storable e) => Arbitrary (Matrix e) where
     arbitrary = dim2 >>= matrix
@@ -359,7 +360,7 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f) =>
     Arbitrary (MatrixPair e f) where
         arbitrary = do
             x <- arbitrary
-            y <- matrix (dimMatrix x)
+            y <- matrix (M.dim x)
             return $ MatrixPair x y
 
 -- | Three matrices with the same dimension.
@@ -370,8 +371,8 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
     Arbitrary (MatrixTriple e f g) where
         arbitrary = do
             x <- arbitrary
-            y <- matrix (dimMatrix x)
-            z <- matrix (dimMatrix x)
+            y <- matrix (M.dim x)
+            z <- matrix (M.dim x)
             return $ MatrixTriple x y z
 
 instance Arbitrary Trans where
@@ -401,7 +402,7 @@ hermMatrix n = do
 rawMatrix :: (TestElem e) => (Int,Int) -> Gen (Matrix e)
 rawMatrix (m,n) = do
     es <- elems (m*n)
-    return $ listMatrix (m,n) es
+    return $ M.fromList (m,n) es
 
 
 subMatrix :: (TestElem e) => (Int,Int) -> Gen (SubMatrix e)

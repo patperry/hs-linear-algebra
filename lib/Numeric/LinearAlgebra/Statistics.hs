@@ -61,14 +61,20 @@ import Data.List( foldl' )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector( Vector )
-import qualified Numeric.LinearAlgebra.Vector as V
-import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
-import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.Packed
-import Numeric.LinearAlgebra.Matrix.ST
+
+import Numeric.LinearAlgebra.Vector( Vector )
+import qualified Numeric.LinearAlgebra.Vector as V
+
+import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
+import qualified Numeric.LinearAlgebra.Vector.ST as V
+
+import Numeric.LinearAlgebra.Matrix( Matrix )
+import qualified Numeric.LinearAlgebra.Matrix as M
+
+import Numeric.LinearAlgebra.Matrix.ST( STMatrix )
+import qualified Numeric.LinearAlgebra.Matrix.ST as M
 
 
 -- | The method of scaling the sample covariance matrix.
@@ -173,7 +179,7 @@ weightedMeanToVector wxs m = let
 covMatrix :: (BLAS3 e)
           => Int -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrix p t xs = runHermMatrix $ do
-    cov <- Herm uplo `fmap` newMatrix_ (p,p)
+    cov <- Herm uplo `fmap` M.new_ (p,p)
     covToMatrix t xs cov
     return cov
   where
@@ -196,7 +202,7 @@ covPacked p t xs = runHermPacked $ do
 covMatrixWithMean :: (BLAS3 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
 covMatrixWithMean mu t xs = runHermMatrix $ do
-    cov <- Herm uplo `fmap` newMatrix_ (p,p)
+    cov <- Herm uplo `fmap` M.new_ (p,p)
     covToMatrixWithMean mu t xs cov
     return cov
   where
@@ -220,7 +226,7 @@ covPackedWithMean mu t xs = runHermPacked $ do
 weightedCovMatrix :: (BLAS3 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Matrix e
 weightedCovMatrix p t wxs = runHermMatrix $ do
-    cov <- Herm uplo `fmap` newMatrix_ (p,p)
+    cov <- Herm uplo `fmap` M.new_ (p,p)
     weightedCovToMatrix t wxs cov
     return cov
   where
@@ -244,7 +250,7 @@ weightedCovMatrixWithMean :: (BLAS3 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Matrix e
 weightedCovMatrixWithMean mu t wxs = runHermMatrix $ do
-    cov <- Herm uplo `fmap` newMatrix_ (p,p)
+    cov <- Herm uplo `fmap` M.new_ (p,p)
     weightedCovToMatrixWithMean mu t wxs cov
     return cov
   where
@@ -273,7 +279,7 @@ covToMatrix t xs cov@(Herm _ a) = do
     meanToVector xs mu
     covToMatrixWithMean mu t xs cov
   where
-    (p,_) = dimMatrix a
+    (p,_) = M.dim a
 
 -- | Computes and copies the sample covariance matrix (in packed form)
 -- to the given destination.
@@ -292,13 +298,13 @@ covToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                     => v1 e -> CovMethod -> [v2 e] -> Herm (STMatrix s) e
                     -> ST s ()
 covToMatrixWithMean mu t xs cov@(Herm _ a)
-    | dimMatrix a /= (p,p) = error $
+    | M.dim a /= (p,p) = error $
         printf ("covToMatrixWithMean <vector with dim %d> _ _"
                 ++ " <matrix with dim %s>: dimension mismatch")
-               n (show $ dimMatrix a)
+               n (show $ M.dim a)
     | otherwise = do
-        xt <- newMatrix_ (p,n)
-        withColsMatrixST xt $ \xs' ->
+        xt <- M.new_ (p,n)
+        M.withColsST xt $ \xs' ->
             sequence_ [ V.subTo x mu x'
                       | (x,x') <- zip xs xs'
                       ]
@@ -320,13 +326,13 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
                 ++ " dimension mismatch")
                n (dimPacked a)
     | otherwise = do
-        xt <- newMatrix_ (p,n)
-        withColsMatrixST xt $ \xs' ->
+        xt <- M.new_ (p,n)
+        M.withColsST xt $ \xs' ->
             sequence_ [ V.subTo x mu x'
                       | (x,x') <- zip xs xs'
                       ]
         withVectorPackedST a V.clear
-        withColsMatrixST xt $ \xs' ->
+        M.withColsST xt $ \xs' ->
             sequence_ [ rank1UpdateToHermPacked scale x' cov | x' <- xs' ]
   where
     p = V.dim mu
@@ -344,7 +350,7 @@ weightedCovToMatrix t wxs cov@(Herm _ a) = do
     weightedMeanToVector wxs mu
     weightedCovToMatrixWithMean mu t wxs cov
   where
-    (p,_) = dimMatrix a
+    (p,_) = M.dim a
 
 -- | Computes and copies the weighed sample covariance matrix (in packed
 -- form) to the given destination.
@@ -364,14 +370,14 @@ weightedCovToMatrixWithMean :: (RVector v1, RVector v2, BLAS3 e)
                             => v1 e -> CovMethod -> [(Double, v2 e)]
                             -> Herm (STMatrix s) e -> ST s ()
 weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
-    | dimMatrix a /= (p,p) = error $
+    | M.dim a /= (p,p) = error $
         printf ("weightedCovToMatrixWithMean <vector with dim %d> _ _"
                 ++ " (Herm _ <matrix with dim %s>):"
                 ++ " dimension mismatch")
-               n (show $ dimMatrix a)
+               n (show $ M.dim a)
     | otherwise = do
-        xt <- newMatrix_ (p,n)
-        withColsMatrixST xt $ \xs' ->
+        xt <- M.new_ (p,n)
+        M.withColsST xt $ \xs' ->
             sequence_ [  V.subTo x mu x'
                       >> V.scaleTo (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
@@ -400,14 +406,14 @@ weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)
                 ++ " dimension mismatch")
                n (dimPacked a)
     | otherwise = do
-        xt <- newMatrix_ (p,n)
-        withColsMatrixST xt $ \xs' ->
+        xt <- M.new_ (p,n)
+        M.withColsST xt $ \xs' ->
             sequence_ [  V.subTo x mu x'
                       >> V.scaleTo (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
         withVectorPackedST a V.clear                      
-        withColsMatrix xt $ \xs' ->
+        M.withCols xt $ \xs' ->
             sequence_ [ rank1UpdateToHermPacked 1 x' cov | x' <- xs' ]
   where
     (ws0,xs) = unzip wxs

@@ -17,6 +17,8 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Matrix as M
+import qualified Numeric.LinearAlgebra.Matrix.ST as M
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim2(..), Index2(..),
     Assocs2(..), MatrixPair(..), MatrixTriple(..) )
@@ -63,194 +65,194 @@ tests_STMatrix = testGroup "STMatrix"
     
     
 prop_new_ t (Dim2 n) = 
-    (dimMatrix $ typed t $ runMatrix $ newMatrix_ n) === n
+    (M.dim $ typed t $ M.create $ M.new_ n) === n
 
 prop_new t (Dim2 n) e = 
-    (runMatrix $ newMatrix n e) === (typed t $ constantMatrix n e)
+    (M.create $ M.new n e) === (typed t $ M.constant n e)
     
 prop_newCopy t x = 
-    (runMatrix $ newCopyMatrix x) === x
+    (M.create $ M.newCopy x) === x
   where
     _ = typed t x
         
 prop_copyTo t (MatrixPair x y) = runST $
     x `readOnlyMatrix` \mx ->
     y `mutatesToMatrix` x $ \my ->
-        copyToMatrix mx my
+        M.copyTo mx my
   where
     _ = typed t x
 
 prop_read t (Index2 n i) =
     forAll (typed t `fmap` Test.matrix n) $ \x -> runST $
         x `readOnlyMatrix` \mx -> do
-            e <- readMatrix mx i
-            return $ e === atMatrix x i
+            e <- M.read mx i
+            return $ e === M.at x i
 
 prop_write t (Index2 n i) e =
     forAll (Test.matrix n) $ \x -> runST $
-        x `mutatesToMatrix` (x `replaceMatrix` [(i,e)]) $ \mx -> do
-            writeMatrix mx i e
+        x `mutatesToMatrix` (x `M.replace` [(i,e)]) $ \mx -> do
+            M.write mx i e
   where
     _ = e == t
 
 prop_modify t (Index2 n i) (Blind f) =
     forAll (Test.matrix n) $ \x -> runST $
         x `mutatesToMatrix`
-            (typed t $ x `replaceMatrix` [(i, f $ atMatrix x i)]) $ \mx ->
-                modifyMatrix mx i f
+            (typed t $ x `M.replace` [(i, f $ M.at x i)]) $ \mx ->
+                M.modify mx i f
 
 prop_getElems t x =
     forAll arbitrary $ \(Blind f) -> runST $
-        x `mutatesToMatrix` (mapMatrix f x) $ \mx -> do
-            es <- getElemsMatrix mx
-            mapToMatrix f mx mx
-            return $ es === elemsMatrix (mapMatrix f x)
+        x `mutatesToMatrix` (M.map f x) $ \mx -> do
+            es <- M.getElems mx
+            M.mapTo f mx mx
+            return $ es === M.elems (M.map f x)
   where
     _ = typed t x
 
 prop_getElems' t x =
     forAll arbitrary $ \(Blind f) -> runST $
-        x `mutatesToMatrix` (mapMatrix f x) $ \mx -> do
-            es <- getElemsMatrix' mx
-            mapToMatrix f mx mx
-            return $ es === elemsMatrix x
+        x `mutatesToMatrix` (M.map f x) $ \mx -> do
+            es <- M.getElems' mx
+            M.mapTo f mx mx
+            return $ es === M.elems x
   where
     _ = typed t x
 
 prop_getAssocs t x =
     forAll arbitrary $ \(Blind f) -> runST $
-        x `mutatesToMatrix` (mapMatrix f x) $ \mx -> do
-            ies <- getAssocsMatrix mx
-            mapToMatrix f mx mx
-            return $ ies === assocsMatrix (mapMatrix f x)
+        x `mutatesToMatrix` (M.map f x) $ \mx -> do
+            ies <- M.getAssocs mx
+            M.mapTo f mx mx
+            return $ ies === M.assocs (M.map f x)
   where
     _ = typed t x
 
 prop_getAssocs' t x =
     forAll arbitrary $ \(Blind f) -> runST $
-        x `mutatesToMatrix` (mapMatrix f x) $ \mx -> do
-            ies <- getAssocsMatrix' mx
-            mapToMatrix f mx mx
-            return $ ies === assocsMatrix x
+        x `mutatesToMatrix` (M.map f x) $ \mx -> do
+            ies <- M.getAssocs' mx
+            M.mapTo f mx mx
+            return $ ies === M.assocs x
   where
     _ = typed t x
 
 prop_setElems t x =
     forAll (QC.vector $ m*n) $ \es -> runST $
-        x `mutatesToMatrix` (listMatrix (m,n) es) $ \mx ->
-            setElemsMatrix mx es
+        x `mutatesToMatrix` (M.fromList (m,n) es) $ \mx ->
+            M.setElems mx es
   where
-    (m,n) = dimMatrix x
+    (m,n) = M.dim x
     _ = typed t x
 
 prop_setAssocs t (Assocs2 mn ies) =
     forAll (Test.matrix mn) $ \x -> runST $
-        x `mutatesToMatrix` (typed t $ replaceMatrix x ies) $ \mx ->
-            setAssocsMatrix mx ies
+        x `mutatesToMatrix` (typed t $ M.replace x ies) $ \mx ->
+            M.setAssocs mx ies
 
 prop_mapTo t (Blind f) = binaryProp t
-    (\x -> mapMatrix f x)
-    (\mx my -> mapToMatrix f mx my)
+    (\x -> M.map f x)
+    (\mx my -> M.mapTo f mx my)
 
 prop_zipWithTo t (Blind f) = ternaryProp t
-    (\x y -> zipWithMatrix f x y)
-    (\mx my mz -> zipWithToMatrix f mx my mz)
+    (\x y -> M.zipWith f x y)
+    (\mx my mz -> M.zipWithTo f mx my mz)
 
 prop_shiftTo t e = binaryProp t
-    (\x -> shiftMatrix e x)
-    (\mx my -> shiftToMatrix e mx my)
+    (\x -> M.shift e x)
+    (\mx my -> M.shiftTo e mx my)
 
 prop_shiftDiagTo1 t a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (shiftDiagMatrix s a) $ \ma ->
-            shiftDiagToMatrix ms ma ma
+        a `mutatesToMatrix` (M.shiftDiag s a) $ \ma ->
+            M.shiftDiagTo ms ma ma
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_shiftDiagTo2 t (MatrixPair a b) =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (shiftDiagMatrix s a) $ \mb ->
-            shiftDiagToMatrix ms ma mb
+        b `mutatesToMatrix` (M.shiftDiag s a) $ \mb ->
+            M.shiftDiagTo ms ma mb
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_shiftDiagToWithScale1 t e a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (shiftDiagMatrixWithScale e s a) $ \ma ->
-            shiftDiagToMatrixWithScale e ms ma ma
+        a `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \ma ->
+            M.shiftDiagToWithScale e ms ma ma
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_shiftDiagToWithScale2 t e (MatrixPair a b) =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (shiftDiagMatrixWithScale e s a) $ \mb ->
-            shiftDiagToMatrixWithScale e ms ma mb
+        b `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \mb ->
+            M.shiftDiagToWithScale e ms ma mb
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
-prop_addTo t = ternaryProp t addMatrix addToMatrix
+prop_addTo t = ternaryProp t M.add M.addTo
 
 prop_addToWithScales t e f = ternaryProp t
-    (\x y -> addMatrixWithScales e x f y)
-    (\mx my mz -> addToMatrixWithScales e mx f my mz)
+    (\x y -> M.addWithScales e x f y)
+    (\mx my mz -> M.addToWithScales e mx f my mz)
     
-prop_subTo t = ternaryProp t subMatrix subToMatrix
+prop_subTo t = ternaryProp t M.sub M.subTo
 
 prop_scaleTo t e = binaryProp t
-    (\x -> scaleMatrix e x)
-    (\mx my -> scaleToMatrix e mx my)
+    (\x -> M.scale e x)
+    (\mx my -> M.scaleTo e mx my)
 
 prop_scaleRowsTo1 t a =
     forAll (Test.vector m) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (scaleRowsMatrix s a) $ \ma ->
-            scaleRowsToMatrix ms ma ma
+        a `mutatesToMatrix` (M.scaleRows s a) $ \ma ->
+            M.scaleRowsTo ms ma ma
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_scaleRowsTo2 t (MatrixPair a b) =
     forAll (Test.vector m) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (scaleRowsMatrix s a) $ \mb ->
-            scaleRowsToMatrix ms ma mb
+        b `mutatesToMatrix` (M.scaleRows s a) $ \mb ->
+            M.scaleRowsTo ms ma mb
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_scaleColsTo1 t a =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (scaleColsMatrix s a) $ \ma ->
-            scaleColsToMatrix ms ma ma
+        a `mutatesToMatrix` (M.scaleCols s a) $ \ma ->
+            M.scaleColsTo ms ma ma
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
 prop_scaleColsTo2 t (MatrixPair a b) =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (scaleColsMatrix s a) $ \mb ->
-            scaleColsToMatrix ms ma mb
+        b `mutatesToMatrix` (M.scaleCols s a) $ \mb ->
+            M.scaleColsTo ms ma mb
   where
-    (m,n) = dimMatrix a
+    (m,n) = M.dim a
     _ = typed t a
 
-prop_negateTo t = binaryProp t negateMatrix negateToMatrix
+prop_negateTo t = binaryProp t M.negate M.negateTo
 
-prop_conjTo t = binaryProp t conjMatrix conjToMatrix
+prop_conjTo t = binaryProp t M.conj M.conjTo
 
 
 binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
@@ -311,7 +313,7 @@ mutatesToMatrix :: (Storable e, AEq e, Testable prop, Show e)
                 -> (STMatrix s e -> ST s prop)
                 -> ST s Property
 mutatesToMatrix x x_new f = do
-    mx <- newCopyMatrix x
+    mx <- M.newCopy x
     prop <- f mx
-    x' <- freezeMatrix mx
+    x' <- M.freeze mx
     return $ prop .&. (x' === x_new)

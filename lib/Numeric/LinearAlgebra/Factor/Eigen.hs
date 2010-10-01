@@ -22,9 +22,11 @@ import Text.Printf( printf )
 import Foreign.LAPACK( LAPACK, EigJob(..), EigRange(..) )
 import qualified Foreign.LAPACK as LAPACK
 
-import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
-import Numeric.LinearAlgebra.Matrix.ST
+import Numeric.LinearAlgebra.Matrix.Base( Matrix )
+import qualified Numeric.LinearAlgebra.Matrix.Base as M
+import Numeric.LinearAlgebra.Matrix.STBase( STMatrix )
+import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
 import Numeric.LinearAlgebra.Vector.ST( STVector )
@@ -36,25 +38,25 @@ import qualified Numeric.LinearAlgebra.Vector.ST as V
 -- matrix.
 eigenHermMatrix :: (LAPACK e) => Herm Matrix e -> (Vector Double, Matrix e)
 eigenHermMatrix (Herm uplo a) = runST $ do
-    ma <- newCopyMatrix a
+    ma <- M.newCopy a
     mw <- V.new_ n
-    mz <- newMatrix_ (n,n)
+    mz <- M.new_ (n,n)
     eigenToHermMatrix (Herm uplo ma) mw mz
     w <- V.unsafeFreeze mw
-    z <- unsafeFreezeMatrix mz
+    z <- M.unsafeFreeze mz
     return (w,z)
   where
-    (_,n) = dimMatrix a
+    (_,n) = M.dim a
 
 -- | Return the eigenvalues of a Hermitian matrix in ascending order.
 eigenvaluesHermMatrix :: (LAPACK e) => Herm Matrix e -> Vector Double
 eigenvaluesHermMatrix (Herm uplo a) = V.create $ do
-    ma <- newCopyMatrix a
+    ma <- M.newCopy a
     w <- V.new_ n
     eigenvaluesToHermMatrix (Herm uplo ma) w
     return w
   where
-    (_,n) = dimMatrix a
+    (_,n) = M.dim a
 
 -- | Compute and copy the eigenvalues and eigenvectors of a mutable
 -- Hermitian matrix.  This destroys the original Hermitian matrix.
@@ -80,17 +82,17 @@ eigenToHermMatrix (Herm uplo a) w z
                ma na nw mz nz
     | otherwise =
         unsafeIOToST $
-            unsafeWithMatrix a $ \pa lda ->
+            M.unsafeWith a $ \pa lda ->
             V.unsafeWith w $ \pw ->
-            unsafeWithMatrix z $ \pz ldz ->
+            M.unsafeWith z $ \pz ldz ->
             allocaArray (2*n) $ \psuppz -> do
                 _m <- LAPACK.heevr jobz range uplo n pa lda abstol pw pz ldz
                                    psuppz
                 return ()
     
   where
-    (ma,na) = dimMatrix a
-    (mz,nz) = dimMatrix z
+    (ma,na) = M.dim a
+    (mz,nz) = M.dim z
     nw = V.dim w
     n = na
     jobz = EigVectors
@@ -117,14 +119,14 @@ eigenvaluesToHermMatrix (Herm uplo a) w
                ma na nw
     | otherwise =
         unsafeIOToST $
-            unsafeWithMatrix a $ \pa lda ->
+            M.unsafeWith a $ \pa lda ->
             V.unsafeWith w $ \pw -> do
                 _m <- LAPACK.heevr jobz range uplo n pa lda abstol pw pz ldz
                                    psuppz
                 return ()
     
   where
-    (ma,na) = dimMatrix a
+    (ma,na) = M.dim a
     nw = V.dim w
     n = na
     jobz = NoEigVectors

@@ -11,81 +11,82 @@
 module Numeric.LinearAlgebra.Matrix (
     -- * The Matrix type
     Matrix,
-    dimMatrix,
+    dim,
 
     -- * Matrix construction
-    matrix, 
-    listMatrix,
-    colListMatrix,
-    rowListMatrix,
-    constantMatrix,
+    fromAssocs, 
+    fromList,
+    fromCols,
+    fromRows,
+    constant,
 
     -- * Accessing matrices
-    atMatrix,
-    indicesMatrix,
-    elemsMatrix,
-    assocsMatrix,
+    at,
+    indices,
+    elems,
+    assocs,
 
     -- * Incremental matrix updates
-    replaceMatrix,
-    accumMatrix,
+    replace,
+    accum,
 
     -- * Derived matrices
-    mapMatrix,
-    zipWithMatrix,
+    map,
+    zipWith,
 
     -- * Matrix views
-    sliceMatrix,
-    takeRowsMatrix,
-    dropRowsMatrix,
-    splitRowsMatrixAt,
-    takeColsMatrix,
-    dropColsMatrix,
-    splitColsMatrixAt,
+    slice,
+    takeRows,
+    dropRows,
+    splitRowsAt,
+    takeCols,
+    dropCols,
+    splitColsAt,
 
     -- * Matrix rows and columns
-    colMatrix,
-    colsMatrix,
-    rowMatrix,
-    rowsMatrix,
+    col,
+    cols,
+    row,
+    rows,
     
     -- * Matrix diagonals
-    diagMatrix,
+    diag,
     
     -- * Vector views
-    matrixViewVector,
-    matrixViewColVector,
-    matrixViewRowVector,
+    viewVector,
+    viewColVector,
+    viewRowVector,
 
     -- * Matrix math operations
-    shiftMatrix,
-    shiftDiagMatrix,
-    shiftDiagMatrixWithScale,    
-    addMatrix,
-    addMatrixWithScales,
-    subMatrix,
-    scaleMatrix,
-    scaleRowsMatrix,
-    scaleColsMatrix,
-    negateMatrix,
-    conjMatrix,
+    shift,
+    shiftDiag,
+    shiftDiagWithScale,    
+    add,
+    addWithScales,
+    sub,
+    scale,
+    scaleRows,
+    scaleCols,
+    negate,
+    conj,
 
     -- * Linear algebra
-    transMatrix,
-    conjTransMatrix,
-    rank1UpdateMatrix,
+    trans,
+    conjTrans,
+    rank1Update,
     
     -- ** Matrix-Vector multiplication
-    mulMatrixVector,
-    mulMatrixVectorWithScale,
-    mulMatrixAddVectorWithScales,
+    mulVector,
+    mulVectorWithScale,
+    mulAddVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
-    mulMatrixMatrix,
-    mulMatrixMatrixWithScale,
-    mulMatrixAddMatrixWithScales,
+    mulMatrix,
+    mulMatrixWithScale,
+    mulAddMatrixWithScales,
 
     ) where
 
+import Prelude()
 import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase

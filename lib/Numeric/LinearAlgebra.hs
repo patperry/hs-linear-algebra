@@ -25,10 +25,8 @@ module Numeric.LinearAlgebra (
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector )
 import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
-import Numeric.LinearAlgebra.Matrix
-import Numeric.LinearAlgebra.Matrix.ST hiding ( dimMatrix, indicesMatrix,
-    sliceMatrix, takeRowsMatrix, dropRowsMatrix, splitRowsMatrixAt, 
-    takeColsMatrix, dropColsMatrix, splitColsMatrixAt )
+import Numeric.LinearAlgebra.Matrix( Matrix )
+import Numeric.LinearAlgebra.Matrix.ST( STMatrix, RMatrix )
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.Packed
 import Numeric.LinearAlgebra.Factor.Cholesky

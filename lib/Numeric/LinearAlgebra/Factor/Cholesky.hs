@@ -42,11 +42,12 @@ import Text.Printf( printf )
 import qualified Foreign.LAPACK as LAPACK
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Matrix
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.Packed
-import Numeric.LinearAlgebra.Matrix.ST
-import Numeric.LinearAlgebra.Matrix.STBase
+import Numeric.LinearAlgebra.Matrix.Base( Matrix )
+import qualified Numeric.LinearAlgebra.Matrix.Base as M
+import Numeric.LinearAlgebra.Matrix.STBase( STMatrix, RMatrix )
+import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
 import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
@@ -63,10 +64,10 @@ cholFactorMatrix :: (LAPACK e)
                  => Herm Matrix e
                  -> Either Int (Chol Matrix e)
 cholFactorMatrix (Herm uplo a) = runST $ do
-    ma <- newCopyMatrix a
+    ma <- M.newCopy a
     cholFactorToMatrix (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
-                a' <- unsafeFreezeMatrix ma'
+                a' <- M.unsafeFreeze ma'
                 return $ Right (Chol uplo' a')
                 )
 
@@ -85,8 +86,8 @@ cholMatrixSolveMatrix :: (LAPACK e)
                       => Chol Matrix e
                       -> Matrix e
                       -> Matrix e
-cholMatrixSolveMatrix a c = runMatrix $ do
-    c' <- newMatrix_ (dimMatrix c)
+cholMatrixSolveMatrix a c = M.create $ do
+    c' <- M.new_ (M.dim c)
     cholMatrixSolveToMatrix a c c'
     return c'
 
@@ -106,12 +107,12 @@ cholFactorToMatrix (Herm uplo a)
                ) ma na
     | otherwise =
         unsafeIOToST $
-            unsafeWithMatrix a $ \pa lda -> do
+            M.unsafeWith a $ \pa lda -> do
                 info <- LAPACK.potrf uplo n pa lda
                 return $ if info > 0 then Left info
                                      else Right (Chol uplo a)
   where
-    (ma,na) = dimMatrix a
+    (ma,na) = M.dim a
     n = na
 
 -- | @cholMatrixSolveToVector a x x'@ sets
@@ -122,8 +123,8 @@ cholMatrixSolveToVector :: (LAPACK e, RMatrix m, RVector v)
                         -> STVector s e
                         -> ST s ()
 cholMatrixSolveToVector a x y =
-    withMatrixViewColVector x $ \x' ->
-        cholMatrixSolveToMatrix a x' (matrixViewColVectorST y)
+    M.withViewColVector x $ \x' ->
+        cholMatrixSolveToMatrix a x' (M.viewColVectorST y)
 
 -- | @cholMatrixSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
@@ -143,15 +144,15 @@ cholMatrixSolveToMatrix (Chol uplo a) b b'
                 ++ " <matrix with dim (%d,%d)>: dimension mismatch")
                ma na mb nb mb' nb'
     | otherwise = do
-        unsafeCopyToMatrix b b'
+        M.unsafeCopyTo b b'
         unsafeIOToST $
-            unsafeWithMatrix a $ \pa lda ->
-            unsafeWithMatrix b' $ \pb ldb ->
+            M.unsafeWith a $ \pa lda ->
+            M.unsafeWith b' $ \pb ldb ->
                 LAPACK.potrs uplo n nrhs pa lda pb ldb
   where
-    (ma,na) = dimMatrix a
-    (mb,nb) = dimMatrix b
-    (mb',nb') = dimMatrix b
+    (ma,na) = M.dim a
+    (mb,nb) = M.dim b
+    (mb',nb') = M.dim b
     (n,nrhs) = (mb',nb')
 
 -- | @cholFactorPacked a@ tries to compute the Cholesky
@@ -184,8 +185,8 @@ cholPackedSolveMatrix :: (LAPACK e)
                       => Chol Packed e
                       -> Matrix e
                       -> Matrix e
-cholPackedSolveMatrix a c = runMatrix $ do
-    c' <- newMatrix_ (dimMatrix c)
+cholPackedSolveMatrix a c = M.create $ do
+    c' <- M.new_ (M.dim c)
     cholPackedSolveToMatrix a c c'
     return c'
 
@@ -215,8 +216,8 @@ cholPackedSolveToVector :: (LAPACK e, RPacked p, RVector v)
                         -> STVector s e
                         -> ST s ()
 cholPackedSolveToVector a x y =
-    withMatrixViewColVector x $ \x' ->
-        cholPackedSolveToMatrix a x' (matrixViewColVectorST y)
+    M.withViewColVector x $ \x' ->
+        cholPackedSolveToMatrix a x' (M.viewColVectorST y)
 
 -- | @cholPackedSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
@@ -236,13 +237,13 @@ cholPackedSolveToMatrix (Chol uplo a) b b'
                 ++ " <matrix with dim (%d,%d)>: dimension mismatch")
                na mb nb mb' nb'
     | otherwise = do
-        unsafeCopyToMatrix b b'
+        M.unsafeCopyTo b b'
         unsafeIOToST $
             unsafeWithPacked a $ \pa ->
-            unsafeWithMatrix b' $ \pb ldb ->
+            M.unsafeWith b' $ \pb ldb ->
                 LAPACK.pptrs uplo n nrhs pa pb ldb
   where
     na = dimPacked a
-    (mb,nb) = dimMatrix b
-    (mb',nb') = dimMatrix b
+    (mb,nb) = M.dim b
+    (mb',nb') = M.dim b
     (n,nrhs) = (mb',nb')

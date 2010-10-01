@@ -12,100 +12,100 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- * The @STMatrix@ data type
     STMatrix,
     IOMatrix,
-    runMatrix,
+    create,
     
     -- * Read-only Dense matrix type class
-    RMatrix( dimMatrix, withColsMatrix, maybeWithVectorViewMatrix, 
-        unsafeWithMatrix, unsafeMatrixToForeignPtr,
-        unsafeMatrixFromForeignPtr ),
+    RMatrix( dim, withCols, maybeWithVectorView, unsafeWith,
+        unsafeToForeignPtr, unsafeFromForeignPtr ),
     
     -- * Creating new matrices
-    newMatrix_,
-    newMatrix,
+    new_,
+    new,
     
     -- * Copying matrices
-    newCopyMatrix,
-    copyToMatrix,
+    newCopy,
+    copyTo,
 
     -- * Matrix views
-    sliceMatrix,
-    takeRowsMatrix,
-    dropRowsMatrix,
-    splitRowsMatrixAt,
-    takeColsMatrix,
-    dropColsMatrix,
-    splitColsMatrixAt,
+    slice,
+    takeRows,
+    dropRows,
+    splitRowsAt,
+    takeCols,
+    dropCols,
+    splitColsAt,
     
     -- * Matrix rows and columns
-    getRowMatrix,
-    setRowMatrix,
-    withColMatrix,
+    getRow,
+    setRow,
+    withCol,
 
-    withColMatrixST,    
-    withColsMatrixST,
+    withColST,    
+    withColsST,
 
     -- * Matrix diagonals
-    getDiagMatrix,
-    setDiagMatrix,
+    getDiag,
+    setDiag,
 
     -- * Reading and writing matrix elements
-    readMatrix,
-    writeMatrix,
-    modifyMatrix,
-    indicesMatrix,
-    getElemsMatrix,
-    getElemsMatrix',
-    getAssocsMatrix,
-    getAssocsMatrix',
-    setElemsMatrix,
-    setAssocsMatrix,
+    read,
+    write,
+    modify,
+    indices,
+    getElems,
+    getElems',
+    getAssocs,
+    getAssocs',
+    setElems,
+    setAssocs,
 
     -- * List-like operations
-    mapToMatrix,
-    zipWithToMatrix,
+    mapTo,
+    zipWithTo,
 
     -- * Matrix math operations
-    shiftToMatrix,
-    shiftDiagToMatrix,
-    shiftDiagToMatrixWithScale,    
-    addToMatrix,
-    addToMatrixWithScales,
-    subToMatrix,
-    scaleToMatrix,
-    scaleRowsToMatrix,
-    scaleColsToMatrix,
-    negateToMatrix,
-    conjToMatrix,
+    shiftTo,
+    shiftDiagTo,
+    shiftDiagToWithScale,    
+    addTo,
+    addToWithScales,
+    subTo,
+    scaleTo,
+    scaleRowsTo,
+    scaleColsTo,
+    negateTo,
+    conjTo,
 
     -- * Linear algebra
-    transToMatrix,
-    conjTransToMatrix,
-    rank1UpdateToMatrix,
+    transTo,
+    conjTransTo,
+    rank1UpdateTo,
     
     -- ** Matrix-Vector multiplication
-    mulMatrixToVector,
-    mulMatrixToVectorWithScale,
-    mulMatrixAddToVectorWithScales,
+    mulToVector,
+    mulToVectorWithScale,
+    mulAddToVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
-    mulMatrixToMatrix,
-    mulMatrixToMatrixWithScale,
-    mulMatrixAddToMatrixWithScales,
+    mulToMatrix,
+    mulToMatrixWithScale,
+    mulAddToMatrixWithScales,
 
     -- * Conversions between mutable and immutable matrices
-    freezeMatrix,
-    unsafeFreezeMatrix,
+    freeze,
+    unsafeFreeze,
     
     -- * Matrix views of vectors
-    withMatrixViewVector,
-    withMatrixViewColVector,
-    withMatrixViewRowVector,
+    withViewVector,
+    withViewColVector,
+    withViewRowVector,
 
-    matrixViewVectorST,
-    matrixViewColVectorST,
-    matrixViewRowVectorST,
+    viewVectorST,
+    viewColVectorST,
+    viewRowVectorST,
     
     ) where
 
+import Prelude()
 import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase

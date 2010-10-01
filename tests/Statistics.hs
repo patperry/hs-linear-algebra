@@ -12,6 +12,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Matrix as M
 import qualified Numeric.LinearAlgebra.Vector as V
 
 import Test.QuickCheck.LinearAlgebra( VectorList(..), WeightedVectorList(..) )
@@ -85,12 +86,12 @@ prop_covMatrix t (VectorList p xs) =
         xbar = meanVector p xs
         ys = [ V.sub x xbar | x <- xs ]
         scale = case method of { UnbiasedCov -> 1/(n-1) ; MLCov -> 1/n }
-        cov' = foldl' (flip $ \y -> rank1UpdateMatrix scale y y)
-                      (constantMatrix (p,p) 0)
+        cov' = foldl' (flip $ \y -> M.rank1Update scale y y)
+                      (M.constant (p,p) 0)
                       ys
         cov = covMatrix p method xs
 
-        in mulHermMatrixVector cov z ~== mulMatrixVector NoTrans cov' z
+        in mulHermMatrixVector cov z ~== M.mulVector NoTrans cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -130,14 +131,14 @@ prop_weightedCovMatrix t (WeightedVectorList p wxs) =
         xbar = weightedMeanVector p wxs
         wys = [ (w, V.sub x xbar) | (w,x) <- zip ws' xs ]
         cov' = if w_sum == 0
-                    then constantMatrix (p,p) 0
-                    else foldl' (flip $ \(w,y) -> rank1UpdateMatrix (scale*w) y y)
-                                (constantMatrix (p,p) 0)
+                    then M.constant (p,p) 0
+                    else foldl' (flip $ \(w,y) -> M.rank1Update (scale*w) y y)
+                                (M.constant (p,p) 0)
                                 wys
 
         cov = weightedCovMatrix p method wxs
 
-        in mulHermMatrixVector cov z ~== mulMatrixVector NoTrans cov' z
+        in mulHermMatrixVector cov z ~== M.mulVector NoTrans cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs
