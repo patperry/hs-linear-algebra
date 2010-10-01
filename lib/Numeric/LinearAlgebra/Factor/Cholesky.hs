@@ -43,13 +43,19 @@ import qualified Foreign.LAPACK as LAPACK
 
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Matrix.Herm
-import Numeric.LinearAlgebra.Matrix.Packed
+
+import Numeric.LinearAlgebra.Matrix.Packed( Packed, RPacked, STPacked )
+import qualified Numeric.LinearAlgebra.Matrix.Packed as P
+
 import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
+
 import Numeric.LinearAlgebra.Matrix.STBase( STMatrix, RMatrix )
 import qualified Numeric.LinearAlgebra.Matrix.STBase as M
+
 import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
+
 import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
 import qualified Numeric.LinearAlgebra.Vector.ST as V
 
@@ -163,10 +169,10 @@ cholFactorPacked :: (LAPACK e)
                  => Herm Packed e
                  -> Either Int (Chol Packed e)
 cholFactorPacked (Herm uplo a) = runST $ do
-    ma <- newCopyPacked a
+    ma <- P.newCopy a
     cholFactorToPacked (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
-                a' <- unsafeFreezePacked ma'
+                a' <- P.unsafeFreeze ma'
                 return $ Right (Chol uplo' a')
                 )
 
@@ -201,12 +207,12 @@ cholFactorToPacked :: (LAPACK e)
                    -> ST s (Either Int (Chol (STPacked s) e))
 cholFactorToPacked (Herm uplo a) =
     unsafeIOToST $
-        unsafeWithPacked a $ \pa -> do
+        P.unsafeWith a $ \pa -> do
             info <- LAPACK.pptrf uplo n pa
             return $ if info > 0 then Left info
                                  else Right (Chol uplo a)
   where
-    n = dimPacked a
+    n = P.dim a
 
 -- | @cholPackedSolveToVector a x x'@ sets
 -- @x' := a \\ x@.  Arguments @x@ and @x'@ can be the same.
@@ -239,11 +245,11 @@ cholPackedSolveToMatrix (Chol uplo a) b b'
     | otherwise = do
         M.unsafeCopyTo b b'
         unsafeIOToST $
-            unsafeWithPacked a $ \pa ->
+            P.unsafeWith a $ \pa ->
             M.unsafeWith b' $ \pb ldb ->
                 LAPACK.pptrs uplo n nrhs pa pb ldb
   where
-    na = dimPacked a
+    na = P.dim a
     (mb,nb) = M.dim b
     (mb',nb') = M.dim b
     (n,nrhs) = (mb',nb')

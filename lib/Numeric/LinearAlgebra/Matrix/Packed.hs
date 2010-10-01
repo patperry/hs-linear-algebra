@@ -16,42 +16,42 @@ module Numeric.LinearAlgebra.Matrix.Packed (
     IOPacked,
 
     RPacked(..),
-    toPacked,
-    unsafeToPacked,
-    fromPacked,
-    toSTPacked,
-    unsafeToSTPacked,
-    fromSTPacked,
-    withVectorPackedST,
+    fromVector,
+    unsafeFromVector,
+    toVector,
+    viewFromSTVector,
+    unsafeViewFromSTVector,
+    toSTVectorView,
+    withSTVectorView,
     
     -- * Conversions between mutable and immutable packed matrices
-    runPacked,
-    freezePacked,
-    unsafeFreezePacked,
+    create,
+    freeze,
+    unsafeFreeze,
     
     -- * Immutable interface
 
     -- ** Herm Packed-Vector multiplication
-    mulHermPackedVector,
-    mulHermPackedVectorWithScale,
-    mulHermPackedAddVectorWithScales,
+    hermMulVector,
+    hermMulVectorWithScale,
+    hermMulAddVectorWithScales,
     
     -- ** Herm Packed updates
-    rank1UpdateHermPacked,
-    rank2UpdateHermPacked,
+    hermRank1Update,
+    hermRank2Update,
 
     -- * Mutable interface
-    newCopyPacked,
-    runHermPacked,
+    newCopy,
+    hermCreate,
 
     -- ** Herm Packed-Vector multiplication
-    mulHermPackedToVector,
-    mulHermPackedToVectorWithScale,
-    mulHermPackedAddToVectorWithScales,
+    hermMulToVector,
+    hermMulToVectorWithScale,
+    hermMulAddToVectorWithScales,
     
     -- ** Herm Packed updates
-    rank1UpdateToHermPacked,
-    rank2UpdateToHermPacked,
+    hermRank1UpdateTo,
+    hermRank2UpdateTo,
     
     ) where
 
@@ -82,109 +82,109 @@ type IOPacked = STPacked RealWorld
 
 -- | Create a packed matrix view of a vector, ensurint that the
 -- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
-toPacked :: (Storable e) => Int -> Vector e -> Packed e
-toPacked n x
+fromVector :: (Storable e) => Int -> Vector e -> Packed e
+fromVector n x
     | not $ 2 * nx == n * (n+1) = error $
-        printf ("toPacked %d <vector with dim %d>: dimension mismatch")
+        printf ("fromVector %d <vector with dim %d>: dimension mismatch")
                n nx
     | otherwise =
-        unsafeToPacked n x
+        unsafeFromVector n x
   where
     nx = V.dim x
-{-# INLINE toPacked #-}
+{-# INLINE fromVector #-}
 
 -- | Create a packed matrix view of a vector, wihtout checking
 -- the dimension of the vector.
-unsafeToPacked :: (Storable e) => Int -> Vector e -> Packed e
-unsafeToPacked = Packed
-{-# INLINE unsafeToPacked #-}
+unsafeFromVector :: (Storable e) => Int -> Vector e -> Packed e
+unsafeFromVector = Packed
+{-# INLINE unsafeFromVector #-}
 
 -- | Returns the dimension and underlying vector storage of a
 -- packed matrix.
-fromPacked :: (Storable e) => Packed e -> (Int, Vector e)
-fromPacked (Packed n v) = (n,v)
-{-# INLINE fromPacked #-}
+toVector :: (Storable e) => Packed e -> (Int, Vector e)
+toVector (Packed n v) = (n,v)
+{-# INLINE toVector #-}
 
 -- | Create a packed matrix view of a vector, ensurint that the
 -- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
-toSTPacked :: (Storable e) => Int -> STVector s e -> STPacked s e
-toSTPacked n x
+viewFromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
+viewFromSTVector n x
     | not $ 2 * nx == n * (n+1) = error $
-        printf ("toPackedST %d <vector with dim %d>: dimension mismatch")
+        printf ("fromVectorST %d <vector with dim %d>: dimension mismatch")
                n nx
     | otherwise =
         STPacked n x
   where
     nx = V.dim x
-{-# INLINE toSTPacked #-}
+{-# INLINE viewFromSTVector #-}
 
 -- | Create a packed matrix view of a vector, wihtout checking
 -- the dimension of the vector.
-unsafeToSTPacked :: (Storable e) => Int -> STVector s e -> STPacked s e
-unsafeToSTPacked = STPacked
-{-# INLINE unsafeToSTPacked #-}
+unsafeViewFromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
+unsafeViewFromSTVector = STPacked
+{-# INLINE unsafeViewFromSTVector #-}
 
 -- | Returns the dimension and underlying vector storage of a
 -- packed matrix.
-fromSTPacked :: (Storable e) => STPacked s e -> (Int, STVector s e)
-fromSTPacked (STPacked n v) = (n,v)
-{-# INLINE fromSTPacked #-}
+toSTVectorView :: (Storable e) => STPacked s e -> (Int, STVector s e)
+toSTVectorView (STPacked n v) = (n,v)
+{-# INLINE toSTVectorView #-}
 
 
 -- | Read-only packed matrices.
 class RPacked p where
     -- | Returns the dimension of the packed matrix.
-    dimPacked :: (Storable e) => p e -> Int
+    dim :: (Storable e) => p e -> Int
 
     -- | Perform an action with the underlying vector storage of
     -- the packed matrix.
-    withVectorPacked :: (Storable e)
-                     => p e
-                     -> (forall v . RVector v => v e -> ST s a)
-                     -> ST s a
+    withVectorView :: (Storable e)
+                   => p e
+                   -> (forall v . RVector v => v e -> ST s a)
+                   -> ST s a
     
     -- | Perform an IO action with a pointer to the first element of
     -- the packed matrix.
-    unsafeWithPacked :: (Storable e) => p e -> (Ptr e -> IO a) -> IO a
+    unsafeWith :: (Storable e) => p e -> (Ptr e -> IO a) -> IO a
 
 -- | Perform an action with the underlying vector storage of
 -- the mutable packed matrix.
-withVectorPackedST :: (Storable e)
-                   => STPacked s e
-                   -> (STVector s e -> ST s a)
-                   -> ST s a
-withVectorPackedST (STPacked _ v) f = f v
-{-# INLINE withVectorPackedST #-}
+withSTVectorView :: (Storable e)
+             => STPacked s e
+             -> (STVector s e -> ST s a)
+             -> ST s a
+withSTVectorView (STPacked _ v) f = f v
+{-# INLINE withSTVectorView #-}
 
 instance RPacked Packed where
-    dimPacked (Packed n _) = n
-    {-# INLINE dimPacked #-}
-    withVectorPacked (Packed _ v) f = f v
-    {-# INLINE withVectorPacked #-}
-    unsafeWithPacked (Packed _ v) = V.unsafeWith v
-    {-# INLINE unsafeWithPacked #-}
+    dim (Packed n _) = n
+    {-# INLINE dim #-}
+    withVectorView (Packed _ v) f = f v
+    {-# INLINE withVectorView #-}
+    unsafeWith (Packed _ v) = V.unsafeWith v
+    {-# INLINE unsafeWith #-}
 
 instance RPacked (STPacked s) where
-    dimPacked (STPacked n _) = n
-    {-# INLINE dimPacked #-}
-    withVectorPacked (STPacked _ v) f = f v
-    {-# INLINE withVectorPacked #-}
-    unsafeWithPacked (STPacked _ v) = V.unsafeWith v
-    {-# INLINE unsafeWithPacked #-}
+    dim (STPacked n _) = n
+    {-# INLINE dim #-}
+    withVectorView (STPacked _ v) f = f v
+    {-# INLINE withVectorView #-}
+    unsafeWith (STPacked _ v) = V.unsafeWith v
+    {-# INLINE unsafeWith #-}
 
 
 -- | Create a new copy of a packed matrix.
-newCopyPacked :: (Storable e, RPacked p)
+newCopy :: (Storable e, RPacked p)
               => p e -> ST s (STPacked s e)
-newCopyPacked p =
-    withVectorPacked p $ \x ->
-        unsafeToSTPacked (dimPacked p) `fmap` V.newCopy x
-{-# INLINE newCopyPacked #-}
+newCopy p =
+    withVectorView p $ \x ->
+        unsafeViewFromSTVector (dim p) `fmap` V.newCopy x
+{-# INLINE newCopy #-}
 
 -- | Converts a mutable packed matrix to an immutable one by taking a complete
 -- copy of it.
-freezePacked :: (Storable e) => STPacked s e -> ST s (Packed e)
-freezePacked (STPacked n mp) = do
+freeze :: (Storable e) => STPacked s e -> ST s (Packed e)
+freeze (STPacked n mp) = do
     p <- V.freeze mp
     return $ Packed n p
 
@@ -194,76 +194,76 @@ freezePacked (STPacked n mp) = do
 -- modifications made to the mutable version of the matrix may be shared with
 -- the immutable version. It is safe to use, therefore, if the mutable
 -- version is never modified after the freeze operation.
-unsafeFreezePacked :: (Storable e) => STPacked s e -> ST s (Packed e)
-unsafeFreezePacked (STPacked n mp) = do
+unsafeFreeze :: (Storable e) => STPacked s e -> ST s (Packed e)
+unsafeFreeze (STPacked n mp) = do
     p <- V.unsafeFreeze mp
     return $ Packed n p
 
 -- | A safe way to V.create and work with a mutable Packed before returning 
 -- an immutable one for later perusal.
-runPacked :: (Storable e)
-          => (forall s. ST s ((STPacked s) e))
-          -> Packed e
-runPacked stmp = runST $ do
+create :: (Storable e)
+       => (forall s. ST s ((STPacked s) e))
+       -> Packed e
+create stmp = runST $ do
     mp <- stmp
-    unsafeFreezePacked mp
+    unsafeFreeze mp
 
 
 -- | A safe way to V.create and work with a mutable Herm Packed before returning 
 -- an immutable one for later perusal.
-runHermPacked :: (Storable e)
-              => (forall s. ST s (Herm (STPacked s) e))
-              -> Herm Packed e
-runHermPacked stmh = runST $ do
+hermCreate :: (Storable e)
+           => (forall s. ST s (Herm (STPacked s) e))
+           -> Herm Packed e
+hermCreate stmh = runST $ do
     (Herm u mp) <- stmh
-    p <- unsafeFreezePacked mp
+    p <- unsafeFreeze mp
     return $ Herm u p
 
--- | @rank1UpdateHermPacked alpha x a@ returns
+-- | @hermRank1Update alpha x a@ returns
 -- @alpha * x * x^H + a@.
-rank1UpdateHermPacked :: (BLAS2 e)
-                      => Double -> Vector e -> Herm Packed e -> Herm Packed e
-rank1UpdateHermPacked alpha x (Herm uplo ap) = runHermPacked $ do
-    hp' <- Herm uplo `fmap` newCopyPacked ap
-    rank1UpdateToHermPacked alpha x hp'
+hermRank1Update :: (BLAS2 e)
+                => Double -> Vector e -> Herm Packed e -> Herm Packed e
+hermRank1Update alpha x (Herm uplo ap) = hermCreate $ do
+    hp' <- Herm uplo `fmap` newCopy ap
+    hermRank1UpdateTo alpha x hp'
     return hp'
 
--- | @rank2UpdateHermPacked alpha x y a@ returns
+-- | @hermRank2Update alpha x y a@ returns
 -- @alpha * x * y^H + conj(alpha) * y * x^H + a@.
-rank2UpdateHermPacked :: (BLAS2 e)
-                      => e -> Vector e -> Vector e -> Herm Packed e
-                      -> Herm Packed e
-rank2UpdateHermPacked alpha x y (Herm uplo ap) = runHermPacked $ do
-    hp' <- Herm uplo `fmap` newCopyPacked ap
-    rank2UpdateToHermPacked alpha x y hp'
+hermRank2Update :: (BLAS2 e)
+                => e -> Vector e -> Vector e -> Herm Packed e
+                -> Herm Packed e
+hermRank2Update alpha x y (Herm uplo ap) = hermCreate $ do
+    hp' <- Herm uplo `fmap` newCopy ap
+    hermRank2UpdateTo alpha x y hp'
     return hp'
 
--- | @rank1UpdateToHermPacked alpha x a@ sets
+-- | @hermRank1UpdateTo alpha x a@ sets
 -- @a := alpha * x * x^H + a@.
-rank1UpdateToHermPacked :: (RVector v, BLAS2 e)
-                        => Double -> v e -> Herm (STPacked s) e -> ST s ()
-rank1UpdateToHermPacked alpha x (Herm uplo a)
+hermRank1UpdateTo :: (RVector v, BLAS2 e)
+                  => Double -> v e -> Herm (STPacked s) e -> ST s ()
+hermRank1UpdateTo alpha x (Herm uplo a)
     | (not . and) [ nx == n, na == n ] = error $
-        printf ("rank1UpdateToHermPacked _ <vector with dim %d>"
+        printf ("hermRank1UpdateTo _ <vector with dim %d>"
                  ++ " (Herm _ <packed matrix with dim %d>):"
                  ++ " invalid dimensions") nx na
     | otherwise =
         unsafeIOToST $
         V.unsafeWith x $ \px ->
-        unsafeWithPacked a $ \pa ->
+        unsafeWith a $ \pa ->
             BLAS.hpr uplo n alpha px 1 pa
   where
     nx = V.dim x
-    na = dimPacked a
+    na = dim a
     n = nx
 
--- | @rank2UpdateToHermPacked alpha x y a@ sets
+-- | @hermRank2UpdateTo alpha x y a@ sets
 -- @a := alpha * x * y^H + conj(alpha) * y * x^H + a@.
-rank2UpdateToHermPacked :: (RVector v1, RVector v2, BLAS2 e)
-                        => e -> v1 e -> v2 e -> Herm (STPacked s) e -> ST s ()
-rank2UpdateToHermPacked alpha x y (Herm uplo a)
+hermRank2UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
+                  => e -> v1 e -> v2 e -> Herm (STPacked s) e -> ST s ()
+hermRank2UpdateTo alpha x y (Herm uplo a)
     | (not . and) [ nx == n, ny == n, na == n ] = error $
-        printf ("rank2UpdateToHermPacked _ <vector with dim %d>"
+        printf ("hermRank2UpdateTo _ <vector with dim %d>"
                  ++ " <vector with dim %d>"
                  ++ " (Herm _ <packed matrix with dim %d>):"
                  ++ " invalid dimensions") nx ny na
@@ -271,86 +271,86 @@ rank2UpdateToHermPacked alpha x y (Herm uplo a)
         unsafeIOToST $
         V.unsafeWith x $ \px ->
         V.unsafeWith y $ \py ->        
-        unsafeWithPacked a $ \pa ->
+        unsafeWith a $ \pa ->
             BLAS.hpr2 uplo n alpha px 1 py 1 pa
   where
     nx = V.dim x
     ny = V.dim y
-    na = dimPacked a
+    na = dim a
     n = nx
 
--- | @mulHermPackedVector a x@ returns @a * x@.
-mulHermPackedVector :: (BLAS2 e)
+-- | @hermMulVector a x@ returns @a * x@.
+hermMulVector :: (BLAS2 e)
                     => Herm Packed e
                     -> Vector e
                     -> Vector e
-mulHermPackedVector a x =
+hermMulVector a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        mulHermPackedToVector a x y
+        hermMulToVector a x y
         return y
 
--- | @mulHermPackedVectorWithScale alpha a x@ retunrs @alpha * a * x@.
-mulHermPackedVectorWithScale :: (BLAS2 e)
-                             => e
-                             -> Herm Packed e
-                             -> Vector e
-                             -> Vector e
-mulHermPackedVectorWithScale alpha a x =
+-- | @hermMulVectorWithScale alpha a x@ retunrs @alpha * a * x@.
+hermMulVectorWithScale :: (BLAS2 e)
+                       => e
+                       -> Herm Packed e
+                       -> Vector e
+                       -> Vector e
+hermMulVectorWithScale alpha a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        mulHermPackedToVectorWithScale alpha a x y
+        hermMulToVectorWithScale alpha a x y
         return y
                        
--- | @mulHermPackedAddVectorWithScales alpha a x y@
+-- | @hermMulAddVectorWithScales alpha a x y@
 -- returns @alpha * a * x + beta * y@.
-mulHermPackedAddVectorWithScales :: (BLAS2 e)
-                                 => e
-                                 -> Herm Packed e
-                                 -> Vector e
-                                 -> e
-                                 -> Vector e
-                                 -> Vector e
-mulHermPackedAddVectorWithScales alpha a x beta y =
+hermMulAddVectorWithScales :: (BLAS2 e)
+                           => e
+                           -> Herm Packed e
+                           -> Vector e
+                           -> e
+                           -> Vector e
+                           -> Vector e
+hermMulAddVectorWithScales alpha a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        mulHermPackedAddToVectorWithScales alpha a x beta y'
+        hermMulAddToVectorWithScales alpha a x beta y'
         return y'
 
--- | @mulHermPackedToVector a x y@ sets @y := a * x@.
-mulHermPackedToVector :: (RPacked p, RVector v, BLAS2 e)
-                      => Herm p e
-                      -> v e
-                      -> STVector s e
-                      -> ST s ()
-mulHermPackedToVector = mulHermPackedToVectorWithScale 1
+-- | @hermMulToVector a x y@ sets @y := a * x@.
+hermMulToVector :: (RPacked p, RVector v, BLAS2 e)
+                => Herm p e
+                -> v e
+                -> STVector s e
+                -> ST s ()
+hermMulToVector = hermMulToVectorWithScale 1
 
--- | @mulHermPackedToVectorWithScale alpha a x y@
+-- | @hermMulToVectorWithScale alpha a x y@
 -- sets @y := alpha * a * x@.
-mulHermPackedToVectorWithScale :: (RPacked p, RVector v, BLAS2 e)
-                               => e
-                               -> Herm p e
-                               -> v e
-                               -> STVector s e
-                               -> ST s ()
-mulHermPackedToVectorWithScale alpha a x y =
-    mulHermPackedAddToVectorWithScales alpha a x 0 y
+hermMulToVectorWithScale :: (RPacked p, RVector v, BLAS2 e)
+                         => e
+                         -> Herm p e
+                         -> v e
+                         -> STVector s e
+                         -> ST s ()
+hermMulToVectorWithScale alpha a x y =
+    hermMulAddToVectorWithScales alpha a x 0 y
 
--- | @mulHermPackedAddToVectorWithScales alpha a x beta y@
+-- | @hermMulAddToVectorWithScales alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
-mulHermPackedAddToVectorWithScales :: (RPacked p, RVector v, BLAS2 e)
-                                   => e
-                                   -> Herm p e
-                                   -> v e
-                                   -> e
-                                   -> STVector s e
-                                   -> ST s ()
-mulHermPackedAddToVectorWithScales alpha (Herm uplo a) x beta y
+hermMulAddToVectorWithScales :: (RPacked p, RVector v, BLAS2 e)
+                             => e
+                             -> Herm p e
+                             -> v e
+                             -> e
+                             -> STVector s e
+                             -> ST s ()
+hermMulAddToVectorWithScales alpha (Herm uplo a) x beta y
     | (not . and) [ na == n
                   , nx == n
                   , ny == n
                   ] = error $
-        printf ("mulHermPackedAddToVectorWithScales _"
+        printf ("hermMulAddToVectorWithScales _"
                 ++ " (Herm %s <packed matrix with dim %d>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"
@@ -360,12 +360,12 @@ mulHermPackedAddToVectorWithScales alpha (Herm uplo a) x beta y
 
     | otherwise =
         unsafeIOToST $
-            unsafeWithPacked a $ \pa ->
+            unsafeWith a $ \pa ->
             V.unsafeWith x $ \px ->
             V.unsafeWith y $ \py ->
                 BLAS.hpmv uplo n alpha pa px 1 beta py 1
   where
-    na = dimPacked a
+    na = dim a
     nx = V.dim x
     ny = V.dim y
     n = ny

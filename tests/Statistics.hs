@@ -12,6 +12,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Matrix.Packed as P
 import qualified Numeric.LinearAlgebra.Matrix as M
 import qualified Numeric.LinearAlgebra.Vector as V
 
@@ -159,7 +160,7 @@ prop_covPacked t (VectorList p xs) =
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
         cov' = covMatrix p method xs
         cov = covPacked p method xs
-        in mulHermPackedVector cov z ~== mulHermMatrixVector cov' z
+        in P.hermMulVector cov z ~== mulHermMatrixVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -170,7 +171,7 @@ prop_covPackedWithMean t (VectorList p xs) =
         xbar = meanVector p xs
         cov = covPackedWithMean xbar method xs
         cov' = covPacked p method xs
-        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
+        in P.hermMulVector cov z ~== P.hermMulVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -181,7 +182,7 @@ prop_weightedCovPacked_eqw t (VectorList p xs) =
         wxs = zip (repeat 1) xs
         cov = weightedCovPacked p method wxs
         cov' = covPacked p method xs
-        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
+        in P.hermMulVector cov z ~== P.hermMulVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -191,7 +192,7 @@ prop_weightedCovPacked t (WeightedVectorList p wxs) =
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
         cov' = weightedCovMatrix p method wxs
         cov = weightedCovPacked p method wxs
-        in mulHermPackedVector cov z ~== mulHermMatrixVector cov' z
+        in P.hermMulVector cov z ~== mulHermMatrixVector cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs
@@ -202,7 +203,7 @@ prop_weightedCovPackedWithMean t (WeightedVectorList p wxs) =
         xbar = weightedMeanVector p wxs
         cov' = weightedCovPacked p method wxs
         cov = weightedCovPackedWithMean xbar method wxs
-        in mulHermPackedVector cov z ~== mulHermPackedVector cov' z
+        in P.hermMulVector cov z ~== P.hermMulVector cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs

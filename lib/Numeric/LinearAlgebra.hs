@@ -28,7 +28,7 @@ import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
 import Numeric.LinearAlgebra.Matrix( Matrix )
 import Numeric.LinearAlgebra.Matrix.ST( STMatrix, RMatrix )
 import Numeric.LinearAlgebra.Matrix.Herm
-import Numeric.LinearAlgebra.Matrix.Packed
+import Numeric.LinearAlgebra.Matrix.Packed( Packed, RPacked, STPacked )
 import Numeric.LinearAlgebra.Factor.Cholesky
 import Numeric.LinearAlgebra.Factor.Eigen
 import Numeric.LinearAlgebra.Statistics
