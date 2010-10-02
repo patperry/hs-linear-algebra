@@ -61,7 +61,6 @@ import Data.List( foldl' )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
 import Numeric.LinearAlgebra.Packed( Packed, STPacked )
 import qualified Numeric.LinearAlgebra.Packed as P
 

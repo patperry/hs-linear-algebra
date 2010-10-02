@@ -11,6 +11,10 @@
 
 module Numeric.LinearAlgebra.Types (
 
+    -- * Matrix views
+    Herm(..),
+    withHerm,
+
     -- * Vector math types
     VNum,
     VFractional,
@@ -43,3 +47,17 @@ import Foreign.BLAS( Trans(..), Uplo(..), Side(..), Diag(..), BLAS1, BLAS2, BLAS
 import Foreign.LAPACK( LAPACK )
 import Data.Complex( Complex(..) )
 import Foreign.Storable( Storable() )
+
+-- | A hermitian view of an underlying matrix.  The view can either be
+-- of the upper or lower triangular part of the matrix.  The type arguments
+-- are as follows:
+--
+--     * @m@: the underlyting matrix type.
+--
+--     * @e@: the element type of the matrix.
+--
+data Herm m e = Herm Uplo (m e) deriving (Show)
+
+-- | Apply a function to the unerlying 'Uplo' and matrix.
+withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
+withHerm (Herm u m) f = f u m

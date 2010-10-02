@@ -11,10 +11,6 @@
 --
 
 module Numeric.LinearAlgebra.Matrix.Herm (
-    -- * Hermitian views of matrices
-    Herm(..),
-    withHerm,
-    
     -- * Immutable interface
     
     -- ** Matrix-Vector multiplication
@@ -67,19 +63,6 @@ import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 import Numeric.LinearAlgebra.Types
 import qualified Foreign.BLAS as BLAS
 
--- | A hermitian view of an underlying matrix.  The view can either be
--- of the upper or lower triangular part of the matrix.  The type arguments
--- are as follows:
---
---     * @m@: the underlyting matrix type.
---
---     * @e@: the element type of the matrix.
---
-data Herm m e = Herm Uplo (m e) deriving (Show)
-
--- | Apply a function to the unerlying 'Uplo' and matrix.
-withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
-withHerm (Herm u m) f = f u m
 
 -- | A safe way to V.create and work with a mutable Herm Matrix before returning 
 -- an immutable one for later perusal.

@@ -60,7 +60,7 @@ import Data.Typeable( Typeable )
 import Foreign( Storable, Ptr )
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
+import Numeric.LinearAlgebra.Types( Herm(..) )
 import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 import Foreign.BLAS( BLAS2 )

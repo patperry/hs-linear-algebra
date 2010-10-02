@@ -22,7 +22,7 @@ import Text.Printf( printf )
 import Foreign.LAPACK( LAPACK, EigJob(..), EigRange(..) )
 import qualified Foreign.LAPACK as LAPACK
 
-import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Types( Herm(..) )
 import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import Numeric.LinearAlgebra.Matrix.STBase( STMatrix )
