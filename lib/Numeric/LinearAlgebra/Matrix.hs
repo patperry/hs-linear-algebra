@@ -9,9 +9,11 @@
 -- Immutable dense matrices.
 
 module Numeric.LinearAlgebra.Matrix (
-    -- * The Matrix type
+    -- * Immutable matrices
     Matrix,
-    dim,
+
+    -- * Read-only matrices
+    RMatrix(..),
 
     -- * Matrix construction
     fromAssocs, 
@@ -88,8 +90,18 @@ module Numeric.LinearAlgebra.Matrix (
     mulMatrixWithScale,
     mulAddMatrixWithScales,
 
+    -- * Mutable interface
+    module Numeric.LinearAlgebra.Matrix.ST,
+    
+    -- * Hermitian views
+    module Numeric.LinearAlgebra.Matrix.Herm,
+
     ) where
 
 import Prelude()
 import Numeric.LinearAlgebra.Matrix.Base
-import Numeric.LinearAlgebra.Matrix.STBase
+import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Matrix.STBase( indices, slice, takeRows,
+    dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
+import Numeric.LinearAlgebra.Matrix.ST hiding ( indices, slice, takeRows,
+    dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )

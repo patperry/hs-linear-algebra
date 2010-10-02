@@ -42,16 +42,12 @@ import Text.Printf( printf )
 import qualified Foreign.LAPACK as LAPACK
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Matrix.Herm
 
 import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked )
 import qualified Numeric.LinearAlgebra.Packed as P
 
-import Numeric.LinearAlgebra.Matrix.Base( Matrix )
-import qualified Numeric.LinearAlgebra.Matrix.Base as M
-
-import Numeric.LinearAlgebra.Matrix.STBase( STMatrix, RMatrix )
-import qualified Numeric.LinearAlgebra.Matrix.STBase as M
+import Numeric.LinearAlgebra.Matrix( Matrix, RMatrix, STMatrix )
+import qualified Numeric.LinearAlgebra.Matrix as M
 
 import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
@@ -128,7 +124,8 @@ cholMatrixSolveToVector :: (LAPACK e, RMatrix m, RVector v)
                         -> ST s ()
 cholMatrixSolveToVector a x y =
     M.withViewFromCol x $ \x' ->
-        cholMatrixSolveToMatrix a x' (M.fromSTCol y)
+    M.withViewFromSTCol y $ \y' ->
+        cholMatrixSolveToMatrix a x' y'
 
 -- | @cholMatrixSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
@@ -221,7 +218,8 @@ cholPackedSolveToVector :: (LAPACK e, RPacked p, RVector v)
                         -> ST s ()
 cholPackedSolveToVector a x y =
     M.withViewFromCol x $ \x' ->
-        cholPackedSolveToMatrix a x' (M.fromSTCol y)
+    M.withViewFromSTCol y $ \y' ->
+        cholPackedSolveToMatrix a x' y'
 
 -- | @cholPackedSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.

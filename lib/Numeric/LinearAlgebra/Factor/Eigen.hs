@@ -23,10 +23,8 @@ import Foreign.LAPACK( LAPACK, EigJob(..), EigRange(..) )
 import qualified Foreign.LAPACK as LAPACK
 
 import Numeric.LinearAlgebra.Types( Herm(..) )
-import Numeric.LinearAlgebra.Matrix.Base( Matrix )
-import qualified Numeric.LinearAlgebra.Matrix.Base as M
-import Numeric.LinearAlgebra.Matrix.STBase( STMatrix )
-import qualified Numeric.LinearAlgebra.Matrix.STBase as M
+import Numeric.LinearAlgebra.Matrix( Matrix, STMatrix )
+import qualified Numeric.LinearAlgebra.Matrix as M
 import Numeric.LinearAlgebra.Vector( Vector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 

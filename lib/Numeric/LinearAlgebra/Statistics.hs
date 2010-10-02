@@ -67,12 +67,8 @@ import qualified Numeric.LinearAlgebra.Packed as P
 import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
-import Numeric.LinearAlgebra.Matrix( Matrix )
+import Numeric.LinearAlgebra.Matrix( Matrix, STMatrix )
 import qualified Numeric.LinearAlgebra.Matrix as M
-import qualified Numeric.LinearAlgebra.Matrix.Herm as M
-
-import Numeric.LinearAlgebra.Matrix.ST( STMatrix )
-import qualified Numeric.LinearAlgebra.Matrix.ST as M
 
 
 -- | The method of scaling the sample covariance matrix.

@@ -15,8 +15,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     create,
     
     -- * Read-only Dense matrix type class
-    RMatrix( dim, withColViews, maybeWithVectorView, unsafeWith,
-        unsafeToForeignPtr, unsafeFromForeignPtr ),
+    RMatrix(..),
     
     -- * Creating new matrices
     new_,
@@ -106,6 +105,9 @@ module Numeric.LinearAlgebra.Matrix.ST (
     withViewFromSTVector,
     withViewFromSTCol,
     withViewFromSTRow,
+    
+    -- * Unsafe operations
+    unsafeCopyTo,
     
     ) where
 
