@@ -45,16 +45,21 @@ Library
                         Foreign.VMath
                         
                         Numeric.LinearAlgebra
-                        Numeric.LinearAlgebra.Factor.Cholesky                        
+
                         Numeric.LinearAlgebra.Matrix
+                        Numeric.LinearAlgebra.Matrix.Cholesky
                         Numeric.LinearAlgebra.Matrix.Eigen
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.ST
+
                         Numeric.LinearAlgebra.Packed                     
+                        Numeric.LinearAlgebra.Packed.Cholesky                        
                         Numeric.LinearAlgebra.Packed.Herm
                         Numeric.LinearAlgebra.Packed.ST                   
+
                         Numeric.LinearAlgebra.Statistics                        
                         Numeric.LinearAlgebra.Types
+
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
                         

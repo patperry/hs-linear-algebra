@@ -25,8 +25,12 @@ module Numeric.LinearAlgebra.Packed (
     -- * Hermitian views
     module Numeric.LinearAlgebra.Packed.Herm,
 
+    -- * Cholesky factorizations
+    module Numeric.LinearAlgebra.Packed.Cholesky,
+
     ) where
 
 import Numeric.LinearAlgebra.Packed.Base
 import Numeric.LinearAlgebra.Packed.ST hiding ( RPacked(..) )
 import Numeric.LinearAlgebra.Packed.Herm
+import Numeric.LinearAlgebra.Packed.Cholesky

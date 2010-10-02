@@ -96,6 +96,9 @@ module Numeric.LinearAlgebra.Matrix (
     -- * Hermitian views
     module Numeric.LinearAlgebra.Matrix.Herm,
     
+    -- * Cholesky factorizations
+    module Numeric.LinearAlgebra.Matrix.Cholesky,
+    
     -- * Eigenvalues and eigenvectors
     module Numeric.LinearAlgebra.Matrix.Eigen,
 
@@ -108,4 +111,5 @@ import Numeric.LinearAlgebra.Matrix.STBase( indices, slice, takeRows,
     dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
 import Numeric.LinearAlgebra.Matrix.ST hiding ( indices, slice, takeRows,
     dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
+import Numeric.LinearAlgebra.Matrix.Cholesky
 import Numeric.LinearAlgebra.Matrix.Eigen

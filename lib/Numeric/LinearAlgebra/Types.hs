@@ -15,6 +15,9 @@ module Numeric.LinearAlgebra.Types (
     Herm(..),
     withHerm,
 
+    -- * Matrix factorization views
+    Chol(..),
+
     -- * Vector math types
     VNum,
     VFractional,
@@ -61,3 +64,6 @@ data Herm m e = Herm Uplo (m e) deriving (Show)
 -- | Apply a function to the unerlying 'Uplo' and matrix.
 withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
 withHerm (Herm u m) f = f u m
+
+-- | A Cholesky decomposition view of a matrix.
+data Chol m e = Chol Uplo (m e) deriving (Show)
