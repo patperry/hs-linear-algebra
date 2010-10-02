@@ -37,6 +37,9 @@ module Numeric.LinearAlgebra.Types (
     Side(..),
     Diag(..),
 
+    -- * Algorithm-specific parameters
+    CovMethod(..),
+
     -- * Re-export of Complex from Data.Complex
     module Data.Complex,
 
@@ -67,3 +70,16 @@ withHerm (Herm u m) f = f u m
 
 -- | A Cholesky decomposition view of a matrix.
 data Chol m e = Chol Uplo (m e) deriving (Show)
+
+-- | The method of scaling the sample covariance matrix.
+data CovMethod =
+      UnbiasedCov -- ^ This is the default behavior. Corresponds to a
+                  -- scaling of @n/(n-1)@ in the unweighed case, and
+                  -- @1/(1 - \\sum w_i^2)@ in the weighted case, where @w_i@
+                  -- is the normalized weight. Note the unweighted and
+                  -- weighted cases agree when @w_i = 1/n@.
+                  
+    | MLCov       -- ^ Returns the centered second moment matrix without
+                  -- scaling the result.
+    deriving (Eq, Show)
+

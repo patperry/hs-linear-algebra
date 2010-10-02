@@ -51,17 +51,19 @@ Library
                         Numeric.LinearAlgebra.Matrix.Eigen
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.ST
+                        Numeric.LinearAlgebra.Matrix.Statistics
 
                         Numeric.LinearAlgebra.Packed                     
                         Numeric.LinearAlgebra.Packed.Cholesky                        
                         Numeric.LinearAlgebra.Packed.Herm
                         Numeric.LinearAlgebra.Packed.ST                   
+                        Numeric.LinearAlgebra.Packed.Statistics
 
-                        Numeric.LinearAlgebra.Statistics                        
                         Numeric.LinearAlgebra.Types
 
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
+                        Numeric.LinearAlgebra.Vector.Statistics
                         
                         Test.QuickCheck.LinearAlgebra
                         

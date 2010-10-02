@@ -102,6 +102,9 @@ module Numeric.LinearAlgebra.Matrix (
     -- * Eigenvalues and eigenvectors
     module Numeric.LinearAlgebra.Matrix.Eigen,
 
+    -- * Basic multivariate statistics
+    module Numeric.LinearAlgebra.Matrix.Statistics,
+
     ) where
 
 import Prelude()
@@ -113,3 +116,4 @@ import Numeric.LinearAlgebra.Matrix.ST hiding ( indices, slice, takeRows,
     dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
 import Numeric.LinearAlgebra.Matrix.Cholesky
 import Numeric.LinearAlgebra.Matrix.Eigen
+import Numeric.LinearAlgebra.Matrix.Statistics

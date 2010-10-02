@@ -85,7 +85,10 @@ module Numeric.LinearAlgebra.Vector (
     atanh,
     
     -- * Mutable interface
-    module Numeric.LinearAlgebra.Vector.ST
+    module Numeric.LinearAlgebra.Vector.ST,
+    
+    -- * Basic multivariate statistics
+    module Numeric.LinearAlgebra.Vector.Statistics,
 
     ) where
 
@@ -94,3 +97,4 @@ import Numeric.LinearAlgebra.Vector.Base
 import Numeric.LinearAlgebra.Vector.STBase( RVector(..) )
 import Numeric.LinearAlgebra.Vector.ST hiding ( dim, slice, indices, drop,
     take, splitAt, RVector(..) )
+import Numeric.LinearAlgebra.Vector.Statistics
