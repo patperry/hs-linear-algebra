@@ -45,9 +45,9 @@ Library
                         Foreign.VMath
                         
                         Numeric.LinearAlgebra
-                        Numeric.LinearAlgebra.Factor.Eigen
                         Numeric.LinearAlgebra.Factor.Cholesky                        
                         Numeric.LinearAlgebra.Matrix
+                        Numeric.LinearAlgebra.Matrix.Eigen
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Packed                     

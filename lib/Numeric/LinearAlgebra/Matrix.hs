@@ -95,6 +95,9 @@ module Numeric.LinearAlgebra.Matrix (
     
     -- * Hermitian views
     module Numeric.LinearAlgebra.Matrix.Herm,
+    
+    -- * Eigenvalues and eigenvectors
+    module Numeric.LinearAlgebra.Matrix.Eigen,
 
     ) where
 
@@ -105,3 +108,4 @@ import Numeric.LinearAlgebra.Matrix.STBase( indices, slice, takeRows,
     dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
 import Numeric.LinearAlgebra.Matrix.ST hiding ( indices, slice, takeRows,
     dropRows, splitRowsAt, takeCols, dropCols, splitColsAt, RMatrix(..) )
+import Numeric.LinearAlgebra.Matrix.Eigen

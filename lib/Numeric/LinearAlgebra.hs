@@ -15,7 +15,6 @@ module Numeric.LinearAlgebra (
     module Numeric.LinearAlgebra.Matrix,
     module Numeric.LinearAlgebra.Packed,    
     module Numeric.LinearAlgebra.Factor.Cholesky,
-    module Numeric.LinearAlgebra.Factor.Eigen,    
     module Numeric.LinearAlgebra.Statistics,
     ) where
 
@@ -24,5 +23,4 @@ import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import Numeric.LinearAlgebra.Matrix( Matrix, RMatrix, STMatrix )
 import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked )
 import Numeric.LinearAlgebra.Factor.Cholesky
-import Numeric.LinearAlgebra.Factor.Eigen
 import Numeric.LinearAlgebra.Statistics

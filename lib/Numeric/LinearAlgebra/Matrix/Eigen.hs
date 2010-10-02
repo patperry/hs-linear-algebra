@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Factor.Eigen
+-- Module     : Numeric.LinearAlgebra.Matrix.Eigen
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -8,11 +8,11 @@
 --
 -- Eigenvalue decompositions.
 --
-module Numeric.LinearAlgebra.Factor.Eigen (
-    eigenHermMatrix,
-    eigenvaluesHermMatrix,
-    eigenToHermMatrix,
-    eigenvaluesToHermMatrix,
+module Numeric.LinearAlgebra.Matrix.Eigen (
+    hermEigen,
+    hermEigenvalues,
+    hermEigenTo,
+    hermEigenvaluesTo,
     ) where
 
 import Control.Monad.ST( ST, runST, unsafeIOToST )
@@ -23,8 +23,10 @@ import Foreign.LAPACK( LAPACK, EigJob(..), EigRange(..) )
 import qualified Foreign.LAPACK as LAPACK
 
 import Numeric.LinearAlgebra.Types( Herm(..) )
-import Numeric.LinearAlgebra.Matrix( Matrix, STMatrix )
-import qualified Numeric.LinearAlgebra.Matrix as M
+import Numeric.LinearAlgebra.Matrix.Base( Matrix )
+import Numeric.LinearAlgebra.Matrix.STBase( STMatrix )
+import qualified Numeric.LinearAlgebra.Matrix.Base as M
+import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 import Numeric.LinearAlgebra.Vector( Vector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
@@ -32,12 +34,12 @@ import qualified Numeric.LinearAlgebra.Vector as V
 -- Return the eigenvalues are in ascending order in the result vector; 
 -- store the corresponding eigenvectors are in the columns of the result
 -- matrix.
-eigenHermMatrix :: (LAPACK e) => Herm Matrix e -> (Vector Double, Matrix e)
-eigenHermMatrix (Herm uplo a) = runST $ do
+hermEigen :: (LAPACK e) => Herm Matrix e -> (Vector Double, Matrix e)
+hermEigen (Herm uplo a) = runST $ do
     ma <- M.newCopy a
     mw <- V.new_ n
     mz <- M.new_ (n,n)
-    eigenToHermMatrix (Herm uplo ma) mw mz
+    hermEigenTo (Herm uplo ma) mw mz
     w <- V.unsafeFreeze mw
     z <- M.unsafeFreeze mz
     return (w,z)
@@ -45,32 +47,32 @@ eigenHermMatrix (Herm uplo a) = runST $ do
     (_,n) = M.dim a
 
 -- | Return the eigenvalues of a Hermitian matrix in ascending order.
-eigenvaluesHermMatrix :: (LAPACK e) => Herm Matrix e -> Vector Double
-eigenvaluesHermMatrix (Herm uplo a) = V.create $ do
+hermEigenvalues :: (LAPACK e) => Herm Matrix e -> Vector Double
+hermEigenvalues (Herm uplo a) = V.create $ do
     ma <- M.newCopy a
     w <- V.new_ n
-    eigenvaluesToHermMatrix (Herm uplo ma) w
+    hermEigenvaluesTo (Herm uplo ma) w
     return w
   where
     (_,n) = M.dim a
 
 -- | Compute and copy the eigenvalues and eigenvectors of a mutable
 -- Hermitian matrix.  This destroys the original Hermitian matrix.
-eigenToHermMatrix :: (LAPACK e)
+hermEigenTo :: (LAPACK e)
                   => Herm (STMatrix s) e
                   -> STVector s Double
                   -> STMatrix s e
                   -> ST s ()
-eigenToHermMatrix (Herm uplo a) w z
+hermEigenTo (Herm uplo a) w z
     | ma /= na =  error $
-        printf ("eigenToHermMatrix"
+        printf ("hermEigenTo"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | (not . and) [ (ma,na) == (n,n)
                   , nw == n
                   , (mz,nz) == (n,n)
                   ] = error $
-        printf ("eigenToHermMatrix"
+        printf ("hermEigenTo"
                 ++ " (Herm _ <matrix with dim (%d,%d)>)"
                 ++ " <vector with dim %d>:"
                 ++ " <matrix with dim (%d,%d)>"
@@ -97,19 +99,19 @@ eigenToHermMatrix (Herm uplo a) w z
 
 -- | Compute and copy the eigenvalues of a mutable Hermitian matrix.  This
 -- destroys the original Hermitian matrix.
-eigenvaluesToHermMatrix :: (LAPACK e)
+hermEigenvaluesTo :: (LAPACK e)
                         => Herm (STMatrix s) e
                         -> STVector s Double
                         -> ST s ()
-eigenvaluesToHermMatrix (Herm uplo a) w
+hermEigenvaluesTo (Herm uplo a) w
     | ma /= na =  error $
-        printf ("eigenvaluesToHermMatrix"
+        printf ("hermEigenvaluesTo"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | (not . and) [ (ma,na) == (n,n)
                   , nw == n
                   ] = error $
-        printf ("eigenvaluesToHermMatrix"
+        printf ("hermEigenvaluesTo"
                 ++ " (Herm _ <matrix with dim (%d,%d)>)"
                 ++ " <vector with dim %d>: dimension mismatch")
                ma na nw
