@@ -13,12 +13,12 @@
 module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Immutable interface
     
-    -- ** Matrix-Vector multiplication
+    -- ** Vector multiplication
     hermMulVector,
     hermMulVectorWithScale,
     hermMulAddVectorWithScales,
     
-    -- ** Matrix-Matrix  multiplication
+    -- ** Matrix  multiplication
     hermMulMatrix,
     hermMulMatrixWithScale,
     hermMulAddMatrixWithScales,
@@ -33,12 +33,12 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Mutable interface
     hermCreate,
     
-    -- ** Matrix-Vector multiplication
+    -- ** Vector multiplication
     hermMulToVector,
     hermMulToVectorWithScale,
     hermMulAddToVectorWithScales,
     
-    -- ** Matrix-Matrix multiplication
+    -- ** Matrix multiplication
     hermMulToMatrix,
     hermMulToMatrixWithScale,
     hermMulAddToMatrixWithScales,
@@ -64,7 +64,7 @@ import Numeric.LinearAlgebra.Types
 import qualified Foreign.BLAS as BLAS
 
 
--- | A safe way to V.create and work with a mutable Herm Matrix before returning 
+-- | A safe way to create and work with a mutable Herm Matrix before returning 
 -- an immutable one for later perusal.
 hermCreate :: (Storable e)
               => (forall s. ST s (Herm (STMatrix s) e))

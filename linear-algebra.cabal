@@ -49,8 +49,10 @@ Library
                         Numeric.LinearAlgebra.Factor.Cholesky                        
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Herm
-                        Numeric.LinearAlgebra.Packed                        
                         Numeric.LinearAlgebra.Matrix.ST
+                        Numeric.LinearAlgebra.Packed                     
+                        Numeric.LinearAlgebra.Packed.Herm
+                        Numeric.LinearAlgebra.Packed.ST                   
                         Numeric.LinearAlgebra.Statistics                        
                         Numeric.LinearAlgebra.Types
                         Numeric.LinearAlgebra.Vector
@@ -80,7 +82,8 @@ Library
                         Numeric.LinearAlgebra.Vector.Base
                         Numeric.LinearAlgebra.Vector.STBase                        
                         Numeric.LinearAlgebra.Matrix.Base
-                        Numeric.LinearAlgebra.Matrix.STBase                        
+                        Numeric.LinearAlgebra.Matrix.STBase
+                        Numeric.LinearAlgebra.Packed.Base
     
     includes:           cbits/config.h
                         cbits/f77_func-hsc.h

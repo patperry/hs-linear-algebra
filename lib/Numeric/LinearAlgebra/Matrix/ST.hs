@@ -9,12 +9,12 @@
 -- Mutable matrices in the ST monad.
 
 module Numeric.LinearAlgebra.Matrix.ST (
-    -- * The @STMatrix@ data type
+    -- * Mutable matrices
     STMatrix,
     IOMatrix,
     create,
     
-    -- * Read-only Dense matrix type class
+    -- * Read-only matrices
     RMatrix(..),
     
     -- * Creating new matrices
