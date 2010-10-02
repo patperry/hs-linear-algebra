@@ -292,24 +292,32 @@ rows a = [ unsafeRow a i | i <- [ 0..m-1 ] ]
     (m,_) = dim a
 {-# INLINE rows #-}
 
+-- | Convert a matrix to a vector by stacking its columns.
+toVector :: (Storable e)
+         => Matrix e
+         -> Vector e
+toVector a = case maybeSTVectorView (unMatrix a) of
+    Just v  -> unSTVector v
+    Nothing -> V.concat $ cols a
+
 -- | Cast a vector to a matrix of the given shape.
 fromVector :: (Storable e)
            => (Int,Int)
            -> Vector e
            -> Matrix e
-fromVector mn v = unSTMatrix $ viewFromSTVector mn (unVector v)
+fromVector mn v = unSTMatrix $ fromSTVector mn (unVector v)
 
 -- | Cast a vector to a matrix with one column.
 fromCol :: (Storable e)
               => Vector e
               -> Matrix e
-fromCol v = unSTMatrix $ viewFromSTCol (unVector v)
+fromCol v = unSTMatrix $ fromSTCol (unVector v)
 
 -- | Cast a vector to a matrix with one row.
 fromRow :: (Storable e)
               => Vector e
               -> Matrix e
-fromRow v = unSTMatrix $ viewFromSTRow (unVector v)
+fromRow v = unSTMatrix $ fromSTRow (unVector v)
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "fromList " ++ show (dim x) ++ " " ++ show (elems x)

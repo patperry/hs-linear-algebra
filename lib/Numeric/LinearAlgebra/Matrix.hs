@@ -52,7 +52,10 @@ module Numeric.LinearAlgebra.Matrix (
     -- * Matrix diagonals
     diag,
     
-    -- * Vector views
+    -- * Conversions to vectors
+    toVector,
+    
+    -- * Conversions from vectors
     fromVector,
     fromCol,
     fromRow,

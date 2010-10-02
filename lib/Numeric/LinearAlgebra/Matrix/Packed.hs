@@ -17,15 +17,11 @@ module Numeric.LinearAlgebra.Matrix.Packed (
 
     RPacked(..),
     fromVector,
-    unsafeFromVector,
     toVector,
-    viewFromSTVector,
-    unsafeViewFromSTVector,
-    toSTVectorView,
-    withSTVectorView,
     
     -- * Conversions between mutable and immutable packed matrices
     create,
+    hermCreate,    
     freeze,
     unsafeFreeze,
     
@@ -41,8 +37,12 @@ module Numeric.LinearAlgebra.Matrix.Packed (
     hermRank2Update,
 
     -- * Mutable interface
+    new_,
     newCopy,
-    hermCreate,
+
+    withSTVectorView,
+    withViewFromVector,
+    withViewFromSTVector,
 
     -- ** Herm Packed-Vector multiplication
     hermMulToVector,
@@ -80,6 +80,16 @@ data STPacked s e = STPacked !Int !(STVector s e)
 -- | Mutable packed matrices in the 'IO' monad.
 type IOPacked = STPacked RealWorld
 
+-- | Allocate a mutable packed matrix of the given dimension.
+new_ :: (Storable e) => Int -> ST s (STPacked s e)
+new_ n
+    | n < 0 = error $
+        printf "new_ %d: negative dimension" n
+    | otherwise = do
+        x <- V.new_ (n*(n+1) `div` 2)
+        return $ unsafeFromSTVector n x
+{-# INLINE new_ #-}
+
 -- | Create a packed matrix view of a vector, ensurint that the
 -- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
 fromVector :: (Storable e) => Int -> Vector e -> Packed e
@@ -107,8 +117,8 @@ toVector (Packed n v) = (n,v)
 
 -- | Create a packed matrix view of a vector, ensurint that the
 -- vector has dimension @n * (n+1)/2@, where @n@ is the desired dimension.
-viewFromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
-viewFromSTVector n x
+fromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
+fromSTVector n x
     | not $ 2 * nx == n * (n+1) = error $
         printf ("fromVectorST %d <vector with dim %d>: dimension mismatch")
                n nx
@@ -116,20 +126,21 @@ viewFromSTVector n x
         STPacked n x
   where
     nx = V.dim x
-{-# INLINE viewFromSTVector #-}
+{-# INLINE fromSTVector #-}
 
 -- | Create a packed matrix view of a vector, wihtout checking
 -- the dimension of the vector.
-unsafeViewFromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
-unsafeViewFromSTVector = STPacked
-{-# INLINE unsafeViewFromSTVector #-}
+unsafeFromSTVector :: (Storable e) => Int -> STVector s e -> STPacked s e
+unsafeFromSTVector = STPacked
+{-# INLINE unsafeFromSTVector #-}
 
+{-
 -- | Returns the dimension and underlying vector storage of a
 -- packed matrix.
-toSTVectorView :: (Storable e) => STPacked s e -> (Int, STVector s e)
-toSTVectorView (STPacked n v) = (n,v)
-{-# INLINE toSTVectorView #-}
-
+toSTVector :: (Storable e) => STPacked s e -> (Int, STVector s e)
+toSTVector (STPacked n v) = (n,v)
+{-# INLINE toSTVector #-}
+-}
 
 -- | Read-only packed matrices.
 class RPacked p where
@@ -147,12 +158,37 @@ class RPacked p where
     -- the packed matrix.
     unsafeWith :: (Storable e) => p e -> (Ptr e -> IO a) -> IO a
 
+-- | View a vector as a packed matrix and pass it to a function.
+withViewFromVector :: (RVector v, Storable e)
+                   => Int
+                   -> v e
+                   -> (forall p. RPacked p => p e -> a)
+                   -> a
+withViewFromVector n v f = f (cast v)
+  where
+    cast :: (RVector v, Storable e) => v e -> Packed e
+    cast x = let
+        (fptr,o,d) = V.unsafeToForeignPtr x
+        x' = V.unsafeFromForeignPtr fptr o d
+        in fromVector n x'
+{-# INLINE withViewFromVector #-}
+
+-- | View a mutable vector as a mutable packed matrix and pass it
+-- to a function.
+withViewFromSTVector :: (Storable e)
+                     => Int
+                     -> STVector s e
+                     -> (STPacked s e -> ST s a)
+                     -> ST s a
+withViewFromSTVector n v f = f $ fromSTVector n v
+{-# INLINE withViewFromSTVector #-}
+
 -- | Perform an action with the underlying vector storage of
--- the mutable packed matrix.
+-- the mutable packed matrix.  See also 'withVectorView'.
 withSTVectorView :: (Storable e)
-             => STPacked s e
-             -> (STVector s e -> ST s a)
-             -> ST s a
+                 => STPacked s e
+                 -> (STVector s e -> ST s a)
+                 -> ST s a
 withSTVectorView (STPacked _ v) f = f v
 {-# INLINE withSTVectorView #-}
 
@@ -178,7 +214,7 @@ newCopy :: (Storable e, RPacked p)
               => p e -> ST s (STPacked s e)
 newCopy p =
     withVectorView p $ \x ->
-        unsafeViewFromSTVector (dim p) `fmap` V.newCopy x
+        unsafeFromSTVector (dim p) `fmap` V.newCopy x
 {-# INLINE newCopy #-}
 
 -- | Converts a mutable packed matrix to an immutable one by taking a complete

@@ -165,7 +165,8 @@ stCols (STMatrix a m n lda) = let
     in xs
 {-# INLINE stCols #-}
 
--- | Perform an action with a list of views of the matrix columns.
+-- | Perform an action with a list of views of the matrix columns.  See
+-- also 'withColViews'.
 withSTColViews :: (Storable e)
                => STMatrix s e
                -> ([STVector s e] -> ST s a)
@@ -186,7 +187,9 @@ maybeSTVectorView (STMatrix a m n lda) | lda == max 1 m = Just a
 {-# INLINE maybeSTVectorView #-}
 
 -- | Possibly view a matrix as a vector and perform an action on the
--- view.  This only succeeds when 'maybeSTVectorView' does.
+-- view.  This succeeds when the matrix is stored contiguously in memory,
+-- i.e. if the matrix contains a single column or the \"lda\" of the matrix
+-- is equal to the number of rows.  See also 'maybeWithVectorView'.
 maybeWithSTVectorView :: (Storable e)
                       => STMatrix s e
                       -> (STVector s e -> ST s a)
@@ -196,13 +199,13 @@ maybeWithSTVectorView a f = f `fmap` maybeSTVectorView a
 
 -- | Cast a vector to a matrix of the given shape.  See also
 -- 'withViewFromVector'.
-viewFromSTVector :: (Storable e)
+fromSTVector :: (Storable e)
                  => (Int,Int)
                  -> STVector s e
                  -> STMatrix s e
-viewFromSTVector mn@(m,n) v
+fromSTVector mn@(m,n) v
     | V.dim v /= m*n = error $
-        printf ("viewFromSTVector (%d,%d) <vector with dim %d>:"
+        printf ("fromSTVector (%d,%d) <vector with dim %d>:"
                 ++ " dimension mismatch") m n (V.dim v)
     | otherwise =
         cast v
@@ -211,25 +214,25 @@ viewFromSTVector mn@(m,n) v
         (fptr,o,_) = V.unsafeToForeignPtr x
         lda = max 1 m
         in unsafeFromForeignPtr fptr o mn lda
-{-# INLINE viewFromSTVector #-}
+{-# INLINE fromSTVector #-}
 
 -- | Cast a vector to a matrix with one column.  See also
 -- 'withViewFromCol'.
-viewFromSTCol :: (Storable e)
+fromSTCol :: (Storable e)
               => STVector s e
               -> STMatrix s e
-viewFromSTCol v = viewFromSTVector (V.dim v, 1) v
-{-# INLINE viewFromSTCol #-}
+fromSTCol v = fromSTVector (V.dim v, 1) v
+{-# INLINE fromSTCol #-}
 
 -- | Cast a vector to a matrix with one row.  See also
 -- 'withViewFromRow'.
-viewFromSTRow :: (Storable e)
+fromSTRow :: (Storable e)
               => STVector s e
               -> STMatrix s e
-viewFromSTRow v = viewFromSTVector (V.dim v, 1) v
-{-# INLINE viewFromSTRow #-}
+fromSTRow v = fromSTVector (V.dim v, 1) v
+{-# INLINE fromSTRow #-}
 
--- | Cast a vector to a matrix of the given shape and pass it to
+-- | View a vector as a matrix of the given shape and pass it to
 -- the specified function.
 withViewFromVector :: (RVector v, Storable e)
                    => (Int,Int)
@@ -250,7 +253,28 @@ withViewFromVector mn@(m,n) v f
         in unsafeFromForeignPtr fptr o mn lda
 {-# INLINE withViewFromVector #-}
 
--- | Cast a vector to a matrix with one column and pass it to
+-- | View a mutable vector as a mutable matrix of the given shape and pass it
+-- to the specified function.
+withViewFromSTVector :: (Storable e)
+                     => (Int,Int)
+                     -> STVector s e
+                     -> (STMatrix s e -> ST s a)
+                     -> ST s a
+withViewFromSTVector mn@(m,n) v f
+    | V.dim v /= m*n = error $
+        printf ("withViewFromSTVector (%d,%d) <vector with dim %d>:"
+                ++ " dimension mismatch") m n (V.dim v)
+    | otherwise =
+        f (cast v)
+  where
+    cast :: (Storable e) => STVector s e -> STMatrix s e
+    cast x = let
+        (fptr,o,_) = V.unsafeToForeignPtr x
+        lda = max 1 m
+        in unsafeFromForeignPtr fptr o mn lda
+{-# INLINE withViewFromSTVector #-}
+
+-- | View a vector as a matrix with one column and pass it to
 -- the specified function.
 withViewFromCol :: (RVector v, Storable e)
                  => v e
@@ -259,7 +283,16 @@ withViewFromCol :: (RVector v, Storable e)
 withViewFromCol v = withViewFromVector (V.dim v, 1) v
 {-# INLINE withViewFromCol #-}
 
--- | Cast a vector to a matrix with one row and pass it to
+-- | View a mutable vector as a mutable matrix with one column and pass it to
+-- the specified function.
+withViewFromSTCol :: (Storable e)
+                 => STVector s e
+                 -> (STMatrix s e -> ST s a)
+                 -> ST s a
+withViewFromSTCol v = withViewFromSTVector (V.dim v, 1) v
+{-# INLINE withViewFromSTCol #-}
+
+-- | View a vector as a matrix with one row and pass it to
 -- the specified function.
 withViewFromRow :: (RVector v, Storable e)
                  => v e
@@ -267,6 +300,15 @@ withViewFromRow :: (RVector v, Storable e)
                  -> a
 withViewFromRow v = withViewFromVector (1, V.dim v) v
 {-# INLINE withViewFromRow #-}
+
+-- | View a mutable vector as a mutable matrix with one row and pass it to
+-- the specified function.
+withViewFromSTRow :: (Storable e)
+                  => STVector s e
+                  -> (STMatrix s e -> ST s a)
+                  -> ST s a
+withViewFromSTRow v = withViewFromSTVector (1, V.dim v) v
+{-# INLINE withViewFromSTRow #-}
 
 -- | Perform an action with a view of a matrix column.
 withColView :: (RMatrix m, Storable e)

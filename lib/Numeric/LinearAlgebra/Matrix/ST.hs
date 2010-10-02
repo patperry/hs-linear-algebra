@@ -95,14 +95,17 @@ module Numeric.LinearAlgebra.Matrix.ST (
     freeze,
     unsafeFreeze,
     
+    -- * Vector views of matrices
+    maybeWithSTVectorView,
+    
     -- * Matrix views of vectors
     withViewFromVector,
     withViewFromCol,
     withViewFromRow,
 
-    viewFromSTVector,
-    viewFromSTCol,
-    viewFromSTRow,
+    withViewFromSTVector,
+    withViewFromSTCol,
+    withViewFromSTRow,
     
     ) where
 

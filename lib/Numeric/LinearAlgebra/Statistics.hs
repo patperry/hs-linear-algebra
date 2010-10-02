@@ -192,7 +192,7 @@ covMatrix p t xs = runHermMatrix $ do
 covPacked :: (BLAS2 e)
           => Int -> CovMethod -> [Vector e] -> Herm Packed e
 covPacked p t xs = P.hermCreate $ do
-    cov <- (Herm uplo . P.unsafeViewFromSTVector p) `fmap` V.new_ (p*(p+1) `div` 2)
+    cov <- Herm uplo `fmap` P.new_ p
     covToPacked t xs cov
     return cov
   where
@@ -215,7 +215,7 @@ covMatrixWithMean mu t xs = runHermMatrix $ do
 covPackedWithMean :: (BLAS2 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Packed e
 covPackedWithMean mu t xs = P.hermCreate $ do
-    cov <- (Herm uplo . P.unsafeViewFromSTVector p) `fmap` V.new_ (p*(p+1) `div` 2)
+    cov <- Herm uplo `fmap` P.new_ p
     covToPackedWithMean mu t xs cov
     return cov
   where
@@ -239,7 +239,7 @@ weightedCovMatrix p t wxs = runHermMatrix $ do
 weightedCovPacked :: (BLAS2 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Packed e
 weightedCovPacked p t wxs = P.hermCreate $ do
-    cov <- (Herm uplo . P.unsafeViewFromSTVector p) `fmap` V.new_ (p*(p+1) `div` 2)
+    cov <- Herm uplo `fmap` P.new_ p
     weightedCovToPacked t wxs cov
     return cov
   where
@@ -264,7 +264,7 @@ weightedCovPackedWithMean :: (BLAS2 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Packed e
 weightedCovPackedWithMean mu t wxs = P.hermCreate $ do
-    cov <- (Herm uplo . P.unsafeViewFromSTVector p) `fmap` V.new_ (p*(p+1) `div` 2)
+    cov <- Herm uplo `fmap` P.new_ p
     weightedCovToPackedWithMean mu t wxs cov
     return cov
   where
