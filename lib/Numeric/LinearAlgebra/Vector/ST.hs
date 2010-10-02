@@ -65,7 +65,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     scaleTo,
     mulTo,
     negateTo,
-    conjTo,
+    conjugateTo,
     absTo,
     signumTo,
 

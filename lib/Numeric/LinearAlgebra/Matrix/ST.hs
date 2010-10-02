@@ -74,7 +74,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     scaleRowsTo,
     scaleColsTo,
     negateTo,
-    conjTo,
+    conjugateTo,
 
     -- * Linear algebra
     transTo,

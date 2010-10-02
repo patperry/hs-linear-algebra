@@ -60,7 +60,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     scale,
     mul,
     negate,
-    conj,
+    conjugate,
     abs,
     signum,
     
@@ -397,9 +397,9 @@ mul = result2 mulTo
 negate :: (VNum e) => Vector e -> Vector e
 negate = result negateTo
 
--- | @conj x@ returns @conj(x)@.
-conj :: (VNum e) => Vector e -> Vector e
-conj = result conjTo
+-- | @conjugate x@ returns @conjugate(x)@.
+conjugate :: (VNum e) => Vector e -> Vector e
+conjugate = result conjugateTo
 
 -- | @abs x@ returns @abs(x)@.
 abs :: (VNum e) => Vector e -> Vector e

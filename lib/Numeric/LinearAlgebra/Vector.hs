@@ -56,7 +56,7 @@ module Numeric.LinearAlgebra.Vector (
     scale,
     mul,
     negate,
-    conj,
+    conjugate,
     abs,
     signum,
 

@@ -71,7 +71,7 @@ module Numeric.LinearAlgebra.Matrix (
     scaleRows,
     scaleCols,
     negate,
-    conj,
+    conjugate,
 
     -- * Linear algebra
     trans,

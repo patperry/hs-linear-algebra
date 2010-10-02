@@ -374,9 +374,9 @@ scaleCols s = result $ scaleColsTo s
 negate :: (VNum e) => Matrix e -> Matrix e
 negate = result negateTo
 
--- | @conj a@ returns @conj(a)@.
-conj :: (VNum e) => Matrix e -> Matrix e
-conj = result conjTo
+-- | @conjugate a@ returns @conjugate(a)@.
+conjugate :: (VNum e) => Matrix e -> Matrix e
+conjugate = result conjugateTo
 
 -- | @trans a@ retunrs @trans(a)@.
 trans :: (BLAS1 e)

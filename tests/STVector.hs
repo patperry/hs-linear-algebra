@@ -56,7 +56,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
-    , testPropertyDZ "conjTo" prop_conjTo prop_conjTo
+    , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
     , testPropertyDZ "absTo" prop_absTo prop_absTo
     , testPropertyDZ "signumTo" prop_signumTo prop_signumTo
     , testPropertyDZ "divTo" prop_divTo prop_divTo
@@ -230,7 +230,7 @@ prop_scaleTo t e = binaryProp t
 
 prop_mulTo t = ternaryProp t V.mul V.mulTo
 prop_negateTo t = binaryProp t V.negate V.negateTo
-prop_conjTo t = binaryProp t V.conj V.conjTo
+prop_conjugateTo t = binaryProp t V.conjugate V.conjugateTo
 prop_absTo t = binaryProp t V.abs V.absTo
 prop_signumTo t = binaryProp t V.signum V.signumTo
 

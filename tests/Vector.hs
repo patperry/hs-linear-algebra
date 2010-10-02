@@ -47,7 +47,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "scale" prop_scale prop_scale
     , testPropertyDZ "mul" prop_mul prop_mul
     , testPropertyDZ "negate" prop_negate prop_negate
-    , testPropertyDZ "conj" prop_conj prop_conj
+    , testPropertyDZ "conjugate" prop_conjugate prop_conjugate
     , testPropertyDZ "abs" prop_abs prop_abs
     , testPropertyDZ "signum" prop_signum prop_signum
     , testPropertyDZ "div" prop_div prop_div
@@ -222,8 +222,8 @@ prop_negate t x =
   where
     _ = typed t x
 
-prop_conj t x =
-    V.conj x === V.map conj x
+prop_conjugate t x =
+    V.conjugate x === V.map conjugate x
   where
     _ = typed t x
 
@@ -365,7 +365,7 @@ prop_whichMaxAbs2 t x =
 prop_dot t (VectorPair x y) =
     V.dot x y ~== sum (V.elems (x * conj y))
   where
-    conj = V.conj
+    conj = V.conjugate
     (*)  = V.mul
     _    = typed t x
 

@@ -55,7 +55,7 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
     , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
     , testPropertyDZ "negate" prop_negate prop_negate
-    , testPropertyDZ "conj" prop_conj prop_conj
+    , testPropertyDZ "conjugate" prop_conjugate prop_conjugate
     , testPropertyDZ "trans" prop_trans prop_trans
     , testPropertyDZ "conjTrans" prop_conjTrans prop_conjTrans
     , testPropertyDZ "rank1Update" prop_rank1Update prop_rank1Update
@@ -300,8 +300,8 @@ prop_negate t x =
   where
     _ = typed t x
 
-prop_conj t x =
-    M.conj x === M.map conj x
+prop_conjugate t x =
+    M.conjugate x === M.map conjugate x
   where
     _ = typed t x
 
@@ -317,13 +317,13 @@ prop_trans t a =
     _ = typed t a
     
 prop_conjTrans t a =
-    M.conjTrans a === M.conj (M.trans a)
+    M.conjTrans a === M.conjugate (M.trans a)
   where
     _ = typed t a
 
 prop_rank1Update t alpha a =
     forAll (Test.vector m) $ \x ->
-    forAll (Test.vector n) $ \y -> let y' = V.conj y in
+    forAll (Test.vector n) $ \y -> let y' = V.conjugate y in
         M.rank1Update alpha x y a
             ~==
             M.fromAssocs (m,n) [ ((i,j), alpha * V.at x i * V.at y' j + e)
@@ -359,11 +359,11 @@ prop_mulVector t (MulMatrixVector transa a x) =
         ~==
         case transa of
             NoTrans   -> V.fromList (fst $ M.dim a)
-                                    [ V.dot x (V.conj r)
+                                    [ V.dot x (V.conjugate r)
                                     | r <- M.rows a ]
 
             Trans     -> V.fromList (snd $ M.dim a)
-                                    [ V.dot x (V.conj c)
+                                    [ V.dot x (V.conjugate c)
                                     | c <- M.cols a ]
                                     
             ConjTrans -> V.fromList (snd $ M.dim a)

@@ -66,7 +66,7 @@ module Numeric.LinearAlgebra.Vector.STBase (
     scaleTo,
     mulTo,
     negateTo,
-    conjTo,
+    conjugateTo,
     absTo,
     signumTo,
     divTo,
@@ -496,12 +496,11 @@ signumTo = checkOp2 "signumTo" $
 {-# INLINE signumTo #-}
 
 
-
--- | @conjTo x z@ replaces @z@ with @conj(x)@.
-conjTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-conjTo = checkOp2 "conjTo" $
+-- | @conjugateTo x z@ replaces @z@ with @conjugate(x)@.
+conjugateTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
+conjugateTo = checkOp2 "conjugateTo" $
     call2 VMath.vConj
-{-# INLINE conjTo #-}
+{-# INLINE conjugateTo #-}
 
 -- | @shiftTo alpha x z@ replaces @z@ with @alpha + x@.
 shiftTo :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()

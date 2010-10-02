@@ -792,10 +792,10 @@ subTo :: (RMatrix m1, RMatrix m2, VNum e)
 subTo = checkOp3 "subTo" $ vectorOp3 V.subTo
 
 -- | Conjugate the entries of a matrix.
-conjTo :: (RMatrix m, VNum e)
-       => m e -> STMatrix s e -> ST s ()
-conjTo = checkOp2 "conjTo" $
-    vectorOp2 V.conjTo
+conjugateTo :: (RMatrix m, VNum e)
+            => m e -> STMatrix s e -> ST s ()
+conjugateTo = checkOp2 "conjugateTo" $
+    vectorOp2 V.conjugateTo
 
 -- | Negate the entries of a matrix.
 negateTo :: (RMatrix m, VNum e)
@@ -887,14 +887,14 @@ transTo a a'
     (ma',na') = dim a'
     (m,n) = (ma,na)
 
--- | @conjTransTo a c@ sets @c := conj(trans(a))@.
+-- | @conjTransTo a c@ sets @c := conjugate(trans(a))@.
 conjTransTo :: (RMatrix m, BLAS1 e)
             => m e
             -> STMatrix s e
             -> ST s ()
 conjTransTo a a' = do
     transTo a a'
-    conjTo a' a'
+    conjugateTo a' a'
 
 -- | @mulToVector transa a x y@
 -- sets @y := op(a) * x@, where @op(a)@ is determined by @transa@.                   
