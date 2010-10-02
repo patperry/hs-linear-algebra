@@ -58,10 +58,8 @@ module Numeric.LinearAlgebra.Matrix.Herm (
 import Control.Monad.ST( ST, runST, unsafeIOToST )
 import Text.Printf( printf )
 
-import Numeric.LinearAlgebra.Vector.Base( Vector )
-import qualified Numeric.LinearAlgebra.Vector.Base as V
-import Numeric.LinearAlgebra.Vector.STBase( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.STBase as V
+import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
+import qualified Numeric.LinearAlgebra.Vector as V
 import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import Numeric.LinearAlgebra.Matrix.STBase( STMatrix, RMatrix )

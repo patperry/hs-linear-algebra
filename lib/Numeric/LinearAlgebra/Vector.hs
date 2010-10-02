@@ -9,9 +9,11 @@
 -- Immutable dense vectors.
 
 module Numeric.LinearAlgebra.Vector (
-    -- * The Vector type
+    -- * Immutable vectors
     Vector,
-    dim,
+    
+    -- * Read-only vectors
+    RVector(..),
 
     -- * Vector construction
     fromAssocs, 
@@ -81,8 +83,14 @@ module Numeric.LinearAlgebra.Vector (
     asinh,
     acosh,
     atanh,
+    
+    -- * Mutable interface
+    module Numeric.LinearAlgebra.Vector.ST
 
     ) where
 
 import Prelude()
 import Numeric.LinearAlgebra.Vector.Base
+import Numeric.LinearAlgebra.Vector.STBase( RVector(..) )
+import Numeric.LinearAlgebra.Vector.ST hiding ( dim, slice, indices, drop,
+    take, splitAt, RVector(..) )

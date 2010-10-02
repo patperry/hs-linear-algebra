@@ -23,8 +23,8 @@ import Unsafe.Coerce( unsafeCoerce )
 
 import Numeric.LinearAlgebra.Types
 import qualified Foreign.BLAS as BLAS
-import Numeric.LinearAlgebra.Vector.STBase( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.STBase as V
+import Numeric.LinearAlgebra.Vector( STVector, RVector )
+import qualified Numeric.LinearAlgebra.Vector as V
 
 -- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
 --

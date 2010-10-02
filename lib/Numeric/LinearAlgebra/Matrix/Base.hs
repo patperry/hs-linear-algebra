@@ -27,8 +27,7 @@ import Numeric.LinearAlgebra.Internal( inlinePerformIO )
 
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector.Base( Vector, unVector, unSTVector )
-import qualified Numeric.LinearAlgebra.Vector.Base as V
-import qualified Numeric.LinearAlgebra.Vector.STBase as V
+import qualified Numeric.LinearAlgebra.Vector as V
 
 import Numeric.LinearAlgebra.Matrix.STBase
 

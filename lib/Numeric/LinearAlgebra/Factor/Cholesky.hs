@@ -44,8 +44,8 @@ import qualified Foreign.LAPACK as LAPACK
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Matrix.Herm
 
-import Numeric.LinearAlgebra.Matrix.Packed( Packed, RPacked, STPacked )
-import qualified Numeric.LinearAlgebra.Matrix.Packed as P
+import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked )
+import qualified Numeric.LinearAlgebra.Packed as P
 
 import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
@@ -53,11 +53,9 @@ import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import Numeric.LinearAlgebra.Matrix.STBase( STMatrix, RMatrix )
 import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 
-import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
-import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 -- | A Cholesky decomposition view of a matrix.
 data Chol m e = Chol Uplo (m e) deriving (Show)

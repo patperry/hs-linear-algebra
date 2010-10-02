@@ -62,14 +62,11 @@ import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
-import Numeric.LinearAlgebra.Matrix.Packed( Packed, STPacked )
-import qualified Numeric.LinearAlgebra.Matrix.Packed as P
+import Numeric.LinearAlgebra.Packed( Packed, STPacked )
+import qualified Numeric.LinearAlgebra.Packed as P
 
-import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
-
-import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 import Numeric.LinearAlgebra.Matrix( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix as M

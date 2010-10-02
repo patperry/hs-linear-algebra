@@ -12,7 +12,7 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
-import qualified Numeric.LinearAlgebra.Matrix.Packed as P
+import qualified Numeric.LinearAlgebra.Packed as P
 import qualified Numeric.LinearAlgebra.Matrix as M
 import qualified Numeric.LinearAlgebra.Matrix.Herm as M
 import qualified Numeric.LinearAlgebra.Vector as V

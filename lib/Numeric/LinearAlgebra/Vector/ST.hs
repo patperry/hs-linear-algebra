@@ -9,13 +9,13 @@
 -- Mutable vectors in the ST monad.
 
 module Numeric.LinearAlgebra.Vector.ST (
-    -- * The @STVector@ data type
+    -- * Mutable vectors
     STVector,
     IOVector,
     create,
     
-    -- * Read-only Dense vector type class
-    RVector( dim, unsafeWith, unsafeToForeignPtr, unsafeFromForeignPtr ),
+    -- * Read-only vectors
+    RVector(..),
     
     -- * Creating new vectors
     new_,
@@ -100,6 +100,8 @@ module Numeric.LinearAlgebra.Vector.ST (
     unsafeRead,
     unsafeWrite,
     unsafeModify,
+    unsafeMapTo,
+    unsafeZipWithTo,
     
     ) where
 

@@ -16,10 +16,8 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector( Vector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
-import Numeric.LinearAlgebra.Vector.ST( STVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim(..), Index(..),
     Assocs(..), VectorPair(..), VectorTriple(..) )

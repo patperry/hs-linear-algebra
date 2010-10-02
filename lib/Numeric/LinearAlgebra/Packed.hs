@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, FlexibleContexts, Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Numeric.LinearAlgebra.Matrix.Packed
+-- Module     : Numeric.LinearAlgebra.Packed
 -- Copyright  : Copyright (c) 2010, Patrick Perry <patperry@gmail.com>
 -- License    : BSD3
 -- Maintainer : Patrick Perry <patperry@gmail.com>
@@ -9,7 +9,7 @@
 --
 -- Packed matrices.
 --
-module Numeric.LinearAlgebra.Matrix.Packed (
+module Numeric.LinearAlgebra.Packed (
     -- * Packed matrix datatypes
     Packed,
     STPacked,
@@ -61,10 +61,8 @@ import Foreign( Storable, Ptr )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
-import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
-import Numeric.LinearAlgebra.Vector.ST( STVector, RVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
 import Foreign.BLAS( BLAS2 )
 import qualified Foreign.BLAS as BLAS
 

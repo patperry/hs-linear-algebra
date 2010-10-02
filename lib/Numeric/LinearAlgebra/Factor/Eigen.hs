@@ -27,10 +27,8 @@ import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import Numeric.LinearAlgebra.Matrix.STBase( STMatrix )
 import qualified Numeric.LinearAlgebra.Matrix.STBase as M
-import Numeric.LinearAlgebra.Vector( Vector )
+import Numeric.LinearAlgebra.Vector( Vector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
-import Numeric.LinearAlgebra.Vector.ST( STVector )
-import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 -- | Compute the eigenvalues and eigenvectors of a Hermitian matrix.
 -- Return the eigenvalues are in ascending order in the result vector; 
