@@ -59,8 +59,6 @@ Library
                         Numeric.LinearAlgebra.Packed.ST                   
                         Numeric.LinearAlgebra.Packed.Statistics
 
-                        Numeric.LinearAlgebra.Types
-
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
                         Numeric.LinearAlgebra.Vector.Statistics
@@ -85,6 +83,7 @@ Library
                         Foreign.VMath.Double
                         Foreign.VMath.Zomplex
                         
+                        Numeric.LinearAlgebra.Types
                         Numeric.LinearAlgebra.Internal
                         Numeric.LinearAlgebra.Vector.Base
                         Numeric.LinearAlgebra.Vector.STBase                        

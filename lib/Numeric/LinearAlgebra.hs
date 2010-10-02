@@ -10,13 +10,28 @@
 --
 
 module Numeric.LinearAlgebra (
+    -- * Vector types
+    Vector,
+    RVector,
+    STVector,
+    IOVector,
+    
+    -- * Matrix types
+    Matrix,
+    RMatrix,
+    STMatrix,
+    IOMatrix,
+    
+    -- * Packed matrix types
+    Packed,
+    RPacked,
+    STPacked,
+    IOPacked,
+    
     module Numeric.LinearAlgebra.Types,
-    module Numeric.LinearAlgebra.Vector,
-    module Numeric.LinearAlgebra.Matrix,
-    module Numeric.LinearAlgebra.Packed,    
     ) where
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
-import Numeric.LinearAlgebra.Matrix( Matrix, RMatrix, STMatrix )
-import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked )
+import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector, IOVector )
+import Numeric.LinearAlgebra.Matrix( Matrix, RMatrix, STMatrix, IOMatrix )
+import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked, IOPacked )
