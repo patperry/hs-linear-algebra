@@ -14,6 +14,7 @@ import qualified Test.QuickCheck as QC
 import Numeric.LinearAlgebra
 import qualified Numeric.LinearAlgebra.Matrix.Packed as P
 import qualified Numeric.LinearAlgebra.Matrix as M
+import qualified Numeric.LinearAlgebra.Matrix.Herm as M
 import qualified Numeric.LinearAlgebra.Vector as V
 
 import Test.QuickCheck.LinearAlgebra( VectorList(..), WeightedVectorList(..) )
@@ -92,7 +93,7 @@ prop_covMatrix t (VectorList p xs) =
                       ys
         cov = covMatrix p method xs
 
-        in mulHermMatrixVector cov z ~== M.mulVector NoTrans cov' z
+        in M.hermMulVector cov z ~== M.mulVector NoTrans cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -103,7 +104,7 @@ prop_covMatrixWithMean t (VectorList p xs) =
         xbar = meanVector p xs
         cov' = covMatrixWithMean xbar method xs
         cov = covMatrix p method xs
-        in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
+        in M.hermMulVector cov z ~== M.hermMulVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -114,7 +115,7 @@ prop_weightedCovMatrix_eqw t (VectorList p xs) =
         wxs = zip (repeat 1) xs
         cov = weightedCovMatrix p method wxs
         cov' = covMatrix p method xs
-        in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
+        in M.hermMulVector cov z ~== M.hermMulVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -139,7 +140,7 @@ prop_weightedCovMatrix t (WeightedVectorList p wxs) =
 
         cov = weightedCovMatrix p method wxs
 
-        in mulHermMatrixVector cov z ~== M.mulVector NoTrans cov' z
+        in M.hermMulVector cov z ~== M.mulVector NoTrans cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs
@@ -150,7 +151,7 @@ prop_weightedCovMatrixWithMean t (WeightedVectorList p wxs) =
         xbar = weightedMeanVector p wxs
         cov' = weightedCovMatrix p method wxs
         cov = weightedCovMatrixWithMean xbar method wxs
-        in mulHermMatrixVector cov z ~== mulHermMatrixVector cov' z
+        in M.hermMulVector cov z ~== M.hermMulVector cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs
@@ -160,7 +161,7 @@ prop_covPacked t (VectorList p xs) =
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
         cov' = covMatrix p method xs
         cov = covPacked p method xs
-        in P.hermMulVector cov z ~== mulHermMatrixVector cov' z
+        in P.hermMulVector cov z ~== M.hermMulVector cov' z
   where
     n = fromIntegral $ length xs
     _ = typed t $ head xs
@@ -192,7 +193,7 @@ prop_weightedCovPacked t (WeightedVectorList p wxs) =
     forAll (elements [ UnbiasedCov, MLCov ]) $ \method -> let
         cov' = weightedCovMatrix p method wxs
         cov = weightedCovPacked p method wxs
-        in P.hermMulVector cov z ~== mulHermMatrixVector cov' z
+        in P.hermMulVector cov z ~== M.hermMulVector cov' z
   where
     n = fromIntegral $ length wxs
     _ = typed t $ snd $ head wxs

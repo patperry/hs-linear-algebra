@@ -18,40 +18,40 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- * Immutable interface
     
     -- ** Matrix-Vector multiplication
-    mulHermMatrixVector,
-    mulHermMatrixVectorWithScale,
-    mulHermMatrixAddVectorWithScales,
+    hermMulVector,
+    hermMulVectorWithScale,
+    hermMulAddVectorWithScales,
     
     -- ** Matrix-Matrix  multiplication
-    mulHermMatrixMatrix,
-    mulHermMatrixMatrixWithScale,
-    mulHermMatrixAddMatrixWithScales,
+    hermMulMatrix,
+    hermMulMatrixWithScale,
+    hermMulAddMatrixWithScales,
 
     -- ** Updates
-    rank1UpdateHermMatrix,
-    rank2UpdateHermMatrix,
-    rankKUpdateHermMatrix,   
-    rank2KUpdateHermMatrix,    
+    hermRank1Update,
+    hermRank2Update,
+    hermRankKUpdate,   
+    hermRank2KUpdate,    
 
     
     -- * Mutable interface
-    runHermMatrix,
+    hermCreate,
     
     -- ** Matrix-Vector multiplication
-    mulHermMatrixToVector,
-    mulHermMatrixToVectorWithScale,
-    mulHermMatrixAddToVectorWithScales,
+    hermMulToVector,
+    hermMulToVectorWithScale,
+    hermMulAddToVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
-    mulHermMatrixToMatrix,
-    mulHermMatrixToMatrixWithScale,
-    mulHermMatrixAddToMatrixWithScales,
+    hermMulToMatrix,
+    hermMulToMatrixWithScale,
+    hermMulAddToMatrixWithScales,
 
     -- ** Updates
-    rank1UpdateToHermMatrix,
-    rank2UpdateToHermMatrix,
-    rankKUpdateToHermMatrix,  
-    rank2KUpdateToHermMatrix,
+    hermRank1UpdateTo,
+    hermRank2UpdateTo,
+    hermRankKUpdateTo,  
+    hermRank2KUpdateTo,
     
     ) where
 
@@ -85,69 +85,69 @@ withHerm (Herm u m) f = f u m
 
 -- | A safe way to V.create and work with a mutable Herm Matrix before returning 
 -- an immutable one for later perusal.
-runHermMatrix :: (Storable e)
+hermCreate :: (Storable e)
               => (forall s. ST s (Herm (STMatrix s) e))
               -> Herm Matrix e
-runHermMatrix mh = runST $ do
+hermCreate mh = runST $ do
     (Herm u ma) <- mh
     a <- M.unsafeFreeze ma
     return $ Herm u a
 
--- | @rank1UpdateHermMatrix alpha x a@ returns
+-- | @hermRank1Update alpha x a@ returns
 -- @alpha * x * x^H + a@.
-rank1UpdateHermMatrix :: (BLAS2 e)
+hermRank1Update :: (BLAS2 e)
                       => Double -> Vector e -> Herm Matrix e -> Herm Matrix e
-rank1UpdateHermMatrix alpha x (Herm uplo a) = runST $ do
+hermRank1Update alpha x (Herm uplo a) = runST $ do
     ma' <- M.newCopy a
-    rank1UpdateToHermMatrix alpha x (Herm uplo ma')
+    hermRank1UpdateTo alpha x (Herm uplo ma')
     a' <- M.unsafeFreeze ma'
     return $ Herm uplo a'
 
--- | @rank2UpdateHermMatrix alpha x y a@ returns
+-- | @hermRank2Update alpha x y a@ returns
 -- @alpha * x * y^H + conj(alpha) * y * x^H + a@.
-rank2UpdateHermMatrix :: (BLAS2 e)
+hermRank2Update :: (BLAS2 e)
                       => e -> Vector e -> Vector e -> Herm Matrix e
                       -> Herm Matrix e
-rank2UpdateHermMatrix alpha x y (Herm uplo a) = runST $ do
+hermRank2Update alpha x y (Herm uplo a) = runST $ do
     ma' <- M.newCopy a
-    rank2UpdateToHermMatrix alpha x y (Herm uplo ma')
+    hermRank2UpdateTo alpha x y (Herm uplo ma')
     a' <- M.unsafeFreeze ma'
     return $ Herm uplo a'
 
--- | @rankKUpdateHermMatrix alpha trans a beta c@ returns
+-- | @hermRankKUpdate alpha trans a beta c@ returns
 -- @c := alpha * a * a^H + beta * c@ when @trans@ is @NoTrans@ and
 -- @c := alpha * a^H * a + beta * c@ when @trans@ is @ConjTrans@.  The
 -- function signals an error when @trans@ is @Trans@.
-rankKUpdateHermMatrix :: (BLAS3 e)
+hermRankKUpdate :: (BLAS3 e)
                       => e -> Trans -> Matrix e -> e -> Herm Matrix e
                       -> Herm Matrix e
-rankKUpdateHermMatrix alpha trans a beta (Herm uplo c) = runST $ do
+hermRankKUpdate alpha trans a beta (Herm uplo c) = runST $ do
     mc' <- M.newCopy c
-    rankKUpdateToHermMatrix alpha trans a beta (Herm uplo mc')
+    hermRankKUpdateTo alpha trans a beta (Herm uplo mc')
     c' <- M.unsafeFreeze mc'
     return $ Herm uplo c'
 
--- | @rank2KUpdateHermMatrix alpha trans a b beta c@ returns
+-- | @hermRank2KUpdate alpha trans a b beta c@ returns
 -- @c := alpha * a * b^H + conj(alpha) * b * a^H + beta * c@ when @trans@ is
 -- @NoTrans@ and @c := alpha * b^H * a + conj(alpha) * a^H * b + beta * c@
 -- when @trans@ is @ConjTrans@.  The function signals an error when @trans@
 -- is @Trans@.
-rank2KUpdateHermMatrix :: (BLAS3 e)
+hermRank2KUpdate :: (BLAS3 e)
                        => e -> Trans -> Matrix e -> Matrix e -> e -> Herm Matrix e
                        -> Herm Matrix e
-rank2KUpdateHermMatrix alpha trans a b beta (Herm uplo c) = runST $ do
+hermRank2KUpdate alpha trans a b beta (Herm uplo c) = runST $ do
     mc' <- M.newCopy c
-    rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo mc')
+    hermRank2KUpdateTo alpha trans a b beta (Herm uplo mc')
     c' <- M.unsafeFreeze mc'
     return $ Herm uplo c'
 
--- | @rank1UpdateToHermMatrix alpha x a@ sets
+-- | @hermRank1UpdateTo alpha x a@ sets
 -- @a := alpha * x * x^H + a@.
-rank1UpdateToHermMatrix :: (RVector v, BLAS2 e)
+hermRank1UpdateTo :: (RVector v, BLAS2 e)
                         => Double -> v e -> Herm (STMatrix s) e -> ST s ()
-rank1UpdateToHermMatrix alpha x (Herm uplo a)
+hermRank1UpdateTo alpha x (Herm uplo a)
     | (not . and) [ nx == n, (ma,na) == (n,n) ] = error $
-        printf ("rank1UpdateToHermMatrix _ <vector with dim %d>"
+        printf ("hermRank1UpdateTo _ <vector with dim %d>"
                  ++ " (Herm _ <matrix with dim (%d,%d)>):"
                  ++ " invalid dimensions") nx ma na
     | otherwise =
@@ -160,13 +160,13 @@ rank1UpdateToHermMatrix alpha x (Herm uplo a)
     (ma,na) = M.dim a
     n = nx
 
--- | @rank2UpdateToHermMatrix alpha x y a@ sets
+-- | @hermRank2UpdateTo alpha x y a@ sets
 -- @a := alpha * x * y^H + conj(alpha) * y * x^H + a@.
-rank2UpdateToHermMatrix :: (RVector v1, RVector v2, BLAS2 e)
+hermRank2UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
                         => e -> v1 e -> v2 e -> Herm (STMatrix s) e -> ST s ()
-rank2UpdateToHermMatrix alpha x y (Herm uplo a)
+hermRank2UpdateTo alpha x y (Herm uplo a)
     | (not . and) [ nx == n, ny == n, (ma,na) == (n,n) ] = error $
-        printf ("rank2UpdateToHermMatrix _ <vector with dim %d>"
+        printf ("hermRank2UpdateTo _ <vector with dim %d>"
                  ++ " <vector with dim %d>"
                  ++ " (Herm _ <matrix with dim (%d,%d)>):"
                  ++ " invalid dimensions") nx ny ma na
@@ -182,23 +182,23 @@ rank2UpdateToHermMatrix alpha x y (Herm uplo a)
     (ma,na) = M.dim a
     n = nx
 
--- | @rankKUpdateToHermMatrix alpha trans a beta c@ sets
+-- | @hermRankKUpdateTo alpha trans a beta c@ sets
 -- @c := alpha * a * a^H + beta * c@ when @trans@ is @NoTrans@ and
 -- @c := alpha * a^H * a + beta * c@ when @trans@ is @ConjTrans@.  The
 -- function signals an error when @trans@ is @Trans@.
-rankKUpdateToHermMatrix :: (RMatrix m, BLAS3 e)
+hermRankKUpdateTo :: (RMatrix m, BLAS3 e)
                         => e -> Trans -> m e -> e -> Herm (STMatrix s) e
                         -> ST s ()
-rankKUpdateToHermMatrix alpha trans a beta (Herm uplo c)
+hermRankKUpdateTo alpha trans a beta (Herm uplo c)
     | trans == Trans = error $
-        printf ("rankKUpdateToHermMatrix _ %s:"
+        printf ("hermRankKUpdateTo _ %s:"
                  ++ " trans argument must be NoTrans or ConjTrans")
                (show trans)
     | (not . and) [ (mc,nc) == (n,n)
                   , case trans of NoTrans -> (ma,na) == (n,k)
                                   _       -> (ma,na) == (k,n)
                   ] = error $
-            printf ("rankKUpdateToHermMatrix _ %s <matrix with dim (%d,%d)> _"
+            printf ("hermRankKUpdateTo _ %s <matrix with dim (%d,%d)> _"
                     ++ " (Herm _ <matrix with dim (%d,%d)>):"
                     ++ " invalid dimensions") (show trans) ma na mc nc
     | otherwise =
@@ -212,17 +212,17 @@ rankKUpdateToHermMatrix alpha trans a beta (Herm uplo c)
     (n,k) = if trans == NoTrans then (ma,na) else (na,ma)
 
 
--- | @rank2KUpdateToHermMatrix alpha trans a b beta c@ sets
+-- | @hermRank2KUpdateTo alpha trans a b beta c@ sets
 -- @c := alpha * a * b^H + conj(alpha) * b * a^H + beta * c@ when @trans@ is
 -- @NoTrans@ and @c := alpha * b^H * a + conj(alpha) * a^H * b + beta * c@
 -- when @trans@ is @ConjTrans@.  The function signals an error when @trans@
 -- is @Trans@.
-rank2KUpdateToHermMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
+hermRank2KUpdateTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
                          => e -> Trans -> m1 e -> m2 e -> e -> Herm (STMatrix s) e
                          -> ST s ()
-rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo c)
+hermRank2KUpdateTo alpha trans a b beta (Herm uplo c)
     | trans == Trans = error $
-        printf ("rank2KUpdateToHermMatrix _ %s:"
+        printf ("hermRank2KUpdateTo _ %s:"
                  ++ " trans argument must be NoTrans or ConjTrans")
                (show trans)
     | (not . and) [ (mc,nc) == (n,n)
@@ -230,7 +230,7 @@ rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo c)
                   , case trans of NoTrans -> (ma,na) == (n,k)
                                   _       -> (ma,na) == (k,n)
                   ] = error $
-            printf ("rank2KUpdateToHermMatrix _ %s <matrix with dim (%d,%d)>"
+            printf ("hermRank2KUpdateTo _ %s <matrix with dim (%d,%d)>"
                     ++ " <matrix with dim (%d,%d)> _"
                     ++ " (Herm _ <matrix with dim (%d,%d)>):"
                     ++ " invalid dimensions") (show trans) ma na mb nb mc nc
@@ -247,118 +247,118 @@ rank2KUpdateToHermMatrix alpha trans a b beta (Herm uplo c)
     (n,k) = if trans == NoTrans then (ma,na) else (na,ma)
 
 
--- | @mulHermMatrixVector a x@ returns @a * x@.
-mulHermMatrixVector :: (BLAS2 e)
+-- | @hermMulVector a x@ returns @a * x@.
+hermMulVector :: (BLAS2 e)
                     => Herm Matrix e
                     -> Vector e
                     -> Vector e
-mulHermMatrixVector a x =
+hermMulVector a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        mulHermMatrixToVector a x y
+        hermMulToVector a x y
         return y
 
--- | @mulHermMatrixVectorWithScale alpha a x@ retunrs @alpha * a * x@.
-mulHermMatrixVectorWithScale :: (BLAS2 e)
+-- | @hermMulVectorWithScale alpha a x@ retunrs @alpha * a * x@.
+hermMulVectorWithScale :: (BLAS2 e)
                              => e
                              -> Herm Matrix e
                              -> Vector e
                              -> Vector e
-mulHermMatrixVectorWithScale alpha a x =
+hermMulVectorWithScale alpha a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        mulHermMatrixToVectorWithScale alpha a x y
+        hermMulToVectorWithScale alpha a x y
         return y
                        
--- | @mulHermMatrixAddVectorWithScales alpha a x y@
+-- | @hermMulAddVectorWithScales alpha a x y@
 -- returns @alpha * a * x + beta * y@.
-mulHermMatrixAddVectorWithScales :: (BLAS2 e)
+hermMulAddVectorWithScales :: (BLAS2 e)
                                  => e
                                  -> Herm Matrix e
                                  -> Vector e
                                  -> e
                                  -> Vector e
                                  -> Vector e
-mulHermMatrixAddVectorWithScales alpha a x beta y =
+hermMulAddVectorWithScales alpha a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        mulHermMatrixAddToVectorWithScales alpha a x beta y'
+        hermMulAddToVectorWithScales alpha a x beta y'
         return y'
 
--- | @mulHermMatrixMatrix side a b@
+-- | @hermMulMatrix side a b@
 -- returns @alpha * a * b@ when @side@ is @LeftSide@ and
 -- @alpha * b * a@ when @side@ is @RightSide@.
-mulHermMatrixMatrix :: (BLAS3 e)
+hermMulMatrix :: (BLAS3 e)
                     => Side -> Herm Matrix e
                     -> Matrix e
                     -> Matrix e
-mulHermMatrixMatrix side a b = 
+hermMulMatrix side a b = 
     M.create $ do
         c <- M.new_ (M.dim b)
-        mulHermMatrixToMatrix side a b c
+        hermMulToMatrix side a b c
         return c
 
--- | @mulHermMatrixMatrixWithScale alpha side a b@
+-- | @hermMulMatrixWithScale alpha side a b@
 -- returns @alpha * a * b@ when @side@ is @LeftSide@ and
 -- @alpha * b * a@ when @side@ is @RightSide@.
-mulHermMatrixMatrixWithScale :: (BLAS3 e)
+hermMulMatrixWithScale :: (BLAS3 e)
                              => e
                              -> Side -> Herm Matrix e
                              -> Matrix e
                              -> Matrix e
-mulHermMatrixMatrixWithScale alpha side a b =
+hermMulMatrixWithScale alpha side a b =
     M.create $ do
         c <- M.new_ (M.dim b)
-        mulHermMatrixToMatrixWithScale alpha side a b c
+        hermMulToMatrixWithScale alpha side a b c
         return c
 
--- | @mulHermMatrixAddMatrixWithScales alpha side a b beta c@
+-- | @hermMulAddMatrixWithScales alpha side a b beta c@
 -- returns @alpha * a * b + beta * c@ when @side@ is @LeftSide@ and
 -- @alpha * b * a + beta * c@ when @side@ is @RightSide@.
-mulHermMatrixAddMatrixWithScales :: (BLAS3 e)
+hermMulAddMatrixWithScales :: (BLAS3 e)
                                  => e
                                  -> Side -> Herm Matrix e
                                  -> Matrix e
                                  -> e
                                  -> Matrix e
                                  -> Matrix e
-mulHermMatrixAddMatrixWithScales alpha side a b beta c = 
+hermMulAddMatrixWithScales alpha side a b beta c = 
     M.create $ do
         c' <- M.newCopy c
-        mulHermMatrixAddToMatrixWithScales alpha side a b beta c'
+        hermMulAddToMatrixWithScales alpha side a b beta c'
         return c'
 
--- | @mulHermMatrixToVector a x y@ sets @y := a * x@.
-mulHermMatrixToVector :: (RMatrix m, RVector v, BLAS2 e)
+-- | @hermMulToVector a x y@ sets @y := a * x@.
+hermMulToVector :: (RMatrix m, RVector v, BLAS2 e)
                       => Herm m e
                       -> v e
                       -> STVector s e
                       -> ST s ()
-mulHermMatrixToVector = mulHermMatrixToVectorWithScale 1
+hermMulToVector = hermMulToVectorWithScale 1
 
--- | @mulHermMatrixToVectorWithScale alpha a x y@
+-- | @hermMulToVectorWithScale alpha a x y@
 -- sets @y := alpha * a * x@.
-mulHermMatrixToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
+hermMulToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
                                => e
                                -> Herm m e
                                -> v e
                                -> STVector s e
                                -> ST s ()
-mulHermMatrixToVectorWithScale alpha a x y =
-    mulHermMatrixAddToVectorWithScales alpha a x 0 y
+hermMulToVectorWithScale alpha a x y =
+    hermMulAddToVectorWithScales alpha a x 0 y
 
--- | @mulHermMatrixAddToVectorWithScales alpha a x beta y@
+-- | @hermMulAddToVectorWithScales alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
-mulHermMatrixAddToVectorWithScales :: (RMatrix m, RVector v, BLAS2 e)
+hermMulAddToVectorWithScales :: (RMatrix m, RVector v, BLAS2 e)
                                    => e
                                    -> Herm m e
                                    -> v e
                                    -> e
                                    -> STVector s e
                                    -> ST s ()
-mulHermMatrixAddToVectorWithScales alpha (Herm uplo a) x beta y
+hermMulAddToVectorWithScales alpha (Herm uplo a) x beta y
     | ma /= na = error $
-        printf ("mulHermMatrixAddToVectorWithScales _"
+        printf ("hermMulAddToVectorWithScales _"
                 ++ " (Herm %s <matrix with dim (%d,%d)>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"
@@ -370,7 +370,7 @@ mulHermMatrixAddToVectorWithScales alpha (Herm uplo a) x beta y
                   , nx == n
                   , ny == n
                   ] = error $
-        printf ("mulHermMatrixAddToVectorWithScales _"
+        printf ("hermMulAddToVectorWithScales _"
                 ++ " (Herm %s <matrix with dim (%d,%d)>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"
@@ -390,41 +390,41 @@ mulHermMatrixAddToVectorWithScales alpha (Herm uplo a) x beta y
     ny = V.dim y
     n = ny
 
--- | @mulHermMatrixToMatrix side a b c@
+-- | @hermMulToMatrix side a b c@
 -- sets @c := a * b@ when @side@ is @LeftSide@ and
 -- @c := b * a@ when @side@ is @RightSide@.
-mulHermMatrixToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
+hermMulToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
                       => Side -> Herm m1 e
                       -> m2 e
                       -> STMatrix s e
                       -> ST s ()
-mulHermMatrixToMatrix = mulHermMatrixToMatrixWithScale 1
+hermMulToMatrix = hermMulToMatrixWithScale 1
 
--- | @mulHermMatrixToMatrixWithScale alpha side a b c@
+-- | @hermMulToMatrixWithScale alpha side a b c@
 -- sets @c := alpha * a * b@ when @side@ is @LeftSide@ and
 -- @c := alpha * b * a@ when @side@ is @RightSide@.
-mulHermMatrixToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
+hermMulToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
                                => e
                                -> Side -> Herm m1 e
                                -> m2 e
                                -> STMatrix s e
                                -> ST s ()
-mulHermMatrixToMatrixWithScale alpha side a b c =
-    mulHermMatrixAddToMatrixWithScales alpha side a b 0 c
+hermMulToMatrixWithScale alpha side a b c =
+    hermMulAddToMatrixWithScales alpha side a b 0 c
 
--- | @mulHermMatrixAddToMatrixWithScales alpha side a b beta c@
+-- | @hermMulAddToMatrixWithScales alpha side a b beta c@
 -- sets @c := alpha * a * b + beta * c@ when @side@ is @LeftSide@ and
 -- @c := alpha * b * a + beta * c@ when @side@ is @RightSide@.
-mulHermMatrixAddToMatrixWithScales :: (RMatrix m1, RMatrix m2, BLAS3 e)
+hermMulAddToMatrixWithScales :: (RMatrix m1, RMatrix m2, BLAS3 e)
                                    => e
                                    -> Side -> Herm m1 e
                                    -> m2 e
                                    -> e
                                    -> STMatrix s e
                                    -> ST s ()
-mulHermMatrixAddToMatrixWithScales alpha side (Herm uplo a) b beta c
+hermMulAddToMatrixWithScales alpha side (Herm uplo a) b beta c
     | ma /= na = error $
-        printf ("mulHermMatrixAddToMatrixWithScales _"
+        printf ("hermMulAddToMatrixWithScales _"
                 ++ " %s (Herm %s <matrix with dim (%d,%d)>)" 
                 ++ " <matrix with dim (%d,%d)>"
                 ++ " _"
@@ -437,7 +437,7 @@ mulHermMatrixAddToMatrixWithScales alpha side (Herm uplo a) b beta c
                   , (mb, nb ) == (m,n)
                   , (mc, nc ) == (m,n)
                   ] = error $
-        printf ("mulHermMatrixAddToMatrixWithScales _"
+        printf ("hermMulAddToMatrixWithScales _"
                 ++ " %s (Herm %s <matrix with dim (%d,%d)>)" 
                 ++ " <matrix with dim (%d,%d)>"
                 ++ " _"

@@ -61,7 +61,7 @@ import Data.List( foldl' )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Matrix.Herm
+import Numeric.LinearAlgebra.Matrix.Herm( Herm(..) )
 import Numeric.LinearAlgebra.Matrix.Packed( Packed, STPacked )
 import qualified Numeric.LinearAlgebra.Matrix.Packed as P
 
@@ -73,6 +73,7 @@ import qualified Numeric.LinearAlgebra.Vector.ST as V
 
 import Numeric.LinearAlgebra.Matrix( Matrix )
 import qualified Numeric.LinearAlgebra.Matrix as M
+import qualified Numeric.LinearAlgebra.Matrix.Herm as M
 
 import Numeric.LinearAlgebra.Matrix.ST( STMatrix )
 import qualified Numeric.LinearAlgebra.Matrix.ST as M
@@ -179,7 +180,7 @@ weightedMeanToVector wxs m = let
 -- of the vectors.
 covMatrix :: (BLAS3 e)
           => Int -> CovMethod -> [Vector e] -> Herm Matrix e
-covMatrix p t xs = runHermMatrix $ do
+covMatrix p t xs = M.hermCreate $ do
     cov <- Herm uplo `fmap` M.new_ (p,p)
     covToMatrix t xs cov
     return cov
@@ -202,7 +203,7 @@ covPacked p t xs = P.hermCreate $ do
 -- with storage scheme equal to 'defaultCovUplo'.
 covMatrixWithMean :: (BLAS3 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
-covMatrixWithMean mu t xs = runHermMatrix $ do
+covMatrixWithMean mu t xs = M.hermCreate $ do
     cov <- Herm uplo `fmap` M.new_ (p,p)
     covToMatrixWithMean mu t xs cov
     return cov
@@ -226,7 +227,7 @@ covPackedWithMean mu t xs = P.hermCreate $ do
 -- to 'defaultCovUplo'. The first argument gives the dimension of the vectors.
 weightedCovMatrix :: (BLAS3 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Matrix e
-weightedCovMatrix p t wxs = runHermMatrix $ do
+weightedCovMatrix p t wxs = M.hermCreate $ do
     cov <- Herm uplo `fmap` M.new_ (p,p)
     weightedCovToMatrix t wxs cov
     return cov
@@ -250,7 +251,7 @@ weightedCovPacked p t wxs = P.hermCreate $ do
 weightedCovMatrixWithMean :: (BLAS3 e)
                           => Vector e -> CovMethod -> [(Double, Vector e)]
                           -> Herm Matrix e
-weightedCovMatrixWithMean mu t wxs = runHermMatrix $ do
+weightedCovMatrixWithMean mu t wxs = M.hermCreate $ do
     cov <- Herm uplo `fmap` M.new_ (p,p)
     weightedCovToMatrixWithMean mu t wxs cov
     return cov
@@ -309,7 +310,7 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
             sequence_ [ V.subTo x mu x'
                       | (x,x') <- zip xs xs'
                       ]
-        rankKUpdateToHermMatrix (1/df) NoTrans xt 0 cov
+        M.hermRankKUpdateTo (1/df) NoTrans xt 0 cov
   where
     p = V.dim mu
     n = length xs
@@ -383,7 +384,7 @@ weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
                       >> V.scaleTo (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
-        rankKUpdateToHermMatrix 1 NoTrans xt 0 cov
+        M.hermRankKUpdateTo 1 NoTrans xt 0 cov
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0
