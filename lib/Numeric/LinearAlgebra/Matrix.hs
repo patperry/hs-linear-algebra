@@ -53,9 +53,9 @@ module Numeric.LinearAlgebra.Matrix (
     diag,
     
     -- * Vector views
-    viewVector,
-    viewColVector,
-    viewRowVector,
+    fromVector,
+    fromCol,
+    fromRow,
 
     -- * Matrix math operations
     shift,

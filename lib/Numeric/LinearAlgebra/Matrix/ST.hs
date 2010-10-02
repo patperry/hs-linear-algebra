@@ -15,7 +15,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     create,
     
     -- * Read-only Dense matrix type class
-    RMatrix( dim, withCols, maybeWithVectorView, unsafeWith,
+    RMatrix( dim, withColViews, maybeWithVectorView, unsafeWith,
         unsafeToForeignPtr, unsafeFromForeignPtr ),
     
     -- * Creating new matrices
@@ -38,10 +38,10 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- * Matrix rows and columns
     getRow,
     setRow,
-    withCol,
+    withColView,
 
-    withColST,    
-    withColsST,
+    withSTColView,
+    withSTColViews,
 
     -- * Matrix diagonals
     getDiag,
@@ -96,13 +96,13 @@ module Numeric.LinearAlgebra.Matrix.ST (
     unsafeFreeze,
     
     -- * Matrix views of vectors
-    withViewVector,
-    withViewColVector,
-    withViewRowVector,
+    withViewFromVector,
+    withViewFromCol,
+    withViewFromRow,
 
-    viewVectorST,
-    viewColVectorST,
-    viewRowVectorST,
+    viewFromSTVector,
+    viewFromSTCol,
+    viewFromSTRow,
     
     ) where
 

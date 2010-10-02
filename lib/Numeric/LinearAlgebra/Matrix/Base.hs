@@ -109,7 +109,7 @@ fromList mn es = create $ do
 fromCols :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 fromCols mn cs = create $ do
     a <- new_ mn
-    withColsST a $ zipWithM_ V.copyTo cs
+    withSTColViews a $ zipWithM_ V.copyTo cs
     return a
 
 -- | Create a matrix of the given dimension with the given vectors as
@@ -250,12 +250,12 @@ col a j
 {-# INLINE col #-}
 
 unsafeCol :: (Storable e) => Matrix e -> Int -> Vector e
-unsafeCol a j = unSTVector $ unsafeColST (unMatrix a) j
+unsafeCol a j = unSTVector $ unsafeSTColView (unMatrix a) j
 {-# INLINE unsafeCol #-}
 
 -- | Get a list of the columns of the matrix.
 cols :: (Storable e) => Matrix e -> [Vector e]
-cols a = P.map unSTVector $ colsST (unMatrix a)
+cols a = P.map unSTVector $ stCols (unMatrix a)
 {-# INLINE cols #-}
 
 -- | Get the given row of the matrix.
@@ -293,23 +293,23 @@ rows a = [ unsafeRow a i | i <- [ 0..m-1 ] ]
 {-# INLINE rows #-}
 
 -- | Cast a vector to a matrix of the given shape.
-viewVector :: (Storable e)
+fromVector :: (Storable e)
            => (Int,Int)
            -> Vector e
            -> Matrix e
-viewVector mn v = unSTMatrix $ viewVectorST mn (unVector v)
+fromVector mn v = unSTMatrix $ viewFromSTVector mn (unVector v)
 
 -- | Cast a vector to a matrix with one column.
-viewColVector :: (Storable e)
+fromCol :: (Storable e)
               => Vector e
               -> Matrix e
-viewColVector v = unSTMatrix $ viewColVectorST (unVector v)
+fromCol v = unSTMatrix $ viewFromSTCol (unVector v)
 
 -- | Cast a vector to a matrix with one row.
-viewRowVector :: (Storable e)
+fromRow :: (Storable e)
               => Vector e
               -> Matrix e
-viewRowVector v = unSTMatrix $ viewRowVectorST (unVector v)
+fromRow v = unSTMatrix $ viewFromSTRow (unVector v)
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "fromList " ++ show (dim x) ++ " " ++ show (elems x)

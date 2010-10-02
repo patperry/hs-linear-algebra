@@ -230,7 +230,7 @@ prop_splitColsAt t a =
 
 prop_viewVector t (Dim2 (m,n)) =
     forAll (Test.vector $ m*n) $ \x -> let _ = typed t x in
-        M.elems (M.viewVector (m,n) x) === V.elems x
+        M.elems (M.fromVector (m,n) x) === V.elems x
 
 
 -------------------------- Num Matrix Operations --------------------------

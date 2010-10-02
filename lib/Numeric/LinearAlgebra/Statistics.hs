@@ -305,7 +305,7 @@ covToMatrixWithMean mu t xs cov@(Herm _ a)
                n (show $ M.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)
-        M.withColsST xt $ \xs' ->
+        M.withSTColViews xt $ \xs' ->
             sequence_ [ V.subTo x mu x'
                       | (x,x') <- zip xs xs'
                       ]
@@ -328,12 +328,12 @@ covToPackedWithMean mu t xs cov@(Herm _ a)
                n (P.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)
-        M.withColsST xt $ \xs' ->
+        M.withSTColViews xt $ \xs' ->
             sequence_ [ V.subTo x mu x'
                       | (x,x') <- zip xs xs'
                       ]
         P.withSTVectorView a V.clear
-        M.withColsST xt $ \xs' ->
+        M.withSTColViews xt $ \xs' ->
             sequence_ [ P.hermRank1UpdateTo scale x' cov | x' <- xs' ]
   where
     p = V.dim mu
@@ -378,7 +378,7 @@ weightedCovToMatrixWithMean mu t wxs cov@(Herm _ a)
                n (show $ M.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)
-        M.withColsST xt $ \xs' ->
+        M.withSTColViews xt $ \xs' ->
             sequence_ [  V.subTo x mu x'
                       >> V.scaleTo (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
@@ -408,13 +408,13 @@ weightedCovToPackedWithMean mu t wxs cov@(Herm _ a)
                n (P.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)
-        M.withColsST xt $ \xs' ->
+        M.withSTColViews xt $ \xs' ->
             sequence_ [  V.subTo x mu x'
                       >> V.scaleTo (realToFrac $ sqrt (w / invscale)) x' x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
         P.withSTVectorView a V.clear                      
-        M.withCols xt $ \xs' ->
+        M.withColViews xt $ \xs' ->
             sequence_ [ P.hermRank1UpdateTo 1 x' cov | x' <- xs' ]
   where
     (ws0,xs) = unzip wxs

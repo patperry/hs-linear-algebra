@@ -129,8 +129,8 @@ cholMatrixSolveToVector :: (LAPACK e, RMatrix m, RVector v)
                         -> STVector s e
                         -> ST s ()
 cholMatrixSolveToVector a x y =
-    M.withViewColVector x $ \x' ->
-        cholMatrixSolveToMatrix a x' (M.viewColVectorST y)
+    M.withViewFromCol x $ \x' ->
+        cholMatrixSolveToMatrix a x' (M.viewFromSTCol y)
 
 -- | @cholMatrixSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
@@ -222,8 +222,8 @@ cholPackedSolveToVector :: (LAPACK e, RPacked p, RVector v)
                         -> STVector s e
                         -> ST s ()
 cholPackedSolveToVector a x y =
-    M.withViewColVector x $ \x' ->
-        cholPackedSolveToMatrix a x' (M.viewColVectorST y)
+    M.withViewFromCol x $ \x' ->
+        cholPackedSolveToMatrix a x' (M.viewFromSTCol y)
 
 -- | @cholPackedSolveToMatrix a b b'@ sets
 -- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
