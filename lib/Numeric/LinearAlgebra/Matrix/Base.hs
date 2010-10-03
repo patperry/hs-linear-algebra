@@ -408,8 +408,8 @@ rank1Update :: (BLAS2 e)
             -> Matrix e
 rank1Update alpha x y a =
     create $ do
-        a' <- newCopy a
-        rank1UpdateTo a' alpha x y
+        a' <- new_ (dim a)
+        rank1UpdateTo a' alpha x y a
         return a'
 
 -- | @mulVector transa a x@
@@ -423,7 +423,7 @@ mulVector transa a x = let
                        _       -> (snd . dim) a
     in V.create $ do
         y <- V.new_ m
-        mulToVector transa a x y
+        mulVectorTo y transa a x
         return y
 
 -- | @mulVectorWithScale alpha transa a x@
@@ -438,7 +438,7 @@ mulVectorWithScale alpha transa a x = let
                        _       -> (snd . dim) a
     in V.create $ do
         y <- V.new_ m
-        mulToVectorWithScale alpha transa a x y
+        mulVectorWithScaleTo y alpha transa a x
         return y
                        
 -- | @mulAddVectorWithScales alpha transa a x beta y@
@@ -453,8 +453,8 @@ mulAddVectorWithScales :: (BLAS2 e)
                        -> Vector e
 mulAddVectorWithScales alpha transa a x beta y =
     V.create $ do
-        y' <- V.newCopy y
-        mulAddToVectorWithScales alpha transa a x beta y'
+        y' <- V.new_ (V.dim y)
+        mulAddVectorWithScalesTo y' alpha transa a x beta y
         return y'
 
 -- | @mulMatrix transa a transb b@
@@ -471,7 +471,7 @@ mulMatrix transa a transb b = let
                        _       -> (fst . dim) b
     in create $ do
         c <- new_ (m,n)
-        mulToMatrix transa a transb b c
+        mulMatrixTo c transa a transb b
         return c
 
 -- | @mulMatrixWithScale alpha transa a transb b@
@@ -489,7 +489,7 @@ mulMatrixWithScale alpha transa a transb b = let
                        _       -> (fst . dim) b
     in create $ do
         c <- new_ (m,n)
-        mulToMatrixWithScale alpha transa a transb b c
+        mulMatrixWithScaleTo c alpha transa a transb b
         return c
 
 -- | @mulAddMatrixWithScales alpha transa a transb b beta c@
@@ -504,8 +504,8 @@ mulAddMatrixWithScales :: (BLAS3 e)
                        -> Matrix e
 mulAddMatrixWithScales alpha transa a transb b beta c = 
     create $ do
-        c' <- newCopy c
-        mulAddToMatrixWithScales alpha transa a transb b beta c'
+        c' <- new_ (dim c)
+        mulAddMatrixWithScalesTo c' alpha transa a transb b beta c
         return c'
 
 compareWith :: (Storable e, Storable e')

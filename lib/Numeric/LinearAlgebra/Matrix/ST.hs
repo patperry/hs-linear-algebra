@@ -81,14 +81,14 @@ module Numeric.LinearAlgebra.Matrix.ST (
     rank1UpdateTo,
     
     -- ** Matrix-Vector multiplication
-    mulToVector,
-    mulToVectorWithScale,
-    mulAddToVectorWithScales,
+    mulVectorTo,
+    mulVectorWithScaleTo,
+    mulAddVectorWithScalesTo,
     
     -- ** Matrix-Matrix multiplication
-    mulToMatrix,
-    mulToMatrixWithScale,
-    mulAddToMatrixWithScales,
+    mulMatrixTo,
+    mulMatrixWithScaleTo,
+    mulAddMatrixWithScalesTo,
 
     -- * Conversions between mutable and immutable matrices
     freeze,

@@ -867,25 +867,34 @@ scaleColsTo dst s a
   where
     (m,n) = dim dst
 
--- | @rank1UpdateTo a alpha x y@ sets @a := a + alpha * x * y^H@.
-rank1UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
-              => STMatrix s e -> e -> v1 e -> v2 e -> ST s ()
-rank1UpdateTo a alpha x y
-    | V.dim x /= m || V.dim y /= n = error $
+-- | @rank1UpdateTo dst alpha x y a@ sets @dst := alpha * x * y^H + a@.
+-- Arguments @dst@ and @a@ can be the same; other forms of aliasing give
+-- undefined results.
+rank1UpdateTo :: (RVector v1, RVector v2, RMatrix m, BLAS2 e)
+              => STMatrix s e -> e -> v1 e -> v2 e -> m e -> ST s ()
+rank1UpdateTo dst alpha x y a
+    | V.dim x /= m || V.dim y /= n || (mdst,ndst) /= (ma,na) = error $
         printf ("rank1UpdateTo"
                 ++ "<matrix with dim (%d,%d)>"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>"
-                ++ ": dimension mismatch")
-                m n (V.dim x) (V.dim y)
+                ++ ": dimension mismatch"
+                ++ "<matrix with dim (%d,%d)>"                )
+                mdst ndst
+                (V.dim x)
+                (V.dim y)
+                ma na 
     | otherwise = do
+        unsafeCopyTo dst a
         unsafeIOToST $
             V.unsafeWith x $ \px ->
             V.unsafeWith y $ \py ->
-            unsafeWith a $ \pa lda ->
-                BLAS.gerc m n alpha px 1 py 1 pa lda
+            unsafeWith dst $ \pdst lddst ->
+                BLAS.gerc m n alpha px 1 py 1 pdst lddst
   where
+    (mdst,ndst) = dim dst
+    (ma,na) = dim a
     (m,n) = dim a
 
 
@@ -925,120 +934,141 @@ conjTransTo a' a = do
     transTo a' a
     conjugateTo a' a'
 
--- | @mulToVector transa a x y@
--- sets @y := op(a) * x@, where @op(a)@ is determined by @transa@.                   
-mulToVector :: (RMatrix m, RVector v, BLAS2 e)
-            => Trans -> m e
+-- | @mulVectorTo dst transa a x@
+-- sets @dst := op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulVectorTo :: (RMatrix m, RVector v, BLAS2 e)
+            => STVector s e
+            -> Trans -> m e
             -> v e
-            -> STVector s e
             -> ST s ()
-mulToVector = mulToVectorWithScale 1
+mulVectorTo dst = mulVectorWithScaleTo dst 1
 
--- | @mulToVectorWithScale alpha transa a x y@
--- sets @y := alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
-mulToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
-                     => e
+-- | @mulVectorWithScaleTo dst alpha transa a x@
+-- sets @dst := alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
+mulVectorWithScaleTo :: (RMatrix m, RVector v, BLAS2 e)
+                     => STVector s e
+                     -> e
                      -> Trans -> m e
                      -> v e
-                     -> STVector s e
                      -> ST s ()
-mulToVectorWithScale alpha t a x y =
-    mulAddToVectorWithScales alpha t a x 0 y
+mulVectorWithScaleTo dst alpha t a x =
+    mulAddVectorWithScalesTo dst alpha t a x 0 dst
 
--- | @mulAddToVectorWithScales alpha transa a x beta y@
--- sets @y := alpha * op(a) * x + beta * y@, where @op(a)@ is
--- determined by @transa@.
-mulAddToVectorWithScales :: (RMatrix m, RVector v, BLAS2 e)
-                         => e
-                         -> Trans -> m e
-                         -> v e
+-- | @mulAddVectorWithScalesTo dst alpha transa a x beta y@
+-- sets @dst := alpha * op(a) * x + beta * y@, where @op(a)@ is
+-- determined by @transa@.  Arguments @dst@ and @y@ can be the same;
+-- other forms of aliasing give undefined results.
+mulAddVectorWithScalesTo :: (RMatrix m, RVector v1, RVector v2, BLAS2 e)
+                         => STVector s e
                          -> e
-                         -> STVector s e
+                         -> Trans -> m e
+                         -> v1 e
+                         -> e
+                         -> v2 e
                          -> ST s ()
-mulAddToVectorWithScales alpha transa a x beta y
+mulAddVectorWithScalesTo dst alpha transa a x beta y
     | (not . and) [ case transa of NoTrans -> (ma,na) == (m,n)
                                    _       -> (ma,na) == (n,m)
                   , nx == n
                   , ny == m
+                  , ndst == ny
                   ] = error $
-        printf ("mulAddToVectorWithScales _"
-                ++ " %s <matrix with dim (%d,%d)>" 
+        printf ("mulAddVectorWithScalesTo"
+                ++ " <vector with dim %d>"        
+                ++ " _"
+                ++ " %s"
+                ++ " <matrix with dim (%d,%d)>" 
                 ++ " <vector with dim %d>"
                 ++ " _"
-                ++ " <vector with dim %d>: dimension mismatch")
-               (show transa) ma na
-               nx ny
-    | otherwise =
+                ++ " <vector with dim %d>"
+                ++ ": dimension mismatch")
+               ndst
+               (show transa)
+               ma na
+               nx
+               ny
+    | otherwise = do
+        V.unsafeCopyTo dst y
         unsafeIOToST $
             unsafeWith a $ \pa lda ->
             V.unsafeWith x $ \px ->
-            V.unsafeWith y $ \py ->
+            V.unsafeWith dst $ \pdst ->
                 if n == 0
-                    then BLAS.scal m beta py 1
-                    else BLAS.gemv transa ma na alpha pa lda px 1 beta py 1
+                    then BLAS.scal m beta pdst 1
+                    else BLAS.gemv transa ma na alpha pa lda px 1 beta pdst 1
   where
+    ndst = V.dim dst
     (ma,na) = dim a
     nx = V.dim x
     ny = V.dim y
     (m,n) = (ny,nx)
 
--- | @mulToMatrix transa a transb b c@
--- sets @c := op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
+-- | @mulMatrixTo dst transa a transb b@
+-- sets @dst := op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
 -- by @transa@ and @transb@.                   
-mulToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
-            => Trans -> m1 e
+mulMatrixTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
+            => STMatrix s e
+            -> Trans -> m1 e
             -> Trans -> m2 e
-            -> STMatrix s e
             -> ST s ()
-mulToMatrix = mulToMatrixWithScale 1
+mulMatrixTo dst = mulMatrixWithScaleTo dst 1
 
--- | @mulToMatrixWithScale alpha transa a transb b c@
+-- | @mulMatrixWithScaleTo alpha transa a transb b c@
 -- sets @c := alpha * op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
 -- by @transa@ and @transb@.                   
-mulToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
-                     => e
+mulMatrixWithScaleTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                     => STMatrix s e
+                     -> e
                      -> Trans -> m1 e
                      -> Trans -> m2 e
-                     -> STMatrix s e
                      -> ST s ()
-mulToMatrixWithScale alpha ta a tb b c =
-    mulAddToMatrixWithScales alpha ta a tb b 0 c
+mulMatrixWithScaleTo dst alpha ta a tb b =
+    mulAddMatrixWithScalesTo dst alpha ta a tb b 0 dst
 
--- | @mulAddToMatrixWithScales alpha transa a transb b beta c@
--- sets @c := alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
--- @op(b)@ are determined by @transa@ and @transb@.
-mulAddToMatrixWithScales :: (RMatrix m1, RMatrix m2, BLAS3 e)
-                               => e
-                               -> Trans -> m1 e
-                               -> Trans -> m2 e
-                               -> e
-                               -> STMatrix s e
-                               -> ST s ()
-mulAddToMatrixWithScales alpha transa a transb b beta c
+-- | @mulAddMatrixWithScalesTo dst alpha transa a transb b beta c@
+-- sets @dst := alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
+-- @op(b)@ are determined by @transa@ and @transb@.  Arguments @dst@ and
+-- @c@ can be the same; other forms of aliasing give undefined results.
+mulAddMatrixWithScalesTo :: (RMatrix m1, RMatrix m2, RMatrix m3, BLAS3 e)
+                         => STMatrix s e
+                         -> e
+                         -> Trans -> m1 e
+                         -> Trans -> m2 e
+                         -> e
+                         -> m3 e
+                         -> ST s ()
+mulAddMatrixWithScalesTo dst alpha transa a transb b beta c
     | (not . and) [ case transa of NoTrans -> (ma,na) == (m,k)
                                    _       -> (ma,na) == (k,m)
                   , case transb of NoTrans -> (mb,nb) == (k,n)
                                    _       -> (mb,nb) == (n,k)
                   , (mc, nc) == (m,n)
+                  , (mdst, ndst) == (mc, nc)
                   ] = error $
-        printf ("mulAddToMatrixWithScales _"
+        printf ("mulAddMatrixWithScalesTo"
+                ++ " <matrix with dim (%d,%d)>"        
+                ++ " _"
                 ++ " %s <matrix with dim (%d,%d)>" 
                 ++ " %s <matrix with dim (%d,%d)>"
                 ++ " _"
-                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch")
+                mdst ndst
                (show transa) ma na
                (show transb) mb nb
                mc nc
-    | otherwise =
+    | otherwise = do
+        unsafeCopyTo dst c
         unsafeIOToST $
             unsafeWith a $ \pa lda ->
             unsafeWith b $ \pb ldb ->
-            unsafeWith c $ \pc ldc ->
-                BLAS.gemm transa transb m n k alpha pa lda pb ldb beta pc ldc
+            unsafeWith dst $ \pdst lddst ->
+                BLAS.gemm transa transb m n k alpha pa lda pb ldb beta pdst lddst
   where
     (ma,na) = dim a
     (mb,nb) = dim b
     (mc,nc) = dim c
+    (mdst,ndst) = dim dst
     (m,n) = dim c
     k = case transa of NoTrans -> na
                        _       -> ma
