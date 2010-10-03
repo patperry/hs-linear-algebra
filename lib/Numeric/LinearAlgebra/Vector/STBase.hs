@@ -204,7 +204,7 @@ newCopy x = do
     unsafeCopyTo y x
     return y
 
--- | @copyTo src dst@ replaces the values in @dst@ with those in
+-- | @copyTo dst src@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
 copyTo :: (RVector v, Storable e) => STVector s e -> v e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo

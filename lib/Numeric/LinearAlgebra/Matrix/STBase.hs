@@ -383,7 +383,7 @@ newCopy a = do
     unsafeCopyTo b a
     return b
 
--- | @copyTo src dst@ replaces the values in @dst@ with those in
+-- | @copyTo dst src@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
 copyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo
