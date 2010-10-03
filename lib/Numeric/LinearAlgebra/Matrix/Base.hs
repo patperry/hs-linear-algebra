@@ -385,7 +385,7 @@ trans a = let
     (m,n) = dim a
     in create $ do
         a' <- new_ (n,m)
-        transTo a a'
+        transTo a' a
         return a'
 
 -- | @conjTrans a@ retunrs @conj(trans(a))@.
@@ -396,7 +396,7 @@ conjTrans a = let
     (m,n) = dim a
     in create $ do
         a' <- new_ (n,m)
-        conjTransTo a a'
+        conjTransTo a' a
         return a'
 
 -- | @rank1Update alpha x y a@ returns @alpha * x * y^H + a@.

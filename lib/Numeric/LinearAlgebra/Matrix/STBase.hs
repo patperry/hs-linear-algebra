@@ -886,18 +886,23 @@ rank1UpdateTo alpha x y a
     (m,n) = dim a
 
 
--- | @transTo a c@ sets @c := trans(a)@.
+-- | @transTo dst a@ sets @dst := trans(a)@.
 transTo :: (RMatrix m, BLAS1 e)
-        => m e
-        -> STMatrix s e
+        => STMatrix s e
+        -> m e
         -> ST s ()
-transTo a a'
+transTo a' a
     | (ma,na) /= (na',ma') = error $
-        printf ("transTo <matrix with dim (%d,%d)>"
-                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
+        printf ( "transTo"
+               ++ " <matrix with dim (%d,%d)>"
+               ++ " <matrix with dim (%d,%d)>"
+               ++ ": dimension mismatch"
+               )
+               ma' na'
+               ma na
     | otherwise = unsafeIOToST $
-        unsafeWith a $ \pa lda ->
-        unsafeWith a' $ \pa' lda' -> let
+        unsafeWith a' $ \pa' lda' ->
+        unsafeWith a $ \pa lda -> let
             go j px py | j == n = return ()
                        | otherwise = do
                            BLAS.copy m px 1 py lda'
@@ -910,11 +915,11 @@ transTo a a'
 
 -- | @conjTransTo a c@ sets @c := conjugate(trans(a))@.
 conjTransTo :: (RMatrix m, BLAS1 e)
-            => m e
-            -> STMatrix s e
+            => STMatrix s e
+            -> m e
             -> ST s ()
-conjTransTo a a' = do
-    transTo a a'
+conjTransTo a' a = do
+    transTo a' a
     conjugateTo a' a'
 
 -- | @mulToVector transa a x y@
