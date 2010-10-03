@@ -409,7 +409,7 @@ rank1Update :: (BLAS2 e)
 rank1Update alpha x y a =
     create $ do
         a' <- newCopy a
-        rank1UpdateTo alpha x y a'
+        rank1UpdateTo a' alpha x y
         return a'
 
 -- | @mulVector transa a x@

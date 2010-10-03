@@ -867,15 +867,18 @@ scaleColsTo dst s a
   where
     (m,n) = dim dst
 
--- | @rank1UpdateTo alpha x y a@ sets @a := alpha * x * y^H + a@.
+-- | @rank1UpdateTo a alpha x y@ sets @a := a + alpha * x * y^H@.
 rank1UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
-              => e -> v1 e -> v2 e -> STMatrix s e -> ST s ()
-rank1UpdateTo alpha x y a
+              => STMatrix s e -> e -> v1 e -> v2 e -> ST s ()
+rank1UpdateTo a alpha x y
     | V.dim x /= m || V.dim y /= n = error $
-        printf ("rank1UpdateTo _ <vector with dim %d>"
-                ++ " <vector with dim %d> <matrix with dim (%d,%d)>:"
-                ++ " dimension mismatch")
-                (V.dim x) (V.dim y) m n
+        printf ("rank1UpdateTo"
+                ++ "<matrix with dim (%d,%d)>"
+                ++ " _"
+                ++ " <vector with dim %d>"
+                ++ " <vector with dim %d>"
+                ++ ": dimension mismatch")
+                m n (V.dim x) (V.dim y)
     | otherwise = do
         unsafeIOToST $
             V.unsafeWith x $ \px ->
@@ -913,7 +916,7 @@ transTo a' a
     (ma',na') = dim a'
     (m,n) = (ma,na)
 
--- | @conjTransTo a c@ sets @c := conjugate(trans(a))@.
+-- | @conjTransTo dst a@ sets @dst := conjugate(trans(a))@.
 conjTransTo :: (RMatrix m, BLAS1 e)
             => STMatrix s e
             -> m e
