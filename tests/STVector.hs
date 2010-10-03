@@ -208,7 +208,7 @@ prop_kroneckerTo t = sized $ \s -> resize (s `div` 2) $
         x `readOnlyVector` \mx ->
         y `readOnlyVector` \my ->
         z `mutatesToVector` (typed t $ V.kronecker x y) $ \mz ->
-            V.kroneckerTo mx my mz
+            V.kroneckerTo mz mx my
 
 prop_shiftTo t e = binaryProp t
     (\x -> V.shift e x)

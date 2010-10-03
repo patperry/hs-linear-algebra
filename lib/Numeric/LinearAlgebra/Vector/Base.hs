@@ -344,7 +344,7 @@ unsafeDot v v' = runST $ unsafeGetDot v v'
 kronecker :: (VNum e) => Vector e -> Vector e -> Vector e
 kronecker x y = create $ do
     z <- new_ (dim x * dim y)
-    kroneckerTo x y z
+    kroneckerTo z x y
     return z
 
 

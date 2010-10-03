@@ -687,20 +687,20 @@ unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
 unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
 {-# INLINE unsafeGetDot #-}
 
--- | @kroneckerTo x y z@ sets @z := x \otimes y@.
+-- | @kroneckerTo dst x y@ sets @dst := x \otimes y@.
 kroneckerTo :: (RVector v1, RVector v2, VNum e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-kroneckerTo x y z
-    | dim z /= m * n = error $
+            => STVector s e -> v1 e -> v2 e -> ST s ()
+kroneckerTo dst x y
+    | dim dst /= m * n = error $
         printf ("kroneckerTo"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (dim z)
+                ++ " dimension mismatch") (dim dst) m n 
     | otherwise = do
         ies <- getAssocs x
         forM_ ies $ \(i,e) ->
-            scaleTo e y (unsafeSlice (i*n) n z)
+            scaleTo e y (unsafeSlice (i*n) n dst)
   where
     m = dim x
     n = dim y
