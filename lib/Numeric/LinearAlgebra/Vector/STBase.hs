@@ -404,68 +404,69 @@ unsafeSwapElems x i1 i2 = unsafeIOToST $ unsafeWith x $ \p ->
 {-# SPECIALIZE INLINE unsafeSwapElems :: STVector s Double -> Int -> Int -> ST s () #-}
 {-# SPECIALIZE INLINE unsafeSwapElems :: STVector s (Complex Double) -> Int -> Int -> ST s () #-}
 
--- | @mapTo f x z@ replaces @z@ elementwise with @f(x)@.
+-- | @mapTo dst f src@ replaces @dst@ elementwise with @f(src)@.
 mapTo :: (RVector v, Storable e, Storable f)
-      => (e -> f)
+      => STVector s f
+      -> (e -> f)
       -> v e
-      -> STVector s f
       -> ST s ()
-mapTo f = checkOp2 "mapTo _" $ unsafeMapTo f
+mapTo dst f src = (checkOp2 "mapTo _" $ \z x -> unsafeMapTo z f x) dst src
 {-# INLINE mapTo #-}
                             
 unsafeMapTo :: (RVector v, Storable e, Storable f)
-            => (e -> f)
+            => STVector s f
+            -> (e -> f)
             -> v e
-            -> STVector s f
             -> ST s ()
-unsafeMapTo f v mv =
-    let go psrc pdst end
+unsafeMapTo dst f src =
+    let go end pdst psrc
             | pdst == end =
                 return ()
             | otherwise = do
                 e <- peek psrc
                 poke pdst (f e)
-                go (psrc `advancePtr` 1) (pdst `advancePtr` 1) end
+                go end (pdst `advancePtr` 1) (psrc `advancePtr` 1)
     in unsafeIOToST $
-           unsafeWith v $ \psrc -> 
-           unsafeWith mv $ \pdst ->
-               go psrc pdst (pdst `advancePtr` dim mv)
+           unsafeWith dst $ \pdst ->
+           unsafeWith src $ \psrc -> 
+               go (pdst `advancePtr` dim dst) pdst psrc
   where
 
 {-# INLINE unsafeMapTo #-}
 
--- | @zipWithTo f x y z@ replaces @z@ elementwise with @f(x, y)@.
+-- | @zipWithTo dst f x y@ replaces @dst@ elementwise with @f(x,y)@.
 zipWithTo :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
-          => (e1 -> e2 -> f)
+          => STVector s f
+          -> (e1 -> e2 -> f)
           -> v1 e1
           -> v2 e2
-          -> STVector s f
           -> ST s ()
-zipWithTo f = checkOp3 "zipWithTo _" $
-    unsafeZipWithTo f
+zipWithTo dst f x y = 
+    (checkOp3 "zipWithTo _" $ \dst1 x1 y1 -> unsafeZipWithTo dst1 f x1 y1)
+        dst x y
 {-# INLINE zipWithTo #-}
 
 unsafeZipWithTo :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
-                => (e1 -> e2 -> f)
+                => STVector s f
+                -> (e1 -> e2 -> f)
                 -> v1 e1
                 -> v2 e2
-                -> STVector s f
                 -> ST s ()
-unsafeZipWithTo f v1 v2 mv =
-    let go psrc1 psrc2 pdst end
+unsafeZipWithTo dst f src1 src2 =
+    let go end pdst psrc1 psrc2 
             | pdst == end = 
                 return ()
             | otherwise = do
                 e1 <- peek psrc1
                 e2 <- peek psrc2
                 poke pdst (f e1 e2)
-                go (psrc1 `advancePtr` 1) (psrc2 `advancePtr` 1)
-                   (pdst `advancePtr` 1) end
+                go end (pdst `advancePtr` 1) (psrc1 `advancePtr` 1)
+                   (psrc2 `advancePtr` 1)
     in unsafeIOToST $
-           unsafeWith v1 $ \psrc1 ->
-           unsafeWith v2 $ \psrc2 -> 
-           unsafeWith mv $ \pdst ->
-               go psrc1 psrc2 pdst (pdst `advancePtr` dim mv)
+           unsafeWith dst $ \pdst ->
+           unsafeWith src1 $ \psrc1 ->
+           unsafeWith src2 $ \psrc2 -> 
+               go (pdst `advancePtr` dim dst) pdst psrc1 psrc2
 {-# INLINE unsafeZipWithTo #-}
 
 

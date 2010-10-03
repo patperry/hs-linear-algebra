@@ -268,13 +268,10 @@ unsafeAccum f v ies = create $ do
 -- | Construct a new vector by applying a function to every element of
 -- a vector.
 map :: (Storable e, Storable e')
-          => (e -> e')
-          -> Vector e
-          -> Vector e'
-map f v = create $ do
-    v' <- new_ (dim v)
-    unsafeMapTo f v v'
-    return v'
+    => (e -> e')
+    -> Vector e
+    -> Vector e'
+map = Vector.map
 {-# INLINE map #-}
 
 -- | Construct a new vector by applying a function to every pair of elements

@@ -202,7 +202,7 @@ map :: (Storable e, Storable e')
     -> Matrix e'
 map f a = create $ do
     a' <- new_ (dim a)
-    unsafeMapTo f a a'
+    unsafeMapTo a' f a
     return a'
 {-# INLINE map #-}
 

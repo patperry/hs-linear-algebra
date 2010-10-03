@@ -105,7 +105,7 @@ prop_getElems t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToMatrix` (M.map f x) $ \mx -> do
             es <- M.getElems mx
-            M.mapTo f mx mx
+            M.mapTo mx f mx
             return $ es === M.elems (M.map f x)
   where
     _ = typed t x
@@ -114,7 +114,7 @@ prop_getElems' t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToMatrix` (M.map f x) $ \mx -> do
             es <- M.getElems' mx
-            M.mapTo f mx mx
+            M.mapTo mx f mx
             return $ es === M.elems x
   where
     _ = typed t x
@@ -123,7 +123,7 @@ prop_getAssocs t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToMatrix` (M.map f x) $ \mx -> do
             ies <- M.getAssocs mx
-            M.mapTo f mx mx
+            M.mapTo mx f mx
             return $ ies === M.assocs (M.map f x)
   where
     _ = typed t x
@@ -132,7 +132,7 @@ prop_getAssocs' t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToMatrix` (M.map f x) $ \mx -> do
             ies <- M.getAssocs' mx
-            M.mapTo f mx mx
+            M.mapTo mx f mx
             return $ ies === M.assocs x
   where
     _ = typed t x
@@ -152,11 +152,11 @@ prop_setAssocs t (Assocs2 mn ies) =
 
 prop_mapTo t (Blind f) = binaryProp t
     (\x -> M.map f x)
-    (\mx my -> M.mapTo f mx my)
+    (\mx my -> M.mapTo my f mx)
 
 prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> M.zipWith f x y)
-    (\mx my mz -> M.zipWithTo f mx my mz)
+    (\mx my mz -> M.zipWithTo mz f mx my)
 
 prop_shiftTo t e = binaryProp t
     (\x -> M.shift e x)

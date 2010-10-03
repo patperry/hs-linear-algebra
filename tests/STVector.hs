@@ -126,7 +126,7 @@ prop_getElems t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToVector` (V.map f x) $ \mx -> do
             es <- V.getElems mx
-            V.mapTo f mx mx
+            V.mapTo mx f mx
             return $ es === V.elems (V.map f x)
   where
     _ = typed t x
@@ -135,7 +135,7 @@ prop_getElems' t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToVector` (V.map f x) $ \mx -> do
             es <- V.getElems' mx
-            V.mapTo f mx mx
+            V.mapTo mx f mx
             return $ es === V.elems x
   where
     _ = typed t x
@@ -144,7 +144,7 @@ prop_getAssocs t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToVector` (V.map f x) $ \mx -> do
             ies <- V.getAssocs mx
-            V.mapTo f mx mx
+            V.mapTo mx f mx
             return $ ies === V.assocs (V.map f x)
   where
     _ = typed t x
@@ -153,7 +153,7 @@ prop_getAssocs' t x =
     forAll arbitrary $ \(Blind f) -> runST $
         x `mutatesToVector` (V.map f x) $ \mx -> do
             ies <- V.getAssocs' mx
-            V.mapTo f mx mx
+            V.mapTo mx f mx
             return $ ies === V.assocs x
   where
     _ = typed t x
@@ -173,11 +173,11 @@ prop_setAssocs t (Assocs n ies) =
 
 prop_mapTo t (Blind f) = binaryProp t
     (\x -> V.map f x)
-    (\mx my -> V.mapTo f mx my)
+    (\mx my -> V.mapTo my f mx)
 
 prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> V.zipWith f x y)
-    (\mx my mz -> V.zipWithTo f mx my mz)
+    (\mx my mz -> V.zipWithTo mz f mx my)
 
 prop_getSumAbs t x = runST $
     x `readOnlyVector` \mx -> do

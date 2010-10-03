@@ -671,59 +671,61 @@ unsafeModify a (i,j) f = unsafeIOToST $
             pokeElemOff p o $ f e
 {-# INLINE unsafeModify #-}
 
--- | @mapTo f a c@ replaces @c@ elementwise with @f(a)@.
+-- | @mapTo dst f src@ replaces @dst@ elementwise with @f(src)@.
 mapTo :: (RMatrix m, Storable e, Storable f)
-      => (e -> f)
+      => STMatrix s f
+      -> (e -> f)
       -> m e
-      -> STMatrix s f
       -> ST s ()
-mapTo f = checkOp2 "mapTo _" $ unsafeMapTo f
+mapTo dst f src = (checkOp2 "mapTo _" $ \z x -> unsafeMapTo z f x) dst src
 {-# INLINE mapTo #-}
                             
 unsafeMapTo :: (RMatrix m, Storable e, Storable f)
-            => (e -> f)
+            => STMatrix s f
+            -> (e -> f)
             -> m e
-            -> STMatrix s f
             -> ST s ()
-unsafeMapTo f a c =
-    fromMaybe colwise $ maybeWithVectorView a $ \x ->
-    fromMaybe colwise $ maybeWithSTVectorView c $ \z ->
-        V.unsafeMapTo f x z
+unsafeMapTo dst f src =
+    fromMaybe colwise $ maybeWithSTVectorView dst $ \vdst ->
+    fromMaybe colwise $ maybeWithVectorView src $ \vsrc ->
+        V.unsafeMapTo vdst f vsrc
   where
-    colwise = withColViews   a $ \xs ->
-              withSTColViews c $ \zs ->
-                  sequence_ [ V.unsafeMapTo f x z
-                            | (x,z) <- zip xs zs
+    colwise = withSTColViews dst $ \zs ->
+              withColViews   src $ \xs ->
+                  sequence_ [ V.unsafeMapTo z f x
+                            | (z,x) <- zip zs xs
                             ]
 
--- | @zipWithTo f a b c@ replaces @c@ elementwise with @f(a, b)@.
+-- | @zipWithTo dst f x y@ replaces @dst@ elementwise with @f(x, y)@.
 zipWithTo :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
-          => (e1 -> e2 -> f)
+          => STMatrix s f
+          -> (e1 -> e2 -> f)
           -> m1 e1
           -> m2 e2
-          -> STMatrix s f
           -> ST s ()
-zipWithTo f = checkOp3 "zipWithTo _" $
-    unsafeZipWithTo f
+zipWithTo dst f x y = 
+    (checkOp3 "zipWithTo _" $ \dst1 x1 y1 -> unsafeZipWithTo dst1 f x1 y1)
+        dst x y
 {-# INLINE zipWithTo #-}
 
 unsafeZipWithTo :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
-                => (e1 -> e2 -> f)
+                => STMatrix s f
+                -> (e1 -> e2 -> f)
                 -> m1 e1
                 -> m2 e2
-                -> STMatrix s f
                 -> ST s ()
-unsafeZipWithTo f a b c =
-    fromMaybe colwise $ maybeWithVectorView a $ \x ->
-    fromMaybe colwise $ maybeWithVectorView b $ \y ->
-    fromMaybe colwise $ maybeWithSTVectorView c $ \z ->
-        V.unsafeZipWithTo f x y z
+unsafeZipWithTo dst f x y =
+    fromMaybe colwise $ maybeWithSTVectorView dst $ \vdst ->
+    fromMaybe colwise $ maybeWithVectorView x $ \vx ->
+    fromMaybe colwise $ maybeWithVectorView y $ \vy ->
+        V.unsafeZipWithTo vdst f vx vy
   where
-    colwise = withColViews   a $ \xs ->
-              withColViews   b $ \ys ->
-              withSTColViews c $ \zs ->
-                  sequence_ [ V.unsafeZipWithTo f x y z
-                            | (x,y,z) <- zip3 xs ys zs
+    colwise = withSTColViews dst $ \vdsts ->
+              withColViews   x $ \vxs ->
+              withColViews   y $ \vys ->
+              
+                  sequence_ [ V.unsafeZipWithTo vdst f vx vy
+                            | (vdst,vx,vy) <- zip3 vdsts vxs vys
                             ]
 
 -- | Set every element in the matrix to a default value.  For
