@@ -89,12 +89,12 @@ weightedSumTo wxs s = do
     V.setElems s (replicate n 0)
     forM_ wxs $ \(w,x) -> do
         V.unsafeCopyTo old_s s -- old_s := s
-        V.scaleTo w x val      -- val := w * x
-        V.addTo err val err    -- err := err + val
-        V.addTo s err s        -- s := s + err
+        V.scaleTo val w x      -- val := w * x
+        V.addTo err err val    -- err := err + val
+        V.addTo s s err        -- s := s + err
         
-        V.subTo old_s s diff   -- diff := old_s - s
-        V.addTo diff val err   -- err := diff + val
+        V.subTo diff old_s s   -- diff := old_s - s
+        V.addTo err diff val   -- err := diff + val
   where
     n = V.dim s
 
@@ -106,9 +106,9 @@ weightedMeanTo wxs m = let
     go diff w_sum ((w,x):wxs') | w == 0    = go diff w_sum wxs'
                                | otherwise = let w_sum' = w_sum + w
                                              in do
-                                    V.subTo x m diff
-                                    V.addToWithScales
-                                        (realToFrac $ w/w_sum') diff 1 m m
+                                    V.subTo diff x m
+                                    V.addWithScalesTo m
+                                        (realToFrac $ w/w_sum') diff 1 m
                                     go diff w_sum' wxs'
     in do
         diff <- V.new_ n

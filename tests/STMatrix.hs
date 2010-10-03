@@ -47,12 +47,12 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "shiftDiagTo (1)" prop_shiftDiagTo1 prop_shiftDiagTo1
     , testPropertyDZ "shiftDiagTo (2)" prop_shiftDiagTo2 prop_shiftDiagTo2
-    , testPropertyDZ "shiftDiagToWithScale (1)"
-        prop_shiftDiagToWithScale1 prop_shiftDiagToWithScale1
-    , testPropertyDZ "shiftDiagToWithScale (2)"
-        prop_shiftDiagToWithScale2 prop_shiftDiagToWithScale2
+    , testPropertyDZ "shiftDiagWithScaleTo (1)"
+        prop_shiftDiagWithScaleTo1 prop_shiftDiagWithScaleTo1
+    , testPropertyDZ "shiftDiagWithScaleTo (2)"
+        prop_shiftDiagWithScaleTo2 prop_shiftDiagWithScaleTo2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addToWithScales" prop_addToWithScales prop_addToWithScales
+    , testPropertyDZ "addWithScalesTo" prop_addWithScalesTo prop_addWithScalesTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
@@ -152,21 +152,21 @@ prop_setAssocs t (Assocs2 mn ies) =
 
 prop_mapTo t (Blind f) = binaryProp t
     (\x -> M.map f x)
-    (\mx my -> M.mapTo my f mx)
+    (\dst mx -> M.mapTo dst f mx)
 
 prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> M.zipWith f x y)
-    (\mx my mz -> M.zipWithTo mz f mx my)
+    (\dst mx my -> M.zipWithTo dst f mx my)
 
 prop_shiftTo t e = binaryProp t
     (\x -> M.shift e x)
-    (\mx my -> M.shiftTo e mx my)
+    (\dst mx -> M.shiftTo dst e mx)
 
 prop_shiftDiagTo1 t a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `mutatesToMatrix` (M.shiftDiag s a) $ \ma ->
-            M.shiftDiagTo ms ma ma
+            M.shiftDiagTo ma ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -176,47 +176,47 @@ prop_shiftDiagTo2 t (MatrixPair a b) =
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
         b `mutatesToMatrix` (M.shiftDiag s a) $ \mb ->
-            M.shiftDiagTo ms ma mb
+            M.shiftDiagTo mb ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagToWithScale1 t e a =
+prop_shiftDiagWithScaleTo1 t e a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \ma ->
-            M.shiftDiagToWithScale e ms ma ma
+            M.shiftDiagWithScaleTo ma e ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagToWithScale2 t e (MatrixPair a b) =
+prop_shiftDiagWithScaleTo2 t e (MatrixPair a b) =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
         b `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \mb ->
-            M.shiftDiagToWithScale e ms ma mb
+            M.shiftDiagWithScaleTo mb e ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
 prop_addTo t = ternaryProp t M.add M.addTo
 
-prop_addToWithScales t e f = ternaryProp t
+prop_addWithScalesTo t e f = ternaryProp t
     (\x y -> M.addWithScales e x f y)
-    (\mx my mz -> M.addToWithScales e mx f my mz)
+    (\dst mx my -> M.addWithScalesTo dst e mx f my)
     
 prop_subTo t = ternaryProp t M.sub M.subTo
 
 prop_scaleTo t e = binaryProp t
     (\x -> M.scale e x)
-    (\mx my -> M.scaleTo e mx my)
+    (\dst mx -> M.scaleTo dst e mx)
 
 prop_scaleRowsTo1 t a =
     forAll (Test.vector m) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `mutatesToMatrix` (M.scaleRows s a) $ \ma ->
-            M.scaleRowsTo ms ma ma
+            M.scaleRowsTo ma ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -226,7 +226,7 @@ prop_scaleRowsTo2 t (MatrixPair a b) =
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
         b `mutatesToMatrix` (M.scaleRows s a) $ \mb ->
-            M.scaleRowsTo ms ma mb
+            M.scaleRowsTo mb ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -235,7 +235,7 @@ prop_scaleColsTo1 t a =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `mutatesToMatrix` (M.scaleCols s a) $ \ma ->
-            M.scaleColsTo ms ma ma
+            M.scaleColsTo ma ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -245,7 +245,7 @@ prop_scaleColsTo2 t (MatrixPair a b) =
         s `readOnlyVector` \ms ->
         a `readOnlyMatrix` \ma ->
         b `mutatesToMatrix` (M.scaleCols s a) $ \mb ->
-            M.scaleColsTo ms ma mb
+            M.scaleColsTo mb ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -266,7 +266,7 @@ binaryProp t imm_f f = let
       where _ = typed t x
     prop2 t (MatrixPair x y) = runST $ let _ = typed t x in
         x `readOnlyMatrix` \mx ->
-        y `mutatesToMatrix` (imm_f x) $ \my -> f mx my
+        y `mutatesToMatrix` (imm_f x) $ \my -> f my mx
       where _ = typed t x
     in (    label "1" prop1
         .&. label "2" prop2
@@ -283,16 +283,16 @@ ternaryProp t imm_f f = let
       where _ = typed t x
     prop2a t (MatrixPair x y) = runST $
         x `readOnlyMatrix` \mx ->
-        y `mutatesToMatrix` (imm_f x y) $ \my -> f mx my my
+        y `mutatesToMatrix` (imm_f x y) $ \my -> f my mx my
       where _ = typed t x
     prop2b t (MatrixPair x y) = runST $
         x `mutatesToMatrix` (imm_f x y) $ \mx ->
-        y `readOnlyMatrix` \my -> f mx my mx
+        y `readOnlyMatrix` \my -> f mx mx my
       where _ = typed t x        
     prop3 t (MatrixTriple x y z) = runST $
         x `readOnlyMatrix` \mx ->
         y `readOnlyMatrix` \my ->
-        z `mutatesToMatrix` (imm_f x y) $ \mz -> f mx my mz
+        z `mutatesToMatrix` (imm_f x y) $ \mz -> f mz mx my
       where _ = typed t x
     in (    label "1" prop1
         .&. label "2a" prop2a

@@ -34,6 +34,8 @@ fromList [0.0] :: Data.Vector.Storable.Vector
 UnbiasedCov
   covMatrix: [Failed]
 
+* Check arguments in shiftDiagWithScale (Matrix)
+
 
 Medium projects
 ---------------

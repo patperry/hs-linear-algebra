@@ -334,15 +334,15 @@ instance (Storable e, AEq e) => AEq (Matrix e) where
 
 -- | @shift k a@ returns @k + a@.
 shift :: (VNum e) => e -> Matrix e -> Matrix e
-shift k = result $ shiftTo k
+shift k = result $ flip shiftTo k
 
 -- | @shiftDiag d a@ returns @diag(d) + a@.
 shiftDiag :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-shiftDiag s = result $ shiftDiagTo s
+shiftDiag s = result $ flip shiftDiagTo s
 
 -- | @shiftDiagWithScale alpha d a@ returns @alpha * diag(d) + a@.
 shiftDiagWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
-shiftDiagWithScale e s = result $ shiftDiagToWithScale e s
+shiftDiagWithScale e s = result $ \dst -> shiftDiagWithScaleTo dst e s
 
 -- | @add a b@ returns @a + b@.
 add :: (VNum e) => Matrix e -> Matrix e -> Matrix e
@@ -351,7 +351,7 @@ add = result2 addTo
 -- | @addWithScales alpha a beta b@ returns @alpha*a + beta*b@.
 addWithScales :: (VNum e) => e -> Matrix e -> e -> Matrix e -> Matrix e
 addWithScales alpha a beta b =
-    (result2 $ \a' b' -> addToWithScales alpha a' beta b') a b
+    (result2 $ \dst a' b' -> addWithScalesTo dst alpha a' beta b') a b
 
 -- | @sub a b@ returns @a - b@.
 sub :: (VNum e) => Matrix e -> Matrix e -> Matrix e
@@ -359,15 +359,15 @@ sub = result2 subTo
 
 -- | @scale k a@ returns @k * a@.
 scale :: (VNum e) => e -> Matrix e -> Matrix e
-scale k = result $ scaleTo k
+scale k = result $ flip scaleTo k
 
 -- | @scaleRows s a@ returns @diag(s) * a@.
 scaleRows :: (VNum e) => Vector e -> Matrix e -> Matrix e
-scaleRows s = result $ scaleRowsTo s
+scaleRows s = result $ flip scaleRowsTo s
 
 -- | @scaleCols s a@ returns @a * diag(s)@.
 scaleCols :: (VNum e) => Vector e -> Matrix e -> Matrix e
-scaleCols s = result $ scaleColsTo s
+scaleCols s = result $ flip scaleColsTo s
 
 -- | @negate a@ returns @-a@.
 negate :: (VNum e) => Matrix e -> Matrix e
@@ -519,14 +519,14 @@ compareWith cmp a a' =
 {-# INLINE compareWith #-}
 
 result :: (Storable e, Storable f)
-       => (forall s . Matrix e -> STMatrix s f -> ST s a)
+       => (forall s . STMatrix s f -> Matrix e -> ST s a)
        -> Matrix e
        -> Matrix f
 result f a = create $ newResult f a
 {-# INLINE result #-}
 
 result2 :: (Storable e, Storable f, Storable g)
-        => (forall s . Matrix e -> Matrix f -> STMatrix s g -> ST s a)
+        => (forall s . STMatrix s g -> Matrix e -> Matrix f -> ST s a)
         -> Matrix e
         -> Matrix f
         -> Matrix g

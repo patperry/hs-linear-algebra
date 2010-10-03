@@ -61,7 +61,7 @@ module Numeric.LinearAlgebra.Vector.STBase (
     
     shiftTo,
     addTo,
-    addToWithScales,
+    addWithScalesTo,
     subTo,
     scaleTo,
     mulTo,
@@ -478,178 +478,166 @@ clear x = unsafeIOToST $ unsafeWith x $ \p -> clearArray p n
   where
     n = dim x
 
--- | @negateTo x z@ replaces @z@ with @negate(x)@.
-negateTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-negateTo = checkOp2 "negateTo" $
-    call2 VMath.vNeg
+-- | @negateTo dst x@ replaces @dst@ with @negate(x)@.
+negateTo :: (RVector v, VNum e) => STVector s e -> v e -> ST s ()
+negateTo = checkOp2 "negateTo" $ \dst x -> 
+    call2 VMath.vNeg x dst
 {-# INLINE negateTo #-}
 
--- | @absTo x z@ replaces @z@ with @abs(x)@.
-absTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-absTo = checkOp2 "absTo" $
-    call2 VMath.vAbs
+-- | @absTo dst x@ replaces @dst@ with @abs(x)@.
+absTo :: (RVector v, VNum e) => STVector s e -> v e -> ST s ()
+absTo = checkOp2 "absTo" $ \dst x -> 
+    call2 VMath.vAbs x dst
 {-# INLINE absTo #-}
 
--- | @signumTo x z@ replaces @z@ with @signum(x)@.
-signumTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-signumTo = checkOp2 "signumTo" $
-    call2 VMath.vSgn
+-- | @signumTo dst x@ replaces @dst@ with @signum(x)@.
+signumTo :: (RVector v, VNum e) => STVector s e -> v e -> ST s ()
+signumTo = checkOp2 "signumTo" $ \dst x ->
+    call2 VMath.vSgn x dst
 {-# INLINE signumTo #-}
 
 
--- | @conjugateTo x z@ replaces @z@ with @conjugate(x)@.
-conjugateTo :: (RVector v, VNum e) => v e -> STVector s e -> ST s ()
-conjugateTo = checkOp2 "conjugateTo" $
-    call2 VMath.vConj
+-- | @conjugateTo dst x@ replaces @dst@ with @conjugate(x)@.
+conjugateTo :: (RVector v, VNum e) => STVector s e -> v e -> ST s ()
+conjugateTo = checkOp2 "conjugateTo" $ \dst x ->
+    call2 VMath.vConj x dst
 {-# INLINE conjugateTo #-}
 
--- | @shiftTo alpha x z@ replaces @z@ with @alpha + x@.
-shiftTo :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
-shiftTo alpha = checkOp2 "shiftTo _" $
-    call2 (flip VMath.vShift alpha)
+-- | @shiftTo dst alpha x@ replaces @dst@ with @alpha + x@.
+shiftTo :: (RVector v, VNum e) => STVector s e -> e -> v e -> ST s ()
+shiftTo dst alpha x =
+    (checkOp2 "shiftTo" $ \dst1 x1 -> 
+        call2 (flip VMath.vShift alpha) x1 dst1)
+            dst x
 {-# INLINE shiftTo #-}
 
--- | @scaleTo alpha x z@ replaces @z@ with @alpha * x@.
-scaleTo :: (RVector v, VNum e) => e -> v e -> STVector s e -> ST s ()
-scaleTo alpha = checkOp2 "scaleTo _" $
-    call2 (flip VMath.vScale alpha)
+-- | @scaleTo dst alpha x@ replaces @dst@ with @alpha * x@.
+scaleTo :: (RVector v, VNum e) => STVector s e -> e -> v e -> ST s ()
+scaleTo dst alpha x = 
+    (checkOp2 "scaleTo" $ \dst1 x1 ->
+        call2 (flip VMath.vScale alpha) x1 dst1)
+            dst x
 {-# INLINE scaleTo #-}
 
--- | @addToWithScales alpha x beta y z@ replaces @z@ with
+-- | @addWithScalesTo dst alpha x beta y@ replaces @dst@ with
 -- @alpha * x + beta * y@.
-addToWithScales :: (RVector v1, RVector v2, VNum e)
-                => e -> v1 e -> e -> v2 e -> STVector s e -> ST s ()
-addToWithScales alpha x beta y z =
-    checkOp3 "addToWithScales"
-        (call3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3))
-        x y z
-{-# INLINE addToWithScales #-}
+addWithScalesTo :: (RVector v1, RVector v2, VNum e)
+                => STVector s e -> e -> v1 e -> e -> v2 e -> ST s ()
+addWithScalesTo dst alpha x beta y =
+    (checkOp3 "addWithScalesTo" $ \dst1 x1 y1 ->
+        call3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3) x1 y1 dst1)
+            dst x y
+{-# INLINE addWithScalesTo #-}
 
--- | @addTo x y z@ replaces @z@ with @x+y@.
+-- | @addTo dst x y@ replaces @dst@ with @x+y@.
 addTo :: (RVector v1, RVector v2, VNum e)
-      => v1 e -> v2 e -> STVector s e -> ST s ()
-addTo = checkOp3 "addTo" $ call3 VMath.vAdd
+      =>  STVector s e -> v1 e -> v2 e -> ST s ()
+addTo = checkOp3 "addTo" $ \dst x y -> call3 VMath.vAdd x y dst
 {-# INLINE addTo #-}
 
--- | @subTo x y z@ replaces @z@ with @x-y@.
+-- | @subTo dst x y@ replaces @dst@ with @x-y@.
 subTo :: (RVector v1, RVector v2, VNum e)
-      => v1 e -> v2 e -> STVector s e -> ST s ()
-subTo = checkOp3 "subTo" $ call3 VMath.vSub
+      => STVector s e -> v1 e -> v2 e -> ST s ()
+subTo = checkOp3 "subTo" $ \dst x y -> call3 VMath.vSub x y dst
 {-# INLINE subTo #-}
 
--- | @mulTo x y z@ replaces @z@ with @x*y@.
+-- | @mulTo dst x y@ replaces @dst@ with @x*y@.
 mulTo :: (RVector v1, RVector v2, VNum e)
-      => v1 e -> v2 e -> STVector s e -> ST s ()
-mulTo = checkOp3 "mulTo" $ call3 VMath.vMul
+      => STVector s e -> v1 e -> v2 e -> ST s ()
+mulTo = checkOp3 "mulTo" $ \dst x y -> call3 VMath.vMul x y dst
 {-# INLINE mulTo #-}
  
--- | @divTo x y z@ replaces @z@ with @x/y@.
+-- | @divTo dst x y@ replaces @dst@ with @x/y@.
 divTo :: (RVector v1, RVector v2, VFractional e)
-      => v1 e -> v2 e -> STVector s e -> ST s ()
-divTo = checkOp3 "divTo" $ call3 VMath.vDiv
+      => STVector s e -> v1 e -> v2 e -> ST s ()
+divTo = checkOp3 "divTo" $ \dst x y -> call3 VMath.vDiv x y dst
 {-# INLINE divTo #-}
 
--- | @recipTo x z@ replaces @z@ with @1/x@.
+-- | @recipTo dst x@ replaces @dst@ with @1/x@.
 recipTo :: (RVector v, VFractional e)
-        => v e -> STVector s e -> ST s ()
-recipTo = checkOp2 "recipTo" $ call2 VMath.vInv
+        => STVector s e -> v e -> ST s ()
+recipTo = checkOp2 "recipTo" $ \dst x -> call2 VMath.vInv x dst
 {-# INLINE recipTo #-}
 
--- | @sqrtTo x z@ replaces @z@ with @sqrt(x)@.
-sqrtTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sqrtTo = checkOp2 "sqrtTo" $
-    call2 VMath.vSqrt
+-- | @sqrtTo dst x@ replaces @dst@ with @sqrt(x)@.
+sqrtTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+sqrtTo = checkOp2 "sqrtTo" $ \dst x -> call2 VMath.vSqrt x dst
 {-# INLINE sqrtTo #-}
 
--- | @expTo x z@ replaces @z@ with @exp(x)@.
-expTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-expTo = checkOp2 "expTo" $
-    call2 VMath.vExp
+-- | @expTo dst x@ replaces @dst@ with @exp(x)@.
+expTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+expTo = checkOp2 "expTo" $ \dst x -> call2 VMath.vExp x dst
 {-# INLINE expTo #-}
 
--- | @logTo x z@ replaces @z@ with @log(x)@.
-logTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-logTo = checkOp2 "logTo" $
-    call2 VMath.vLog
+-- | @logTo dst x@ replaces @dst@ with @log(x)@.
+logTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+logTo = checkOp2 "logTo" $ \dst x -> call2 VMath.vLog x dst
 {-# INLINE logTo #-}
 
--- | @powTo x y z@ replaces @z@ with @x ** y@.
+-- | @powTo dst x y@ replaces @dst@ with @x ** y@.
 powTo :: (RVector v1, RVector v2, VFloating e)
-            => v1 e -> v2 e -> STVector s e -> ST s ()
-powTo = checkOp3 "powTo" $
-    call3 VMath.vPow
+      => STVector s e -> v1 e -> v2 e -> ST s ()
+powTo = checkOp3 "powTo" $ \dst x y -> call3 VMath.vPow x y dst
 {-# INLINE powTo #-}
 
--- | @sinTo x z@ replaces @z@ with @sin(x)@.
-sinTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sinTo = checkOp2 "sinTo" $
-    call2 VMath.vSin
+-- | @sinTo dst x@ replaces @dst@ with @sin(x)@.
+sinTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+sinTo = checkOp2 "sinTo" $ \dst x -> call2 VMath.vSin x dst
 {-# INLINE sinTo #-}
 
--- | @cosTo x z@ replaces @z@ with @cos(x)@.
-cosTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-cosTo = checkOp2 "cosTo" $
-    call2 VMath.vCos
+-- | @cosTo dst x@ replaces @dst@ with @cos(x)@.
+cosTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+cosTo = checkOp2 "cosTo" $ \dst x -> call2 VMath.vCos x dst
 {-# INLINE cosTo #-}
 
--- | @tanTo x z@ replaces @z@ with @tan(x)@.
-tanTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-tanTo = checkOp2 "tanTo" $
-    call2 VMath.vTan
+-- | @tanTo dst x@ replaces @dst@ with @tan(x)@.
+tanTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+tanTo = checkOp2 "tanTo" $ \dst x -> call2 VMath.vTan x dst
 {-# INLINE tanTo #-}
 
--- | @asinTo x z@ replaces @z@ with @asin(x)@.
-asinTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-asinTo = checkOp2 "asinTo" $
-    call2 VMath.vASin
+-- | @asinTo dst x@ replaces @dst@ with @asin(x)@.
+asinTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+asinTo = checkOp2 "asinTo" $ \dst x -> call2 VMath.vASin x dst
 {-# INLINE asinTo #-}
 
--- | @acosTo x z@ replaces @z@ with @acos(x)@.
-acosTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-acosTo = checkOp2 "acosTo" $
-    call2 VMath.vACos
+-- | @acosTo dst x@ replaces @dst@ with @acos(x)@.
+acosTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+acosTo = checkOp2 "acosTo" $ \dst x -> call2 VMath.vACos x dst
 {-# INLINE acosTo #-}
 
--- | @atanTo x z@ replaces @z@ with @atan(x)@.
-atanTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-atanTo = checkOp2 "atanTo" $
-    call2 VMath.vATan
+-- | @atanTo dst x@ replaces @dst@ with @atan(x)@.
+atanTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+atanTo = checkOp2 "atanTo" $ \dst x -> call2 VMath.vATan x dst
 {-# INLINE atanTo #-}
 
--- | @sinhTo x z@ replaces @z@ with @sinh(x)@.
-sinhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-sinhTo = checkOp2 "sinhTo" $
-    call2 VMath.vSinh
+-- | @sinhTo dst x@ replaces @dst@ with @sinh(x)@.
+sinhTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+sinhTo = checkOp2 "sinhTo" $ \dst x -> call2 VMath.vSinh x dst
 {-# INLINE sinhTo #-}
 
--- | @coshTo x z@ replaces @z@ with @cosh(x)@.
-coshTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-coshTo = checkOp2 "coshTo" $
-    call2 VMath.vCosh
+-- | @coshTo dst x@ replaces @dst@ with @cosh(x)@.
+coshTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+coshTo = checkOp2 "coshTo" $ \dst x -> call2 VMath.vCosh x dst
 {-# INLINE coshTo #-}
 
--- | @tanhTo x z@ replaces @z@ with @tanh(x)@.
-tanhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-tanhTo = checkOp2 "tanhTo" $
-    call2 VMath.vTanh
+-- | @tanhTo dst x@ replaces @dst@ with @tanh(x)@.
+tanhTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+tanhTo = checkOp2 "tanhTo" $ \dst x -> call2 VMath.vTanh x dst
 {-# INLINE tanhTo #-}
 
--- | @asinhTo x z@ replaces @z@ with @asinh(x)@.
-asinhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-asinhTo = checkOp2 "asinhTo" $
-    call2 VMath.vASinh
+-- | @asinhTo dst x@ replaces @dst@ with @asinh(x)@.
+asinhTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+asinhTo = checkOp2 "asinhTo" $ \dst x -> call2 VMath.vASinh x dst
 {-# INLINE asinhTo #-}
 
--- | @acoshTo x z@ replaces @z@ with @acosh(x)@.
-acoshTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-acoshTo = checkOp2 "acoshTo" $
-    call2 VMath.vACosh
+-- | @acoshTo dst x@ replaces @dst@ with @acosh(x)@.
+acoshTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+acoshTo = checkOp2 "acoshTo" $ \dst x -> call2 VMath.vACosh x dst
 {-# INLINE acoshTo #-}
 
--- | @atanhTo x z@ replaces @z@ with @atanh(x)@.
-atanhTo :: (RVector v, VFloating e) => v e -> STVector s e -> ST s ()
-atanhTo = checkOp2 "atanhTo" $
-    call2 VMath.vATanh
+-- | @atanhTo dst x@ replaces @dst@ with @atanh(x)@.
+atanhTo :: (RVector v, VFloating e) => STVector s e -> v e -> ST s ()
+atanhTo = checkOp2 "atanhTo" $ \dst x -> call2 VMath.vATanh x dst
 {-# INLINE atanhTo #-}
 
 
@@ -700,7 +688,7 @@ kroneckerTo dst x y
     | otherwise = do
         ies <- getAssocs x
         forM_ ies $ \(i,e) ->
-            scaleTo e y (unsafeSlice (i*n) n dst)
+            scaleTo (unsafeSlice (i*n) n dst) e y
   where
     m = dim x
     n = dim y
@@ -802,23 +790,23 @@ checkOp3 str f x y z
 {-# INLINE checkOp3 #-}
 
 newResult :: (RVector v, Storable e, Storable f)
-          => (v e -> STVector s f -> ST s a)
+          => (STVector s f -> v e -> ST s a)
           -> v e
           -> ST s (STVector s f)
 newResult f v = do
     z <- new_ (dim v)
-    _ <- f v z
+    _ <- f z v
     return z
 {-# INLINE newResult #-}
 
 
 newResult2 :: (RVector v1, RVector v2, Storable e, Storable f, Storable g)
-           => (v1 e -> v2 f -> STVector s g -> ST s a)
+           => (STVector s g -> v1 e -> v2 f -> ST s a)
            -> v1 e
            -> v2 f
            -> ST s (STVector s g)
 newResult2 f v1 v2 = do
     z <- new_ (dim v1)
-    _ <- f v1 v2 z
+    _ <- f z v1 v2
     return z
 {-# INLINE newResult2 #-}

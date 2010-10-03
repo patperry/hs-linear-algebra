@@ -12,7 +12,7 @@
 module Numeric.LinearAlgebra.Matrix.STBase
     where
       
-import Control.Monad( forM_, zipWithM_ )
+import Control.Monad( forM_ )
 import Control.Monad.ST( ST, RealWorld, unsafeIOToST )
 import Data.Maybe( fromMaybe )
 import Data.Typeable( Typeable )
@@ -390,7 +390,7 @@ copyTo = checkOp2 "copyTo" unsafeCopyTo
 {-# INLINE copyTo #-}
 
 unsafeCopyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
-unsafeCopyTo = flip $ vectorOp2 (flip V.unsafeCopyTo)
+unsafeCopyTo = vectorOp2 V.unsafeCopyTo
 {-# INLINE unsafeCopyTo #-}
 
 -- | Create a view of a matrix by taking the initial rows.
@@ -738,115 +738,134 @@ clear a = case maybeSTVectorView a of
 
 -- | Add a constant to all entries of a matrix.
 shiftTo :: (RMatrix m, VNum e)
-        => e -> m e -> STMatrix s e -> ST s ()
-shiftTo e = checkOp2 "shiftTo" $
-    vectorOp2 (V.shiftTo e)
+        => STMatrix s e -> e -> m e -> ST s ()
+shiftTo dst e x = 
+    (checkOp2 "shiftTo" $ \dst1 x1 ->
+        vectorOp2 (flip V.shiftTo e) dst1 x1)
+            dst x
 
 -- | Add a vector to the diagonal of a matrix.
 shiftDiagTo :: (RVector v, RMatrix m, BLAS1 e)
-            => v e -> m e -> STMatrix s e -> ST s ()
-shiftDiagTo s a b
+            => STMatrix s e -> v e -> m e -> ST s ()
+shiftDiagTo dst s a
     | V.dim s /= mn || dim a /= (m,n) = error $
-        printf ("shiftDiagTo <vector with dim %d>"
-                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
-                ++ " dimension mismatch") (V.dim s)
-                (fst $ dim a) (snd $ dim a) m n
-    | otherwise = shiftDiagToWithScale 1 s a b
+        printf ("shiftDiagTo"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch")
+                m n
+                (V.dim s)
+                (fst $ dim a) (snd $ dim a)
+    | otherwise = shiftDiagWithScaleTo dst 1 s a
   where
-    (m,n) = dim b
+    (m,n) = dim dst
     mn = min m n
 
 -- | Add a scaled vector to the diagonal of a matrix.
-shiftDiagToWithScale :: (RVector v, RMatrix m, BLAS1 e)
-                     => e -> v e -> m e -> STMatrix s e -> ST s ()
-shiftDiagToWithScale e s a b
+shiftDiagWithScaleTo :: (RVector v, RMatrix m, BLAS1 e)
+                     => STMatrix s e -> e -> v e -> m e -> ST s ()
+shiftDiagWithScaleTo dst e s a
     | V.dim s /= mn || dim a /= (m,n) = error $
-        printf ("shiftDiagToWithScale _ <vector with dim %d>"
-                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
-                ++ " dimension mismatch") (V.dim s)
-                (fst $ dim a) (snd $ dim a) m n
+        printf ("shiftDiagToWithScale"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " _"
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch")
+                m n
+                (V.dim s)
+                (fst $ dim a) (snd $ dim a)
     | otherwise = do
-        unsafeCopyTo b a
+        unsafeCopyTo dst a
         unsafeIOToST $
             V.unsafeWith s $ \ps ->
-            unsafeWith b $ \pb ldb ->
-                BLAS.axpy mn e ps 1 pb (ldb+1)
+            unsafeWith dst $ \pdst lddst ->
+                BLAS.axpy mn e ps 1 pdst (lddst+1)
   where
-    (m,n) = dim b
+    (m,n) = dim dst
     mn = min m n
 
 -- | Add two matrices.
 addTo :: (RMatrix m1, RMatrix m2, VNum e)
-      => m1 e -> m2 e -> STMatrix s e -> ST s ()
+      =>  STMatrix s e -> m1 e -> m2 e -> ST s ()
 addTo = checkOp3 "addTo" $ vectorOp3 V.addTo
 
 -- | Add two matrices with the given scales.
-addToWithScales :: (RMatrix m1, RMatrix m2, VNum e)
-                => e -> m1 e -> e -> m2 e -> STMatrix s e -> ST s ()
-addToWithScales alpha a beta b c =
-    (checkOp3 "addToWithScales" $
-        vectorOp3 (\x y z -> V.addToWithScales alpha x beta y z))
-        a b c
+addWithScalesTo :: (RMatrix m1, RMatrix m2, VNum e)
+                => STMatrix s e -> e -> m1 e -> e -> m2 e -> ST s ()
+addWithScalesTo dst alpha a beta b =
+    (checkOp3 "addWithScalesTo" $
+        vectorOp3 (\z x y -> V.addWithScalesTo z alpha x beta y))
+            dst a b
 
 -- | Subtract two matrices.
 subTo :: (RMatrix m1, RMatrix m2, VNum e)
-      => m1 e -> m2 e -> STMatrix s e -> ST s ()
+      => STMatrix s e -> m1 e -> m2 e -> ST s ()
 subTo = checkOp3 "subTo" $ vectorOp3 V.subTo
 
 -- | Conjugate the entries of a matrix.
 conjugateTo :: (RMatrix m, VNum e)
-            => m e -> STMatrix s e -> ST s ()
+            => STMatrix s e -> m e -> ST s ()
 conjugateTo = checkOp2 "conjugateTo" $
     vectorOp2 V.conjugateTo
 
 -- | Negate the entries of a matrix.
 negateTo :: (RMatrix m, VNum e)
-         => m e -> STMatrix s e -> ST s ()
+         => STMatrix s e -> m e -> ST s ()
 negateTo = checkOp2 "negateTo" $
     vectorOp2 V.negateTo
 
 -- | Scale the entries of a matrix by the given value.
 scaleTo :: (RMatrix m, VNum e)
-        => e -> m e -> STMatrix s e -> ST s ()
-scaleTo e = checkOp2 "scaleTo" $
-    vectorOp2 (V.scaleTo e)
+        => STMatrix s e -> e -> m e -> ST s ()
+scaleTo dst e x = 
+    (checkOp2 "scaleTo" $ vectorOp2 (flip V.scaleTo e)) dst x
 
--- | Scale the rows of a matrix; @scaleRowsTo s a c@ sets
--- @c := diag(s) * a@.
+-- | Scale the rows of a matrix; @scaleRowsTo dst s a@ sets
+-- @dst := diag(s) * a@.
 scaleRowsTo :: (RVector v, RMatrix m, VNum e)
-            => v e -> m e -> STMatrix s e -> ST s ()
-scaleRowsTo s a b
+            => STMatrix s e -> v e -> m e -> ST s ()
+scaleRowsTo dst s a
     | V.dim s /= m || dim a /= (m,n) = error $
-        printf ("scaleRowsTo <vector with dim %d>"
-                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
-                ++ " dimension mismatch") (V.dim s)
-                (fst $ dim a) (snd $ dim a) m n
+        printf ("scaleRowsTo"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch")
+                m n
+                (V.dim s)
+                (fst $ dim a) (snd $ dim a)
     | otherwise =
+        withSTColViews dst $ \ys ->
         withColViews   a $ \xs ->
-        withSTColViews b $ \ys ->
-            zipWithM_ (V.mulTo s) xs ys
+            sequence_ [ V.mulTo y s x | (y,x) <- zip ys xs ]
   where
-    (m,n) = dim b
+    (m,n) = dim dst
 
--- | Scale the columns of a matrix; @scaleColsTo s a c@ sets
--- @c := a * diag(s)@.
+-- | Scale the columns of a matrix; @scaleColsTo dst s a@ sets
+-- @dst := a * diag(s)@.
 scaleColsTo :: (RVector v, RMatrix m, VNum e)
-            => v e -> m e -> STMatrix s e -> ST s ()
-scaleColsTo s a b 
+            => STMatrix s e -> v e -> m e -> ST s ()
+scaleColsTo dst s a
     | V.dim s /= n || dim a /= (m,n) = error $
-        printf ("scaleColsTo <vector with dim %d>"
-                ++ " <matrix with dim (%d,%d)> matrix with dim (%d,%d)>:"
-                ++ " dimension mismatch") (V.dim s)
-                (fst $ dim a) (snd $ dim a) m n
+        printf ("scaleColsTo"
+                ++ " <matrix with dim (%d,%d)>"        
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch") 
+                m n
+                (V.dim s)
+                (fst $ dim a) (snd $ dim a)
     | otherwise =
         V.getElems   s >>= \es ->
-        withColViews   a $ \xs ->
-        withSTColViews b $ \ys ->
-            sequence_ [ V.scaleTo e x y
+        withSTColViews dst $ \ys ->
+        withColViews   a   $ \xs ->
+            sequence_ [ V.scaleTo y e x
                       | (e,x,y) <- zip3 es xs ys
                       ]
   where
-    (m,n) = dim b
+    (m,n) = dim dst
 
 -- | @rank1UpdateTo alpha x y a@ sets @a := alpha * x * y^H + a@.
 rank1UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
@@ -1055,51 +1074,52 @@ checkOp3 str f x y z
 {-# INLINE checkOp3 #-}
 
 vectorOp2 :: (RMatrix m, Storable e, Storable f)
-          => (forall v . RVector v => v e -> STVector s f -> ST s ())
-          -> m e -> STMatrix s f -> ST s ()
-vectorOp2 f a c =
-    fromMaybe colwise $ maybeWithVectorView   a $ \x ->
-    fromMaybe colwise $ maybeWithSTVectorView c $ \z ->
-        f x z
+          => (forall v . RVector v => STVector s f -> v e -> ST s ())
+          -> STMatrix s f -> m e -> ST s ()
+vectorOp2 f dst x =
+    fromMaybe colwise $ maybeWithSTVectorView dst $ \vdst ->
+    fromMaybe colwise $ maybeWithVectorView   x   $ \vx ->
+        f vdst vx
   where
-    colwise = withColViews   a $ \xs ->
-              withSTColViews c $ \zs ->
-                  sequence_ [ f x z | (x,z) <- zip xs zs ]
+    colwise = withSTColViews dst $ \vdsts ->
+              withColViews   x   $ \vxs ->
+                  sequence_ [ f vdst vx | (vdst,vx) <- zip vdsts vxs ]
 {-# INLINE vectorOp2 #-}
 
 vectorOp3 :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
           => (forall v1 v2 . (RVector v1, RVector v2) => 
-                  v1 e1 -> v2 e2 -> STVector s f -> ST s ())
-          -> m1 e1 -> m2 e2 -> STMatrix s f -> ST s ()
-vectorOp3 f a b c =
-    fromMaybe colwise $ maybeWithVectorView   a $ \x ->
-    fromMaybe colwise $ maybeWithVectorView   b $ \y ->
-    fromMaybe colwise $ maybeWithSTVectorView c $ \z ->
-        f x y z
+                  STVector s f -> v1 e1 -> v2 e2 -> ST s ())
+          -> STMatrix s f -> m1 e1 -> m2 e2 -> ST s ()
+vectorOp3 f dst x y =
+    fromMaybe colwise $ maybeWithSTVectorView dst $ \vdst ->
+    fromMaybe colwise $ maybeWithVectorView   x $ \vx ->
+    fromMaybe colwise $ maybeWithVectorView   y $ \vy ->
+        f vdst vx vy
   where
-    colwise = withColViews   a $ \xs ->
-              withColViews   b $ \ys ->
-              withSTColViews c $ \zs ->
-                  sequence_ [ f x y z | (x,y,z) <- zip3 xs ys zs ]
+    colwise = withSTColViews dst $ \vdsts ->
+              withColViews   x   $ \vxs ->
+              withColViews   y   $ \vys ->
+                  sequence_ [ f vdst vx vy
+                            | (vdst,vx,vy) <- zip3 vdsts vxs vys ]
 {-# INLINE vectorOp3 #-}
 
 newResult :: (RMatrix m, Storable e, Storable f)
-          => (m e -> STMatrix s f -> ST s a)
+          => (STMatrix s f -> m e -> ST s a)
           -> m e
           -> ST s (STMatrix s f)
 newResult f a = do
     c <- new_ (dim a)
-    _ <- f a c
+    _ <- f c a
     return c
 {-# INLINE newResult #-}
 
 newResult2 :: (RMatrix m1, RMatrix m2, Storable e, Storable f, Storable g)
-           => (m1 e -> m2 f -> STMatrix s g -> ST s a)
+           => (STMatrix s g -> m1 e -> m2 f -> ST s a)
            -> m1 e
            -> m2 f
            -> ST s (STMatrix s g)
 newResult2 f a1 a2 = do
     c <- new_ (dim a1)
-    _ <- f a1 a2 c
+    _ <- f c a1 a2
     return c
 {-# INLINE newResult2 #-}

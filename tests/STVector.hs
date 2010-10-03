@@ -49,7 +49,7 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "kroneckerTo" prop_kroneckerTo prop_kroneckerTo
     , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addToWithScales" prop_addToWithScales prop_addToWithScales
+    , testPropertyDZ "addWithScalesTo" prop_addWithScalesTo prop_addWithScalesTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
@@ -173,11 +173,11 @@ prop_setAssocs t (Assocs n ies) =
 
 prop_mapTo t (Blind f) = binaryProp t
     (\x -> V.map f x)
-    (\mx my -> V.mapTo my f mx)
+    (\dst mx -> V.mapTo dst f mx)
 
 prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> V.zipWith f x y)
-    (\mx my mz -> V.zipWithTo mz f mx my)
+    (\dst mx my -> V.zipWithTo dst f mx my)
 
 prop_getSumAbs t x = runST $
     x `readOnlyVector` \mx -> do
@@ -212,19 +212,19 @@ prop_kroneckerTo t = sized $ \s -> resize (s `div` 2) $
 
 prop_shiftTo t e = binaryProp t
     (\x -> V.shift e x)
-    (\mx my -> V.shiftTo e mx my)
+    (\dst mx -> V.shiftTo dst e mx)
     
 prop_addTo t = ternaryProp t V.add V.addTo
 
-prop_addToWithScales t e f = ternaryProp t
+prop_addWithScalesTo t e f = ternaryProp t
     (\x y -> V.addWithScales e x f y)
-    (\mx my mz -> V.addToWithScales e mx f my mz)
+    (\dst mx my -> V.addWithScalesTo dst e mx f my)
     
 prop_subTo t = ternaryProp t V.sub V.subTo
 
 prop_scaleTo t e = binaryProp t
     (\x -> V.scale e x)
-    (\mx my -> V.scaleTo e mx my)
+    (\dst mx -> V.scaleTo dst e mx)
 
 prop_mulTo t = ternaryProp t V.mul V.mulTo
 prop_negateTo t = binaryProp t V.negate V.negateTo
@@ -264,7 +264,7 @@ binaryProp t imm_f f = let
       where _ = typed t x
     prop2 t (VectorPair x y) = runST $ let _ = typed t x in
         x `readOnlyVector` \mx ->
-        y `mutatesToVector` (imm_f x) $ \my -> f mx my
+        y `mutatesToVector` (imm_f x) $ \my -> f my mx
       where _ = typed t x
     in (    label "1" prop1
         .&. label "2" prop2
@@ -281,16 +281,16 @@ ternaryProp t imm_f f = let
       where _ = typed t x
     prop2a t (VectorPair x y) = runST $
         x `readOnlyVector` \mx ->
-        y `mutatesToVector` (imm_f x y) $ \my -> f mx my my
+        y `mutatesToVector` (imm_f x y) $ \my -> f my mx my
       where _ = typed t x
     prop2b t (VectorPair x y) = runST $
         x `mutatesToVector` (imm_f x y) $ \mx ->
-        y `readOnlyVector` \my -> f mx my mx
+        y `readOnlyVector` \my -> f mx mx my
       where _ = typed t x        
     prop3 t (VectorTriple x y z) = runST $
         x `readOnlyVector` \mx ->
         y `readOnlyVector` \my ->
-        z `mutatesToVector` (imm_f x y) $ \mz -> f mx my mz
+        z `mutatesToVector` (imm_f x y) $ \mz -> f mz mx my
       where _ = typed t x
     in (    label "1" prop1
         .&. label "2a" prop2a
@@ -301,7 +301,7 @@ ternaryProp t imm_f f = let
 
 readOnlyVector :: (Storable e, AEq e, Testable prop, Show e)
                => Vector e
-               -> (STVector s e ->  ST s prop)
+               -> (STVector s e -> ST s prop)
                -> ST s Property
 readOnlyVector x = mutatesToVector x x
 

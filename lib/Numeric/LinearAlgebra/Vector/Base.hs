@@ -366,7 +366,7 @@ compareWith cmp v v' =
 
 -- | @shift k x@ returns @k + x@.
 shift :: (VNum e) => e -> Vector e -> Vector e
-shift k = result $ shiftTo k
+shift k = result $ \dst -> shiftTo dst k
 
 -- | @add x y@ returns @x + y@.
 add :: (VNum e) => Vector e -> Vector e -> Vector e
@@ -375,7 +375,7 @@ add = result2 addTo
 -- | @addWithScales a x b y@ returns @a*x + b*y@.
 addWithScales :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
 addWithScales a x b y =
-    (result2 $ \x' y' -> addToWithScales a x' b y') x y
+    (result2 $ \dst x' y' -> addWithScalesTo dst a x' b y') x y
 
 -- | @sub x y@ returns @x - y@.
 sub :: (VNum e) => Vector e -> Vector e -> Vector e
@@ -383,7 +383,7 @@ sub = result2 subTo
 
 -- | @scale k x@ returns @k * x@.
 scale :: (VNum e) => e -> Vector e -> Vector e
-scale k = result $ scaleTo k
+scale k = result $ \dst -> scaleTo dst k
 
 -- | @mul x y@ returns @x + y@.
 mul :: (VNum e) => Vector e -> Vector e -> Vector e
@@ -479,14 +479,14 @@ atanh = result atanhTo
 
 
 result :: (Storable e, Storable f)
-       => (forall s . Vector e -> STVector s f -> ST s a)
+       => (forall s . STVector s f -> Vector e -> ST s a)
        -> Vector e
        -> Vector f
 result f v = create $ newResult f v
 {-# INLINE result #-}
 
 result2 :: (Storable e, Storable f, Storable g)
-        => (forall s . Vector e -> Vector f -> STVector s g -> ST s a)
+        => (forall s . STVector s g -> Vector e -> Vector f -> ST s a)
         -> Vector e
         -> Vector f
         -> Vector g

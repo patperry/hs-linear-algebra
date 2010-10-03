@@ -65,9 +65,9 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- * Matrix math operations
     shiftTo,
     shiftDiagTo,
-    shiftDiagToWithScale,    
+    shiftDiagWithScaleTo,
     addTo,
-    addToWithScales,
+    addWithScalesTo,
     subTo,
     scaleTo,
     scaleRowsTo,
