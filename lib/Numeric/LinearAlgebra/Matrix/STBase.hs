@@ -380,17 +380,17 @@ new (m,n) e = do
 newCopy :: (RMatrix m, Storable e) => m e -> ST s (STMatrix s e)
 newCopy a = do
     b <- new_ (dim a)
-    unsafeCopyTo a b
+    unsafeCopyTo b a
     return b
 
 -- | @copyTo src dst@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyTo :: (RMatrix m, Storable e) => m e -> STMatrix s e -> ST s ()
+copyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo
 {-# INLINE copyTo #-}
 
-unsafeCopyTo :: (RMatrix m, Storable e) => m e -> STMatrix s e -> ST s ()
-unsafeCopyTo = vectorOp2 V.unsafeCopyTo
+unsafeCopyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
+unsafeCopyTo = flip $ vectorOp2 (flip V.unsafeCopyTo)
 {-# INLINE unsafeCopyTo #-}
 
 -- | Create a view of a matrix by taking the initial rows.
@@ -764,7 +764,7 @@ shiftDiagToWithScale e s a b
                 ++ " dimension mismatch") (V.dim s)
                 (fst $ dim a) (snd $ dim a) m n
     | otherwise = do
-        unsafeCopyTo a b
+        unsafeCopyTo b a
         unsafeIOToST $
             V.unsafeWith s $ \ps ->
             unsafeWith b $ \pb ldb ->

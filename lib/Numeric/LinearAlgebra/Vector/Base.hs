@@ -143,8 +143,7 @@ create = Vector.create
 -- copy of it.
 freeze :: (Storable e) => STVector s e -> ST s (Vector e)
 freeze mv = do
-    mv' <- new_ (dim mv)
-    unsafeCopyTo mv mv'
+    mv' <- newCopy mv
     unsafeFreeze mv'
 {-# INLINE freeze #-}
 
@@ -315,7 +314,7 @@ concat xs = let
     in create $ do
         y <- new_ n_tot
         forM_ onxs $ \(o,n,x) ->
-            unsafeCopyTo x (unsafeSlice o n y)
+            unsafeCopyTo (unsafeSlice o n y) x
         return y
 
 -- | Compute the sum of absolute values of entries in the vector.

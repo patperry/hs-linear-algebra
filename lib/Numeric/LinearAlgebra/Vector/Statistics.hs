@@ -88,7 +88,7 @@ weightedSumTo wxs s = do
     
     V.setElems s (replicate n 0)
     forM_ wxs $ \(w,x) -> do
-        V.unsafeCopyTo s old_s -- old_s := s
+        V.unsafeCopyTo old_s s -- old_s := s
         V.scaleTo w x val      -- val := w * x
         V.addTo err val err    -- err := err + val
         V.addTo s err s        -- s := s + err

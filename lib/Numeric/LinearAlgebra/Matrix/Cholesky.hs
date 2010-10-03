@@ -128,7 +128,7 @@ cholSolveToMatrix (Chol uplo a) b b'
                 ++ " <matrix with dim (%d,%d)>: dimension mismatch")
                ma na mb nb mb' nb'
     | otherwise = do
-        M.unsafeCopyTo b b'
+        M.unsafeCopyTo b' b
         unsafeIOToST $
             M.unsafeWith a $ \pa lda ->
             M.unsafeWith b' $ \pb ldb ->

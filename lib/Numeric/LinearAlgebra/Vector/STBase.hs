@@ -201,22 +201,22 @@ new n e = do
 newCopy :: (RVector v, Storable e) => v e -> ST s (STVector s e)
 newCopy x = do
     y <- new_ (dim x)
-    unsafeCopyTo x y
+    unsafeCopyTo y x
     return y
 
 -- | @copyTo src dst@ replaces the values in @dst@ with those in
 -- source.  The operands must be the same shape.
-copyTo :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
+copyTo :: (RVector v, Storable e) => STVector s e -> v e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo
 {-# INLINE copyTo #-}
 
-unsafeCopyTo :: (RVector v, Storable e) => v e -> STVector s e -> ST s ()
-unsafeCopyTo x y = unsafeIOToST $
-    unsafeWith x $ \px ->
-    unsafeWith y $ \py ->
-        when (px /= py) $ copyArray py px n
+unsafeCopyTo :: (RVector v, Storable e) => STVector s e -> v e -> ST s ()
+unsafeCopyTo dst src = unsafeIOToST $
+    unsafeWith dst $ \pdst ->
+    unsafeWith src $ \psrc ->
+        when (pdst /= psrc) $ copyArray pdst psrc n
   where
-    n = dim y
+    n = dim dst
 {-# INLINE unsafeCopyTo #-}
 
 -- | Swap the values stored in two vectors.

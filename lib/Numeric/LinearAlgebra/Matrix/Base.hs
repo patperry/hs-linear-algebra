@@ -108,7 +108,7 @@ fromList mn es = create $ do
 fromCols :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 fromCols mn cs = create $ do
     a <- new_ mn
-    withSTColViews a $ zipWithM_ V.copyTo cs
+    withSTColViews a $ \cs' -> zipWithM_ V.copyTo cs' cs
     return a
 
 -- | Create a matrix of the given dimension with the given vectors as

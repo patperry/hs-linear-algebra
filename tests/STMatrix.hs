@@ -78,7 +78,7 @@ prop_newCopy t x =
 prop_copyTo t (MatrixPair x y) = runST $
     x `readOnlyMatrix` \mx ->
     y `mutatesToMatrix` x $ \my ->
-        M.copyTo mx my
+        M.copyTo my mx
   where
     _ = typed t x
 

@@ -92,7 +92,7 @@ prop_newCopy t x =
 prop_copyTo t (VectorPair x y) = runST $
     x `readOnlyVector` \mx ->
     y `mutatesToVector` x $ \my ->
-        V.copyTo mx my
+        V.copyTo my mx
   where
     _ = typed t x
 
