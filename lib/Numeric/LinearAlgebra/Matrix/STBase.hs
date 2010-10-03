@@ -399,7 +399,7 @@ takeRows i a = slice (0,0) (i,n) a
   where
     (_,n) = dim a
 
--- | Create a view of a matrix by droping the initial rows.
+-- | Create a view of a matrix by dropping the initial rows.
 dropRows :: (RMatrix m, Storable e) => Int -> m e -> m e
 dropRows i a = slice (i,0) (m-i,n) a
   where
@@ -428,7 +428,7 @@ takeCols j a = slice (0,0) (m,j) a
   where
     (m,_) = dim a
 
--- | Create a view of a matrix by droping the initial columns.
+-- | Create a view of a matrix by dropping the initial columns.
 dropCols :: (RMatrix m, Storable e) => Int -> m e -> m e
 dropCols j a = slice (0,j) (m,n-j) a
   where
