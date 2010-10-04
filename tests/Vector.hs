@@ -40,9 +40,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "whichMaxAbs2" prop_whichMaxAbs1 prop_whichMaxAbs2
     , testPropertyDZ "dot" prop_dot prop_dot
     , testPropertyDZ "kronecker" prop_kronecker prop_kronecker
-    , testPropertyDZ "shift" prop_shift prop_shift
     , testPropertyDZ "add" prop_add prop_add
-    , testPropertyDZ "addWithScales" prop_addWithScales prop_addWithScales
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
     , testPropertyDZ "mul" prop_mul prop_mul
@@ -186,19 +184,8 @@ prop_splitAt t x =
 
 -------------------------- Num Vector Operations --------------------------
 
-prop_shift t k x =
-    k `V.shift` x === V.map (k+) x
-  where
-    _ = typed t x
-
 prop_add t (VectorPair x y) =
     x `V.add` y === V.zipWith (+) x y
-  where
-    _ = typed t x
-
-prop_addWithScales t a b (VectorPair x y) =
-    V.addWithScales a x b y ~== 
-        V.zipWith (+) (V.map (a*) x) (V.map (b*) y)
   where
     _ = typed t x
 
@@ -208,7 +195,7 @@ prop_sub t (VectorPair x y) =
     _ = typed t x
 
 prop_scale t k x =
-    k `V.scale` x === V.map (k*) x
+    k `V.scale` x ~== V.map (k*) x
   where
     _ = typed t x
 
@@ -370,7 +357,7 @@ prop_dot t (VectorPair x y) =
     _    = typed t x
 
 prop_kronecker t x y =
-    x `V.kronecker` y ===
+    x `V.kronecker` y ~==
         V.fromList (V.dim x * V.dim y)
                    [ e*f | e <- V.elems x, f <- V.elems y ]
   where

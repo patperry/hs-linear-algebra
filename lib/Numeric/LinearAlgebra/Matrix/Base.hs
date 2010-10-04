@@ -33,7 +33,7 @@ import Numeric.LinearAlgebra.Matrix.STBase
 
 
 infixl 7 `scale`, `scaleRows`, `scaleCols`
-infixl 6 `add`, `shift`, `shiftDiag`, `sub`
+infixl 6 `add`, `shiftDiag`, `sub`
 
 
 -- | Immutable dense matrices. The type arguments are as follows:
@@ -332,10 +332,6 @@ instance (Storable e, AEq e) => AEq (Matrix e) where
     (~==) = compareWith (~==)
     {-# INLINE (~==) #-}
 
--- | @shift k a@ returns @k + a@.
-shift :: (VNum e) => e -> Matrix e -> Matrix e
-shift k = result $ flip shiftTo k
-
 -- | @shiftDiag d a@ returns @diag(d) + a@.
 shiftDiag :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
 shiftDiag s = result $ flip shiftDiagTo s
@@ -348,26 +344,27 @@ shiftDiagWithScale e s = result $ \dst -> shiftDiagWithScaleTo dst e s
 add :: (VNum e) => Matrix e -> Matrix e -> Matrix e
 add = result2 addTo
 
--- | @addWithScales alpha a beta b@ returns @alpha*a + beta*b@.
-addWithScales :: (VNum e) => e -> Matrix e -> e -> Matrix e -> Matrix e
-addWithScales alpha a beta b =
-    (result2 $ \dst a' b' -> addWithScalesTo dst alpha a' beta b') a b
-
 -- | @sub a b@ returns @a - b@.
 sub :: (VNum e) => Matrix e -> Matrix e -> Matrix e
 sub = result2 subTo
 
 -- | @scale k a@ returns @k * a@.
-scale :: (VNum e) => e -> Matrix e -> Matrix e
-scale k = result $ flip scaleTo k
+scale :: (BLAS1 e) => e -> Matrix e -> Matrix e
+scale k a = create $ do
+    a' <- newCopy a
+    scale_ a' k
+    return a'
 
 -- | @scaleRows s a@ returns @diag(s) * a@.
 scaleRows :: (VNum e) => Vector e -> Matrix e -> Matrix e
 scaleRows s = result $ flip scaleRowsTo s
 
 -- | @scaleCols s a@ returns @a * diag(s)@.
-scaleCols :: (VNum e) => Vector e -> Matrix e -> Matrix e
-scaleCols s = result $ flip scaleColsTo s
+scaleCols :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+scaleCols s a = create $ do
+    a' <- newCopy a
+    scaleCols_ a' s
+    return a'
 
 -- | @negate a@ returns @-a@.
 negate :: (VNum e) => Matrix e -> Matrix e

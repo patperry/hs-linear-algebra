@@ -53,9 +53,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     unsafeDot,
     kronecker,
 
-    shift,
     add,
-    addWithScales,
     sub,
     scale,
     mul,
@@ -108,7 +106,7 @@ import Numeric.LinearAlgebra.Vector.STBase
 infixr 8 `pow`
 infixl 7 `div`
 infixl 7 `mul`, `scale`, `kronecker`
-infixl 6 `add`, `shift`, `sub`
+infixl 6 `add`, `sub`
 
 unVector :: Vector e -> STVector RealWorld e
 unVector = unsafeCoerce
@@ -341,7 +339,7 @@ unsafeDot v v' = runST $ unsafeGetDot v v'
 {-# INLINE unsafeDot #-}
 
 -- | Compute the kronecker product of two vectors.
-kronecker :: (VNum e) => Vector e -> Vector e -> Vector e
+kronecker :: (BLAS2 e) => Vector e -> Vector e -> Vector e
 kronecker x y = create $ do
     z <- new_ (dim x * dim y)
     kroneckerTo z x y
@@ -364,26 +362,20 @@ compareWith cmp v v' =
     && and (P.zipWith cmp (elems v) (elems v'))
 {-# INLINE compareWith #-}
 
--- | @shift k x@ returns @k + x@.
-shift :: (VNum e) => e -> Vector e -> Vector e
-shift k = result $ \dst -> shiftTo dst k
-
 -- | @add x y@ returns @x + y@.
 add :: (VNum e) => Vector e -> Vector e -> Vector e
 add = result2 addTo
-
--- | @addWithScales a x b y@ returns @a*x + b*y@.
-addWithScales :: (VNum e) => e -> Vector e -> e -> Vector e -> Vector e
-addWithScales a x b y =
-    (result2 $ \dst x' y' -> addWithScalesTo dst a x' b y') x y
 
 -- | @sub x y@ returns @x - y@.
 sub :: (VNum e) => Vector e -> Vector e -> Vector e
 sub = result2 subTo
 
 -- | @scale k x@ returns @k * x@.
-scale :: (VNum e) => e -> Vector e -> Vector e
-scale k = result $ \dst -> scaleTo dst k
+scale :: (BLAS1 e) => e -> Vector e -> Vector e
+scale k x = create $ do
+    x' <- newCopy x
+    scale_ x' k
+    return x'
 
 -- | @mul x y@ returns @x + y@.
 mul :: (VNum e) => Vector e -> Vector e -> Vector e

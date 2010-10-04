@@ -49,20 +49,19 @@ module Numeric.LinearAlgebra.Vector.ST (
     mapTo,
     zipWithTo,
 
-    -- * Vector properties
+    -- * Vector linear algebra
     getSumAbs,
     getNorm2,
     getWhichMaxAbs,
     getDot,
+    scale_,
+    addWithScale_,
     kroneckerTo,
     
     -- * Vector math operations
     -- ** Num
-    shiftTo,
     addTo,
-    addWithScalesTo,
     subTo,
-    scaleTo,
     mulTo,
     negateTo,
     conjugateTo,
@@ -102,6 +101,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     unsafeModify,
     unsafeMapTo,
     unsafeZipWithTo,
+    unsafeAddWithScale_,
     
     ) where
 

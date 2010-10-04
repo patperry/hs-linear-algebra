@@ -51,9 +51,7 @@ module Numeric.LinearAlgebra.Vector (
 
     -- * Vector math operations
     -- ** Num
-    shift,
     add,
-    addWithScales,
     sub,
     scale,
     mul,

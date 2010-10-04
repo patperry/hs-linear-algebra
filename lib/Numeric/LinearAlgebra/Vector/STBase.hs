@@ -57,13 +57,13 @@ module Numeric.LinearAlgebra.Vector.STBase (
     getWhichMaxAbs,
     getDot,
     unsafeGetDot,
+    scale_,
+    addWithScale_,
+    unsafeAddWithScale_,
     kroneckerTo,
     
-    shiftTo,
     addTo,
-    addWithScalesTo,
     subTo,
-    scaleTo,
     mulTo,
     negateTo,
     conjugateTo,
@@ -503,32 +503,6 @@ conjugateTo = checkOp2 "conjugateTo" $ \dst x ->
     call2 VMath.vConj x dst
 {-# INLINE conjugateTo #-}
 
--- | @shiftTo dst alpha x@ replaces @dst@ with @alpha + x@.
-shiftTo :: (RVector v, VNum e) => STVector s e -> e -> v e -> ST s ()
-shiftTo dst alpha x =
-    (checkOp2 "shiftTo" $ \dst1 x1 -> 
-        call2 (flip VMath.vShift alpha) x1 dst1)
-            dst x
-{-# INLINE shiftTo #-}
-
--- | @scaleTo dst alpha x@ replaces @dst@ with @alpha * x@.
-scaleTo :: (RVector v, VNum e) => STVector s e -> e -> v e -> ST s ()
-scaleTo dst alpha x = 
-    (checkOp2 "scaleTo" $ \dst1 x1 ->
-        call2 (flip VMath.vScale alpha) x1 dst1)
-            dst x
-{-# INLINE scaleTo #-}
-
--- | @addWithScalesTo dst alpha x beta y@ replaces @dst@ with
--- @alpha * x + beta * y@.
-addWithScalesTo :: (RVector v1, RVector v2, VNum e)
-                => STVector s e -> e -> v1 e -> e -> v2 e -> ST s ()
-addWithScalesTo dst alpha x beta y =
-    (checkOp3 "addWithScalesTo" $ \dst1 x1 y1 ->
-        call3 (\n v1 v2 v3 -> VMath.vAxpby n alpha v1 beta v2 v3) x1 y1 dst1)
-            dst x y
-{-# INLINE addWithScalesTo #-}
-
 -- | @addTo dst x y@ replaces @dst@ with @x+y@.
 addTo :: (RVector v1, RVector v2, VNum e)
       =>  STVector s e -> v1 e -> v2 e -> ST s ()
@@ -666,17 +640,38 @@ getWhichMaxAbs x =
 
 -- | Computes the dot product of two vectors.
 getDot :: (RVector v, RVector v', BLAS1 e)
-             => v e -> v' e -> ST s e
+       => v e -> v' e -> ST s e
 getDot = checkOp2 "getDot" unsafeGetDot
 {-# INLINE getDot #-}
 
 unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
-                   => x e -> y e -> ST s e
+             => x e -> y e -> ST s e
 unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
 {-# INLINE unsafeGetDot #-}
 
+-- | @scale_ x e@ sets @x := x * e@.
+scale_ :: (Storable e, BLAS1 e) => STVector s e -> e -> ST s ()
+scale_ x e =
+    unsafeIOToST $
+        unsafeWith x $ \px ->
+            BLAS.scal (dim x) e px 1
+{-# INLINE scale_ #-}
+
+-- | @addWithScale_ y alpha x@ sets @y := alpha * x + y@.
+addWithScale_ :: (RVector v, BLAS1 e) => STVector s e -> e -> v e -> ST s ()
+addWithScale_ y alpha x =
+    (checkOp2 "addWithScale_" $ \y1 x1 -> unsafeAddWithScale_ y1 alpha x1)
+        y x
+{-# INLINE addWithScale_ #-}
+
+unsafeAddWithScale_ :: (RVector v, BLAS1 e)
+                    => STVector s e -> e -> v e -> ST s ()
+unsafeAddWithScale_ y alpha x =
+    (strideCall2 $ flip BLAS.axpy alpha) x y
+{-# INLINE unsafeAddWithScale_ #-}
+
 -- | @kroneckerTo dst x y@ sets @dst := x \otimes y@.
-kroneckerTo :: (RVector v1, RVector v2, VNum e)
+kroneckerTo :: (RVector v1, RVector v2, BLAS2 e)
             => STVector s e -> v1 e -> v2 e -> ST s ()
 kroneckerTo dst x y
     | dim dst /= m * n = error $
@@ -686,24 +681,15 @@ kroneckerTo dst x y
                 ++ " <vector with dim %d>:"
                 ++ " dimension mismatch") (dim dst) m n 
     | otherwise = do
-        ies <- getAssocs x
-        forM_ ies $ \(i,e) ->
-            scaleTo (unsafeSlice (i*n) n dst) e y
+        clear dst
+        unsafeIOToST $
+            unsafeWith dst $ \pdst ->
+            unsafeWith x $ \px ->
+            unsafeWith y $ \py ->
+                BLAS.geru n m 1 py 1 px 1 pdst (max n 1)
   where
     m = dim x
     n = dim y
-
-{-
-call :: (RVector x, Storable e)
-           => (Int -> Ptr e -> IO a) 
-           ->  x e -> ST s a
-call f x = 
-    let n    = dim x
-    in unsafeIOToST $
-           unsafeWith x $ \pX ->
-               f n pX
-{-# INLINE call #-}
--}
 
 call2 :: (RVector x, RVector y, Storable e, Storable f)
       => (Int -> Ptr e -> Ptr f -> IO a) 

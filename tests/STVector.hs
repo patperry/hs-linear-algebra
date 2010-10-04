@@ -47,11 +47,8 @@ tests_STVector = testGroup "STVector"
     , testPropertyDZ "getNorm2" prop_getNorm2 prop_getNorm2
     , testPropertyDZ "getDot" prop_getDot prop_getDot
     , testPropertyDZ "kroneckerTo" prop_kroneckerTo prop_kroneckerTo
-    , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addWithScalesTo" prop_addWithScalesTo prop_addWithScalesTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
-    , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
     , testPropertyDZ "mulTo" prop_mulTo prop_mulTo
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
@@ -210,22 +207,8 @@ prop_kroneckerTo t = sized $ \s -> resize (s `div` 2) $
         z `mutatesToVector` (typed t $ V.kronecker x y) $ \mz ->
             V.kroneckerTo mz mx my
 
-prop_shiftTo t e = binaryProp t
-    (\x -> V.shift e x)
-    (\dst mx -> V.shiftTo dst e mx)
-    
 prop_addTo t = ternaryProp t V.add V.addTo
-
-prop_addWithScalesTo t e f = ternaryProp t
-    (\x y -> V.addWithScales e x f y)
-    (\dst mx my -> V.addWithScalesTo dst e mx f my)
-    
 prop_subTo t = ternaryProp t V.sub V.subTo
-
-prop_scaleTo t e = binaryProp t
-    (\x -> V.scale e x)
-    (\dst mx -> V.scaleTo dst e mx)
-
 prop_mulTo t = ternaryProp t V.mul V.mulTo
 prop_negateTo t = binaryProp t V.negate V.negateTo
 prop_conjugateTo t = binaryProp t V.conjugate V.conjugateTo
@@ -259,16 +242,11 @@ binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
             -> (forall s . STVector s e -> STVector s e -> ST s a)
             -> Property
 binaryProp t imm_f f = let
-    prop1 t x = runST $
-        x `mutatesToVector` (imm_f x) $ \mx -> f mx mx
-      where _ = typed t x
     prop2 t (VectorPair x y) = runST $ let _ = typed t x in
         x `readOnlyVector` \mx ->
         y `mutatesToVector` (imm_f x) $ \my -> f my mx
       where _ = typed t x
-    in (    label "1" prop1
-        .&. label "2" prop2
-       )
+    in label "" prop2
     
 ternaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
             => e
@@ -276,27 +254,13 @@ ternaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
             -> (forall s . STVector s e -> STVector s e -> STVector s e -> ST s a)
             -> Property
 ternaryProp t imm_f f = let
-    prop1 t x = runST $
-        x `mutatesToVector` (imm_f x x) $ \mx -> f mx mx mx
-      where _ = typed t x
-    prop2a t (VectorPair x y) = runST $
-        x `readOnlyVector` \mx ->
-        y `mutatesToVector` (imm_f x y) $ \my -> f my mx my
-      where _ = typed t x
-    prop2b t (VectorPair x y) = runST $
-        x `mutatesToVector` (imm_f x y) $ \mx ->
-        y `readOnlyVector` \my -> f mx mx my
-      where _ = typed t x        
     prop3 t (VectorTriple x y z) = runST $
         x `readOnlyVector` \mx ->
         y `readOnlyVector` \my ->
         z `mutatesToVector` (imm_f x y) $ \mz -> f mz mx my
       where _ = typed t x
-    in (    label "1" prop1
-        .&. label "2a" prop2a
-        .&. label "2b" prop2b
-        .&. label "3" prop3
-       )
+    in label "" prop3
+       
 
 
 readOnlyVector :: (Storable e, AEq e, Testable prop, Show e)

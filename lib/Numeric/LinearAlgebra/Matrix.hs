@@ -63,11 +63,9 @@ module Numeric.LinearAlgebra.Matrix (
     fromRow,
 
     -- * Matrix math operations
-    shift,
     shiftDiag,
     shiftDiagWithScale,    
     add,
-    addWithScales,
     sub,
     scale,
     scaleRows,

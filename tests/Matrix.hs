@@ -45,11 +45,9 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
     , testPropertyI "viewVector" prop_viewVector
-    , testPropertyDZ "shift" prop_shift prop_shift
     , testPropertyDZ "shiftDiag" prop_shiftDiag prop_shiftDiag
     , testPropertyDZ "shiftDiagWithScale" prop_shiftDiagWithScale prop_shiftDiagWithScale
     , testPropertyDZ "add" prop_add prop_add
-    , testPropertyDZ "addWithScales" prop_addWithScales prop_addWithScales
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
     , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
@@ -235,11 +233,6 @@ prop_viewVector t (Dim2 (m,n)) =
 
 -------------------------- Num Matrix Operations --------------------------
 
-prop_shift t k a =
-    k `M.shift` a === M.map (k+) a
-  where
-    _ = typed t a
-
 prop_shiftDiag t a =
     forAll (Test.vector (min m n)) $ \d ->
         d `M.shiftDiag` a
@@ -261,19 +254,13 @@ prop_add t (MatrixPair x y) =
   where
     _ = typed t x
 
-prop_addWithScales t a b (MatrixPair x y) =
-    M.addWithScales a x b y ~== 
-        M.zipWith (+) (M.map (a*) x) (M.map (b*) y)
-  where
-    _ = typed t x
-
 prop_sub t (MatrixPair x y) =
     x `M.sub` y === M.zipWith (-) x y
   where
     _ = typed t x
 
 prop_scale t k x =
-    k `M.scale` x === M.map (k*) x
+    k `M.scale` x ~== M.map (k*) x
   where
     _ = typed t x
 
@@ -438,8 +425,8 @@ prop_mulMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
 prop_mulAddMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
     M.mulAddMatrixWithScales alpha transa a transb b beta c
         ~==
-        M.addWithScales alpha (M.mulMatrix transa a transb b)
-                            beta c
+        M.add (M.scale alpha (M.mulMatrix transa a transb b))
+              (M.scale beta c)
   where
     _ = typed t a
 

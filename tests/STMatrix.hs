@@ -44,7 +44,6 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyI "setAssocs" prop_setAssocs
     , testPropertyI "mapTo" prop_mapTo
     , testPropertyI "zipWithTo" prop_zipWithTo
-    , testPropertyDZ "shiftTo" prop_shiftTo prop_shiftTo
     , testPropertyDZ "shiftDiagTo (1)" prop_shiftDiagTo1 prop_shiftDiagTo1
     , testPropertyDZ "shiftDiagTo (2)" prop_shiftDiagTo2 prop_shiftDiagTo2
     , testPropertyDZ "shiftDiagWithScaleTo (1)"
@@ -52,13 +51,11 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "shiftDiagWithScaleTo (2)"
         prop_shiftDiagWithScaleTo2 prop_shiftDiagWithScaleTo2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
-    , testPropertyDZ "addWithScalesTo" prop_addWithScalesTo prop_addWithScalesTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
-    , testPropertyDZ "scaleTo" prop_scaleTo prop_scaleTo
+    , testPropertyDZ "scale_" prop_scale_ prop_scale_
     , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
     , testPropertyDZ "scaleRowsTo (2)" prop_scaleRowsTo2 prop_scaleRowsTo2
-    , testPropertyDZ "scaleColsTo (1)" prop_scaleColsTo1 prop_scaleColsTo1
-    , testPropertyDZ "scaleColsTo (2)" prop_scaleColsTo2 prop_scaleColsTo2
+    , testPropertyDZ "scaleCols_" prop_scaleCols_ prop_scaleCols_
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
     ]
@@ -158,10 +155,6 @@ prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> M.zipWith f x y)
     (\dst mx my -> M.zipWithTo dst f mx my)
 
-prop_shiftTo t e = binaryProp t
-    (\x -> M.shift e x)
-    (\dst mx -> M.shiftTo dst e mx)
-
 prop_shiftDiagTo1 t a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
@@ -202,15 +195,13 @@ prop_shiftDiagWithScaleTo2 t e (MatrixPair a b) =
 
 prop_addTo t = ternaryProp t M.add M.addTo
 
-prop_addWithScalesTo t e f = ternaryProp t
-    (\x y -> M.addWithScales e x f y)
-    (\dst mx my -> M.addWithScalesTo dst e mx f my)
-    
 prop_subTo t = ternaryProp t M.sub M.subTo
 
-prop_scaleTo t e = binaryProp t
-    (\x -> M.scale e x)
-    (\dst mx -> M.scaleTo dst e mx)
+prop_scale_ t a e = runST $
+    a `mutatesToMatrix` (M.scale e a) $ \ma ->
+        M.scale_ ma e
+  where
+    _ = typed t a
 
 prop_scaleRowsTo1 t a =
     forAll (Test.vector m) $ \s -> runST $
@@ -231,21 +222,11 @@ prop_scaleRowsTo2 t (MatrixPair a b) =
     (m,n) = M.dim a
     _ = typed t a
 
-prop_scaleColsTo1 t a =
+prop_scaleCols_ t a =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
         a `mutatesToMatrix` (M.scaleCols s a) $ \ma ->
-            M.scaleColsTo ma ms ma
-  where
-    (m,n) = M.dim a
-    _ = typed t a
-
-prop_scaleColsTo2 t (MatrixPair a b) =
-    forAll (Test.vector n) $ \s -> runST $
-        s `readOnlyVector` \ms ->
-        a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (M.scaleCols s a) $ \mb ->
-            M.scaleColsTo mb ms ma
+            M.scaleCols_ ma ms
   where
     (m,n) = M.dim a
     _ = typed t a

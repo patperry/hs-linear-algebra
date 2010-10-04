@@ -736,14 +736,6 @@ clear a = case maybeSTVectorView a of
     Just x  -> V.clear x
     Nothing -> withSTColViews a $ mapM_ V.clear
 
--- | Add a constant to all entries of a matrix.
-shiftTo :: (RMatrix m, VNum e)
-        => STMatrix s e -> e -> m e -> ST s ()
-shiftTo dst e x = 
-    (checkOp2 "shiftTo" $ \dst1 x1 ->
-        vectorOp2 (flip V.shiftTo e) dst1 x1)
-            dst x
-
 -- | Add a vector to the diagonal of a matrix.
 shiftDiagTo :: (RVector v, RMatrix m, BLAS1 e)
             => STMatrix s e -> v e -> m e -> ST s ()
@@ -791,14 +783,6 @@ addTo :: (RMatrix m1, RMatrix m2, VNum e)
       =>  STMatrix s e -> m1 e -> m2 e -> ST s ()
 addTo = checkOp3 "addTo" $ vectorOp3 V.addTo
 
--- | Add two matrices with the given scales.
-addWithScalesTo :: (RMatrix m1, RMatrix m2, VNum e)
-                => STMatrix s e -> e -> m1 e -> e -> m2 e -> ST s ()
-addWithScalesTo dst alpha a beta b =
-    (checkOp3 "addWithScalesTo" $
-        vectorOp3 (\z x y -> V.addWithScalesTo z alpha x beta y))
-            dst a b
-
 -- | Subtract two matrices.
 subTo :: (RMatrix m1, RMatrix m2, VNum e)
       => STMatrix s e -> m1 e -> m2 e -> ST s ()
@@ -817,10 +801,9 @@ negateTo = checkOp2 "negateTo" $
     vectorOp2 V.negateTo
 
 -- | Scale the entries of a matrix by the given value.
-scaleTo :: (RMatrix m, VNum e)
-        => STMatrix s e -> e -> m e -> ST s ()
-scaleTo dst e x = 
-    (checkOp2 "scaleTo" $ vectorOp2 (flip V.scaleTo e)) dst x
+scale_ :: (BLAS1 e)
+       => STMatrix s e -> e -> ST s ()
+scale_ x e = vectorOp (`V.scale_` e) x
 
 -- | Scale the rows of a matrix; @scaleRowsTo dst s a@ sets
 -- @dst := diag(s) * a@.
@@ -843,29 +826,26 @@ scaleRowsTo dst s a
   where
     (m,n) = dim dst
 
--- | Scale the columns of a matrix; @scaleColsTo dst s a@ sets
--- @dst := a * diag(s)@.
-scaleColsTo :: (RVector v, RMatrix m, VNum e)
-            => STMatrix s e -> v e -> m e -> ST s ()
-scaleColsTo dst s a
-    | V.dim s /= n || dim a /= (m,n) = error $
-        printf ("scaleColsTo"
+-- | Scale the columns of a matrix; @scaleCols_ a s@ sets
+-- @a := a * diag(s)@.
+scaleCols_ :: (RVector v, BLAS1 e)
+            => STMatrix s e -> v e -> ST s ()
+scaleCols_ a s
+    | V.dim s /= n  = error $
+        printf ("scaleCols_"
                 ++ " <matrix with dim (%d,%d)>"        
                 ++ " <vector with dim %d>"
-                ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch") 
                 m n
                 (V.dim s)
-                (fst $ dim a) (snd $ dim a)
     | otherwise =
         V.getElems   s >>= \es ->
-        withSTColViews dst $ \ys ->
-        withColViews   a   $ \xs ->
-            sequence_ [ V.scaleTo y e x
-                      | (e,x,y) <- zip3 es xs ys
+        withSTColViews a $ \xs ->
+            sequence_ [ V.scale_ x e
+                      | (e,x) <- zip es xs
                       ]
   where
-    (m,n) = dim dst
+    (m,n) = dim a
 
 -- | @rank1UpdateTo dst alpha x y a@ sets @dst := alpha * x * y^H + a@.
 -- Arguments @dst@ and @a@ can be the same; other forms of aliasing give
@@ -1110,6 +1090,15 @@ checkOp3 str f x y z
     (m2,n2) = dim y
     (m3,n3) = dim z
 {-# INLINE checkOp3 #-}
+
+vectorOp :: (Storable e)
+         => (STVector s e -> ST s ())
+         -> STMatrix s e -> ST s ()
+vectorOp f x =
+    fromMaybe colwise $ maybeWithSTVectorView x $ \vx -> f vx
+  where
+    colwise = withSTColViews x $ \vxs ->
+                  sequence_ [ f vx | vx <- vxs ]
 
 vectorOp2 :: (RMatrix m, Storable e, Storable f)
           => (forall v . RVector v => STVector s f -> v e -> ST s ())

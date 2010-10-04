@@ -39,7 +39,7 @@ import qualified Numeric.LinearAlgebra.Vector.STBase as V
 
 -- | Returns the sum of the vectors.  The first argument gives the dimension
 -- of the vectors.
-sum :: (VNum e) => Int -> [Vector e] -> Vector e
+sum :: (BLAS1 e, VNum e) => Int -> [Vector e] -> Vector e
 sum p xs = V.create $ do
     s <- V.new_ p
     sumTo xs s
@@ -47,7 +47,7 @@ sum p xs = V.create $ do
 
 -- | Returns the mean of the vectors.  The first argument gives the dimension
 -- of the vectors.
-mean :: (VNum e, Fractional e) => Int -> [Vector e] -> Vector e
+mean :: (BLAS1 e, VNum e) => Int -> [Vector e] -> Vector e
 mean p xs = V.create $ do
       m <- V.new_ p
       meanTo xs m
@@ -55,7 +55,7 @@ mean p xs = V.create $ do
 
 -- | Returns the weighted sum of the vectors.  The first argument gives the
 -- dimension of the vectors.
-weightedSum :: (VNum e) => Int -> [(e, Vector e)] -> Vector e
+weightedSum :: (BLAS1 e, VNum e) => Int -> [(e, Vector e)] -> Vector e
 weightedSum p wxs = V.create $ do
     s <- V.new_ p
     weightedSumTo wxs s
@@ -63,23 +63,25 @@ weightedSum p wxs = V.create $ do
 
 -- | Returns the weighted mean of the vectors.  The first argument gives the
 -- dimension of the vectors.
-weightedMean :: (VNum e, Fractional e) => Int -> [(Double, Vector e)] -> Vector e
+weightedMean :: (BLAS1 e, VNum e)
+             => Int -> [(Double, Vector e)] -> Vector e
 weightedMean p wxs = V.create $ do
        s <- V.new_ p
        weightedMeanTo wxs s
        return s
 
 -- | Sets the target vector to the sum of the vectors.
-sumTo :: (RVector v, VNum e) => [v e] -> STVector s e -> ST s ()
+sumTo :: (RVector v, BLAS1 e, VNum e) => [v e] -> STVector s e -> ST s ()
 sumTo = weightedSumTo . zip (repeat 1)
 
 -- | Sets the target vector to the mean of the vectors.
-meanTo :: (RVector v, VNum e, Fractional e)
+meanTo :: (RVector v, BLAS1 e, VNum e)
        => [v e] -> STVector s e -> ST s()
 meanTo = weightedMeanTo . zip (repeat 1)
 
 -- | Sets the target vector to the weigthed sum of the vectors.
-weightedSumTo :: (RVector v, VNum e) => [(e, v e)] -> STVector s e -> ST s ()
+weightedSumTo :: (RVector v, BLAS1 e, VNum e)
+              => [(e, v e)] -> STVector s e -> ST s ()
 weightedSumTo wxs s = do
     err <- V.new n 0
     old_s <- V.new_ n
@@ -89,7 +91,10 @@ weightedSumTo wxs s = do
     V.setElems s (replicate n 0)
     forM_ wxs $ \(w,x) -> do
         V.unsafeCopyTo old_s s -- old_s := s
-        V.scaleTo val w x      -- val := w * x
+        
+        V.unsafeCopyTo val x   -- val := w * x
+        V.scale_ val w
+
         V.addTo err err val    -- err := err + val
         V.addTo s s err        -- s := s + err
         
@@ -99,7 +104,7 @@ weightedSumTo wxs s = do
     n = V.dim s
 
 -- | Sets the target vector to the weighted mean of the vectors.
-weightedMeanTo :: (RVector v, VNum e, Fractional e)
+weightedMeanTo :: (RVector v, BLAS1 e, VNum e)
                => [(Double, v e)] -> STVector s e -> ST s ()
 weightedMeanTo wxs m = let
     go _ _ [] = return ()
@@ -107,8 +112,8 @@ weightedMeanTo wxs m = let
                                | otherwise = let w_sum' = w_sum + w
                                              in do
                                     V.subTo diff x m
-                                    V.addWithScalesTo m
-                                        (realToFrac $ w/w_sum') diff 1 m
+                                    V.addWithScale_ m 
+                                        (realToFrac $ w/w_sum') diff
                                     go diff w_sum' wxs'
     in do
         diff <- V.new_ n

@@ -63,15 +63,13 @@ module Numeric.LinearAlgebra.Matrix.ST (
     zipWithTo,
 
     -- * Matrix math operations
-    shiftTo,
     shiftDiagTo,
     shiftDiagWithScaleTo,
     addTo,
-    addWithScalesTo,
     subTo,
-    scaleTo,
+    scale_,
     scaleRowsTo,
-    scaleColsTo,
+    scaleCols_,
     negateTo,
     conjugateTo,
 
