@@ -55,13 +55,13 @@ prop_sum t (VectorList p xs) =
 
 prop_weightedSum t (WeightedVectorList p wxs) =
     V.weightedSum p wxs
-            ~== V.sum p [ V.scale x w | (w,x) <- wxs ]
+            ~== V.sum p (map (uncurry V.scaleBy) wxs)
   where
     n = length wxs
     _ = typed t (snd $ head wxs)
 
 prop_mean t (VectorList p xs) =
-    V.mean p xs ~== V.scale (V.sum p xs) (1/n)
+    V.mean p xs ~== V.scaleBy (1/n) (V.sum p xs)
   where
     n = fromIntegral $ max (length xs) 1
     _ = typed t (head xs)
@@ -76,7 +76,7 @@ prop_weightedMean t (WeightedVectorList p wxs) = let
         w_sum = (sum . fst . unzip) wxs
         in V.weightedMean p wxs
             ~== if w_sum == 0 then V.constant p 0
-                              else V.scale (V.weightedSum p wxs) (1/w_sum)
+                              else V.scaleBy (1/w_sum) (V.weightedSum p wxs)
   where
     n = length wxs
     _ = typed t (snd $ head wxs)

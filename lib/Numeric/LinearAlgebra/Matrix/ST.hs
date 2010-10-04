@@ -67,7 +67,8 @@ module Numeric.LinearAlgebra.Matrix.ST (
     shiftDiagWithScaleTo,
     addTo,
     subTo,
-    scaleM,
+    scaleByM_,
+    addWithScaleM_,
     scaleRowsTo,
     scaleCols_,
     negateTo,
@@ -106,6 +107,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     
     -- * Unsafe operations
     unsafeCopyTo,
+    unsafeAddWithScaleM_,
     
     ) where
 

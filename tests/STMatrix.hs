@@ -52,7 +52,8 @@ tests_STMatrix = testGroup "STMatrix"
         prop_shiftDiagWithScaleTo2 prop_shiftDiagWithScaleTo2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
-    , testPropertyDZ "scaleM" prop_scaleM prop_scaleM
+    , testPropertyDZ "scaleByM_" prop_scaleByM_ prop_scaleByM_
+    , testPropertyDZ "addWithScaleM_" prop_addWithScaleM_ prop_addWithScaleM_
     , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
     , testPropertyDZ "scaleRowsTo (2)" prop_scaleRowsTo2 prop_scaleRowsTo2
     , testPropertyDZ "scaleCols_" prop_scaleCols_ prop_scaleCols_
@@ -197,11 +198,18 @@ prop_addTo t = ternaryProp t M.add M.addTo
 
 prop_subTo t = ternaryProp t M.sub M.subTo
 
-prop_scaleM t a e = runST $
-    a `mutatesToMatrix` (M.scale e a) $ \ma ->
-        M.scaleM ma e
+prop_scaleByM_ t e a = runST $
+    a `mutatesToMatrix` (M.scaleBy e a) $ \ma ->
+        M.scaleByM_ e ma
   where
     _ = typed t a
+
+prop_addWithScaleM_ t alpha (MatrixPair x y) = runST $
+    x `readOnlyMatrix` \mx ->
+    y `mutatesToMatrix` (M.addWithScale alpha x y) $ \my ->
+        M.addWithScaleM_ alpha mx my
+  where
+    _ = typed t x
 
 prop_scaleRowsTo1 t a =
     forAll (Test.vector m) $ \s -> runST $

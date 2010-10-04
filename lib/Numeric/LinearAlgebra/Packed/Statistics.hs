@@ -157,7 +157,7 @@ weightedCovWithMeanTo mu t wxs c@(Herm _ a)
         xt <- M.new_ (p,n)
         M.withSTColViews xt $ \xs' ->
             sequence_ [  V.subTo x' mu x
-                      >> V.scaleM x' (realToFrac $ sqrt (w / invscale))
+                      >> V.scaleByM_ (realToFrac $ sqrt (w / invscale)) x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
         P.withSTVectorView a V.clear                      

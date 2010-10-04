@@ -41,8 +41,9 @@ tests_Vector = testGroup "Vector"
     , testPropertyDZ "dot" prop_dot prop_dot
     , testPropertyDZ "kronecker" prop_kronecker prop_kronecker
     , testPropertyDZ "add" prop_add prop_add
+    , testPropertyDZ "addWithScale" prop_addWithScale prop_addWithScale
     , testPropertyDZ "sub" prop_sub prop_sub
-    , testPropertyDZ "scale" prop_scale prop_scale
+    , testPropertyDZ "scaleBy" prop_scaleBy prop_scaleBy
     , testPropertyDZ "mul" prop_mul prop_mul
     , testPropertyDZ "negate" prop_negate prop_negate
     , testPropertyDZ "conjugate" prop_conjugate prop_conjugate
@@ -189,13 +190,18 @@ prop_add t (VectorPair x y) =
   where
     _ = typed t x
 
+prop_addWithScale t alpha (VectorPair x y) =
+    V.addWithScale alpha x y ~== V.add (V.scaleBy alpha x) y
+  where
+    _ = typed t x
+
 prop_sub t (VectorPair x y) =
     x `V.sub` y === V.zipWith (-) x y
   where
     _ = typed t x
 
-prop_scale t k x =
-    V.scale x k ~== V.map (k*) x
+prop_scaleBy t k x =
+    V.scaleBy k x ~== V.map (k*) x
   where
     _ = typed t x
 

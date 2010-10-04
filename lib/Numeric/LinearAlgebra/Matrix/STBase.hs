@@ -801,9 +801,27 @@ negateTo = checkOp2 "negateTo" $
     vectorOp2 V.negateTo
 
 -- | Scale the entries of a matrix by the given value.
-scaleM :: (BLAS1 e)
-       => STMatrix s e -> e -> ST s ()
-scaleM x e = vectorOp (`V.scaleM` e) x
+scaleByM_ :: (BLAS1 e)
+          => e -> STMatrix s e -> ST s ()
+scaleByM_ e = vectorOp (V.scaleByM_ e)
+
+-- | @addWithScaleM_ alpha x y@ sets @y := alpha * x + y@.
+addWithScaleM_ :: (RMatrix m, BLAS1 e)
+               => e -> m e -> STMatrix s e -> ST s ()
+addWithScaleM_ e = checkOp2 "addWithScaleM_" $
+    unsafeAddWithScaleM_ e
+
+unsafeAddWithScaleM_ :: (RMatrix m, BLAS1 e)
+                     => e -> m e -> STMatrix s e -> ST s ()
+unsafeAddWithScaleM_ alpha x y =
+    fromMaybe colwise $ maybeWithVectorView   x $ \vx ->
+    fromMaybe colwise $ maybeWithSTVectorView y $ \vy ->
+        V.unsafeAddWithScaleM_ alpha vx vy
+  where
+    colwise = withColViews   x $ \vxs ->
+              withSTColViews y $ \vys ->
+                  sequence_ [ V.unsafeAddWithScaleM_ alpha vx vy
+                            | (vx,vy) <- zip vxs vys ]                
 
 -- | Scale the rows of a matrix; @scaleRowsTo dst s a@ sets
 -- @dst := diag(s) * a@.
@@ -841,7 +859,7 @@ scaleCols_ a s
     | otherwise =
         V.getElems   s >>= \es ->
         withSTColViews a $ \xs ->
-            sequence_ [ V.scaleM x e
+            sequence_ [ V.scaleByM_ e x
                       | (e,x) <- zip es xs
                       ]
   where

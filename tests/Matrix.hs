@@ -260,7 +260,7 @@ prop_sub t (MatrixPair x y) =
     _ = typed t x
 
 prop_scale t k x =
-    k `M.scale` x ~== M.map (k*) x
+    M.scaleBy k x ~== M.map (k*) x
   where
     _ = typed t x
 
@@ -276,7 +276,7 @@ prop_scaleCols t a =
     forAll (Test.vector n) $ \s ->
         M.scaleCols s a
             === M.fromCols (m,n)
-                    [ V.scale x e
+                    [ V.scaleBy e x
                     | (e,x) <- zip (V.elems s) (M.cols a) ]
   where
     (m,n) = M.dim a
@@ -362,7 +362,7 @@ prop_mulVector t (MulMatrixVector transa a x) =
 prop_mulVectorWithScale t alpha (MulMatrixVector transa a x) =
     M.mulVectorWithScale alpha transa a x
         ~==
-        M.mulVector transa a (V.scale x alpha)
+        M.mulVector transa a (V.scaleBy alpha x)
   where
     _ = typed t a
 
@@ -370,7 +370,7 @@ prop_mulAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
     M.mulAddVectorWithScales alpha transa a x beta y
         ~==
         V.add (M.mulVectorWithScale alpha transa a x)
-                  (V.scale y beta)
+              (V.scaleBy beta y)
   where
     _ = typed t a
 
@@ -418,15 +418,15 @@ prop_mulMatrix t (MulMatrixMatrix transa a transb b) =
 prop_mulMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
     M.mulMatrixWithScale alpha transa a transb b
         ~==
-        M.scale alpha (M.mulMatrix transa a transb b)
+        M.scaleBy alpha (M.mulMatrix transa a transb b)
   where
     _ = typed t a
 
 prop_mulAddMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
     M.mulAddMatrixWithScales alpha transa a transb b beta c
         ~==
-        M.add (M.scale alpha (M.mulMatrix transa a transb b))
-              (M.scale beta c)
+        M.add (M.scaleBy alpha (M.mulMatrix transa a transb b))
+              (M.scaleBy beta c)
   where
     _ = typed t a
 

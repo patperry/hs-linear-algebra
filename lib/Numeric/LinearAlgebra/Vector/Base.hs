@@ -54,8 +54,9 @@ module Numeric.LinearAlgebra.Vector.Base (
     kronecker,
 
     add,
+    addWithScale,
     sub,
-    scale,
+    scaleBy,
     mul,
     negate,
     conjugate,
@@ -105,7 +106,7 @@ import Numeric.LinearAlgebra.Vector.STBase
 
 infixr 8 `pow`
 infixl 7 `div`
-infixl 7 `mul`, `scale`, `kronecker`
+infixl 7 `mul`, `scaleBy`, `kronecker`
 infixl 6 `add`, `sub`
 
 unVector :: Vector e -> STVector RealWorld e
@@ -370,12 +371,19 @@ add = result2 addTo
 sub :: (VNum e) => Vector e -> Vector e -> Vector e
 sub = result2 subTo
 
--- | @scale x k@ returns @k * x@.
-scale :: (BLAS1 e) => Vector e -> e -> Vector e
-scale x k = create $ do
+-- | @scaleBy k x@ returns @k * x@.
+scaleBy :: (BLAS1 e) => e -> Vector e -> Vector e
+scaleBy k x = create $ do
     x' <- newCopy x
-    scaleM x' k
+    scaleByM_ k x'
     return x'
+
+-- | @addWithScale alpha x y@ return @alpha * x + y@.
+addWithScale :: (BLAS1 e) => e -> Vector e -> Vector e -> Vector e
+addWithScale alpha x y = create $ do
+    y' <- newCopy y
+    addWithScaleM_ alpha x y'
+    return y'
 
 -- | @mul x y@ returns @x * y@.
 mul :: (VNum e) => Vector e -> Vector e -> Vector e
