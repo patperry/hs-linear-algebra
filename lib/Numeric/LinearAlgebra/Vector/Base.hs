@@ -370,14 +370,14 @@ add = result2 addTo
 sub :: (VNum e) => Vector e -> Vector e -> Vector e
 sub = result2 subTo
 
--- | @scale k x@ returns @k * x@.
-scale :: (BLAS1 e) => e -> Vector e -> Vector e
-scale k x = create $ do
+-- | @scale x k@ returns @k * x@.
+scale :: (BLAS1 e) => Vector e -> e -> Vector e
+scale x k = create $ do
     x' <- newCopy x
-    scale_ x' k
+    scaleM x' k
     return x'
 
--- | @mul x y@ returns @x + y@.
+-- | @mul x y@ returns @x * y@.
 mul :: (VNum e) => Vector e -> Vector e -> Vector e
 mul = result2 mulTo
 

@@ -352,7 +352,7 @@ sub = result2 subTo
 scale :: (BLAS1 e) => e -> Matrix e -> Matrix e
 scale k a = create $ do
     a' <- newCopy a
-    scale_ a' k
+    scaleM a' k
     return a'
 
 -- | @scaleRows s a@ returns @diag(s) * a@.

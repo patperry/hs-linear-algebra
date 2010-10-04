@@ -154,7 +154,7 @@ weightedCovWithMeanTo mu t wxs c@(Herm _ a)
         xt <- M.new_ (p,n)
         M.withSTColViews xt $ \xs' ->
             sequence_ [  V.subTo x' mu x
-                      >> V.scale_ x' (realToFrac $ sqrt (w / invscale))
+                      >> V.scaleM x' (realToFrac $ sqrt (w / invscale))
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
         M.hermRankKUpdateTo 1 NoTrans xt 0 c

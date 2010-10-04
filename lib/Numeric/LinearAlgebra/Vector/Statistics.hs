@@ -93,7 +93,7 @@ weightedSumTo wxs s = do
         V.unsafeCopyTo old_s s -- old_s := s
         
         V.unsafeCopyTo val x   -- val := w * x
-        V.scale_ val w
+        V.scaleM val w
 
         V.addTo err err val    -- err := err + val
         V.addTo s s err        -- s := s + err
@@ -112,7 +112,7 @@ weightedMeanTo wxs m = let
                                | otherwise = let w_sum' = w_sum + w
                                              in do
                                     V.subTo diff x m
-                                    V.addWithScale_ m 
+                                    V.addWithScaleM m 
                                         (realToFrac $ w/w_sum') diff
                                     go diff w_sum' wxs'
     in do

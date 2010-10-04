@@ -67,7 +67,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     shiftDiagWithScaleTo,
     addTo,
     subTo,
-    scale_,
+    scaleM,
     scaleRowsTo,
     scaleCols_,
     negateTo,

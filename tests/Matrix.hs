@@ -276,7 +276,7 @@ prop_scaleCols t a =
     forAll (Test.vector n) $ \s ->
         M.scaleCols s a
             === M.fromCols (m,n)
-                    [ V.scale e x 
+                    [ V.scale x e
                     | (e,x) <- zip (V.elems s) (M.cols a) ]
   where
     (m,n) = M.dim a
@@ -362,7 +362,7 @@ prop_mulVector t (MulMatrixVector transa a x) =
 prop_mulVectorWithScale t alpha (MulMatrixVector transa a x) =
     M.mulVectorWithScale alpha transa a x
         ~==
-        M.mulVector transa a (V.scale alpha x)
+        M.mulVector transa a (V.scale x alpha)
   where
     _ = typed t a
 
@@ -370,7 +370,7 @@ prop_mulAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
     M.mulAddVectorWithScales alpha transa a x beta y
         ~==
         V.add (M.mulVectorWithScale alpha transa a x)
-                  (V.scale beta y)
+                  (V.scale y beta)
   where
     _ = typed t a
 

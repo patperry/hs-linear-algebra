@@ -801,9 +801,9 @@ negateTo = checkOp2 "negateTo" $
     vectorOp2 V.negateTo
 
 -- | Scale the entries of a matrix by the given value.
-scale_ :: (BLAS1 e)
+scaleM :: (BLAS1 e)
        => STMatrix s e -> e -> ST s ()
-scale_ x e = vectorOp (`V.scale_` e) x
+scaleM x e = vectorOp (`V.scaleM` e) x
 
 -- | Scale the rows of a matrix; @scaleRowsTo dst s a@ sets
 -- @dst := diag(s) * a@.
@@ -841,7 +841,7 @@ scaleCols_ a s
     | otherwise =
         V.getElems   s >>= \es ->
         withSTColViews a $ \xs ->
-            sequence_ [ V.scale_ x e
+            sequence_ [ V.scaleM x e
                       | (e,x) <- zip es xs
                       ]
   where

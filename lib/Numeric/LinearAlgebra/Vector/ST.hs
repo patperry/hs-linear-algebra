@@ -54,8 +54,8 @@ module Numeric.LinearAlgebra.Vector.ST (
     getNorm2,
     getWhichMaxAbs,
     getDot,
-    scale_,
-    addWithScale_,
+    scaleM,
+    addWithScaleM,
     kroneckerTo,
     
     -- * Vector math operations
@@ -101,7 +101,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     unsafeModify,
     unsafeMapTo,
     unsafeZipWithTo,
-    unsafeAddWithScale_,
+    unsafeAddWithScaleM,
     
     ) where
 

@@ -57,9 +57,9 @@ module Numeric.LinearAlgebra.Vector.STBase (
     getWhichMaxAbs,
     getDot,
     unsafeGetDot,
-    scale_,
-    addWithScale_,
-    unsafeAddWithScale_,
+    scaleM,
+    addWithScaleM,
+    unsafeAddWithScaleM,
     kroneckerTo,
     
     addTo,
@@ -649,26 +649,26 @@ unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
 unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
 {-# INLINE unsafeGetDot #-}
 
--- | @scale_ x e@ sets @x := x * e@.
-scale_ :: (Storable e, BLAS1 e) => STVector s e -> e -> ST s ()
-scale_ x e =
+-- | @scaleM x e@ sets @x := x * e@.
+scaleM :: (Storable e, BLAS1 e) => STVector s e -> e -> ST s ()
+scaleM x e =
     unsafeIOToST $
         unsafeWith x $ \px ->
             BLAS.scal (dim x) e px 1
-{-# INLINE scale_ #-}
+{-# INLINE scaleM #-}
 
--- | @addWithScale_ y alpha x@ sets @y := alpha * x + y@.
-addWithScale_ :: (RVector v, BLAS1 e) => STVector s e -> e -> v e -> ST s ()
-addWithScale_ y alpha x =
-    (checkOp2 "addWithScale_" $ \y1 x1 -> unsafeAddWithScale_ y1 alpha x1)
+-- | @addWithScaleM y alpha x@ sets @y := alpha * x + y@.
+addWithScaleM :: (RVector v, BLAS1 e) => STVector s e -> e -> v e -> ST s ()
+addWithScaleM y alpha x =
+    (checkOp2 "addWithScaleM" $ \y1 x1 -> unsafeAddWithScaleM y1 alpha x1)
         y x
-{-# INLINE addWithScale_ #-}
+{-# INLINE addWithScaleM #-}
 
-unsafeAddWithScale_ :: (RVector v, BLAS1 e)
+unsafeAddWithScaleM :: (RVector v, BLAS1 e)
                     => STVector s e -> e -> v e -> ST s ()
-unsafeAddWithScale_ y alpha x =
+unsafeAddWithScaleM y alpha x =
     (strideCall2 $ flip BLAS.axpy alpha) x y
-{-# INLINE unsafeAddWithScale_ #-}
+{-# INLINE unsafeAddWithScaleM #-}
 
 -- | @kroneckerTo dst x y@ sets @dst := x \otimes y@.
 kroneckerTo :: (RVector v1, RVector v2, BLAS2 e)

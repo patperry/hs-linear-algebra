@@ -195,7 +195,7 @@ prop_sub t (VectorPair x y) =
     _ = typed t x
 
 prop_scale t k x =
-    k `V.scale` x ~== V.map (k*) x
+    V.scale x k ~== V.map (k*) x
   where
     _ = typed t x
 

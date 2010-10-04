@@ -52,7 +52,7 @@ tests_STMatrix = testGroup "STMatrix"
         prop_shiftDiagWithScaleTo2 prop_shiftDiagWithScaleTo2
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
-    , testPropertyDZ "scale_" prop_scale_ prop_scale_
+    , testPropertyDZ "scaleM" prop_scaleM prop_scaleM
     , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
     , testPropertyDZ "scaleRowsTo (2)" prop_scaleRowsTo2 prop_scaleRowsTo2
     , testPropertyDZ "scaleCols_" prop_scaleCols_ prop_scaleCols_
@@ -197,9 +197,9 @@ prop_addTo t = ternaryProp t M.add M.addTo
 
 prop_subTo t = ternaryProp t M.sub M.subTo
 
-prop_scale_ t a e = runST $
+prop_scaleM t a e = runST $
     a `mutatesToMatrix` (M.scale e a) $ \ma ->
-        M.scale_ ma e
+        M.scaleM ma e
   where
     _ = typed t a
 
