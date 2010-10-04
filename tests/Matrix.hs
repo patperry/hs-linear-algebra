@@ -45,8 +45,9 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
     , testPropertyI "viewVector" prop_viewVector
-    , testPropertyDZ "shiftDiag" prop_shiftDiag prop_shiftDiag
-    , testPropertyDZ "shiftDiagWithScale" prop_shiftDiagWithScale prop_shiftDiagWithScale
+    , testPropertyDZ "shiftDiagBy" prop_shiftDiagBy prop_shiftDiagBy
+    , testPropertyDZ "shiftDiagByWithScale"
+        prop_shiftDiagByWithScale prop_shiftDiagByWithScale
     , testPropertyDZ "add" prop_add prop_add
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
@@ -233,17 +234,17 @@ prop_viewVector t (Dim2 (m,n)) =
 
 -------------------------- Num Matrix Operations --------------------------
 
-prop_shiftDiag t a =
+prop_shiftDiagBy t a =
     forAll (Test.vector (min m n)) $ \d ->
-        d `M.shiftDiag` a
+        M.shiftDiagBy d a
             === M.accum (+) a [ ((i,i),e) | (i,e) <- V.assocs d ]
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagWithScale t k a =
+prop_shiftDiagByWithScale t k a =
     forAll (Test.vector (min m n)) $ \d ->
-        M.shiftDiagWithScale k d a
+        M.shiftDiagByWithScale k d a
             ~== M.accum (+) a [ ((i,i),k * e) | (i,e) <- V.assocs d ]
   where
     (m,n) = M.dim a

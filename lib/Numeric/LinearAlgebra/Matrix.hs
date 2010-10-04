@@ -63,8 +63,8 @@ module Numeric.LinearAlgebra.Matrix (
     fromRow,
 
     -- * Matrix math operations
-    shiftDiag,
-    shiftDiagWithScale,    
+    shiftDiagBy,
+    shiftDiagByWithScale,    
     add,
     addWithScale,
     sub,

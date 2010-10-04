@@ -33,7 +33,7 @@ import Numeric.LinearAlgebra.Matrix.STBase
 
 
 infixl 7 `scaleBy`, `scaleRows`, `scaleCols`
-infixl 6 `add`, `shiftDiag`, `sub`
+infixl 6 `add`, `shiftDiagBy`, `sub`
 
 
 -- | Immutable dense matrices. The type arguments are as follows:
@@ -332,13 +332,19 @@ instance (Storable e, AEq e) => AEq (Matrix e) where
     (~==) = compareWith (~==)
     {-# INLINE (~==) #-}
 
--- | @shiftDiag d a@ returns @diag(d) + a@.
-shiftDiag :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-shiftDiag s = result $ flip shiftDiagTo s
+-- | @shiftDiagBy d a@ returns @diag(d) + a@.
+shiftDiagBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+shiftDiagBy s a = create $ do
+    a' <- newCopy a
+    shiftDiagByM_ s a'
+    return a'
 
--- | @shiftDiagWithScale alpha d a@ returns @alpha * diag(d) + a@.
-shiftDiagWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
-shiftDiagWithScale e s = result $ \dst -> shiftDiagWithScaleTo dst e s
+-- | @shiftDiagByWithScale alpha d a@ returns @alpha * diag(d) + a@.
+shiftDiagByWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
+shiftDiagByWithScale e s a = create $ do
+    a' <- newCopy a
+    shiftDiagByWithScaleM_ e s a'
+    return a'
 
 -- | @add a b@ returns @a + b@.
 add :: (VNum e) => Matrix e -> Matrix e -> Matrix e

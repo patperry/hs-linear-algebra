@@ -63,8 +63,8 @@ module Numeric.LinearAlgebra.Matrix.ST (
     zipWithTo,
 
     -- * Matrix math operations
-    shiftDiagTo,
-    shiftDiagWithScaleTo,
+    shiftDiagByM_,
+    shiftDiagByWithScaleM_,
     addTo,
     subTo,
     scaleByM_,

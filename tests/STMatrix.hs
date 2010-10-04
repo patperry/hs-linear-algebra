@@ -44,12 +44,9 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyI "setAssocs" prop_setAssocs
     , testPropertyI "mapTo" prop_mapTo
     , testPropertyI "zipWithTo" prop_zipWithTo
-    , testPropertyDZ "shiftDiagTo (1)" prop_shiftDiagTo1 prop_shiftDiagTo1
-    , testPropertyDZ "shiftDiagTo (2)" prop_shiftDiagTo2 prop_shiftDiagTo2
-    , testPropertyDZ "shiftDiagWithScaleTo (1)"
-        prop_shiftDiagWithScaleTo1 prop_shiftDiagWithScaleTo1
-    , testPropertyDZ "shiftDiagWithScaleTo (2)"
-        prop_shiftDiagWithScaleTo2 prop_shiftDiagWithScaleTo2
+    , testPropertyDZ "shiftDiagByM_" prop_shiftDiagByM_ prop_shiftDiagByM_
+    , testPropertyDZ "shiftDiagByWithScaleToM_"
+        prop_shiftDiagByWithScaleM_ prop_shiftDiagByWithScaleM_
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleByM_" prop_scaleByM_ prop_scaleByM_
@@ -156,40 +153,20 @@ prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> M.zipWith f x y)
     (\dst mx my -> M.zipWithTo dst f mx my)
 
-prop_shiftDiagTo1 t a =
+prop_shiftDiagByM_ t a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.shiftDiag s a) $ \ma ->
-            M.shiftDiagTo ma ms ma
+        a `mutatesToMatrix` (M.shiftDiagBy s a) $ \ma ->
+            M.shiftDiagByM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagTo2 t (MatrixPair a b) =
+prop_shiftDiagByWithScaleM_ t e a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (M.shiftDiag s a) $ \mb ->
-            M.shiftDiagTo mb ms ma
-  where
-    (m,n) = M.dim a
-    _ = typed t a
-
-prop_shiftDiagWithScaleTo1 t e a =
-    forAll (Test.vector (min m n)) $ \s -> runST $
-        s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \ma ->
-            M.shiftDiagWithScaleTo ma e ms ma
-  where
-    (m,n) = M.dim a
-    _ = typed t a
-
-prop_shiftDiagWithScaleTo2 t e (MatrixPair a b) =
-    forAll (Test.vector (min m n)) $ \s -> runST $
-        s `readOnlyVector` \ms ->
-        a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \mb ->
-            M.shiftDiagWithScaleTo mb e ms ma
+        a `mutatesToMatrix` (M.shiftDiagByWithScale e s a) $ \ma ->
+            M.shiftDiagByWithScaleM_ e ms ma
   where
     (m,n) = M.dim a
     _ = typed t a

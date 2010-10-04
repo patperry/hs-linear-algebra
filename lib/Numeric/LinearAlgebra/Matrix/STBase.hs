@@ -737,45 +737,40 @@ clear a = case maybeSTVectorView a of
     Nothing -> withSTColViews a $ mapM_ V.clear
 
 -- | Add a vector to the diagonal of a matrix.
-shiftDiagTo :: (RVector v, RMatrix m, BLAS1 e)
-            => STMatrix s e -> v e -> m e -> ST s ()
-shiftDiagTo dst s a
-    | V.dim s /= mn || dim a /= (m,n) = error $
-        printf ("shiftDiagTo"
-                ++ " <matrix with dim (%d,%d)>"
+shiftDiagByM_ :: (RVector v, BLAS1 e)
+              => v e -> STMatrix s e -> ST s ()
+shiftDiagByM_ s a
+    | V.dim s /= mn = error $
+        printf ("shiftDiagByM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                m n
                 (V.dim s)
-                (fst $ dim a) (snd $ dim a)
-    | otherwise = shiftDiagWithScaleTo dst 1 s a
+                m n
+    | otherwise = shiftDiagByWithScaleM_ 1 s a
   where
-    (m,n) = dim dst
+    (m,n) = dim a
     mn = min m n
 
 -- | Add a scaled vector to the diagonal of a matrix.
-shiftDiagWithScaleTo :: (RVector v, RMatrix m, BLAS1 e)
-                     => STMatrix s e -> e -> v e -> m e -> ST s ()
-shiftDiagWithScaleTo dst e s a
-    | V.dim s /= mn || dim a /= (m,n) = error $
-        printf ("shiftDiagToWithScale"
-                ++ " <matrix with dim (%d,%d)>"
+shiftDiagByWithScaleM_ :: (RVector v, BLAS1 e)
+                       => e -> v e -> STMatrix s e -> ST s ()
+shiftDiagByWithScaleM_ e s a
+    | V.dim s /= mn = error $
+        printf ("shiftDiagByWithScaleM_"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                m n
                 (V.dim s)
-                (fst $ dim a) (snd $ dim a)
+                m n
     | otherwise = do
-        unsafeCopyTo dst a
         unsafeIOToST $
             V.unsafeWith s $ \ps ->
-            unsafeWith dst $ \pdst lddst ->
-                BLAS.axpy mn e ps 1 pdst (lddst+1)
+            unsafeWith a $ \pa lda ->
+                BLAS.axpy mn e ps 1 pa (lda+1)
   where
-    (m,n) = dim dst
+    (m,n) = dim a
     mn = min m n
 
 -- | Add two matrices.
