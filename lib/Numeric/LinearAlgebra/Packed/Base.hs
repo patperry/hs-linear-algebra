@@ -293,19 +293,19 @@ hermMulVectorWithScale alpha a x =
         hermMulToVectorWithScale alpha a x y
         return y
                        
--- | @hermMulAddVectorWithScales alpha a x y@
+-- | @addHermMulVectorWithScales alpha a x y@
 -- returns @alpha * a * x + beta * y@.
-hermMulAddVectorWithScales :: (BLAS2 e)
+addHermMulVectorWithScales :: (BLAS2 e)
                            => e
                            -> Herm Packed e
                            -> Vector e
                            -> e
                            -> Vector e
                            -> Vector e
-hermMulAddVectorWithScales alpha a x beta y =
+addHermMulVectorWithScales alpha a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        hermMulAddVectorWithScalesM_ alpha a x beta y'
+        addHermMulVectorWithScalesM_ alpha a x beta y'
         return y'
 
 -- | @hermMulToVector a x y@ sets @y := a * x@.
@@ -325,23 +325,23 @@ hermMulToVectorWithScale :: (RPacked p, RVector v, BLAS2 e)
                          -> STVector s e
                          -> ST s ()
 hermMulToVectorWithScale alpha a x y =
-    hermMulAddVectorWithScalesM_ alpha a x 0 y
+    addHermMulVectorWithScalesM_ alpha a x 0 y
 
--- | @hermMulAddVectorWithScalesM_ alpha a x beta y@
+-- | @addHermMulVectorWithScalesM_ alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
-hermMulAddVectorWithScalesM_ :: (RPacked p, RVector v, BLAS2 e)
+addHermMulVectorWithScalesM_ :: (RPacked p, RVector v, BLAS2 e)
                              => e
                              -> Herm p e
                              -> v e
                              -> e
                              -> STVector s e
                              -> ST s ()
-hermMulAddVectorWithScalesM_ alpha (Herm uplo a) x beta y
+addHermMulVectorWithScalesM_ alpha (Herm uplo a) x beta y
     | (not . and) [ na == n
                   , nx == n
                   , ny == n
                   ] = error $
-        printf ("hermMulAddVectorWithScalesM_ _"
+        printf ("addHermMulVectorWithScalesM_ _"
                 ++ " (Herm %s <packed matrix with dim %d>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"

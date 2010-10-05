@@ -11,8 +11,8 @@
 module Numeric.LinearAlgebra.Matrix.Eigen (
     hermEigen,
     hermEigenvalues,
-    hermEigenTo,
-    hermEigenvaluesTo,
+    hermEigenM_,
+    hermEigenvaluesM_,
     ) where
 
 import Control.Monad.ST( ST, runST, unsafeIOToST )
@@ -39,7 +39,7 @@ hermEigen (Herm uplo a) = runST $ do
     ma <- M.newCopy a
     mw <- V.new_ n
     mz <- M.new_ (n,n)
-    hermEigenTo (Herm uplo ma) mw mz
+    hermEigenM_ (Herm uplo ma) mw mz
     w <- V.unsafeFreeze mw
     z <- M.unsafeFreeze mz
     return (w,z)
@@ -51,28 +51,28 @@ hermEigenvalues :: (LAPACK e) => Herm Matrix e -> Vector Double
 hermEigenvalues (Herm uplo a) = V.create $ do
     ma <- M.newCopy a
     w <- V.new_ n
-    hermEigenvaluesTo (Herm uplo ma) w
+    hermEigenvaluesM_ (Herm uplo ma) w
     return w
   where
     (_,n) = M.dim a
 
 -- | Compute and copy the eigenvalues and eigenvectors of a mutable
 -- Hermitian matrix.  This destroys the original Hermitian matrix.
-hermEigenTo :: (LAPACK e)
+hermEigenM_ :: (LAPACK e)
                   => Herm (STMatrix s) e
                   -> STVector s Double
                   -> STMatrix s e
                   -> ST s ()
-hermEigenTo (Herm uplo a) w z
+hermEigenM_ (Herm uplo a) w z
     | ma /= na =  error $
-        printf ("hermEigenTo"
+        printf ("hermEigenM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | (not . and) [ (ma,na) == (n,n)
                   , nw == n
                   , (mz,nz) == (n,n)
                   ] = error $
-        printf ("hermEigenTo"
+        printf ("hermEigenM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>)"
                 ++ " <vector with dim %d>:"
                 ++ " <matrix with dim (%d,%d)>"
@@ -99,19 +99,19 @@ hermEigenTo (Herm uplo a) w z
 
 -- | Compute and copy the eigenvalues of a mutable Hermitian matrix.  This
 -- destroys the original Hermitian matrix.
-hermEigenvaluesTo :: (LAPACK e)
+hermEigenvaluesM_ :: (LAPACK e)
                         => Herm (STMatrix s) e
                         -> STVector s Double
                         -> ST s ()
-hermEigenvaluesTo (Herm uplo a) w
+hermEigenvaluesM_ (Herm uplo a) w
     | ma /= na =  error $
-        printf ("hermEigenvaluesTo"
+        printf ("hermEigenvaluesM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | (not . and) [ (ma,na) == (n,n)
                   , nw == n
                   ] = error $
-        printf ("hermEigenvaluesTo"
+        printf ("hermEigenvaluesM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>)"
                 ++ " <vector with dim %d>: dimension mismatch")
                ma na nw

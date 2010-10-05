@@ -16,12 +16,12 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- ** Vector multiplication
     hermMulVector,
     hermMulVectorWithScale,
-    hermMulAddVectorWithScales,
+    addHermMulVectorWithScales,
     
     -- ** Matrix  multiplication
     hermMulMatrix,
     hermMulMatrixWithScale,
-    hermMulAddMatrixWithScales,
+    addHermMulMatrixWithScales,
 
     -- ** Updates
     hermRank1Update,
@@ -36,12 +36,12 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     -- ** Vector multiplication
     hermMulToVector,
     hermMulToVectorWithScale,
-    hermMulAddVectorWithScalesM_,
+    addHermMulVectorWithScalesM_,
     
     -- ** Matrix multiplication
     hermMulToMatrix,
     hermMulToMatrixWithScale,
-    hermMulAddMatrixWithScalesM_,
+    addHermMulMatrixWithScalesM_,
 
     -- ** Updates
     hermRank1UpdateM_,
@@ -251,19 +251,19 @@ hermMulVectorWithScale alpha a x =
         hermMulToVectorWithScale alpha a x y
         return y
                        
--- | @hermMulAddVectorWithScales alpha a x y@
+-- | @addHermMulVectorWithScales alpha a x y@
 -- returns @alpha * a * x + beta * y@.
-hermMulAddVectorWithScales :: (BLAS2 e)
+addHermMulVectorWithScales :: (BLAS2 e)
                                  => e
                                  -> Herm Matrix e
                                  -> Vector e
                                  -> e
                                  -> Vector e
                                  -> Vector e
-hermMulAddVectorWithScales alpha a x beta y =
+addHermMulVectorWithScales alpha a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        hermMulAddVectorWithScalesM_ alpha a x beta y'
+        addHermMulVectorWithScalesM_ alpha a x beta y'
         return y'
 
 -- | @hermMulMatrix side a b@
@@ -293,20 +293,20 @@ hermMulMatrixWithScale alpha side a b =
         hermMulToMatrixWithScale alpha side a b c
         return c
 
--- | @hermMulAddMatrixWithScales alpha side a b beta c@
+-- | @addHermMulMatrixWithScales alpha side a b beta c@
 -- returns @alpha * a * b + beta * c@ when @side@ is @LeftSide@ and
 -- @alpha * b * a + beta * c@ when @side@ is @RightSide@.
-hermMulAddMatrixWithScales :: (BLAS3 e)
+addHermMulMatrixWithScales :: (BLAS3 e)
                                  => e
                                  -> Side -> Herm Matrix e
                                  -> Matrix e
                                  -> e
                                  -> Matrix e
                                  -> Matrix e
-hermMulAddMatrixWithScales alpha side a b beta c = 
+addHermMulMatrixWithScales alpha side a b beta c = 
     M.create $ do
         c' <- M.newCopy c
-        hermMulAddMatrixWithScalesM_ alpha side a b beta c'
+        addHermMulMatrixWithScalesM_ alpha side a b beta c'
         return c'
 
 -- | @hermMulToVector a x y@ sets @y := a * x@.
@@ -326,20 +326,20 @@ hermMulToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
                                -> STVector s e
                                -> ST s ()
 hermMulToVectorWithScale alpha a x y =
-    hermMulAddVectorWithScalesM_ alpha a x 0 y
+    addHermMulVectorWithScalesM_ alpha a x 0 y
 
--- | @hermMulAddVectorWithScalesM_ alpha a x beta y@
+-- | @addHermMulVectorWithScalesM_ alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
-hermMulAddVectorWithScalesM_ :: (RMatrix m, RVector v, BLAS2 e)
+addHermMulVectorWithScalesM_ :: (RMatrix m, RVector v, BLAS2 e)
                                    => e
                                    -> Herm m e
                                    -> v e
                                    -> e
                                    -> STVector s e
                                    -> ST s ()
-hermMulAddVectorWithScalesM_ alpha (Herm uplo a) x beta y
+addHermMulVectorWithScalesM_ alpha (Herm uplo a) x beta y
     | ma /= na = error $
-        printf ("hermMulAddVectorWithScalesM_ _"
+        printf ("addHermMulVectorWithScalesM_ _"
                 ++ " (Herm %s <matrix with dim (%d,%d)>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"
@@ -351,7 +351,7 @@ hermMulAddVectorWithScalesM_ alpha (Herm uplo a) x beta y
                   , nx == n
                   , ny == n
                   ] = error $
-        printf ("hermMulAddVectorWithScalesM_ _"
+        printf ("addHermMulVectorWithScalesM_ _"
                 ++ " (Herm %s <matrix with dim (%d,%d)>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"
@@ -391,21 +391,21 @@ hermMulToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
                                -> STMatrix s e
                                -> ST s ()
 hermMulToMatrixWithScale alpha side a b c =
-    hermMulAddMatrixWithScalesM_ alpha side a b 0 c
+    addHermMulMatrixWithScalesM_ alpha side a b 0 c
 
--- | @hermMulAddMatrixWithScalesM_ alpha side a b beta c@
+-- | @addHermMulMatrixWithScalesM_ alpha side a b beta c@
 -- sets @c := alpha * a * b + beta * c@ when @side@ is @LeftSide@ and
 -- @c := alpha * b * a + beta * c@ when @side@ is @RightSide@.
-hermMulAddMatrixWithScalesM_ :: (RMatrix m1, RMatrix m2, BLAS3 e)
+addHermMulMatrixWithScalesM_ :: (RMatrix m1, RMatrix m2, BLAS3 e)
                                    => e
                                    -> Side -> Herm m1 e
                                    -> m2 e
                                    -> e
                                    -> STMatrix s e
                                    -> ST s ()
-hermMulAddMatrixWithScalesM_ alpha side (Herm uplo a) b beta c
+addHermMulMatrixWithScalesM_ alpha side (Herm uplo a) b beta c
     | ma /= na = error $
-        printf ("hermMulAddMatrixWithScalesM_ _"
+        printf ("addHermMulMatrixWithScalesM_ _"
                 ++ " %s (Herm %s <matrix with dim (%d,%d)>)" 
                 ++ " <matrix with dim (%d,%d)>"
                 ++ " _"
@@ -418,7 +418,7 @@ hermMulAddMatrixWithScalesM_ alpha side (Herm uplo a) b beta c
                   , (mb, nb ) == (m,n)
                   , (mc, nc ) == (m,n)
                   ] = error $
-        printf ("hermMulAddMatrixWithScalesM_ _"
+        printf ("addHermMulMatrixWithScalesM_ _"
                 ++ " %s (Herm %s <matrix with dim (%d,%d)>)" 
                 ++ " <matrix with dim (%d,%d)>"
                 ++ " _"

@@ -14,7 +14,7 @@ module Numeric.LinearAlgebra.Packed.Herm (
     -- ** Vector multiplication
     hermMulVector,
     hermMulVectorWithScale,
-    hermMulAddVectorWithScales,
+    addHermMulVectorWithScales,
     
     -- ** Updates
     hermRank1Update,
@@ -26,7 +26,7 @@ module Numeric.LinearAlgebra.Packed.Herm (
     -- ** Vector multiplication
     hermMulToVector,
     hermMulToVectorWithScale,
-    hermMulAddVectorWithScalesM_,
+    addHermMulVectorWithScalesM_,
     
     -- ** Updates
     hermRank1UpdateM_,
