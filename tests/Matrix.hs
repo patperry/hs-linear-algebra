@@ -51,8 +51,8 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "add" prop_add prop_add
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
-    , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
-    , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
+    , testPropertyDZ "scaleRowsBy" prop_scaleRowsBy prop_scaleRowsBy
+    , testPropertyDZ "scaleColsBy" prop_scaleColsBy prop_scaleColsBy
     , testPropertyDZ "negate" prop_negate prop_negate
     , testPropertyDZ "conjugate" prop_conjugate prop_conjugate
     , testPropertyDZ "trans" prop_trans prop_trans
@@ -265,18 +265,18 @@ prop_scale t k x =
   where
     _ = typed t x
 
-prop_scaleRows t a =
+prop_scaleRowsBy t a =
     forAll (Test.vector m) $ \s ->
-        M.scaleRows s a
-            === M.fromCols (m,n) [ V.mul s x | x <- M.cols a ]
+        M.scaleRowsBy s a
+            ~== M.fromCols (m,n) [ V.mul s x | x <- M.cols a ]
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_scaleCols t a =
+prop_scaleColsBy t a =
     forAll (Test.vector n) $ \s ->
-        M.scaleCols s a
-            === M.fromCols (m,n)
+        M.scaleColsBy s a
+            ~== M.fromCols (m,n)
                     [ V.scaleBy e x
                     | (e,x) <- zip (V.elems s) (M.cols a) ]
   where

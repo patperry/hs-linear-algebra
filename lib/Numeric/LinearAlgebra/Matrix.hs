@@ -69,8 +69,8 @@ module Numeric.LinearAlgebra.Matrix (
     addWithScale,
     sub,
     scaleBy,
-    scaleRows,
-    scaleCols,
+    scaleRowsBy,
+    scaleColsBy,
     negate,
     conjugate,
 

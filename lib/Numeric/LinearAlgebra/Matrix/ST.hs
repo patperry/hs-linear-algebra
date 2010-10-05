@@ -69,8 +69,8 @@ module Numeric.LinearAlgebra.Matrix.ST (
     subTo,
     scaleByM_,
     addWithScaleM_,
-    scaleRowsTo,
-    scaleCols_,
+    scaleRowsByM_,
+    scaleColsByM_,
     negateTo,
     conjugateTo,
 

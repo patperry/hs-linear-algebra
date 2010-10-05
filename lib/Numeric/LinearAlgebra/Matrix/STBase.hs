@@ -16,7 +16,7 @@ import Control.Monad( forM_ )
 import Control.Monad.ST( ST, RealWorld, unsafeIOToST )
 import Data.Maybe( fromMaybe )
 import Data.Typeable( Typeable )
-import Foreign( ForeignPtr, Ptr, advancePtr, peekElemOff, pokeElemOff,
+import Foreign( ForeignPtr, Ptr, advancePtr, peek, peekElemOff, pokeElemOff,
     mallocForeignPtrArray )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
@@ -818,42 +818,46 @@ unsafeAddWithScaleM_ alpha x y =
                   sequence_ [ V.unsafeAddWithScaleM_ alpha vx vy
                             | (vx,vy) <- zip vxs vys ]                
 
--- | Scale the rows of a matrix; @scaleRowsTo dst s a@ sets
--- @dst := diag(s) * a@.
-scaleRowsTo :: (RVector v, RMatrix m, VNum e)
-            => STMatrix s e -> v e -> m e -> ST s ()
-scaleRowsTo dst s a
-    | V.dim s /= m || dim a /= (m,n) = error $
-        printf ("scaleRowsTo"
-                ++ " <matrix with dim (%d,%d)>"
+-- | Scale the rows of a matrix; @scaleRowsByM_ s a@ sets
+-- @a := diag(s) * a@.
+scaleRowsByM_ :: (RVector v, BLAS1 e)
+              => v e -> STMatrix s e -> ST s ()
+scaleRowsByM_  s a
+    | V.dim s /= m = error $
+        printf ("scaleRowsByM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                m n
                 (V.dim s)
-                (fst $ dim a) (snd $ dim a)
+                m n
     | otherwise =
-        withSTColViews dst $ \ys ->
-        withColViews   a $ \xs ->
-            sequence_ [ V.mulTo y s x | (y,x) <- zip ys xs ]
+        unsafeIOToST $
+        V.unsafeWith s $ \ps ->
+        unsafeWith a   $ \pa lda ->
+            go lda pa ps 0
   where
-    (m,n) = dim dst
+    (m,n) = dim a
+    go lda pa ps i | i == m = return ()
+                   | otherwise = do
+                         e <- peek ps
+                         BLAS.scal n e pa lda
+                         go lda (pa `advancePtr` 1) (ps `advancePtr` 1) (i+1)
 
--- | Scale the columns of a matrix; @scaleCols_ a s@ sets
+-- | Scale the columns of a matrix; @scaleColBysM_ s a@ sets
 -- @a := a * diag(s)@.
-scaleCols_ :: (RVector v, BLAS1 e)
-            => STMatrix s e -> v e -> ST s ()
-scaleCols_ a s
+scaleColsByM_ :: (RVector v, BLAS1 e)
+            => v e -> STMatrix s e -> ST s ()
+scaleColsByM_ s a
     | V.dim s /= n  = error $
-        printf ("scaleCols_"
-                ++ " <matrix with dim (%d,%d)>"        
+        printf ("scaleColsByM_"
                 ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"        
                 ++ ": dimension mismatch") 
-                m n
                 (V.dim s)
+                m n
     | otherwise =
-        V.getElems   s >>= \es ->
-        withSTColViews a $ \xs ->
+        V.getElems     s >>= \es ->
+        withSTColViews a $   \xs ->
             sequence_ [ V.scaleByM_ e x
                       | (e,x) <- zip es xs
                       ]

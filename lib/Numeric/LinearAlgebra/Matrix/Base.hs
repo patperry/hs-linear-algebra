@@ -32,7 +32,7 @@ import qualified Numeric.LinearAlgebra.Vector as V
 import Numeric.LinearAlgebra.Matrix.STBase
 
 
-infixl 7 `scaleBy`, `scaleRows`, `scaleCols`
+infixl 7 `scaleBy`, `scaleRowsBy`, `scaleColsBy`
 infixl 6 `add`, `shiftDiagBy`, `sub`
 
 
@@ -368,15 +368,18 @@ addWithScale alpha x y = create $ do
     addWithScaleM_ alpha x y'
     return y'
 
--- | @scaleRows s a@ returns @diag(s) * a@.
-scaleRows :: (VNum e) => Vector e -> Matrix e -> Matrix e
-scaleRows s = result $ flip scaleRowsTo s
-
--- | @scaleCols s a@ returns @a * diag(s)@.
-scaleCols :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-scaleCols s a = create $ do
+-- | @scaleRowsBy s a@ returns @diag(s) * a@.
+scaleRowsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+scaleRowsBy s a = create $ do
     a' <- newCopy a
-    scaleCols_ a' s
+    scaleRowsByM_ s a'
+    return a'
+
+-- | @scaleColsBy s a@ returns @a * diag(s)@.
+scaleColsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+scaleColsBy s a = create $ do
+    a' <- newCopy a
+    scaleColsByM_ s a'
     return a'
 
 -- | @negate a@ returns @-a@.

@@ -51,9 +51,8 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "subTo" prop_subTo prop_subTo
     , testPropertyDZ "scaleByM_" prop_scaleByM_ prop_scaleByM_
     , testPropertyDZ "addWithScaleM_" prop_addWithScaleM_ prop_addWithScaleM_
-    , testPropertyDZ "scaleRowsTo (1)" prop_scaleRowsTo1 prop_scaleRowsTo1
-    , testPropertyDZ "scaleRowsTo (2)" prop_scaleRowsTo2 prop_scaleRowsTo2
-    , testPropertyDZ "scaleCols_" prop_scaleCols_ prop_scaleCols_
+    , testPropertyDZ "scaleRowsByM" prop_scaleRowsByM_ prop_scaleRowsByM_
+    , testPropertyDZ "scaleColsByM_" prop_scaleColsByM_ prop_scaleColsByM_
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
     ]
@@ -188,30 +187,20 @@ prop_addWithScaleM_ t alpha (MatrixPair x y) = runST $
   where
     _ = typed t x
 
-prop_scaleRowsTo1 t a =
+prop_scaleRowsByM_ t a =
     forAll (Test.vector m) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.scaleRows s a) $ \ma ->
-            M.scaleRowsTo ma ms ma
+        a `mutatesToMatrix` (M.scaleRowsBy s a) $ \ma ->
+            M.scaleRowsByM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_scaleRowsTo2 t (MatrixPair a b) =
-    forAll (Test.vector m) $ \s -> runST $
-        s `readOnlyVector` \ms ->
-        a `readOnlyMatrix` \ma ->
-        b `mutatesToMatrix` (M.scaleRows s a) $ \mb ->
-            M.scaleRowsTo mb ms ma
-  where
-    (m,n) = M.dim a
-    _ = typed t a
-
-prop_scaleCols_ t a =
+prop_scaleColsByM_ t a =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.scaleCols s a) $ \ma ->
-            M.scaleCols_ ma ms
+        a `mutatesToMatrix` (M.scaleColsBy s a) $ \ma ->
+            M.scaleColsByM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
