@@ -51,7 +51,7 @@ cov :: (BLAS2 e)
     => Int -> CovMethod -> [Vector e] -> Herm Packed e
 cov p t xs = P.hermCreate $ do
     c <- Herm uplo `fmap` P.new_ p
-    covTo t xs c
+    covTo c t xs
     return c
   where
     uplo = defaultCovUplo
@@ -62,7 +62,7 @@ covWithMean :: (BLAS2 e)
             => Vector e -> CovMethod -> [Vector e] -> Herm Packed e
 covWithMean mu t xs = P.hermCreate $ do
     c <- Herm uplo `fmap` P.new_ p
-    covWithMeanTo mu t xs c
+    covWithMeanTo c mu t xs
     return c
   where
     p = V.dim mu
@@ -75,7 +75,7 @@ weightedCov :: (BLAS2 e)
             => Int -> CovMethod -> [(Double, Vector e)] -> Herm Packed e
 weightedCov p t wxs = P.hermCreate $ do
     c <- Herm uplo `fmap` P.new_ p
-    weightedCovTo t wxs c
+    weightedCovTo c t wxs
     return c
   where
     uplo = defaultCovUplo
@@ -87,7 +87,7 @@ weightedCovWithMean :: (BLAS2 e)
                     -> Herm Packed e
 weightedCovWithMean mu t wxs = P.hermCreate $ do
     c <- Herm uplo `fmap` P.new_ p
-    weightedCovWithMeanTo mu t wxs c
+    weightedCovWithMeanTo c mu t wxs
     return c
   where
     p = V.dim mu
@@ -96,24 +96,27 @@ weightedCovWithMean mu t wxs = P.hermCreate $ do
 -- | Computes and copies the sample covariance matrix (in packed form)
 -- to the given destination.
 covTo :: (RVector v, BLAS2 e)
-      => CovMethod -> [v e] -> Herm (STPacked s) e -> ST s ()
-covTo t xs c@(Herm _ a) = do
+      => Herm (STPacked s) e -> CovMethod -> [v e] -> ST s ()
+covTo c@(Herm _ a) t xs = do
     mu <- V.new p 1
     V.meanTo mu xs
-    covWithMeanTo mu t xs c
+    covWithMeanTo c mu t xs
   where
     p = P.dim a
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix (in packed form) to the given destination.
 covWithMeanTo :: (RVector v1, RVector v2, BLAS2 e)
-              => v1 e -> CovMethod -> [v2 e] -> Herm (STPacked s) e
+              => Herm (STPacked s) e
+              -> v1 e -> CovMethod -> [v2 e]
               -> ST s ()
-covWithMeanTo mu t xs c@(Herm _ a)
+covWithMeanTo c@(Herm _ a) mu t xs
     | P.dim a /= p = error $
-        printf ("covWithMeanTo <vector with dim %d> _ _"
-                ++ " (Herm _ <packed matrix with dim %d>):"
-                ++ " dimension mismatch")
+        printf ("covWithMeanTo"
+                ++ " (Herm _ <packed matrix with dim %d>)"
+                ++ " <vector with dim %d>"
+                ++ " _ _"
+                ++ ": dimension mismatch")
                n (P.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)
@@ -133,25 +136,29 @@ covWithMeanTo mu t xs c@(Herm _ a)
 -- | Computes and copies the weighed sample covariance matrix (in packed
 -- form) to the given destination.
 weightedCovTo :: (RVector v, BLAS2 e)
-              => CovMethod -> [(Double, v e)] -> Herm (STPacked s) e
+              => Herm (STPacked s) e
+              -> CovMethod -> [(Double, v e)] 
               -> ST s ()
-weightedCovTo t wxs c@(Herm _ a) = do
+weightedCovTo c@(Herm _ a) t wxs = do
     mu <- V.new p 1
     V.weightedMeanTo mu wxs
-    weightedCovWithMeanTo mu t wxs c
+    weightedCovWithMeanTo c mu t wxs
   where
     p = P.dim a
 
 -- | Given the pre-computed mean, computes and copies the weighed sample
 -- covariance matrix (in packed form) to the given destination.
 weightedCovWithMeanTo :: (RVector v1, RVector v2, BLAS2 e)
-                      => v1 e -> CovMethod -> [(Double, v2 e)]
-                      -> Herm (STPacked s) e -> ST s ()
-weightedCovWithMeanTo mu t wxs c@(Herm _ a)
+                      => Herm (STPacked s) e
+                      -> v1 e -> CovMethod -> [(Double, v2 e)]
+                      -> ST s ()
+weightedCovWithMeanTo c@(Herm _ a) mu t wxs
     | P.dim a /= p = error $
-        printf ("weightedCovWithMeanTo <vector with dim %d> _ _"
-                ++ " (Herm _ <packed matrix with dim %d>):"
-                ++ " dimension mismatch")
+        printf ("weightedCovWithMeanTo"
+                ++ " (Herm _ <packed matrix with dim %d>)"
+                ++ " <vector with dim %d>"
+                ++ " _ _"
+                ++ ": dimension mismatch")
                n (P.dim a)
     | otherwise = do
         xt <- M.new_ (p,n)

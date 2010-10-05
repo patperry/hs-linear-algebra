@@ -53,7 +53,7 @@ cov :: (BLAS3 e)
           => Int -> CovMethod -> [Vector e] -> Herm Matrix e
 cov p t xs = M.hermCreate $ do
     c <- Herm uplo `fmap` M.new_ (p,p)
-    covTo t xs c
+    covTo c t xs
     return c
   where
     uplo = defaultCovUplo
@@ -64,7 +64,7 @@ covWithMean :: (BLAS3 e)
                   => Vector e -> CovMethod -> [Vector e] -> Herm Matrix e
 covWithMean mu t xs = M.hermCreate $ do
     c <- Herm uplo `fmap` M.new_ (p,p)
-    covWithMeanTo mu t xs c
+    covWithMeanTo c mu t xs
     return c
   where
     p = V.dim mu
@@ -76,7 +76,7 @@ weightedCov :: (BLAS3 e)
                   => Int -> CovMethod -> [(Double, Vector e)] -> Herm Matrix e
 weightedCov p t wxs = M.hermCreate $ do
     c <- Herm uplo `fmap` M.new_ (p,p)
-    weightedCovTo t wxs c
+    weightedCovTo c t wxs
     return c
   where
     uplo = defaultCovUplo
@@ -88,7 +88,7 @@ weightedCovWithMean :: (BLAS3 e)
                           -> Herm Matrix e
 weightedCovWithMean mu t wxs = M.hermCreate $ do
     c <- Herm uplo `fmap` M.new_ (p,p)
-    weightedCovWithMeanTo mu t wxs c
+    weightedCovWithMeanTo c mu t wxs
     return c
   where
     p = V.dim mu
@@ -97,24 +97,26 @@ weightedCovWithMean mu t wxs = M.hermCreate $ do
 -- | Computes and copies the sample covariance matrix to the given
 -- destination.
 covTo :: (RVector v, BLAS3 e)
-            => CovMethod -> [v e] -> Herm (STMatrix s) e -> ST s ()
-covTo t xs c@(Herm _ a) = do
+      => Herm (STMatrix s) e -> CovMethod -> [v e] -> ST s ()
+covTo c@(Herm _ a) t xs = do
     mu <- V.new p 1
     V.meanTo mu xs
-    covWithMeanTo mu t xs c
+    covWithMeanTo c mu t xs
   where
     (p,_) = M.dim a
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix to the given destination.
 covWithMeanTo :: (RVector v1, RVector v2, BLAS3 e)
-                    => v1 e -> CovMethod -> [v2 e] -> Herm (STMatrix s) e
-                    -> ST s ()
-covWithMeanTo mu t xs c@(Herm _ a)
+              => Herm (STMatrix s) e -> v1 e -> CovMethod -> [v2 e] -> ST s ()
+covWithMeanTo c@(Herm _ a) mu t xs
     | M.dim a /= (p,p) = error $
-        printf ("covWithMeanTo <vector with dim %d> _ _"
-                ++ " <matrix with dim %s>: dimension mismatch")
-               n (show $ M.dim a)
+        printf ("covWithMeanTo"
+                ++ " (Herm _ <matrix with dim %s>)"
+                ++ " <vector with dim %d>"
+                ++ " _ _"
+                ++ ": dimension mismatch")
+               (show $ M.dim a) n
     | otherwise = do
         xt <- M.new_ (p,n)
         M.withSTColViews xt $ \xs' ->
@@ -130,26 +132,28 @@ covWithMeanTo mu t xs c@(Herm _ a)
 -- | Computes and copies the weighed sample covariance matrix to the
 -- given destination.
 weightedCovTo :: (RVector v, BLAS3 e)
-                    => CovMethod -> [(Double, v e)] -> Herm (STMatrix s) e
-                    -> ST s ()
-weightedCovTo t wxs c@(Herm _ a) = do
+              => Herm (STMatrix s) e -> CovMethod -> [(Double, v e)] -> ST s ()
+weightedCovTo c@(Herm _ a) t wxs = do
     mu <- V.new p 1
     V.weightedMeanTo mu wxs
-    weightedCovWithMeanTo mu t wxs c
+    weightedCovWithMeanTo c mu t wxs
   where
     (p,_) = M.dim a
 
 -- | Given the pre-computed mean, computes and copies the weighed sample
 -- covariance matrix to the given destination.
 weightedCovWithMeanTo :: (RVector v1, RVector v2, BLAS3 e)
-                            => v1 e -> CovMethod -> [(Double, v2 e)]
-                            -> Herm (STMatrix s) e -> ST s ()
-weightedCovWithMeanTo mu t wxs c@(Herm _ a)
+                      => Herm (STMatrix s) e
+                      -> v1 e -> CovMethod -> [(Double, v2 e)]
+                      -> ST s ()
+weightedCovWithMeanTo c@(Herm _ a) mu t wxs 
     | M.dim a /= (p,p) = error $
-        printf ("weightedCovWithMeanTo <vector with dim %d> _ _"
+        printf ("weightedCovWithMeanTo"
                 ++ " (Herm _ <matrix with dim %s>):"
+                ++ " <vector with dim %d>"
+                ++ " _ _"
                 ++ " dimension mismatch")
-               n (show $ M.dim a)
+               (show $ M.dim a) n
     | otherwise = do
         xt <- M.new_ (p,n)
         M.withSTColViews xt $ \xs' ->
