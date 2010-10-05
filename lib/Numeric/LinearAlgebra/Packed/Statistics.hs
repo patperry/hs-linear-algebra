@@ -99,7 +99,7 @@ covTo :: (RVector v, BLAS2 e)
       => CovMethod -> [v e] -> Herm (STPacked s) e -> ST s ()
 covTo t xs c@(Herm _ a) = do
     mu <- V.new p 1
-    V.meanTo xs mu
+    V.meanTo mu xs
     covWithMeanTo mu t xs c
   where
     p = P.dim a
@@ -137,7 +137,7 @@ weightedCovTo :: (RVector v, BLAS2 e)
               -> ST s ()
 weightedCovTo t wxs c@(Herm _ a) = do
     mu <- V.new p 1
-    V.weightedMeanTo wxs mu
+    V.weightedMeanTo mu wxs
     weightedCovWithMeanTo mu t wxs c
   where
     p = P.dim a
