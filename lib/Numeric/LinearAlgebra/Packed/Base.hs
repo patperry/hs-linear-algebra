@@ -278,7 +278,7 @@ hermMulVector :: (BLAS2 e)
 hermMulVector a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        hermMulToVector a x y
+        hermMulVectorTo y a x
         return y
 
 -- | @hermMulVectorWithScale alpha a x@ retunrs @alpha * a * x@.
@@ -290,7 +290,7 @@ hermMulVectorWithScale :: (BLAS2 e)
 hermMulVectorWithScale alpha a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        hermMulToVectorWithScale alpha a x y
+        hermMulVectorWithScaleTo y alpha a x
         return y
                        
 -- | @addHermMulVectorWithScales alpha a x y@
@@ -308,24 +308,24 @@ addHermMulVectorWithScales alpha a x beta y =
         addHermMulVectorWithScalesM_ alpha a x beta y'
         return y'
 
--- | @hermMulToVector a x y@ sets @y := a * x@.
-hermMulToVector :: (RPacked p, RVector v, BLAS2 e)
-                => Herm p e
+-- | @hermMulVectorTo dst a x@ sets @dst := a * x@.
+hermMulVectorTo :: (RPacked p, RVector v, BLAS2 e)
+                => STVector s e
+                -> Herm p e
                 -> v e
-                -> STVector s e
                 -> ST s ()
-hermMulToVector = hermMulToVectorWithScale 1
+hermMulVectorTo dst = hermMulVectorWithScaleTo dst 1
 
--- | @hermMulToVectorWithScale alpha a x y@
--- sets @y := alpha * a * x@.
-hermMulToVectorWithScale :: (RPacked p, RVector v, BLAS2 e)
-                         => e
+-- | @hermMulVectorWithScaleTo dst alpha a x@
+-- sets @dst := alpha * a * x@.
+hermMulVectorWithScaleTo :: (RPacked p, RVector v, BLAS2 e)
+                         => STVector s e
+                         -> e
                          -> Herm p e
                          -> v e
-                         -> STVector s e
                          -> ST s ()
-hermMulToVectorWithScale alpha a x y =
-    addHermMulVectorWithScalesM_ alpha a x 0 y
+hermMulVectorWithScaleTo dst alpha a x =
+    addHermMulVectorWithScalesM_ alpha a x 0 dst
 
 -- | @addHermMulVectorWithScalesM_ alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.

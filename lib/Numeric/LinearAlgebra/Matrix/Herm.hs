@@ -34,13 +34,13 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     hermCreate,
     
     -- ** Vector multiplication
-    hermMulToVector,
-    hermMulToVectorWithScale,
+    hermMulVectorTo,
+    hermMulVectorWithScaleTo,
     addHermMulVectorWithScalesM_,
     
     -- ** Matrix multiplication
-    hermMulToMatrix,
-    hermMulToMatrixWithScale,
+    hermMulMatrixTo,
+    hermMulMatrixWithScaleTo,
     addHermMulMatrixWithScalesM_,
 
     -- ** Updates
@@ -236,7 +236,7 @@ hermMulVector :: (BLAS2 e)
 hermMulVector a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        hermMulToVector a x y
+        hermMulVectorTo y a x
         return y
 
 -- | @hermMulVectorWithScale alpha a x@ retunrs @alpha * a * x@.
@@ -248,7 +248,7 @@ hermMulVectorWithScale :: (BLAS2 e)
 hermMulVectorWithScale alpha a x =
     V.create $ do
         y <- V.new_ (V.dim x)
-        hermMulToVectorWithScale alpha a x y
+        hermMulVectorWithScaleTo y alpha a x
         return y
                        
 -- | @addHermMulVectorWithScales alpha a x y@
@@ -276,7 +276,7 @@ hermMulMatrix :: (BLAS3 e)
 hermMulMatrix side a b = 
     M.create $ do
         c <- M.new_ (M.dim b)
-        hermMulToMatrix side a b c
+        hermMulMatrixTo c side a b
         return c
 
 -- | @hermMulMatrixWithScale alpha side a b@
@@ -290,7 +290,7 @@ hermMulMatrixWithScale :: (BLAS3 e)
 hermMulMatrixWithScale alpha side a b =
     M.create $ do
         c <- M.new_ (M.dim b)
-        hermMulToMatrixWithScale alpha side a b c
+        hermMulMatrixWithScaleTo c alpha side a b
         return c
 
 -- | @addHermMulMatrixWithScales alpha side a b beta c@
@@ -309,24 +309,24 @@ addHermMulMatrixWithScales alpha side a b beta c =
         addHermMulMatrixWithScalesM_ alpha side a b beta c'
         return c'
 
--- | @hermMulToVector a x y@ sets @y := a * x@.
-hermMulToVector :: (RMatrix m, RVector v, BLAS2 e)
-                      => Herm m e
-                      -> v e
-                      -> STVector s e
-                      -> ST s ()
-hermMulToVector = hermMulToVectorWithScale 1
+-- | @hermMulVectorTo dst a x@ sets @dst := a * x@.
+hermMulVectorTo :: (RMatrix m, RVector v, BLAS2 e)
+                => STVector s e
+                -> Herm m e
+                -> v e
+                -> ST s ()
+hermMulVectorTo dst = hermMulVectorWithScaleTo dst 1
 
--- | @hermMulToVectorWithScale alpha a x y@
--- sets @y := alpha * a * x@.
-hermMulToVectorWithScale :: (RMatrix m, RVector v, BLAS2 e)
-                               => e
-                               -> Herm m e
-                               -> v e
-                               -> STVector s e
-                               -> ST s ()
-hermMulToVectorWithScale alpha a x y =
-    addHermMulVectorWithScalesM_ alpha a x 0 y
+-- | @hermMulVectorWithScaleTo dst alpha a x@
+-- sets @dst := alpha * a * x@.
+hermMulVectorWithScaleTo :: (RMatrix m, RVector v, BLAS2 e)
+                         => STVector s e
+                         -> e
+                         -> Herm m e
+                         -> v e
+                         -> ST s ()
+hermMulVectorWithScaleTo dst alpha a x =
+    addHermMulVectorWithScalesM_ alpha a x 0 dst
 
 -- | @addHermMulVectorWithScalesM_ alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
@@ -371,27 +371,27 @@ addHermMulVectorWithScalesM_ alpha (Herm uplo a) x beta y
     ny = V.dim y
     n = ny
 
--- | @hermMulToMatrix side a b c@
--- sets @c := a * b@ when @side@ is @LeftSide@ and
--- @c := b * a@ when @side@ is @RightSide@.
-hermMulToMatrix :: (RMatrix m1, RMatrix m2, BLAS3 e)
-                      => Side -> Herm m1 e
-                      -> m2 e
-                      -> STMatrix s e
-                      -> ST s ()
-hermMulToMatrix = hermMulToMatrixWithScale 1
+-- | @hermMulMatrixTo dst side a b@
+-- sets @dst := a * b@ when @side@ is @LeftSide@ and
+-- @dst := b * a@ when @side@ is @RightSide@.
+hermMulMatrixTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                => STMatrix s e
+                -> Side -> Herm m1 e
+                -> m2 e
+                -> ST s ()
+hermMulMatrixTo dst = hermMulMatrixWithScaleTo dst 1
 
--- | @hermMulToMatrixWithScale alpha side a b c@
--- sets @c := alpha * a * b@ when @side@ is @LeftSide@ and
--- @c := alpha * b * a@ when @side@ is @RightSide@.
-hermMulToMatrixWithScale :: (RMatrix m1, RMatrix m2, BLAS3 e)
-                               => e
-                               -> Side -> Herm m1 e
-                               -> m2 e
-                               -> STMatrix s e
-                               -> ST s ()
-hermMulToMatrixWithScale alpha side a b c =
-    addHermMulMatrixWithScalesM_ alpha side a b 0 c
+-- | @hermMulMatrixWithScaleTo dst alpha side a b@
+-- sets @dst := alpha * a * b@ when @side@ is @LeftSide@ and
+-- @dst := alpha * b * a@ when @side@ is @RightSide@.
+hermMulMatrixWithScaleTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
+                         => STMatrix s e
+                         -> e
+                         -> Side -> Herm m1 e
+                         -> m2 e
+                         -> ST s ()
+hermMulMatrixWithScaleTo dst alpha side a b =
+    addHermMulMatrixWithScalesM_ alpha side a b 0 dst
 
 -- | @addHermMulMatrixWithScalesM_ alpha side a b beta c@
 -- sets @c := alpha * a * b + beta * c@ when @side@ is @LeftSide@ and

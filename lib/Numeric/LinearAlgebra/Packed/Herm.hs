@@ -24,8 +24,8 @@ module Numeric.LinearAlgebra.Packed.Herm (
     hermCreate,    
 
     -- ** Vector multiplication
-    hermMulToVector,
-    hermMulToVectorWithScale,
+    hermMulVectorTo,
+    hermMulVectorWithScaleTo,
     addHermMulVectorWithScalesM_,
     
     -- ** Updates
