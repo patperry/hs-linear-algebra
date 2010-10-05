@@ -454,20 +454,20 @@ mulVectorWithScale alpha transa a x = let
         mulVectorWithScaleTo y alpha transa a x
         return y
                        
--- | @mulAddVectorWithScales alpha transa a x beta y@
+-- | @addMulVectorWithScales alpha transa a x beta y@
 -- returns @alpha * op(a) * x + beta * y@, where @op(a)@ is
 -- determined by @transa@.
-mulAddVectorWithScales :: (BLAS2 e)
+addMulVectorWithScales :: (BLAS2 e)
                        => e
                        -> Trans -> Matrix e
                        -> Vector e
                        -> e
                        -> Vector e
                        -> Vector e
-mulAddVectorWithScales alpha transa a x beta y =
+addMulVectorWithScales alpha transa a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        mulAddVectorWithScalesM_ alpha transa a x beta y'
+        addMulVectorWithScalesM_ alpha transa a x beta y'
         return y'
 
 -- | @mulMatrix transa a transb b@
@@ -505,20 +505,20 @@ mulMatrixWithScale alpha transa a transb b = let
         mulMatrixWithScaleTo c alpha transa a transb b
         return c
 
--- | @mulAddMatrixWithScales alpha transa a transb b beta c@
+-- | @addMulMatrixWithScales alpha transa a transb b beta c@
 -- returns @alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
 -- @op(b)@ are determined by @transa@ and @transb@.
-mulAddMatrixWithScales :: (BLAS3 e)
+addMulMatrixWithScales :: (BLAS3 e)
                        => e
                        -> Trans -> Matrix e
                        -> Trans -> Matrix e
                        -> e
                        -> Matrix e
                        -> Matrix e
-mulAddMatrixWithScales alpha transa a transb b beta c = 
+addMulMatrixWithScales alpha transa a transb b beta c = 
     create $ do
         c' <- newCopy c
-        mulAddMatrixWithScalesM_ alpha transa a transb b beta c'
+        addMulMatrixWithScalesM_ alpha transa a transb b beta c'
         return c'
 
 compareWith :: (Storable e, Storable e')

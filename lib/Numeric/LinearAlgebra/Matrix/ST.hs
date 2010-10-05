@@ -82,12 +82,12 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- ** Matrix-Vector multiplication
     mulVectorTo,
     mulVectorWithScaleTo,
-    mulAddVectorWithScalesM_,
+    addMulVectorWithScalesM_,
     
     -- ** Matrix-Matrix multiplication
     mulMatrixTo,
     mulMatrixWithScaleTo,
-    mulAddMatrixWithScalesM_,
+    addMulMatrixWithScalesM_,
 
     -- * Conversions between mutable and immutable matrices
     freeze,

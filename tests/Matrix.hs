@@ -60,10 +60,10 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyDZ "rank1Update" prop_rank1Update prop_rank1Update
     , testPropertyDZ "mulVector" prop_mulVector prop_mulVector
     , testPropertyDZ "mulVectorWithScale" prop_mulVectorWithScale prop_mulVectorWithScale
-    , testPropertyDZ "mulAddVectorWithScales" prop_mulAddVectorWithScales prop_mulAddVectorWithScales    
+    , testPropertyDZ "addMulVectorWithScales" prop_addMulVectorWithScales prop_addMulVectorWithScales    
     , testPropertyDZ "mulMatrix" prop_mulMatrix prop_mulMatrix
     , testPropertyDZ "mulMatrixWithScale" prop_mulMatrixWithScale prop_mulMatrixWithScale
-    , testPropertyDZ "mulAddMatrixWithScales" prop_mulAddMatrixWithScales prop_mulAddMatrixWithScales    
+    , testPropertyDZ "addMulMatrixWithScales" prop_addMulMatrixWithScales prop_addMulMatrixWithScales    
 
     ]
 
@@ -367,8 +367,8 @@ prop_mulVectorWithScale t alpha (MulMatrixVector transa a x) =
   where
     _ = typed t a
 
-prop_mulAddVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
-    M.mulAddVectorWithScales alpha transa a x beta y
+prop_addMulVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
+    M.addMulVectorWithScales alpha transa a x beta y
         ~==
         V.add (M.mulVectorWithScale alpha transa a x)
               (V.scaleBy beta y)
@@ -423,8 +423,8 @@ prop_mulMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
   where
     _ = typed t a
 
-prop_mulAddMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
-    M.mulAddMatrixWithScales alpha transa a transb b beta c
+prop_addMulMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
+    M.addMulMatrixWithScales alpha transa a transb b beta c
         ~==
         M.add (M.scaleBy alpha (M.mulMatrix transa a transb b))
               (M.scaleBy beta c)

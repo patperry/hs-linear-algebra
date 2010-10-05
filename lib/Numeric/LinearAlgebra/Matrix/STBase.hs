@@ -942,25 +942,25 @@ mulVectorWithScaleTo :: (RMatrix m, RVector v, BLAS2 e)
                      -> v e
                      -> ST s ()
 mulVectorWithScaleTo dst alpha t a x =
-    mulAddVectorWithScalesM_ alpha t a x 0 dst
+    addMulVectorWithScalesM_ alpha t a x 0 dst
 
--- | @mulAddVectorWithScalesM_ alpha transa a x beta y@
+-- | @addMulVectorWithScalesM_ alpha transa a x beta y@
 -- sets @y := alpha * op(a) * x + beta * y@, where @op(a)@ is
 -- determined by @transa@.
-mulAddVectorWithScalesM_ :: (RMatrix m, RVector v, BLAS2 e)
+addMulVectorWithScalesM_ :: (RMatrix m, RVector v, BLAS2 e)
                          => e
                          -> Trans -> m e
                          -> v e
                          -> e
                          -> STVector s e
                          -> ST s ()
-mulAddVectorWithScalesM_ alpha transa a x beta y
+addMulVectorWithScalesM_ alpha transa a x beta y
     | (not . and) [ case transa of NoTrans -> (ma,na) == (m,n)
                                    _       -> (ma,na) == (n,m)
                   , nx == n
                   , ny == m
                   ] = error $
-        printf ("mulAddVectorWithScalesTo"
+        printf ("addMulVectorWithScalesTo"
                 ++ " _"
                 ++ " %s"
                 ++ " <matrix with dim (%d,%d)>" 
@@ -1006,26 +1006,26 @@ mulMatrixWithScaleTo :: (RMatrix m1, RMatrix m2, BLAS3 e)
                      -> Trans -> m2 e
                      -> ST s ()
 mulMatrixWithScaleTo dst alpha ta a tb b =
-    mulAddMatrixWithScalesM_ alpha ta a tb b 0 dst
+    addMulMatrixWithScalesM_ alpha ta a tb b 0 dst
 
--- | @mulAddMatrixWithScalesM_ alpha transa a transb b beta c@
+-- | @addMulMatrixWithScalesM_ alpha transa a transb b beta c@
 -- sets @c := alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
 -- @op(b)@ are determined by @transa@ and @transb@.
-mulAddMatrixWithScalesM_ :: (RMatrix m1, RMatrix m2, BLAS3 e)
+addMulMatrixWithScalesM_ :: (RMatrix m1, RMatrix m2, BLAS3 e)
                          => e
                          -> Trans -> m1 e
                          -> Trans -> m2 e
                          -> e
                          -> STMatrix s e
                          -> ST s ()
-mulAddMatrixWithScalesM_ alpha transa a transb b beta c
+addMulMatrixWithScalesM_ alpha transa a transb b beta c
     | (not . and) [ case transa of NoTrans -> (ma,na) == (m,k)
                                    _       -> (ma,na) == (k,m)
                   , case transb of NoTrans -> (mb,nb) == (k,n)
                                    _       -> (mb,nb) == (n,k)
                   , (mc, nc) == (m,n)
                   ] = error $
-        printf ("mulAddMatrixWithScalesM_"
+        printf ("addMulMatrixWithScalesM_"
                 ++ " _"
                 ++ " %s <matrix with dim (%d,%d)>" 
                 ++ " %s <matrix with dim (%d,%d)>"

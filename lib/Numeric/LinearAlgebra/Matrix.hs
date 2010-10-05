@@ -82,12 +82,12 @@ module Numeric.LinearAlgebra.Matrix (
     -- ** Matrix-Vector multiplication
     mulVector,
     mulVectorWithScale,
-    mulAddVectorWithScales,
+    addMulVectorWithScales,
     
     -- ** Matrix-Matrix multiplication
     mulMatrix,
     mulMatrixWithScale,
-    mulAddMatrixWithScales,
+    addMulMatrixWithScales,
 
     -- * Mutable interface
     module Numeric.LinearAlgebra.Matrix.ST,
