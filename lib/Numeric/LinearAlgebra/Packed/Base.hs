@@ -216,7 +216,7 @@ hermRank1Update :: (BLAS2 e)
                 => Double -> Vector e -> Herm Packed e -> Herm Packed e
 hermRank1Update alpha x (Herm uplo ap) = hermCreate $ do
     hp' <- Herm uplo `fmap` newCopy ap
-    hermRank1UpdateTo alpha x hp'
+    hermRank1UpdateM_ alpha x hp'
     return hp'
 
 -- | @hermRank2Update alpha x y a@ returns
@@ -226,16 +226,16 @@ hermRank2Update :: (BLAS2 e)
                 -> Herm Packed e
 hermRank2Update alpha x y (Herm uplo ap) = hermCreate $ do
     hp' <- Herm uplo `fmap` newCopy ap
-    hermRank2UpdateTo alpha x y hp'
+    hermRank2UpdateM_ alpha x y hp'
     return hp'
 
--- | @hermRank1UpdateTo alpha x a@ sets
+-- | @hermRank1UpdateM_ alpha x a@ sets
 -- @a := alpha * x * x^H + a@.
-hermRank1UpdateTo :: (RVector v, BLAS2 e)
+hermRank1UpdateM_ :: (RVector v, BLAS2 e)
                   => Double -> v e -> Herm (STPacked s) e -> ST s ()
-hermRank1UpdateTo alpha x (Herm uplo a)
+hermRank1UpdateM_ alpha x (Herm uplo a)
     | (not . and) [ nx == n, na == n ] = error $
-        printf ("hermRank1UpdateTo _ <vector with dim %d>"
+        printf ("hermRank1UpdateM_ _ <vector with dim %d>"
                  ++ " (Herm _ <packed matrix with dim %d>):"
                  ++ " invalid dimensions") nx na
     | otherwise =
@@ -248,13 +248,13 @@ hermRank1UpdateTo alpha x (Herm uplo a)
     na = dim a
     n = nx
 
--- | @hermRank2UpdateTo alpha x y a@ sets
+-- | @hermRank2UpdateM_ alpha x y a@ sets
 -- @a := alpha * x * y^H + conj(alpha) * y * x^H + a@.
-hermRank2UpdateTo :: (RVector v1, RVector v2, BLAS2 e)
+hermRank2UpdateM_ :: (RVector v1, RVector v2, BLAS2 e)
                   => e -> v1 e -> v2 e -> Herm (STPacked s) e -> ST s ()
-hermRank2UpdateTo alpha x y (Herm uplo a)
+hermRank2UpdateM_ alpha x y (Herm uplo a)
     | (not . and) [ nx == n, ny == n, na == n ] = error $
-        printf ("hermRank2UpdateTo _ <vector with dim %d>"
+        printf ("hermRank2UpdateM_ _ <vector with dim %d>"
                  ++ " <vector with dim %d>"
                  ++ " (Herm _ <packed matrix with dim %d>):"
                  ++ " invalid dimensions") nx ny na
@@ -305,7 +305,7 @@ hermMulAddVectorWithScales :: (BLAS2 e)
 hermMulAddVectorWithScales alpha a x beta y =
     V.create $ do
         y' <- V.newCopy y
-        hermMulAddToVectorWithScales alpha a x beta y'
+        hermMulAddVectorWithScalesM_ alpha a x beta y'
         return y'
 
 -- | @hermMulToVector a x y@ sets @y := a * x@.
@@ -325,23 +325,23 @@ hermMulToVectorWithScale :: (RPacked p, RVector v, BLAS2 e)
                          -> STVector s e
                          -> ST s ()
 hermMulToVectorWithScale alpha a x y =
-    hermMulAddToVectorWithScales alpha a x 0 y
+    hermMulAddVectorWithScalesM_ alpha a x 0 y
 
--- | @hermMulAddToVectorWithScales alpha a x beta y@
+-- | @hermMulAddVectorWithScalesM_ alpha a x beta y@
 -- sets @y := alpha * a * x + beta * y@.
-hermMulAddToVectorWithScales :: (RPacked p, RVector v, BLAS2 e)
+hermMulAddVectorWithScalesM_ :: (RPacked p, RVector v, BLAS2 e)
                              => e
                              -> Herm p e
                              -> v e
                              -> e
                              -> STVector s e
                              -> ST s ()
-hermMulAddToVectorWithScales alpha (Herm uplo a) x beta y
+hermMulAddVectorWithScalesM_ alpha (Herm uplo a) x beta y
     | (not . and) [ na == n
                   , nx == n
                   , ny == n
                   ] = error $
-        printf ("hermMulAddToVectorWithScales _"
+        printf ("hermMulAddVectorWithScalesM_ _"
                 ++ " (Herm %s <packed matrix with dim %d>)"
                 ++ " %s <vector with dim %d>"
                 ++ " _"

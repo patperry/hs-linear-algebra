@@ -123,7 +123,7 @@ covWithMeanTo mu t xs c@(Herm _ a)
                       ]
         P.withSTVectorView a V.clear
         M.withSTColViews xt $ \xs' ->
-            sequence_ [ P.hermRank1UpdateTo scale x' c | x' <- xs' ]
+            sequence_ [ P.hermRank1UpdateM_ scale x' c | x' <- xs' ]
   where
     p = V.dim mu
     n = length xs
@@ -162,7 +162,7 @@ weightedCovWithMeanTo mu t wxs c@(Herm _ a)
                       ]
         P.withSTVectorView a V.clear                      
         M.withColViews xt $ \xs' ->
-            sequence_ [ P.hermRank1UpdateTo 1 x' c | x' <- xs' ]
+            sequence_ [ P.hermRank1UpdateM_ 1 x' c | x' <- xs' ]
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0

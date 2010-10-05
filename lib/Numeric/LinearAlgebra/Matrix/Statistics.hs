@@ -121,7 +121,7 @@ covWithMeanTo mu t xs c@(Herm _ a)
             sequence_ [ V.subTo x' mu x
                       | (x,x') <- zip xs xs'
                       ]
-        M.hermRankKUpdateTo (1/df) NoTrans xt 0 c
+        M.hermRankKUpdateM_ (1/df) NoTrans xt 0 c
   where
     p = V.dim mu
     n = length xs
@@ -157,7 +157,7 @@ weightedCovWithMeanTo mu t wxs c@(Herm _ a)
                       >> V.scaleByM_ (realToFrac $ sqrt (w / invscale)) x'
                       |  (w,x,x') <- zip3 ws xs xs'
                       ]
-        M.hermRankKUpdateTo 1 NoTrans xt 0 c
+        M.hermRankKUpdateM_ 1 NoTrans xt 0 c
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0

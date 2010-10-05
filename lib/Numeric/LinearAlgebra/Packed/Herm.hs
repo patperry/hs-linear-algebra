@@ -26,11 +26,11 @@ module Numeric.LinearAlgebra.Packed.Herm (
     -- ** Vector multiplication
     hermMulToVector,
     hermMulToVectorWithScale,
-    hermMulAddToVectorWithScales,
+    hermMulAddVectorWithScalesM_,
     
     -- ** Updates
-    hermRank1UpdateTo,
-    hermRank2UpdateTo,
+    hermRank1UpdateM_,
+    hermRank2UpdateM_,
 
     ) where
 
