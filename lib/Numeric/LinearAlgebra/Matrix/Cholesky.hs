@@ -17,9 +17,9 @@ module Numeric.LinearAlgebra.Matrix.Cholesky (
     cholSolveMatrix,
     
     -- * Mutable interface
-    cholFactorTo,
-    cholSolveToVector,
-    cholSolveToMatrix,
+    cholFactorM_,
+    cholSolveVectorM_,
+    cholSolveMatrixM_,
     
     ) where
 
@@ -35,7 +35,7 @@ import Numeric.LinearAlgebra.Matrix.STBase( RMatrix, STMatrix )
 import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 
-import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )
+import Numeric.LinearAlgebra.Vector( Vector, STVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
 
@@ -48,7 +48,7 @@ cholFactor :: (LAPACK e)
                  -> Either Int (Chol Matrix e)
 cholFactor (Herm uplo a) = runST $ do
     ma <- M.newCopy a
-    cholFactorTo (Herm uplo ma)
+    cholFactorM_ (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
                 a' <- M.unsafeFreeze ma'
                 return $ Right (Chol uplo' a')
@@ -60,32 +60,32 @@ cholSolveVector :: (LAPACK e)
                       -> Vector e
                       -> Vector e
 cholSolveVector a x = V.create $ do
-    y <- V.new_ (V.dim x)
-    cholSolveToVector a x y
-    return y
+    x' <- V.newCopy x
+    cholSolveVectorM_ a x'
+    return x'
 
 -- | @cholSolveMatrix a b@ returns @a \\ b@.
 cholSolveMatrix :: (LAPACK e)
-                      => Chol Matrix e
-                      -> Matrix e
-                      -> Matrix e
+                => Chol Matrix e
+                -> Matrix e
+                -> Matrix e
 cholSolveMatrix a c = M.create $ do
-    c' <- M.new_ (M.dim c)
-    cholSolveToMatrix a c c'
+    c' <- M.newCopy c
+    cholSolveMatrixM_ a c'
     return c'
 
--- | @cholFactorTo a@ tries to compute the Cholesky
+-- | @cholFactorM_ a@ tries to compute the Cholesky
 -- factorization of @a@ in place.  If @a@ is positive-definite then the
 -- routine returns @Right@ with the factorization, stored in the same
 -- memory as @a@.  If the leading minor of order @i@ is not
 -- positive-definite then the routine returns @Left i@.
 -- In either case, the original storage of @a@ is destroyed.
-cholFactorTo :: (LAPACK e)
-                   => Herm (STMatrix s) e
-                   -> ST s (Either Int (Chol (STMatrix s) e))
-cholFactorTo (Herm uplo a)
+cholFactorM_ :: (LAPACK e)
+             => Herm (STMatrix s) e
+             -> ST s (Either Int (Chol (STMatrix s) e))
+cholFactorM_ (Herm uplo a)
     | not $ (ma,na) == (n,n) = error $
-        printf ("cholFactorTo"
+        printf ("cholFactorM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
     | otherwise =
@@ -98,43 +98,35 @@ cholFactorTo (Herm uplo a)
     (ma,na) = M.dim a
     n = na
 
--- | @cholSolveToVector a x x'@ sets
--- @x' := a \\ x@.  Arguments @x@ and @x'@ can be the same.
-cholSolveToVector :: (LAPACK e, RMatrix m, RVector v)
-                        => Chol m e
-                        -> v e
-                        -> STVector s e
-                        -> ST s ()
-cholSolveToVector a x y =
-    M.withViewFromCol x $ \x' ->
-    M.withViewFromSTCol y $ \y' ->
-        cholSolveToMatrix a x' y'
+-- | @cholSolveVectorM_ a x@ sets @x := a \\ x@.
+cholSolveVectorM_ :: (LAPACK e, RMatrix m)
+                  => Chol m e
+                  -> STVector s e
+                  -> ST s ()
+cholSolveVectorM_ a x =
+    M.withViewFromSTCol x $ \x' ->
+        cholSolveMatrixM_ a x'
 
--- | @cholSolveToMatrix a b b'@ sets
--- @b' := a \\ b@.  Arguments @b@ and @b'@ can be the same.
-cholSolveToMatrix :: (LAPACK e, RMatrix m1, RMatrix m2)
-                        => Chol m1 e
-                        -> m2 e
-                        -> STMatrix s e
-                        -> ST s ()
-cholSolveToMatrix (Chol uplo a) b b'
+-- | @cholSolveMatrixM_ a b@ sets @b := a \\ b@.
+cholSolveMatrixM_ :: (LAPACK e, RMatrix m)
+                  => Chol m e
+                  -> STMatrix s e
+                  -> ST s ()
+cholSolveMatrixM_ (Chol uplo a) b
     | (not . and) [ (ma,na) == (n,n)
                   , (mb,nb) == (n,nrhs)
-                  , (mb',nb') == (n,nrhs)
                   ] = error $
-        printf ("cholSolveToMatrix"
+        printf ("cholSolveMatrixM_"
                 ++ " (Chol _ <matrix with dim (%d,%d)>)"
                 ++ " <matrix with dim (%d,%d)>"
-                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
-               ma na mb nb mb' nb'
+                ++ ": dimension mismatch")
+               ma na mb nb
     | otherwise = do
-        M.unsafeCopyTo b' b
         unsafeIOToST $
             M.unsafeWith a $ \pa lda ->
-            M.unsafeWith b' $ \pb ldb ->
+            M.unsafeWith b $ \pb ldb ->
                 LAPACK.potrs uplo n nrhs pa lda pb ldb
   where
     (ma,na) = M.dim a
     (mb,nb) = M.dim b
-    (mb',nb') = M.dim b
-    (n,nrhs) = (mb',nb')
+    (n,nrhs) = (mb,nb)
