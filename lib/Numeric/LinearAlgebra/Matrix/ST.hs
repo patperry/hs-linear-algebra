@@ -77,17 +77,17 @@ module Numeric.LinearAlgebra.Matrix.ST (
     -- * Linear algebra
     transTo,
     conjTransTo,
-    rank1UpdateTo,
+    rank1UpdateM_,
     
     -- ** Matrix-Vector multiplication
     mulVectorTo,
     mulVectorWithScaleTo,
-    mulAddVectorWithScalesTo,
+    mulAddVectorWithScalesM_,
     
     -- ** Matrix-Matrix multiplication
     mulMatrixTo,
     mulMatrixWithScaleTo,
-    mulAddMatrixWithScalesTo,
+    mulAddMatrixWithScalesM_,
 
     -- * Conversions between mutable and immutable matrices
     freeze,

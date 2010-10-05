@@ -421,8 +421,8 @@ rank1Update :: (BLAS2 e)
             -> Matrix e
 rank1Update alpha x y a =
     create $ do
-        a' <- new_ (dim a)
-        rank1UpdateTo a' alpha x y a
+        a' <- newCopy a
+        rank1UpdateM_ alpha x y a'
         return a'
 
 -- | @mulVector transa a x@
@@ -466,8 +466,8 @@ mulAddVectorWithScales :: (BLAS2 e)
                        -> Vector e
 mulAddVectorWithScales alpha transa a x beta y =
     V.create $ do
-        y' <- V.new_ (V.dim y)
-        mulAddVectorWithScalesTo y' alpha transa a x beta y
+        y' <- V.newCopy y
+        mulAddVectorWithScalesM_ alpha transa a x beta y'
         return y'
 
 -- | @mulMatrix transa a transb b@
@@ -517,8 +517,8 @@ mulAddMatrixWithScales :: (BLAS3 e)
                        -> Matrix e
 mulAddMatrixWithScales alpha transa a transb b beta c = 
     create $ do
-        c' <- new_ (dim c)
-        mulAddMatrixWithScalesTo c' alpha transa a transb b beta c
+        c' <- newCopy c
+        mulAddMatrixWithScalesM_ alpha transa a transb b beta c'
         return c'
 
 compareWith :: (Storable e, Storable e')
