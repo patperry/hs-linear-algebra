@@ -117,8 +117,8 @@ class RPacked p where
 withViewFromVector :: (RVector v, Storable e)
                    => Int
                    -> v e
-                   -> (forall p. RPacked p => p e -> a)
-                   -> a
+                   -> (forall p . RPacked p => p e -> ST s a)
+                   -> ST s a
 withViewFromVector n v f = f (cast v)
   where
     cast :: (RVector v, Storable e) => v e -> Packed e
