@@ -237,8 +237,8 @@ fromSTRow v = fromSTVector (V.dim v, 1) v
 withViewFromVector :: (RVector v, Storable e)
                    => (Int,Int)
                    -> v e
-                   -> (forall m . RMatrix m => m e -> a)
-                   -> a
+                   -> (forall m . RMatrix m => m e -> ST s a)
+                   -> ST s a
 withViewFromVector mn@(m,n) v f
     | V.dim v /= m*n = error $
         printf ("withViewFromVector (%d,%d) <vector with dim %d>:"
@@ -278,8 +278,8 @@ withViewFromSTVector mn@(m,n) v f
 -- the specified function.
 withViewFromCol :: (RVector v, Storable e)
                  => v e
-                 -> (forall m . RMatrix m => m e -> a)
-                 -> a
+                 -> (forall m . RMatrix m => m e -> ST s a)
+                 -> ST s a
 withViewFromCol v = withViewFromVector (V.dim v, 1) v
 {-# INLINE withViewFromCol #-}
 
@@ -296,8 +296,8 @@ withViewFromSTCol v = withViewFromSTVector (V.dim v, 1) v
 -- the specified function.
 withViewFromRow :: (RVector v, Storable e)
                  => v e
-                 -> (forall m . RMatrix m => m e -> a)
-                 -> a
+                 -> (forall m . RMatrix m => m e -> ST s a)
+                 -> ST s a
 withViewFromRow v = withViewFromVector (1, V.dim v) v
 {-# INLINE withViewFromRow #-}
 
