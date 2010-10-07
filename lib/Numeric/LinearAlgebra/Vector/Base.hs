@@ -122,6 +122,9 @@ instance RVector Vector where
     {-# INLINE dim #-}
     unsafeSlice = Vector.unsafeSlice
     {-# INLINE unsafeSlice #-}
+    unsafeWithSliceView i n' v f =
+        f (unsafeSlice i n' v)
+    {-# INLINE unsafeWithSliceView #-}
     unsafeWith = Vector.unsafeWith
     {-# INLINE unsafeWith #-}
     unsafeFromForeignPtr = Vector.unsafeFromForeignPtr
@@ -312,6 +315,35 @@ concat xs = let
         forM_ onxs $ \(o,n,x) ->
             unsafeCopyTo (unsafeSlice o n y) x
         return y
+
+-- | @slice i n v@ creates a subvector view of @v@ starting at
+-- index @i@ and having dimension @n@.
+slice :: (Storable e)
+      => Int
+      -> Int
+      -> Vector e
+      -> Vector e            
+slice i n' v = unSTVector $ stSlice i n' (unVector v)
+
+-- | @drop i v@ is equal to @slice i (n-i) v@, where @n@ is
+-- the dimension of the vector.
+drop :: (Storable e) => Int -> Vector e -> Vector e
+drop i v = unSTVector $ stDrop i (unVector v)
+
+-- | @take n v@ is equal to @slice 0 n v@.
+take :: (Storable e) => Int -> Vector e -> Vector e
+take n v = unSTVector $ stTake n (unVector v)
+{-# INLINE take #-}
+
+-- | Split a vector into two blocks and returns views into the blocks.  If
+-- @(x1, x2) = splitAt k x@, then
+-- @x1 = slice 0 k x@ and
+-- @x2 = slice k (dim x - k) x@.
+splitAt :: (Storable e) => Int -> Vector e -> (Vector e, Vector e)
+splitAt k x = let
+    (x1, x2) = stSplitAt k (unVector x)
+    in (unSTVector x1, unSTVector x2)
+
 
 -- | Compute the sum of absolute values of entries in the vector.
 sumAbs :: (BLAS1 e) => Vector e -> Double

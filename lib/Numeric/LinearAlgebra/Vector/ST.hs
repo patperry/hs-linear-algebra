@@ -26,12 +26,6 @@ module Numeric.LinearAlgebra.Vector.ST (
     copyTo,
     swap,
 
-    -- * Vector views
-    slice,
-    splitAt,
-    drop,
-    take,
-
     -- * Reading and writing vector elements
     read,
     write,
@@ -57,6 +51,17 @@ module Numeric.LinearAlgebra.Vector.ST (
     scaleByM_,
     addWithScaleM_,
     kroneckerTo,
+    
+    -- * Vector views    
+    withSliceView,
+    withDropView,
+    withTakeView,
+    withSplitAtView,
+    
+    withSTSliceView,
+    withSTDropView,
+    withSTTakeView,
+    withSTSplitAtView,
     
     -- * Vector math operations
     -- ** Num

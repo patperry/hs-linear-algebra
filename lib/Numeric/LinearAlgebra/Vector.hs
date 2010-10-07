@@ -94,6 +94,5 @@ module Numeric.LinearAlgebra.Vector (
 import Prelude()
 import Numeric.LinearAlgebra.Vector.Base
 import Numeric.LinearAlgebra.Vector.STBase( RVector(..) )
-import Numeric.LinearAlgebra.Vector.ST hiding ( dim, slice, indices, drop,
-    take, splitAt, RVector(..) )
+import Numeric.LinearAlgebra.Vector.ST hiding ( dim, indices, RVector(..) )
 import Numeric.LinearAlgebra.Vector.Statistics

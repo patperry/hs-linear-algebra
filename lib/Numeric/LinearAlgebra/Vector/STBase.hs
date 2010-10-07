@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -12,11 +13,6 @@ module Numeric.LinearAlgebra.Vector.STBase (
     STVector,
     IOVector,
     RVector(..),
-    
-    slice,
-    drop,
-    take,
-    splitAt,
     
     new_,
     new,
@@ -51,6 +47,21 @@ module Numeric.LinearAlgebra.Vector.STBase (
     unsafeMapTo,
     zipWithTo,
     unsafeZipWithTo,
+    
+    stSlice,
+    stDrop,
+    stTake,
+    stSplitAt,
+    
+    withSliceView,
+    withDropView,
+    withTakeView,
+    withSplitAtView,
+    
+    withSTSliceView,
+    withSTDropView,
+    withSTTakeView,
+    withSTSplitAtView,
     
     getSumAbs,
     getNorm2,
@@ -114,6 +125,10 @@ class RVector v where
     dim :: (Storable e) => v e -> Int
 
     unsafeSlice :: (Storable e) => Int -> Int -> v e -> v e
+    unsafeWithSliceView :: (Storable e)
+                        => Int -> Int -> v e
+                        -> (forall v'. RVector v' => v' e -> ST s a)
+                        -> ST s a
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- vector.
@@ -138,6 +153,10 @@ instance RVector (MVector s) where
     unsafeSlice = STVector.unsafeSlice
     {-# INLINE unsafeSlice #-}
 
+    unsafeWithSliceView i n' v f =
+        f (unsafeSlice i n' v)
+    {-# INLINE unsafeWithSliceView #-}
+
     unsafeWith v f =
         STVector.unsafeWith (cast v) f
       where
@@ -152,14 +171,12 @@ instance RVector (MVector s) where
     {-# INLINE unsafeFromForeignPtr #-}
 
 
--- | @slice i n v@ creates a subvector view of @v@ starting at
--- index @i@ and having dimension @n@.
-slice :: (RVector v, Storable e)
-      => Int
-      -> Int
-      -> v e
-      -> v e            
-slice i n' v
+stSlice :: (Storable e)
+        => Int
+        -> Int
+        -> STVector s e
+        -> STVector s e          
+stSlice i n' v
     | i < 0 || n' < 0 || i + n' > n = error $
         printf "slice %d %d <vector with dim %d>: index out of range"
                i n' n
@@ -167,18 +184,100 @@ slice i n' v
         unsafeSlice i n' v
   where
     n = dim v
-{-# INLINE slice #-}
+{-# INLINE stSlice #-}
 
--- | @drop i v@ is equal to @slice i (n-i) v@, where @n@ is
--- the dimension of the vector.
-drop :: (RVector v, Storable e) => Int -> v e -> v e
-drop i v = slice i (dim v - i) v
-{-# INLINE drop #-}
+stDrop :: (Storable e) => Int -> STVector s e -> STVector s e
+stDrop i v = stSlice i (dim v - i) v
+{-# INLINE stDrop #-}
 
--- | @take n v@ is equal to @slice 0 n v@.
-take :: (RVector v, Storable e) => Int -> v e -> v e
-take n = slice 0 n
-{-# INLINE take #-}
+stTake :: (Storable e) => Int -> STVector s e -> STVector s e
+stTake n = stSlice 0 n
+{-# INLINE stTake #-}
+
+stSplitAt :: (Storable e) => Int -> STVector s e -> (STVector s e, STVector s e)
+stSplitAt k x
+    | k < 0 || k > n = error $
+        printf "splitAt %d <vector with dim %d>: invalid index" k n
+    | otherwise = let
+        x1 = unsafeSlice 0 k     x
+        x2 = unsafeSlice k (n-k) x
+    in (x1,x2)
+  where
+    n = dim x
+{-# INLINE stSplitAt #-}
+
+-- | @withSliceView i n v@ performs an action with a view of the
+-- @n@-dimensional subvector of @v@ starting at index @i@.
+withSliceView :: (RVector v, Storable e)
+              => Int
+              -> Int
+              -> v e
+              -> (forall v'. RVector v' => v' e -> ST s a)
+              -> ST s a
+withSliceView i n' v f
+    | i < 0 || n' < 0 || i + n' > n = error $
+        printf "withSliceView %d %d <vector with dim %d>: index out of range"
+               i n' n
+    | otherwise =
+        unsafeWithSliceView i n' v f
+  where
+    n = dim v
+
+withSTSliceView :: (Storable e)
+                => Int
+                -> Int
+                -> STVector s e
+                -> (STVector s e -> ST s a)
+                -> ST s a
+withSTSliceView i n' v f = f $ stSlice i n' v
+
+withDropView :: (RVector v, Storable e)
+             => Int
+             -> v e
+             -> (forall v'. RVector v' => v' e -> ST s a)
+             -> ST s a
+withDropView i v f =
+    withSliceView i (dim v - i) v f
+
+withSTDropView :: (Storable e)
+               => Int
+               -> STVector s e
+               -> (STVector s e -> ST s a)
+               -> ST s a
+withSTDropView i v f = f $ stDrop i v
+    
+withTakeView :: (RVector v, Storable e)
+             => Int
+             -> v e
+             -> (forall v'. RVector v' => v' e -> ST s a)
+             -> ST s a
+withTakeView n v f =
+    withSliceView 0 n v f
+
+withSTTakeView :: (Storable e)
+               => Int
+               -> STVector s e
+               -> (STVector s e -> ST s a)
+               -> ST s a
+withSTTakeView n v f = f $ stTake n v
+
+withSplitAtView :: (RVector v, Storable e)
+                => Int
+                -> v e
+                -> (forall v1' v2'. (RVector v1', RVector v2') => v1' e -> v2' e -> ST s a)
+                -> ST s a
+withSplitAtView i v f =
+    withSliceView 0 i v $ \v1 ->
+    withSliceView i (dim v - i) v $ \v2 ->
+        f v1 v2
+
+withSTSplitAtView :: (Storable e)
+                  => Int
+                  -> STVector s e
+                  -> (STVector s e -> STVector s e -> ST s a)
+                  -> ST s a
+withSTSplitAtView i v f = 
+    let (v1,v2) = stSplitAt i v in f v1 v2
 
 -- | Creates a new vector of the given length.  The elements will be
 -- uninitialized.
@@ -227,22 +326,6 @@ swap = checkOp2 "swap" unsafeSwap
 unsafeSwap :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
 unsafeSwap = strideCall2 BLAS.swap
 {-# INLINE unsafeSwap #-}
-
--- | Split a vector into two blocks and returns views into the blocks.  If
--- @(x1, x2) = splitAt k x@, then
--- @x1 = slice 0 k x@ and
--- @x2 = slice k (dim x - k) x@.
-splitAt :: (RVector v, Storable e) => Int -> v e -> (v e, v e)
-splitAt k x
-    | k < 0 || k > n = error $
-        printf "splitAt %d <vector with dim %d>: invalid index" k n
-    | otherwise = let
-        x1 = unsafeSlice 0 k     x
-        x2 = unsafeSlice k (n-k) x
-    in (x1,x2)
-  where
-    n = dim x
-{-# INLINE splitAt #-}
 
 -- | Get the indices of the elements in the vector, @[ 0..n-1 ]@, where
 -- @n@ is the dimension of the vector.
