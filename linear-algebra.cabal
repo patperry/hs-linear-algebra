@@ -44,20 +44,20 @@ Library
                         Foreign.LAPACK
                         Foreign.VMath
                         
-                        Numeric.LinearAlgebra
+                        -- Numeric.LinearAlgebra
 
-                        Numeric.LinearAlgebra.Matrix
-                        Numeric.LinearAlgebra.Matrix.Cholesky
-                        Numeric.LinearAlgebra.Matrix.Eigen
-                        Numeric.LinearAlgebra.Matrix.Herm
-                        Numeric.LinearAlgebra.Matrix.ST
-                        Numeric.LinearAlgebra.Matrix.Statistics
-
-                        Numeric.LinearAlgebra.Packed                     
-                        Numeric.LinearAlgebra.Packed.Cholesky                        
-                        Numeric.LinearAlgebra.Packed.Herm
-                        Numeric.LinearAlgebra.Packed.ST                   
-                        Numeric.LinearAlgebra.Packed.Statistics
+                        -- Numeric.LinearAlgebra.Matrix
+                        -- Numeric.LinearAlgebra.Matrix.Cholesky
+                        -- Numeric.LinearAlgebra.Matrix.Eigen
+                        -- Numeric.LinearAlgebra.Matrix.Herm
+                        -- Numeric.LinearAlgebra.Matrix.ST
+                        -- Numeric.LinearAlgebra.Matrix.Statistics
+                        -- 
+                        -- Numeric.LinearAlgebra.Packed                     
+                        -- Numeric.LinearAlgebra.Packed.Cholesky                        
+                        -- Numeric.LinearAlgebra.Packed.Herm
+                        -- Numeric.LinearAlgebra.Packed.ST                   
+                        -- Numeric.LinearAlgebra.Packed.Statistics
 
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
@@ -87,9 +87,9 @@ Library
                         Numeric.LinearAlgebra.Internal
                         Numeric.LinearAlgebra.Vector.Base
                         Numeric.LinearAlgebra.Vector.STBase                        
-                        Numeric.LinearAlgebra.Matrix.Base
-                        Numeric.LinearAlgebra.Matrix.STBase
-                        Numeric.LinearAlgebra.Packed.Base
+                        -- Numeric.LinearAlgebra.Matrix.Base
+                        -- Numeric.LinearAlgebra.Matrix.STBase
+                        -- Numeric.LinearAlgebra.Packed.Base
     
     includes:           cbits/config.h
                         cbits/f77_func-hsc.h
@@ -118,9 +118,9 @@ Executable test-hs-linear-algebra
     main-is:            Main.hs
     other-modules:      Vector
                         STVector,
-                        Matrix,
-                        STMatrix,
-                        Statistics,
+--                         Matrix,
+--                         STMatrix,
+--                         Statistics,
                         Typed
                         Foreign.BLAS.Double
                         Foreign.BLAS.Zomplex

@@ -33,7 +33,6 @@ import Numeric.LinearAlgebra.Types
 
 import Numeric.LinearAlgebra.Vector.Base( Vector )
 import Numeric.LinearAlgebra.Vector.STBase( RVector, STVector )
-import qualified Numeric.LinearAlgebra.Vector.Base as V
 import qualified Numeric.LinearAlgebra.Vector.STBase as V
 
 
@@ -85,6 +84,7 @@ meanTo dst = weightedMeanTo dst . zip (repeat 1)
 addWeightedSumTo :: (RVector v, BLAS1 e)
                  => STVector s e ->  [(e, v e)] -> ST s ()
 addWeightedSumTo s wxs = do
+    n <- V.getDim s
     err <- V.new n 0
     old_s <- V.new_ n
     diff <- V.new_ n
@@ -101,8 +101,6 @@ addWeightedSumTo s wxs = do
         
         V.subTo diff old_s s   -- diff := old_s - s
         V.addTo err diff val   -- err := diff + val
-  where
-    n = V.dim s
 
 -- | Sets the target vector to the weighted mean of the vectors.
 weightedMeanTo :: (RVector v, BLAS1 e)
@@ -117,8 +115,7 @@ weightedMeanTo m wxs = let
                                         (realToFrac $ w/w_sum') diff m
                                     go diff w_sum' wxs'
     in do
+        n <- V.getDim m
         diff <- V.new_ n
         V.clear m
         go diff 0 wxs
-  where
-    n = V.dim m

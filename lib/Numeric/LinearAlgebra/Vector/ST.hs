@@ -30,7 +30,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     read,
     write,
     modify,
-    indices,
+    getIndices,
     getElems,
     getElems',
     getAssocs,
@@ -107,9 +107,9 @@ module Numeric.LinearAlgebra.Vector.ST (
     unsafeMapTo,
     unsafeZipWithTo,
     unsafeAddWithScaleM_,
+    unsafeGetDot,
     
     ) where
 
 import Prelude()
-import Numeric.LinearAlgebra.Vector.Base
 import Numeric.LinearAlgebra.Vector.STBase

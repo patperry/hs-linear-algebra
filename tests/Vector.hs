@@ -9,7 +9,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim(..), Assocs(..),
@@ -20,9 +20,9 @@ import Typed
 
 
 tests_Vector = testGroup "Vector"
-    [ testPropertyI "dim/fromAssocs" prop_dim_fromAssocs
-    , testPropertyI "at/fromAssocs" prop_at_fromAssocs
-    , testPropertyI "fromList" prop_fromList
+    [ testPropertyI "dim/fromList" prop_dim_fromList
+    , testPropertyI "at/fromList" prop_at_fromList
+    , testPropertyI "zero" prop_zero
     , testPropertyI "constant" prop_constant
     , testPropertyI "indices" prop_indices
     , testPropertyI "elems" prop_elems
@@ -73,22 +73,19 @@ tests_Vector = testGroup "Vector"
 
 ------------------------- Vector Construction ------------------------------
 
-prop_dim_fromAssocs t (Assocs n ies) =
-    V.dim (V.fromAssocs n ies) === n
-  where
-    _ = typed t $ V.fromAssocs n ies
+prop_dim_fromList t (Dim n) =
+    forAll (QC.vector n) $ \es -> let
+        x = typed t $ V.fromList n es
+        in V.dim x == n
+        
+prop_at_fromList t (Dim n) =
+    forAll (QC.vector n) $ \es -> let
+        x = typed t $ V.fromList n es
+        in and [ V.at x i === e | (i,e) <- zip [ 0..n-1 ] es ]
 
-prop_at_fromAssocs t (Assocs n ies) = let
-    x = V.fromAssocs n ies
-    is = (fst . unzip) ies
-    in and [ V.at x i `elem` [ e | (i',e) <- ies, i' == i ]
-           | i <- is]
-  where
-    _ = typed t $ V.fromAssocs n ies
-
-prop_fromList t (Dim n) =
-    forAll (QC.vector n) $ \es ->
-        V.fromList n es === (typed t $ V.fromAssocs n $ zip [ 0..n-1 ] es)
+prop_zero t (Dim n) = let
+    x = typed t $ V.zero n
+    in x === V.fromList n (replicate n 0)
 
 prop_constant t (Dim n) e =
     V.constant n e === V.fromList n (replicate n e)
