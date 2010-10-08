@@ -53,15 +53,15 @@ module Numeric.LinearAlgebra.Vector.ST (
     kroneckerTo,
     
     -- * Vector views    
-    withSliceView,
-    withDropView,
-    withTakeView,
-    withSplitAtView,
+    withSlice,
+    withDrop,
+    withTake,
+    withSplitAt,
     
-    withSTSliceView,
-    withSTDropView,
-    withSTTakeView,
-    withSTSplitAtView,
+    withSliceM,
+    withDropM,
+    withTakeM,
+    withSplitAtM,
     
     -- * Vector math operations
     -- ** Num
@@ -100,6 +100,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     
     -- * Unsafe operations
     unsafeCopyTo,
+    unsafeSwap,
     unsafeRead,
     unsafeWrite,
     unsafeModify,

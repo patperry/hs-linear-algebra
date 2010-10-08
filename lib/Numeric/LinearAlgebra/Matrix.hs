@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Numeric.LinearAlgebra.Matrix
@@ -11,13 +12,14 @@
 module Numeric.LinearAlgebra.Matrix (
     -- * Immutable matrices
     Matrix,
+    dim,
 
     -- * Matrix construction
     fromList,
     fromCols,
     fromRows,
     constant,
-    dim,
+    zero,
 
     -- * Accessing matrices
     at,
@@ -26,8 +28,10 @@ module Numeric.LinearAlgebra.Matrix (
     assocs,
 
     -- * Incremental matrix updates
-    replace,
+    update,
+    unsafeUpdate,
     accum,
+    unsafeAccum,
 
     -- * Derived matrices
     map,
@@ -136,7 +140,7 @@ infixl 6 `add`, `shiftDiagBy`, `sub`
 fromCols :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
 fromCols mn cs = create $ do
     a <- new_ mn
-    withSTColViews a $ \cs' -> zipWithM_ V.copyTo cs' cs
+    withColsM a $ \cs' -> zipWithM_ V.copyTo cs' cs
     return a
 
 -- | Create a matrix of the given dimension with the given vectors as

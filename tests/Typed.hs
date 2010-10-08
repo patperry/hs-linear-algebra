@@ -7,7 +7,7 @@ module Typed(
     testPropertyDZ,
     
     immutableVector,
-    -- immutableMatrix,
+    immutableMatrix,
     ) where
 
 
@@ -17,7 +17,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
 
 import Numeric.LinearAlgebra.Vector( Vector )
--- import Numeric.LinearAlgebra.Matrix( Matrix )
+import Numeric.LinearAlgebra.Matrix( Matrix )
         
 
 typed :: e -> a e -> a e
@@ -26,8 +26,8 @@ typed _ = id
 immutableVector :: Vector e -> Vector e
 immutableVector = id
 
--- immutableMatrix :: Matrix e -> Matrix e
--- immutableMatrix = id
+immutableMatrix :: Matrix e -> Matrix e
+immutableMatrix = id
 
 testPropertyI :: (Testable a)
               => TestName

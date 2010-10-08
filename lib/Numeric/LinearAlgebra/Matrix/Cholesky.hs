@@ -105,7 +105,7 @@ cholSolveVectorM_ :: (LAPACK e, RMatrix m)
                   -> STVector s e
                   -> ST s ()
 cholSolveVectorM_ a x =
-    M.withViewFromSTCol x $ \x' ->
+    M.withFromColM x $ \x' ->
         cholSolveMatrixM_ a x'
 
 -- | @cholSolveMatrixM_ a b@ sets @b := a \\ b@.

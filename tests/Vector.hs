@@ -27,7 +27,7 @@ tests_Vector = testGroup "Vector"
     , testPropertyI "indices" prop_indices
     , testPropertyI "elems" prop_elems
     , testPropertyI "assocs" prop_assocs
-    , testPropertyI "replace" prop_replace
+    , testPropertyI "update" prop_update
     , testPropertyI "accum" prop_accum
     , testPropertyI "map" prop_map
     , testPropertyI "zipWith" prop_zipWith
@@ -114,9 +114,9 @@ prop_assocs t x =
 
 ------------------------- Incremental Updates ------------------------------
     
-prop_replace t (Assocs n ies) =
+prop_update t (Assocs n ies) =
     forAll (typed t `fmap` Test.vector n) $ \x -> let
-        x' = V.replace x ies
+        x' = V.update x ies
         is = V.indices x
         is1 = (fst . unzip) ies
         is0 = [ i | i <- is, i `notElem` is1 ]

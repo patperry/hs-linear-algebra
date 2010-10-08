@@ -44,7 +44,7 @@ Library
                         Foreign.LAPACK
                         Foreign.VMath
                         
-                        -- Numeric.LinearAlgebra
+                        Numeric.LinearAlgebra
 
                         Numeric.LinearAlgebra.Matrix
                         Numeric.LinearAlgebra.Matrix.Cholesky
@@ -52,7 +52,7 @@ Library
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Matrix.Statistics
-                        -- 
+
                         -- Numeric.LinearAlgebra.Packed                     
                         -- Numeric.LinearAlgebra.Packed.Cholesky                        
                         -- Numeric.LinearAlgebra.Packed.Herm
@@ -118,8 +118,8 @@ Executable test-hs-linear-algebra
     main-is:            Main.hs
     other-modules:      Vector
                         STVector,
---                         Matrix,
---                         STMatrix,
+                        Matrix,
+                        STMatrix,
 --                         Statistics,
                         Typed
                         Foreign.BLAS.Double

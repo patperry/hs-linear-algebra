@@ -26,30 +26,30 @@ module Numeric.LinearAlgebra.Matrix.ST (
     copyTo,
 
     -- * Matrix views
-    -- withSliceView,
-    -- withTakeRowsView,
-    -- withDropRowsView,
-    -- withSplitRowsAt,
-    -- withTakeColsView,
-    -- withDropColsView,
-    -- withSplitColsAtView,
-    -- withSTSliceView,
-    -- withSTTakeRowsView,
-    -- withSTDropRowsView,
-    -- withSTSplitRowsAt,
-    -- withSTTakeColsView,
-    -- withSTDropColsView,
-    -- withSTSplitColsAtView,
+    withSlice,
+    withTakeRows,
+    withDropRows,
+    withSplitRowsAt,
+    withTakeCols,
+    withDropCols,
+    withSplitColsAt,
+    withSliceM,
+    withTakeRowsM,
+    withDropRowsM,
+    withSplitRowsAtM,
+    withTakeColsM,
+    withDropColsM,
+    withSplitColsAtM,
     
     -- * Matrix rows and columns
     rowTo,
     unsafeRowTo,
     setRow,
     unsafeSetRow,
-    withColView,
+    withCol,
 
-    withSTColView,
-    withSTColViews,
+    withColM,
+    withColsM,
 
     -- * Matrix diagonals
     getDiag,
@@ -100,19 +100,18 @@ module Numeric.LinearAlgebra.Matrix.ST (
 
     -- * Conversions between mutable and immutable matrices
     freeze,
-    unsafeFreeze,
     
     -- * Vector views of matrices
-    maybeWithSTVectorView,
+    maybeWithVectorM,
     
     -- * Matrix views of vectors
-    withViewFromVector,
-    withViewFromCol,
-    withViewFromRow,
+    withFromVector,
+    withFromCol,
+    withFromRow,
 
-    withViewFromSTVector,
-    withViewFromSTCol,
-    withViewFromSTRow,
+    withFromVectorM,
+    withFromColM,
+    withFromRowM,
     
     -- * Unsafe operations
     unsafeCopyTo,

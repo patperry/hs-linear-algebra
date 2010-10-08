@@ -108,7 +108,7 @@ prop_read t (Index n i) =
 
 prop_write t (Index n i) e =
     forAll (Test.vector n) $ \x -> runST $
-        x `mutatesToVector` (x `V.replace` [(i,e)]) $ \mx -> do
+        x `mutatesToVector` (x `V.update` [(i,e)]) $ \mx -> do
             V.write mx i e
   where
     _ = e == t
@@ -116,7 +116,7 @@ prop_write t (Index n i) e =
 prop_modify t (Index n i) (Blind f) =
     forAll (Test.vector n) $ \x -> runST $
         x `mutatesToVector`
-            (typed t $ x `V.replace` [(i, f $ V.at x i)]) $ \mx ->
+            (typed t $ x `V.update` [(i, f $ V.at x i)]) $ \mx ->
                 V.modify mx i f
 
 prop_getElems t x =
@@ -165,7 +165,7 @@ prop_setElems t x =
 
 prop_setAssocs t (Assocs n ies) =
     forAll (Test.vector n) $ \x -> runST $
-        x `mutatesToVector` (typed t $ V.replace x ies) $ \mx ->
+        x `mutatesToVector` (typed t $ V.update x ies) $ \mx ->
             V.setAssocs mx ies
 
 prop_mapTo t (Blind f) = binaryProp t

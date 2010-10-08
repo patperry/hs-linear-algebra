@@ -50,15 +50,15 @@ module Numeric.LinearAlgebra.Vector.STBase (
     zipWithTo,
     unsafeZipWithTo,
     
-    withSliceView,
-    withDropView,
-    withTakeView,
-    withSplitAtView,
+    withSlice,
+    withDrop,
+    withTake,
+    withSplitAt,
     
-    withSTSliceView,
-    withSTDropView,
-    withSTTakeView,
-    withSTSplitAtView,
+    withSliceM,
+    withDropM,
+    withTakeM,
+    withSplitAtM,
     
     getSumAbs,
     getNorm2,
@@ -155,17 +155,17 @@ class RVector v where
     -- elements in the vector.                          
     getDim :: (Storable e) => v e -> ST s Int
 
-    unsafeWithSliceView :: (Storable e)
-                        => Int -> Int -> v e
-                        -> (forall v'. RVector v' => v' e -> ST s a)
-                        -> ST s a
+    -- | Same as 'withSlice' but does not range-check indices.
+    unsafeWithSlice :: (Storable e)
+                    => Int -> Int -> v e
+                    -> (forall v'. RVector v' => v' e -> ST s a)
+                    -> ST s a
 
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- vector.
     unsafeWith :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
 
-
-    -- | Converts a mutable vector into an immutable vector. This simply
+    -- | Converts a read-only vector into an immutable vector. This simply
     -- casts the vector from one type to the other without copying the vector.
     -- Note that because the vector is possibly not copied, any subsequent
     -- modifications made to the mutable version of the vector may be shared
@@ -185,9 +185,9 @@ instance RVector Vector where
     unsafeWith = V.unsafeWith
     {-# INLINE unsafeWith #-}
 
-    unsafeWithSliceView i n' v f =
+    unsafeWithSlice i n' v f =
         f (V.unsafeSlice i n' v)
-    {-# INLINE unsafeWithSliceView #-}
+    {-# INLINE unsafeWithSlice #-}
 
     unsafeFreeze = return . id
     {-# INLINE unsafeFreeze #-}
@@ -203,9 +203,9 @@ instance RVector (STVector s) where
     unsafeWith v f = V.unsafeWith (unSTVector v) f
     {-# INLINE unsafeWith #-}
 
-    unsafeWithSliceView i n' v f =
+    unsafeWithSlice i n' v f =
         f $ unsafeSlice i n' (unSTVector v)
-    {-# INLINE unsafeWithSliceView #-}
+    {-# INLINE unsafeWithSlice #-}
 
     unsafeFreeze = return . unSTVector
     {-# INLINE unsafeFreeze #-}
@@ -217,96 +217,111 @@ instance RVector (STVector s) where
     {-# INLINE unsafeThaw #-}
 
 
--- | @withSliceView i n v@ performs an action with a view of the
+-- | @withSlice i n v@ performs an action with a view of the
 -- @n@-dimensional subvector of @v@ starting at index @i@.
-withSliceView :: (RVector v, Storable e)
-              => Int
-              -> Int
-              -> v e
-              -> (forall v'. RVector v' => v' e -> ST s a)
-              -> ST s a
-withSliceView i n' v f = do
+withSlice :: (RVector v, Storable e)
+          => Int
+          -> Int
+          -> v e
+          -> (forall v'. RVector v' => v' e -> ST s a)
+          -> ST s a
+withSlice i n' v f = do
     n <- getDim v
     when (i < 0 || n' < 0 || i + n' > n) $ error $
-        printf "withSliceView %d %d <vector with dim %d>: index out of range"
+        printf "withSlice %d %d <vector with dim %d>: index out of range"
                i n' n
-    unsafeWithSliceView i n' v f
+    unsafeWithSlice i n' v f
 
-unsafeWithSTSliceView :: (Storable e)
-                      => Int
-                      -> Int
-                      -> STVector s e
-                      -> (STVector s e -> ST s a)
-                      -> ST s a
-unsafeWithSTSliceView i n' v f =
+-- | Same as 'withSliceM' but does not range-check indices.
+unsafeWithSliceM :: (Storable e)
+                 => Int
+                 -> Int
+                 -> STVector s e
+                 -> (STVector s e -> ST s a)
+                 -> ST s a
+unsafeWithSliceM i n' v f =
     f $ STVector $ unsafeSlice i n' (unSTVector v)
 
-withSTSliceView :: (Storable e)
-                => Int
-                -> Int
-                -> STVector s e
-                -> (STVector s e -> ST s a)
-                -> ST s a
-withSTSliceView i n' v f = do
+-- | Like 'withSlice', but performs the action with a mutable view 
+-- of the vector.
+withSliceM :: (Storable e)
+           => Int
+           -> Int
+           -> STVector s e
+           -> (STVector s e -> ST s a)
+           -> ST s a
+withSliceM i n' v f = do
     n <- getDim v
     when (i < 0 || n' < 0 || i + n' > n) $ error $
-        printf "withSliceView %d %d <vector with dim %d>: index out of range"
+        printf "withSlice %d %d <vector with dim %d>: index out of range"
                i n' n
-    unsafeWithSTSliceView i n' v f
+    unsafeWithSliceM i n' v f
 
-withSTDropView :: (Storable e)
-               => Int
-               -> STVector s e
-               -> (STVector s e -> ST s a)
-               -> ST s a
-withSTDropView i v f = do
+-- | Like 'withDrop', but performs the action with a mutable view 
+-- of the vector.
+withDropM :: (Storable e)
+          => Int
+          -> STVector s e
+          -> (STVector s e -> ST s a)
+          -> ST s a
+withDropM i v f = do
     n <- getDim v
-    withSTSliceView i (n-i) v f
+    withSliceM i (n-i) v f
 
-withSTTakeView :: (Storable e)
-               => Int
-               -> STVector s e
-               -> (STVector s e -> ST s a)
-               -> ST s a
-withSTTakeView = withSTSliceView 0
+-- | Like 'withTake', but performs the action with a mutable view 
+-- of the vector.
+withTakeM :: (Storable e)
+          => Int
+          -> STVector s e
+          -> (STVector s e -> ST s a)
+          -> ST s a
+withTakeM = withSliceM 0
 
-withSTSplitAtView :: (Storable e)
-                  => Int
-                  -> STVector s e
-                  -> (STVector s e -> STVector s e -> ST s a)
-                  -> ST s a
-withSTSplitAtView i v f = do
+-- | Like 'withSplitAt' but performs the action with mutable views
+-- of the vector.
+withSplitAtM :: (Storable e)
+             => Int
+             -> STVector s e
+             -> (STVector s e -> STVector s e -> ST s a)
+             -> ST s a
+withSplitAtM i v f = do
     n <- getDim v
-    withSTSliceView 0 i v $ \v1 ->
-        withSTSliceView i (n-i) v $ \v2 ->
+    withSliceM 0 i v $ \v1 ->
+        withSliceM i (n-i) v $ \v2 ->
             f v1 v2
 
-withDropView :: (RVector v, Storable e)
-             => Int
-             -> v e
-             -> (forall v'. RVector v' => v' e -> ST s a)
-             -> ST s a
-withDropView i v f = do
+-- | Perform an action the a view gotten from dropping the given
+-- number of elements from the start of the vector.
+withDrop :: (RVector v, Storable e)
+         => Int
+         -> v e
+         -> (forall v'. RVector v' => v' e -> ST s a)
+         -> ST s a
+withDrop i v f = do
     mv <- unsafeThaw v
-    withSTDropView i mv f
+    withDropM i mv f
 
-withTakeView :: (RVector v, Storable e)
-             => Int
-             -> v e
-             -> (forall v'. RVector v' => v' e -> ST s a)
-             -> ST s a
-withTakeView n v f = do
+-- | Perform an action with a view gotten from taking the given
+-- number of elements from the start of the vector.
+withTake :: (RVector v, Storable e)
+         => Int
+         -> v e
+         -> (forall v'. RVector v' => v' e -> ST s a)
+         -> ST s a
+withTake n v f = do
     mv <- unsafeThaw v
-    withSTTakeView n mv f
+    withTakeM n mv f
 
-withSplitAtView :: (RVector v, Storable e)
-                => Int
-                -> v e
-                -> (forall v1' v2'. (RVector v1', RVector v2') => v1' e -> v2' e -> ST s a)
-                -> ST s a
-withSplitAtView i v f = do
+-- | Perform an action with views from splitting the vector at the
+-- given index.
+withSplitAt :: (RVector v, Storable e)
+            => Int
+            -> v e
+            -> (forall v1' v2'. (RVector v1', RVector v2') => v1' e -> v2' e -> ST s a)
+            -> ST s a
+withSplitAt i v f = do
     mv <- unsafeThaw v
-    withSTSplitAtView i mv f
+    withSplitAtM i mv f
 
 -- | Creates a new vector of the given length.  The elements will be
 -- uninitialized.
@@ -339,6 +354,7 @@ copyTo :: (RVector v, Storable e) => STVector s e -> v e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo
 {-# INLINE copyTo #-}
 
+-- | Same as 'copyTo' but does not check the dimensions.
 unsafeCopyTo :: (RVector v, Storable e) => STVector s e -> v e -> ST s ()
 unsafeCopyTo dst src = do
     n <- getDim dst
@@ -353,6 +369,7 @@ swap :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
 swap = checkOp2 "swap" unsafeSwap
 {-# INLINE swap #-}
 
+-- | Same as 'swap' but does not check the dimensions.
 unsafeSwap :: (BLAS1 e) => STVector s e -> STVector s e -> ST s ()
 unsafeSwap = strideCall2 BLAS.swap
 {-# INLINE unsafeSwap #-}
@@ -465,6 +482,7 @@ read x i = do
 {-# SPECIALIZE INLINE read :: STVector s Double -> Int -> ST s (Double) #-}
 {-# SPECIALIZE INLINE read :: STVector s (Complex Double) -> Int -> ST s (Complex Double) #-}
 
+-- | Same as 'read' but does not range check the index.
 unsafeRead :: (RVector v, Storable e) => v e -> Int -> ST s e
 unsafeRead x i =
     unsafeIOToST $ unsafeWith x $ \p -> peekElemOff p i
@@ -482,6 +500,7 @@ write x i e = do
 {-# SPECIALIZE INLINE write :: STVector s Double -> Int -> Double -> ST s () #-}
 {-# SPECIALIZE INLINE write :: STVector s (Complex Double) -> Int -> Complex Double -> ST s () #-}
 
+-- | Same as 'write' but does not range check the index.
 unsafeWrite :: (Storable e) => STVector s e -> Int -> e -> ST s ()
 unsafeWrite x i e =
     unsafeIOToST $ unsafeWith x $ \p -> pokeElemOff p i e
@@ -499,6 +518,7 @@ modify x i f = do
 {-# SPECIALIZE INLINE modify :: STVector s Double -> Int -> (Double -> Double) -> ST s () #-}
 {-# SPECIALIZE INLINE modify :: STVector s (Complex Double) -> Int -> (Complex Double -> Complex Double) -> ST s () #-}
 
+-- | Same as 'modify' but does not range check the index.
 unsafeModify :: (Storable e) => STVector s e -> Int -> (e -> e) -> ST s ()
 unsafeModify x i f =
     unsafeIOToST $ unsafeWith x $ \p -> do
@@ -527,7 +547,8 @@ mapTo :: (RVector v, Storable e, Storable f)
       -> ST s ()
 mapTo dst f src = (checkOp2 "mapTo _" $ \z x -> unsafeMapTo z f x) dst src
 {-# INLINE mapTo #-}
-                            
+
+-- | Same as 'mapTo' but does not check dimensions.
 unsafeMapTo :: (RVector v, Storable e, Storable f)
             => STVector s f
             -> (e -> f)
@@ -563,6 +584,7 @@ zipWithTo dst f x y =
         dst x y
 {-# INLINE zipWithTo #-}
 
+-- | Same as 'zipWithTo' but does not range-check dimensions.
 unsafeZipWithTo :: (RVector v1, RVector v2, Storable e1, Storable e2, Storable f)
                 => STVector s f
                 -> (e1 -> e2 -> f)
@@ -764,6 +786,7 @@ getDot :: (RVector v, RVector v', BLAS1 e)
 getDot = checkOp2 "getDot" unsafeGetDot
 {-# INLINE getDot #-}
 
+-- | Same as 'getDot' but does not check dimensions.
 unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
              => x e -> y e -> ST s e
 unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
@@ -785,6 +808,7 @@ addWithScaleM_ alpha x y =
         x y
 {-# INLINE addWithScaleM_ #-}
 
+-- | Same as 'addWithScaleM_' but does not check dimensions.
 unsafeAddWithScaleM_ :: (RVector v, BLAS1 e)
                      => e -> v e -> STVector s e -> ST s ()
 unsafeAddWithScaleM_ alpha x y =

@@ -25,8 +25,8 @@ module Numeric.LinearAlgebra.Vector.Base (
     elems,
     assocs,
     
-    replace,
-    unsafeReplace,
+    update,
+    unsafeUpdate,
     accum,
     unsafeAccum,
     
@@ -65,23 +65,34 @@ dim = Vector.length
 {-# INLINE dim #-}
 
 -- | Create a vector of the given dimension with elements initialized
--- to the values from the list.  @fromList n es@ is equivalent to 
--- @fromAssocs n (zip [0..(n-1)] es)@.
+-- to the values from the list.  The list must have at least as many
+-- elements as the dimension of the vector; elements in the list past
+-- the dimension of the vector are discarded.
 fromList :: (Storable e) => Int -> [e] -> Vector e
-fromList = Vector.fromListN
+fromList n es = Vector.fromListN n $ es ++ repeat (error msg)
+  where
+    msg = printf ( "fromList"
+                 ++ " %d"
+                 ++ " <list with length less than %d>"
+                 ++ ": not enough elements"
+                 ) n n
 {-# INLINE fromList #-}
 
 -- | Create a zero vector of the given dimension with all elements initialized
 -- to the given zero.
 zero :: (Storable e, Num e) => Int -> Vector e
 zero n = constant n 0
-{-# NOINLINE zero #-}
+{-# INLINE zero #-}
 
 -- | Create a vector of the given dimension with all elements initialized
 -- to the given value.
 constant :: (Storable e) => Int -> e -> Vector e
-constant n e = Vector.fromListN n $ repeat e
-{-# NOINLINE constant #-}
+constant n e
+    | n < 0 = error $
+        printf ("constant %d: negative dimension") n
+    | otherwise =
+        Vector.fromListN n $ repeat e
+{-# INLINE constant #-}
 
 -- | Returns the element of a vector at the specified index.
 at :: (Storable e) => Vector e -> Int -> e
@@ -94,7 +105,7 @@ at v i
     n = dim v
 {-# INLINE at #-}
 
--- | Same as 'at' but does not range-check argument.
+-- | Same as 'at' but does not range-check index.
 unsafeAt :: (Storable e) => Vector e -> Int -> e
 unsafeAt v i = Vector.unsafeIndex v i
 {-# INLINE unsafeAt #-}
@@ -116,12 +127,13 @@ assocs :: (Storable e) => Vector e -> [(Int,e)]
 assocs x = zip (indices x) (elems x)
 {-# INLINE assocs #-}
 
-unsafeReplace :: (Storable e) => Vector e -> [(Int,e)] -> Vector e
-unsafeReplace = Vector.unsafeUpd
+-- | Same as 'update' but does not range-check indices.
+unsafeUpdate :: (Storable e) => Vector e -> [(Int,e)] -> Vector e
+unsafeUpdate = Vector.unsafeUpd
 
 -- | Create a new vector by replacing the values at the specified indices.
-replace :: (Storable e) => Vector e -> [(Int,e)] -> Vector e
-replace = (Vector.//)
+update :: (Storable e) => Vector e -> [(Int,e)] -> Vector e
+update = (Vector.//)
 
 -- | @accum f@ takes a vector and an association list and accumulates
 -- pairs from the list into the vector with the accumulating function @f@.
@@ -169,8 +181,8 @@ zipWith f v v'
     n' = dim v'
 {-# INLINE zipWith #-}
 
--- | Version of 'zipWith' that does not check if the input vectors
--- have the same lengths.
+-- | Same as 'zipWith' but does not check if the input vectors
+-- have the same dimensions.
 unsafeZipWith :: (Storable e, Storable e', Storable f)
               => (e -> e' -> f)
               -> Vector e
@@ -184,7 +196,7 @@ concat :: (Storable e) => [Vector e] -> Vector e
 concat = Vector.concat
 {-# INLINE concat #-}
 
--- | Unsafe version of 'slice' (no range-checking on indices).
+-- | Same as 'slice' but does not range-change indices.
 unsafeSlice :: (Storable e)
             => Int
             -> Int

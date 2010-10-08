@@ -23,23 +23,22 @@ import Typed
 
 
 tests_Matrix = testGroup "Matrix"
-    [ testPropertyI "dim/fromAssocs" prop_dim_fromAssocs
-    , testPropertyI "at/fromAssocs" prop_at_fromAssocs
-    , testPropertyI "fromList" prop_fromList
+    [ testPropertyI "dim . fromList" prop_dim_fromList
+    , testPropertyI "at . fromList" prop_at_fromList
     , testPropertyI "fromCols" prop_fromCols    
     , testPropertyI "fromRows" prop_fromRows        
     , testPropertyI "constant" prop_constant
     , testPropertyI "indices" prop_indices
     , testPropertyI "elems" prop_elems
     , testPropertyI "assocs" prop_assocs
-    , testPropertyI "replace" prop_replace
+    , testPropertyI "update" prop_update
     , testPropertyI "accum" prop_accum
     , testPropertyI "map" prop_map
     , testPropertyI "zipWith" prop_zipWith
     , testPropertyI "col" prop_col
     , testPropertyI "cols" prop_cols
-    , testPropertyI "row" prop_row
-    , testPropertyI "rows" prop_rows
+    , testPropertyD "row" prop_row
+    , testPropertyD "rows" prop_rows
     , testPropertyI "diag" prop_diag
     , testPropertyI "slice" prop_slice
     , testPropertyI "splitRowsAt" prop_splitRowsAt
@@ -71,23 +70,18 @@ tests_Matrix = testGroup "Matrix"
 
 ------------------------- Matrix Construction ------------------------------
 
-prop_dim_fromAssocs t (Assocs2 mn ies) =
-    M.dim (M.fromAssocs mn ies) === mn
-  where
-    _ = typed t $ M.fromAssocs mn ies
-
-prop_at_fromAssocs t (Assocs2 mn ies) = let
-    x = M.fromAssocs mn ies
-    is = (fst . unzip) ies
-    in and [ M.at x i `elem` [ e | (i',e) <- ies, i' == i ]
-           | i <- is]
-  where
-    _ = typed t $ M.fromAssocs mn ies
-
-prop_fromList t (Dim2 (m,n)) =
-    forAll (QC.vector $ m*n) $ \es ->
-        M.fromList (m,n) es === (typed t $ M.fromAssocs (m,n) $ 
-            zip [ (i,j) | j <- [ 0..n-1], i <- [ 0..m-1 ] ] es)
+prop_dim_fromList t (Dim2 (m,n)) =
+    forAll (QC.vector $ m*n) $ \es -> let
+        a = typed t $ M.fromList (m,n) es
+        in M.dim a == (m,n)
+        
+prop_at_fromList t (Dim2 (m,n)) =
+    forAll (QC.vector $ m*n) $ \es -> let
+        a = typed t $ M.fromList (m,n) es
+        in and [ M.at a (i,j) === e
+               | ((i,j),e) <- zip [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
+                                  es
+               ]
 
 prop_fromCols t (Dim2 (m,n)) =
     forAll (replicateM n $ Test.vector m) $ \cs ->
@@ -127,9 +121,9 @@ prop_assocs t x =
 
 ------------------------- Incremental Updates ------------------------------
     
-prop_replace t (Assocs2 mn ies) =
+prop_update t (Assocs2 mn ies) =
     forAll (typed t `fmap` Test.matrix mn) $ \x -> let
-        x' = M.replace x ies
+        x' = M.update x ies
         is = M.indices x
         is1 = (fst . unzip) ies
         is0 = [ i | i <- is, i `notElem` is1 ]
@@ -299,7 +293,7 @@ prop_conjugate t x =
 prop_trans t a =
     M.trans a
         ===
-        M.fromAssocs (swap $ M.dim a) [ (swap ij, e) | (ij,e) <- M.assocs a ]
+        M.update (M.zero (swap $ M.dim a)) [ (swap ij, e) | (ij,e) <- M.assocs a ]
   where
     swap (i,j) = (j,i)
     _ = typed t a
@@ -314,9 +308,10 @@ prop_rank1Update t alpha a =
     forAll (Test.vector n) $ \y -> let y' = V.conjugate y in
         M.rank1Update alpha x y a
             ~==
-            M.fromAssocs (m,n) [ ((i,j), alpha * V.at x i * V.at y' j + e)
-                               | ((i,j),e) <- M.assocs a
-                               ]
+            M.update (M.zero (m,n))
+                     [ ((i,j), alpha * V.at x i * V.at y' j + e)
+                     | ((i,j),e) <- M.assocs a
+                     ]
   where
     (m,n)= M.dim a
     _ = typed t a

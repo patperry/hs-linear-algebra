@@ -27,8 +27,8 @@ module Numeric.LinearAlgebra.Vector (
     assocs,
 
     -- * Incremental vector updates
-    replace,
-    unsafeReplace,
+    update,
+    unsafeUpdate,
     accum,
     unsafeAccum,
 

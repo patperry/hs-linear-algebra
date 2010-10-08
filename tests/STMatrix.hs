@@ -84,7 +84,7 @@ prop_read t (Index2 n i) =
 
 prop_write t (Index2 n i) e =
     forAll (Test.matrix n) $ \x -> runST $
-        x `mutatesToMatrix` (x `M.replace` [(i,e)]) $ \mx -> do
+        x `mutatesToMatrix` (x `M.update` [(i,e)]) $ \mx -> do
             M.write mx i e
   where
     _ = e == t
@@ -92,7 +92,7 @@ prop_write t (Index2 n i) e =
 prop_modify t (Index2 n i) (Blind f) =
     forAll (Test.matrix n) $ \x -> runST $
         x `mutatesToMatrix`
-            (typed t $ x `M.replace` [(i, f $ M.at x i)]) $ \mx ->
+            (typed t $ x `M.update` [(i, f $ M.at x i)]) $ \mx ->
                 M.modify mx i f
 
 prop_getElems t x =
@@ -141,7 +141,7 @@ prop_setElems t x =
 
 prop_setAssocs t (Assocs2 mn ies) =
     forAll (Test.matrix mn) $ \x -> runST $
-        x `mutatesToMatrix` (typed t $ M.replace x ies) $ \mx ->
+        x `mutatesToMatrix` (typed t $ M.update x ies) $ \mx ->
             M.setAssocs mx ies
 
 prop_mapTo t (Blind f) = binaryProp t

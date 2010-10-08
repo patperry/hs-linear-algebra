@@ -30,8 +30,8 @@ module Numeric.LinearAlgebra.Matrix.Base (
     unsafeCol,
     cols,
 
-    replace,
-    unsafeReplace,
+    update,
+    unsafeUpdate,
     accum,
     unsafeAccum,
 
@@ -167,20 +167,19 @@ assocs :: (Storable e) => Matrix e -> [((Int,Int),e)]
 assocs x = zip (indices x) (elems x)
 {-# INLINE assocs #-}
 
--- | Version of 'replace' that doesn't range-check indices.
-unsafeReplace :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
-unsafeReplace (Matrix v m n lda) ijes = let
+-- | Version of 'update' that doesn't range-check indices.
+unsafeUpdate :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
+unsafeUpdate (Matrix v m n lda) ijes = let
     ies = [ (i + j * lda, e) | ((i,j),e) <- ijes ]
-    v' = V.unsafeReplace v ies
-    lda' = max 1 m
-    in Matrix v' m n lda'
+    v' = V.unsafeUpdate v ies
+    in Matrix v' m n lda
 
 -- | Create a new matrix by replacing the values at the specified indices.
-replace :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
-replace (Matrix v m n lda) ijes = let
+update :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
+update (Matrix v m n lda) ijes = let
     ies = [ if i < 0 || i >= m || j < 0 || j >= n
                 then error $ printf
-                         ("replace"
+                         ("update"
                          ++ " <matrix with dim (%d,%d)>"
                          ++ " [ ..((%d,%d),_).. ]"
                          ++ ": invalid index")
@@ -188,9 +187,8 @@ replace (Matrix v m n lda) ijes = let
                 else (i + j * lda, e)
           | ((i,j),e) <- ijes
           ]
-    v' = V.unsafeReplace v ies
-    lda' = max 1 m
-    in Matrix v' m n lda'
+    v' = V.unsafeUpdate v ies
+    in Matrix v' m n lda
 
 -- | Same as 'accum' but does not range-check indices.
 unsafeAccum :: (Storable e)
@@ -201,8 +199,7 @@ unsafeAccum :: (Storable e)
 unsafeAccum f (Matrix v m n lda) ijes = let
     ies = [ (i + j * lda, e) | ((i,j),e) <- ijes ]
     v' = V.unsafeAccum f v ies
-    lda' = max 1 m
-    in Matrix v' m n lda'
+    in Matrix v' m n lda
 
 -- | @accum f@ takes a matrix and an association list and accumulates
 -- pairs from the list into the matrix with the accumulating function @f@.
@@ -223,8 +220,7 @@ accum f (Matrix v m n lda) ijes = let
           | ((i,j),e) <- ijes
           ]
     v' = V.unsafeAccum f v ies
-    lda' = max 1 m
-    in Matrix v' m n lda'
+    in Matrix v' m n lda
 
 -- | Construct a new matrix by applying a function to every element of
 -- a matrix.
@@ -319,9 +315,9 @@ unsafeSlice :: (Storable e)
             => (Int,Int) -> (Int,Int) -> Matrix e -> Matrix e
 unsafeSlice (i,j) (m',n') (Matrix v _ _ lda) = let
     o = i + j*lda
-    l = if m' == 0 || n' == 0
+    l = if m' == 0
             then 0
-            else lda * (n' - 1) + m'
+            else lda * n'
     v' = V.unsafeSlice o l v
     in Matrix v' m' n' lda
 {-# INLINE unsafeSlice #-}
@@ -385,14 +381,11 @@ splitColsAt j a
 {-# INLINE splitColsAt #-}
 
 
-
-      
-
 -- | Convert a matrix to a vector by stacking its columns.
 toVector :: (Storable e)
          => Matrix e
          -> Vector e
-toVector a@(Matrix v m n _)
+toVector a@(Matrix v m n _lda)
     | isContig a = v
     | otherwise  = V.fromList (m*n) $ elems a
 
@@ -463,7 +456,8 @@ unsafeFromForeignPtr :: (Storable e)
                      -> Int          -- ^ leading dimension (lda)
                      -> Matrix e
 unsafeFromForeignPtr p o (m,n) lda = let
-    v = V.unsafeFromForeignPtr p o (m*lda)
+    nv = if m == 0 then 0 else n * lda
+    v = V.unsafeFromForeignPtr p o nv
     in Matrix v m n lda
 {-# INLINE unsafeFromForeignPtr #-}
 

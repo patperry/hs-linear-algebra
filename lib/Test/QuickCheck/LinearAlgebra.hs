@@ -51,14 +51,12 @@ module Test.QuickCheck.LinearAlgebra (
     NonEmptyVectorList(..),
     NonEmptyWeightedVectorList(..),
     
-    {-
     --  ** Matrices
     matrix,
     MatrixPair(..),
     MatrixTriple(..),
     -- hermMatrix,
     -- triMatrix,
-    -}
 
     --  Banded matrices
     -- bandwidths,
@@ -84,8 +82,8 @@ import qualified Test.QuickCheck as QC
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
--- import Numeric.LinearAlgebra.Matrix( Matrix )
--- import qualified Numeric.LinearAlgebra.Matrix as M
+import Numeric.LinearAlgebra.Matrix( Matrix )
+import qualified Numeric.LinearAlgebra.Matrix as M
 -- import Data.Matrix.Banded( Banded, maybeBandedFromMatrixStorage )
 -- import Data.Matrix.Banded.ST( runSTBanded, unsafeThawBanded, 
 --     diagViewBanded )
@@ -337,7 +335,6 @@ instance (Arbitrary e, Storable e, Num e) => Arbitrary (WeightedVectorList e) wh
         (NonEmptyWeightedVectorList p (_:wxs)) <- arbitrary
         return $ WeightedVectorList p wxs
 
-{-
 -- | Generate a random matrix of the given size.
 matrix :: (Arbitrary e, Storable e) => (Int,Int) -> Gen (Matrix e)
 matrix (m,n) = 
@@ -378,7 +375,6 @@ instance (Arbitrary e, Storable e, Arbitrary f, Storable f,
 
 instance Arbitrary Trans where
     arbitrary = elements [ NoTrans, Trans, ConjTrans ]
--}
 {-
 
 -- | Generate a triangular dense matrix.

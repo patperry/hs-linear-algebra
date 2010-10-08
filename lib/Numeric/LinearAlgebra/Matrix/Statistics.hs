@@ -123,7 +123,7 @@ covWithMeanTo c@(Herm _ a) mu t xs = do
                ma na p
 
     xt <- M.new_ (p,n)
-    M.withSTColViews xt $ \xs' ->
+    M.withColsM xt $ \xs' ->
         sequence_ [ V.subTo x' mu x
                   | (x,x') <- zip xs xs'
                   ]
@@ -163,7 +163,7 @@ weightedCovWithMeanTo c@(Herm _ a) mu t wxs = do
                ma na p
 
     xt <- M.new_ (p,n)
-    M.withSTColViews xt $ \xs' ->
+    M.withColsM xt $ \xs' ->
         sequence_ [  V.subTo x' mu x
                   >> V.scaleByM_ (realToFrac $ sqrt (w / invscale)) x'
                   |  (w,x,x') <- zip3 ws xs xs'
