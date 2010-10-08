@@ -26,17 +26,26 @@ module Numeric.LinearAlgebra.Matrix.ST (
     copyTo,
 
     -- * Matrix views
-    slice,
-    takeRows,
-    dropRows,
-    splitRowsAt,
-    takeCols,
-    dropCols,
-    splitColsAt,
+    -- withSliceView,
+    -- withTakeRowsView,
+    -- withDropRowsView,
+    -- withSplitRowsAt,
+    -- withTakeColsView,
+    -- withDropColsView,
+    -- withSplitColsAtView,
+    -- withSTSliceView,
+    -- withSTTakeRowsView,
+    -- withSTDropRowsView,
+    -- withSTSplitRowsAt,
+    -- withSTTakeColsView,
+    -- withSTDropColsView,
+    -- withSTSplitColsAtView,
     
     -- * Matrix rows and columns
-    getRow,
+    rowTo,
+    unsafeRowTo,
     setRow,
+    unsafeSetRow,
     withColView,
 
     withSTColView,
@@ -50,7 +59,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     read,
     write,
     modify,
-    indices,
+    getIndices,
     getElems,
     getElems',
     getAssocs,
@@ -112,5 +121,4 @@ module Numeric.LinearAlgebra.Matrix.ST (
     ) where
 
 import Prelude()
-import Numeric.LinearAlgebra.Matrix.Base
 import Numeric.LinearAlgebra.Matrix.STBase

@@ -97,7 +97,6 @@ module Numeric.LinearAlgebra.Vector.ST (
 
     -- * Conversions between mutable and immutable vectors
     freeze,
-    unsafeFreeze,
     
     -- * Unsafe operations
     unsafeCopyTo,

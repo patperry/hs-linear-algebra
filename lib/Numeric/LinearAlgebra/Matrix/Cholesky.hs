@@ -23,6 +23,7 @@ module Numeric.LinearAlgebra.Matrix.Cholesky (
     
     ) where
 
+import Control.Monad( when )
 import Control.Monad.ST( ST, runST, unsafeIOToST )
 import Text.Printf( printf )
 
@@ -32,7 +33,6 @@ import Numeric.LinearAlgebra.Types
 
 import Numeric.LinearAlgebra.Matrix.Base( Matrix )
 import Numeric.LinearAlgebra.Matrix.STBase( RMatrix, STMatrix )
-import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import qualified Numeric.LinearAlgebra.Matrix.STBase as M
 
 import Numeric.LinearAlgebra.Vector( Vector, STVector )
@@ -83,20 +83,21 @@ cholSolveMatrix a c = M.create $ do
 cholFactorM_ :: (LAPACK e)
              => Herm (STMatrix s) e
              -> ST s (Either Int (Chol (STMatrix s) e))
-cholFactorM_ (Herm uplo a)
-    | not $ (ma,na) == (n,n) = error $
+cholFactorM_ (Herm uplo a) = do
+    (ma,na) <- M.getDim a
+    let n = na
+
+    when (not $ (ma,na) == (n,n)) $ error $
         printf ("cholFactorM_"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
-    | otherwise =
-        unsafeIOToST $
-            M.unsafeWith a $ \pa lda -> do
-                info <- LAPACK.potrf uplo n pa lda
-                return $ if info > 0 then Left info
-                                     else Right (Chol uplo a)
-  where
-    (ma,na) = M.dim a
-    n = na
+
+    unsafeIOToST $
+        M.unsafeWith a $ \pa lda -> do
+            info <- LAPACK.potrf uplo n pa lda
+            return $ if info > 0 then Left info
+                                 else Right (Chol uplo a)
+
 
 -- | @cholSolveVectorM_ a x@ sets @x := a \\ x@.
 cholSolveVectorM_ :: (LAPACK e, RMatrix m)
@@ -112,21 +113,21 @@ cholSolveMatrixM_ :: (LAPACK e, RMatrix m)
                   => Chol m e
                   -> STMatrix s e
                   -> ST s ()
-cholSolveMatrixM_ (Chol uplo a) b
-    | (not . and) [ (ma,na) == (n,n)
-                  , (mb,nb) == (n,nrhs)
-                  ] = error $
+cholSolveMatrixM_ (Chol uplo a) b = do
+    (ma,na) <- M.getDim a
+    (mb,nb) <- M.getDim b
+    let (n,nrhs) = (mb,nb)
+    
+    when ((not . and) [ (ma,na) == (n,n)
+                      , (mb,nb) == (n,nrhs)
+                      ]) $ error $
         printf ("cholSolveMatrixM_"
                 ++ " (Chol _ <matrix with dim (%d,%d)>)"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
                ma na mb nb
-    | otherwise = do
-        unsafeIOToST $
-            M.unsafeWith a $ \pa lda ->
-            M.unsafeWith b $ \pb ldb ->
-                LAPACK.potrs uplo n nrhs pa lda pb ldb
-  where
-    (ma,na) = M.dim a
-    (mb,nb) = M.dim b
-    (n,nrhs) = (mb,nb)
+
+    unsafeIOToST $
+        M.unsafeWith a $ \pa lda ->
+        M.unsafeWith b $ \pb ldb ->
+            LAPACK.potrs uplo n nrhs pa lda pb ldb

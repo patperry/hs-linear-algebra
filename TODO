@@ -36,6 +36,9 @@ UnbiasedCov
 
 * Check arguments in shiftDiagWithScale (Matrix)
 
+* Don't use conjugateTo with same argument in conjTransTo
+
+* Optimize unsafeGetRow (use BLAS1)
 
 Medium projects
 ---------------

@@ -32,6 +32,7 @@ module Numeric.LinearAlgebra.Vector.Base (
     
     map,
     zipWith,
+    unsafeZipWith,
     concat,
     
     slice,

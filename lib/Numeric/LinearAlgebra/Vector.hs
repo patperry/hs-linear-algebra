@@ -28,15 +28,19 @@ module Numeric.LinearAlgebra.Vector (
 
     -- * Incremental vector updates
     replace,
+    unsafeReplace,
     accum,
+    unsafeAccum,
 
     -- * Derived vectors
     map,
     zipWith,
+    unsafeZipWith,
     concat,
 
     -- * Vector views
     slice,
+    unsafeSlice,
     splitAt,
     drop,
     take,
@@ -82,6 +86,10 @@ module Numeric.LinearAlgebra.Vector (
     asinh,
     acosh,
     atanh,
+    
+    -- * Conversions between foreign pointers
+    unsafeFromForeignPtr,
+    unsafeToForeignPtr,
     
     -- * Mutable interface
     module Numeric.LinearAlgebra.Vector.ST,

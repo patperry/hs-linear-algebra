@@ -12,48 +12,65 @@
 module Numeric.LinearAlgebra.Matrix.STBase
     where
       
-import Control.Monad( forM_ )
-import Control.Monad.ST( ST, RealWorld, unsafeIOToST )
+import Control.Monad( forM_, when )
+import Control.Monad.ST( ST, RealWorld, runST, unsafeInterleaveST,
+    unsafeIOToST )
 import Data.Maybe( fromMaybe )
 import Data.Typeable( Typeable )
-import Foreign( ForeignPtr, Ptr, advancePtr, peek, peekElemOff, pokeElemOff,
+import Foreign( Ptr, advancePtr, peek, peekElemOff, pokeElemOff,
     mallocForeignPtrArray )
 import Text.Printf( printf )
 import Unsafe.Coerce( unsafeCoerce )
 
 import Numeric.LinearAlgebra.Types
 import qualified Foreign.BLAS as BLAS
+import Numeric.LinearAlgebra.Matrix.Base hiding ( unsafeWith,
+    unsafeToForeignPtr, unsafeFromForeignPtr, )
+import qualified Numeric.LinearAlgebra.Matrix.Base as M
 import Numeric.LinearAlgebra.Vector( STVector, RVector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
--- | Dense matrices in the 'ST' monad.  The type arguments are as follows:
---
---     * @s@: the state variable argument for the 'ST' type
---
---     * @e@: the element type of the matrix.
---
-data STMatrix s e =
-      STMatrix {-# UNPACK #-} !(STVector s e) -- matrix data
-               {-# UNPACK #-} !Int            -- row dimension
-               {-# UNPACK #-} !Int            -- column dimension
-               {-# UNPACK #-} !Int            -- leading dimension
-  deriving (Typeable)
+-- | Mutable dense matrices in the 'ST' monad.
+newtype STMatrix s e = STMatrix { unSTMatrix :: Matrix e }
+    deriving (Typeable)
 
--- | Dense matrices in the 'IO' monad.
+-- | Mutable dense matrices in the 'IO' monad.
 type IOMatrix = STMatrix RealWorld
+
+-- | A safe way to create and work with a mutable matrix before returning 
+-- an immutable matrix for later perusal. This function avoids copying
+-- the matrix before returning it - it uses 'unsafeFreeze' internally,
+-- but this wrapper is a safe interface to that function. 
+create :: (Storable e) => (forall s . ST s (STMatrix s e)) -> Matrix e
+create mx = runST $ mx >>= unsafeFreeze
+{-# INLINE create #-}
+
+-- | Converts a mutable matrix to an immutable one by taking a complete
+-- copy of it.
+freeze :: (Storable e) => STMatrix s e -> ST s (Matrix e)
+freeze = fmap unSTMatrix . newCopy
+{-# INLINE freeze #-}
+
+-- | Converts a mutable matrix into an immutable matrix. This simply casts
+-- the matrix from one type to the other without copying the matrix.
+-- Note that because the matrix is possibly not copied, any subsequent
+-- modifications made to the mutable version of the matrix may be shared with
+-- the immutable version. It is safe to use, therefore, if the mutable
+-- version is never modified after the freeze operation.
+unsafeFreeze :: (Storable e) => STMatrix s e -> ST s (Matrix e)
+unsafeFreeze = return . unSTMatrix
+{-# INLINE unsafeFreeze #-}
+
 
 -- | Read-only matrices
 class RMatrix m where
-    -- | The dimensions of the matrix (number of rows and columns).
-    dim :: (Storable e) => m e -> (Int,Int)
+    -- | Get the dimensions of the matrix (number of rows and columns).
+    getDim :: (Storable e) => m e -> ST s (Int,Int)
     
-    unsafeSlice :: (Storable e)
-                => (Int,Int) -> (Int,Int) -> m e -> m e
-
     unsafeWithColView :: (Storable e)
                       => m e
                       -> Int 
-                      -> (forall v . RVector v => v e -> ST s a)
+                      -> (forall v. RVector v => v e -> ST s a)
                       -> ST s a
 
     -- | Perform an action with a list of views of the matrix columns.
@@ -61,6 +78,13 @@ class RMatrix m where
                  => m e
                  -> (forall v . RVector v => [v e] -> ST s a)
                  -> ST s a
+
+    unsafeWithSliceView :: (Storable e)
+                        => (Int,Int)
+                        -> (Int,Int)
+                        -> m e
+                        -> (forall m'. RMatrix m' => m' e -> ST s a)
+                        -> ST s a
 
     -- | Possibly view a matrix as a vector and perform an action on the
     -- view.  This only succeeds if the matrix is stored contiguously in
@@ -71,80 +95,52 @@ class RMatrix m where
                         -> (forall v . RVector v => v e -> ST s a)
                         -> Maybe (ST s a)
 
+    -- | Unsafe cast from a read-only matrix to a mutable matrix.
+    unsafeThaw :: (Storable e)
+               => m e -> ST s (STMatrix s e)
+
     -- | Execute an 'IO' action with a pointer to the first element in the
     -- matrix and the leading dimension (lda).
     unsafeWith :: (Storable e) => m e -> (Ptr e -> Int -> IO a) -> IO a
 
-    -- | Convert a vector to a @ForeignPtr@, and offset, dimensions,
-    -- and leading dimension (lda).
-    unsafeToForeignPtr :: (Storable e)
-                       => m e -> (ForeignPtr e, Int, (Int,Int), Int)
-                             
-    -- | Cast a @ForeignPtr@ to a matrix.
-    unsafeFromForeignPtr :: (Storable e)
-                         => ForeignPtr e -- ^ the pointer
-                         -> Int          -- ^ the offset
-                         -> (Int,Int)    -- ^ the dimensions
-                         -> Int          -- ^ the leading dimension
-                         -> m e
+instance RMatrix Matrix where
+    getDim = return . dim
+    {-# INLINE getDim #-}
+    unsafeWithColView a j f = f (unsafeCol a j)
+    {-# INLINE unsafeWithColView #-}
+    withColViews a f = f (cols a)
+    {-# INLINE withColViews #-}
+    unsafeWithSliceView ij mn a f = f (unsafeSlice ij mn a)
+    {-# INLINE unsafeWithSliceView #-}
+    maybeWithVectorView a f | isContig a = Just $ f (toVector a)
+                            | otherwise = Nothing
+    {-# INLINE maybeWithVectorView #-}
+    unsafeWith = M.unsafeWith
+    {-# INLINE unsafeWith #-}
+    unsafeThaw = return . STMatrix
+    {-# INLINE unsafeThaw #-}
 
 
 instance RMatrix (STMatrix s) where
-    dim (STMatrix _ m n _) = (m,n)
-    {-# INLINE dim #-}
-
-    unsafeWithColView a j f = cast $ unsafeWithSTColView a j (cast . f)
-      where
-        cast :: ST s' a -> ST s a
-        cast = unsafeCoerce
+    getDim = return . dim . unSTMatrix
+    {-# INLINE getDim #-}
+    unsafeWithColView = unsafeWithColView . unSTMatrix
     {-# INLINE unsafeWithColView #-}
-
-    withColViews a f = cast $ withSTColViews a (cast . f)
-      where
-        cast :: ST s' a -> ST s a
-        cast = unsafeCoerce
+    withColViews = withColViews . unSTMatrix
     {-# INLINE withColViews #-}
-
-    unsafeSlice (i,j) (m',n') (STMatrix a _ _ lda) = let
-        o = i + j*lda
-        l = if m' == 0 || n' == 0
-                then 0
-                else lda * (n' - 1) + m'
-        a' = V.unsafeSlice o l a
-        in STMatrix a' m' n' lda
-    {-# INLINE unsafeSlice #-}
-    
-    maybeWithVectorView a f =
-        cast `fmap` maybeWithSTVectorView a (cast . f)
-      where
-        cast :: ST s' a -> ST s a
-        cast = unsafeCoerce
+    unsafeWithSliceView ij mn = unsafeWithSliceView ij mn . unSTMatrix
+    {-# INLINE unsafeWithSliceView #-}
+    maybeWithVectorView = maybeWithVectorView . unSTMatrix
     {-# INLINE maybeWithVectorView #-}
-
-    unsafeWith (STMatrix a _ _ lda) f =
-        V.unsafeWith a $ \p -> f p lda
+    unsafeWith = unsafeWith . unSTMatrix
     {-# INLINE unsafeWith #-}
-
-    unsafeToForeignPtr (STMatrix a m n lda) = let
-        (f,o,_) = V.unsafeToForeignPtr a
-        in (f, o, (m,n), lda)
-    {-# INLINE unsafeToForeignPtr #-}
-
-    unsafeFromForeignPtr f o (m,n) lda = let
-        d = if m == 0 then 0 else lda * n
-        a = V.unsafeFromForeignPtr f o d
-        in (STMatrix a m n lda)
-    {-# INLINE unsafeFromForeignPtr #-}
+    unsafeThaw v = return $ cast v
+      where
+        cast :: STMatrix s e -> STMatrix s' e
+        cast = unsafeCoerce
+    {-# INLINE unsafeThaw #-}
 
 
-unsafeSTColView :: (Storable e)
-                => STMatrix s e
-                -> Int
-                -> STVector s e
-unsafeSTColView (STMatrix a m _ lda) j = let
-    o = j * lda
-    in V.unsafeSlice o m a
-{-# INLINE unsafeSTColView #-}
 
 -- | Perform an action with a view of a matrix column (no index checking).
 unsafeWithSTColView :: (Storable e)
@@ -152,18 +148,11 @@ unsafeWithSTColView :: (Storable e)
                     -> Int
                     -> (STVector s e -> ST s a)
                     -> ST s a
-unsafeWithSTColView a j f = f $ unsafeSTColView a j
+unsafeWithSTColView a j f = 
+    unsafeWithColView a j $ \c -> do
+        mc <- V.unsafeThaw c
+        f mc
 {-# INLINE unsafeWithSTColView #-}
-
--- | Get a list of views of the matrix columns.
-stCols :: (Storable e)
-       => STMatrix s e
-       -> [STVector s e]
-stCols (STMatrix a m n lda) = let
-    os = take n $ [ 0, lda .. ]
-    xs = [ V.unsafeSlice o m a | o <- os ]
-    in xs
-{-# INLINE stCols #-}
 
 -- | Perform an action with a list of views of the matrix columns.  See
 -- also 'withColViews'.
@@ -171,20 +160,18 @@ withSTColViews :: (Storable e)
                => STMatrix s e
                -> ([STVector s e] -> ST s a)
                -> ST s a
-withSTColViews a f = f $ stCols a
+withSTColViews a f =
+    withColViews a $ \cs -> do
+        mcs <- thawVecs cs
+        f mcs
+  where
+    thawVecs [] = return []
+    thawVecs (c:cs) = unsafeInterleaveST $ do
+        mc <- V.unsafeThaw c
+        mcs <- thawVecs cs
+        return $ mc:mcs
 {-# INLINE withSTColViews #-}
 
--- | Possibly view a matrix as a vector.  This only succeeds if the
--- matrix is stored contiguously in memory, i.e. if the matrix contains
--- a single column or the \"lda\" of the matrix is equal to the number
--- of rows.
-maybeSTVectorView :: (Storable e)
-                  => STMatrix s e
-                  -> Maybe (STVector s e)
-maybeSTVectorView (STMatrix a m n lda) | lda == max 1 m = Just a
-                                       | n   == 1       = Just a
-                                       | otherwise      = Nothing
-{-# INLINE maybeSTVectorView #-}
 
 -- | Possibly view a matrix as a vector and perform an action on the
 -- view.  This succeeds when the matrix is stored contiguously in memory,
@@ -194,43 +181,12 @@ maybeWithSTVectorView :: (Storable e)
                       => STMatrix s e
                       -> (STVector s e -> ST s a)
                       -> Maybe (ST s a)
-maybeWithSTVectorView a f = f `fmap` maybeSTVectorView a
+maybeWithSTVectorView a f = 
+    maybeWithVectorView a $ \v -> do
+        mv <- V.unsafeThaw v
+        f mv
 {-# INLINE maybeWithSTVectorView #-}
 
--- | Cast a vector to a matrix of the given shape.  See also
--- 'withViewFromVector'.
-fromSTVector :: (Storable e)
-                 => (Int,Int)
-                 -> STVector s e
-                 -> STMatrix s e
-fromSTVector mn@(m,n) v
-    | V.dim v /= m*n = error $
-        printf ("fromSTVector (%d,%d) <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim v)
-    | otherwise =
-        cast v
-  where
-    cast x = let
-        (fptr,o,_) = V.unsafeToForeignPtr x
-        lda = max 1 m
-        in unsafeFromForeignPtr fptr o mn lda
-{-# INLINE fromSTVector #-}
-
--- | Cast a vector to a matrix with one column.  See also
--- 'withViewFromCol'.
-fromSTCol :: (Storable e)
-              => STVector s e
-              -> STMatrix s e
-fromSTCol v = fromSTVector (V.dim v, 1) v
-{-# INLINE fromSTCol #-}
-
--- | Cast a vector to a matrix with one row.  See also
--- 'withViewFromRow'.
-fromSTRow :: (Storable e)
-              => STVector s e
-              -> STMatrix s e
-fromSTRow v = fromSTVector (V.dim v, 1) v
-{-# INLINE fromSTRow #-}
 
 -- | View a vector as a matrix of the given shape and pass it to
 -- the specified function.
@@ -239,19 +195,15 @@ withViewFromVector :: (RVector v, Storable e)
                    -> v e
                    -> (forall m . RMatrix m => m e -> ST s a)
                    -> ST s a
-withViewFromVector mn@(m,n) v f
-    | V.dim v /= m*n = error $
+withViewFromVector mn@(m,n) v f = do
+    nv <- V.getDim v
+    when (nv /= m*n) $ error $
         printf ("withViewFromVector (%d,%d) <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim v)
-    | otherwise =
-        f (cast v)
-  where
-    cast :: (RVector v, Storable e) => v e -> STMatrix s e
-    cast x = let
-        (fptr,o,_) = V.unsafeToForeignPtr x
-        lda = max 1 m
-        in unsafeFromForeignPtr fptr o mn lda
+                ++ " dimension mismatch") m n nv
+    iv <- V.unsafeFreeze v
+    f $ fromVector mn iv
 {-# INLINE withViewFromVector #-}
+
 
 -- | View a mutable vector as a mutable matrix of the given shape and pass it
 -- to the specified function.
@@ -260,45 +212,50 @@ withViewFromSTVector :: (Storable e)
                      -> STVector s e
                      -> (STMatrix s e -> ST s a)
                      -> ST s a
-withViewFromSTVector mn@(m,n) v f
-    | V.dim v /= m*n = error $
+withViewFromSTVector mn@(m,n) v f = do
+    nv <- V.getDim v
+    when (nv /= m*n) $ error $
         printf ("withViewFromSTVector (%d,%d) <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim v)
-    | otherwise =
-        f (cast v)
-  where
-    cast :: (Storable e) => STVector s e -> STMatrix s e
-    cast x = let
-        (fptr,o,_) = V.unsafeToForeignPtr x
-        lda = max 1 m
-        in unsafeFromForeignPtr fptr o mn lda
+                ++ " dimension mismatch") m n nv
+    withViewFromVector mn v $ \a -> do
+        ma <- unsafeThaw a
+        f ma
 {-# INLINE withViewFromSTVector #-}
+
 
 -- | View a vector as a matrix with one column and pass it to
 -- the specified function.
 withViewFromCol :: (RVector v, Storable e)
-                 => v e
-                 -> (forall m . RMatrix m => m e -> ST s a)
-                 -> ST s a
-withViewFromCol v = withViewFromVector (V.dim v, 1) v
+                => v e
+                -> (forall m . RMatrix m => m e -> ST s a)
+                -> ST s a
+withViewFromCol v f = do
+    m <- V.getDim v
+    withViewFromVector (m,1) v f
 {-# INLINE withViewFromCol #-}
+
 
 -- | View a mutable vector as a mutable matrix with one column and pass it to
 -- the specified function.
 withViewFromSTCol :: (Storable e)
-                 => STVector s e
-                 -> (STMatrix s e -> ST s a)
-                 -> ST s a
-withViewFromSTCol v = withViewFromSTVector (V.dim v, 1) v
+                  => STVector s e
+                  -> (STMatrix s e -> ST s a)
+                  -> ST s a
+withViewFromSTCol v f = do
+    m <- V.getDim v
+    withViewFromSTVector (m, 1) v f
 {-# INLINE withViewFromSTCol #-}
+
 
 -- | View a vector as a matrix with one row and pass it to
 -- the specified function.
 withViewFromRow :: (RVector v, Storable e)
-                 => v e
-                 -> (forall m . RMatrix m => m e -> ST s a)
-                 -> ST s a
-withViewFromRow v = withViewFromVector (1, V.dim v) v
+                => v e
+                -> (forall m . RMatrix m => m e -> ST s a)
+                -> ST s a
+withViewFromRow v f = do
+    n <- V.getDim v
+    withViewFromVector (1,n) v f
 {-# INLINE withViewFromRow #-}
 
 -- | View a mutable vector as a mutable matrix with one row and pass it to
@@ -307,7 +264,9 @@ withViewFromSTRow :: (Storable e)
                   => STVector s e
                   -> (STMatrix s e -> ST s a)
                   -> ST s a
-withViewFromSTRow v = withViewFromSTVector (1, V.dim v) v
+withViewFromSTRow v f = do
+    n <- V.getDim v
+    withViewFromSTVector (1,n) v f
 {-# INLINE withViewFromSTRow #-}
 
 -- | Perform an action with a view of a matrix column.
@@ -316,14 +275,13 @@ withColView :: (RMatrix m, Storable e)
             -> Int
             -> (forall v . RVector v => v e -> ST s a)
             -> ST s a
-withColView a j f
-    | j < 0 || j >= n = error $
+withColView a j f = do
+    (m,n) <- getDim a
+    when (j < 0 || j >= n) $ error $
         printf ("withColView <matrix with dim (%d,%d)> %d:"
                 ++ " index out of range") m n j
-    | otherwise =
-        unsafeWithColView a j f
-  where
-    (m,n) = dim a
+
+    unsafeWithColView a j f
 {-# INLINE withColView #-}
 
 -- | Perform an action with a view of a mutable matrix column.
@@ -332,33 +290,14 @@ withSTColView :: (Storable e)
               -> Int
               -> (STVector s e -> ST s a)
               -> ST s a
-withSTColView a j f
-    | j < 0 || j >= n = error $
+withSTColView a j f = do
+    (m,n) <- getDim a
+    when (j < 0 || j >= n) $ error $
         printf ("withSTColView <matrix with dim (%d,%d)> %d:"
                 ++ " index out of range") m n j
-    | otherwise =
-        unsafeWithSTColView a j f
-  where
-    (m,n) = dim a
-{-# INLINE withSTColView #-}
 
--- | @slice (i,j) (m,n) a@ creates a submatrix view of @a@ starting at
--- element @(i,j)@ and having dimensions @(m,n)@.
-slice :: (RMatrix m, Storable e)
-      => (Int,Int)
-      -> (Int,Int)
-      -> m e
-      -> m e
-slice (i,j) (m',n') a
-    | (i < 0 || m' < 0 || i + m' > m 
-       || j < 0 || n' < 0 || j + n' > n) = error $
-        printf ("slice (%d,%d) (%d,%d) <matrix with dim (%d,%d)>:"
-                ++ " index out of range") i j m' n' m n
-    | otherwise =
-        unsafeSlice (i,j) (m',n') a
-  where
-    (m,n) = dim a
-{-# INLINE slice #-}
+    unsafeWithSTColView a j f
+{-# INLINE withSTColView #-}
 
 -- | Create a new matrix of given shape, but do not initialize the elements.
 new_ :: (Storable e) => (Int,Int) -> ST s (STMatrix s e)
@@ -367,7 +306,7 @@ new_ (m,n)
         printf "new_ (%d,%d): invalid dimensions" m n
     | otherwise = unsafeIOToST $ do
         f <- mallocForeignPtrArray (m*n)
-        return $ unsafeFromForeignPtr f 0 (m,n) (max 1 m)
+        return $ STMatrix $ M.unsafeFromForeignPtr f 0 (m,n) (max 1 m)
 
 -- | Create a matrix with every element initialized to the same value.
 new :: (Storable e) => (Int,Int) -> e -> ST s (STMatrix s e)
@@ -379,7 +318,8 @@ new (m,n) e = do
 -- | Creates a new matrix by copying another one.    
 newCopy :: (RMatrix m, Storable e) => m e -> ST s (STMatrix s e)
 newCopy a = do
-    b <- new_ (dim a)
+    mn <- getDim a
+    b <- new_ mn
     unsafeCopyTo b a
     return b
 
@@ -393,68 +333,11 @@ unsafeCopyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
 unsafeCopyTo = vectorOp2 V.unsafeCopyTo
 {-# INLINE unsafeCopyTo #-}
 
--- | Create a view of a matrix by taking the initial rows.
-takeRows :: (RMatrix m, Storable e) => Int -> m e -> m e
-takeRows i a = slice (0,0) (i,n) a
-  where
-    (_,n) = dim a
-
--- | Create a view of a matrix by dropping the initial rows.
-dropRows :: (RMatrix m, Storable e) => Int -> m e -> m e
-dropRows i a = slice (i,0) (m-i,n) a
-  where
-    (m,n) = dim a
-
--- | Split a matrix into two blocks and returns views into the blocks.  If
--- @(a1, a2) = splitRowsAt i a@, then
--- @a1 = slice (0,0) (i,n) a@ and
--- @a2 = slice (i,0) (m-i,n) a@, where @(m,n)@ is the dimension of @a@.
-splitRowsAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
-splitRowsAt i a
-    | i < 0 || i > m = error $
-        printf ("splitRowsAt %d <matrix with dim (%d,%d)>:"
-                ++ " invalid index") i m n
-    | otherwise = let
-        a1 = unsafeSlice (0,0) (i,n)   a
-        a2 = unsafeSlice (i,0) (m-i,n) a
-    in (a1,a2)
-  where
-    (m,n) = dim a
-{-# INLINE splitRowsAt #-}
-
--- | Create a view of a matrix by taking the initial columns.
-takeCols :: (RMatrix m, Storable e) => Int -> m e -> m e
-takeCols j a = slice (0,0) (m,j) a
-  where
-    (m,_) = dim a
-
--- | Create a view of a matrix by dropping the initial columns.
-dropCols :: (RMatrix m, Storable e) => Int -> m e -> m e
-dropCols j a = slice (0,j) (m,n-j) a
-  where
-    (m,n) = dim a
-
--- | Split a matrix into two blocks and returns views into the blocks.  If
--- @(a1, a2) = splitColsAt j a@, then
--- @a1 = slice (0,0) (m,j) a@ and
--- @a2 = slice (0,j) (m,n-j) a@, where @(m,n)@ is the dimension of @a@.
-splitColsAt :: (RMatrix m, Storable e) => Int -> m e -> (m e, m e)
-splitColsAt j a
-    | j < 0 || j > n = error $
-        printf ("splitColsAt %d <matrix with dim (%d,%d)>:"
-                ++ " invalid index") j m n
-    | otherwise = let
-        a1 = unsafeSlice (0,0) (m,j)   a
-        a2 = unsafeSlice (0,j) (m,n-j) a
-    in (a1,a2)
-  where
-    (m,n) = dim a
-{-# INLINE splitColsAt #-}
-
 -- | Get the indices of the elements in the matrix, in column-major order.
-indices :: (RMatrix m, Storable e) => m e -> [(Int,Int)]
-indices a = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
-  where (m,n) = dim a
+getIndices :: (RMatrix m, Storable e) => m e -> ST s [(Int,Int)]
+getIndices a = do
+    (m,n) <- getDim a
+    return $ [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
   
 -- | Lazily get the elements of the matrix, in column-major order.  
 getElems :: (RMatrix m, Storable e) => m e -> ST s [e]
@@ -473,14 +356,16 @@ getElems' a = case maybeWithVectorView a V.getElems' of
 -- | Lazily get the association list of the matrix, in column-major order.
 getAssocs :: (RMatrix m, Storable e) => m e -> ST s [((Int,Int),e)]
 getAssocs a = do
+    is <- getIndices a
     es <- getElems a
-    return $ zip (indices a) es
+    return $ zip is es
 
 -- | Get the association list of the matrix, in column-major order.
 getAssocs' :: (RMatrix m, Storable e) => m e -> ST s [((Int,Int),e)]
 getAssocs' a = do
+    is <- getIndices a
     es <- getElems' a
-    return $ zip (indices a) es
+    return $ zip is es
 
 -- | Set all of the values of the matrix from the elements in the list,
 -- in column-major order.
@@ -488,18 +373,19 @@ setElems :: (Storable e) => STMatrix s e -> [e] -> ST s ()
 setElems a es =
     case maybeWithSTVectorView a (`V.setElems` es) of
         Just st  -> st
-        Nothing -> go 0 es
+        Nothing -> do
+            (m,n) <- getDim a
+            go m n 0 es
   where
-    (m,n) = dim a
-    go j [] | j == n = return ()
-    go j [] | j < n = error $ 
+    go _ n j [] | j == n = return ()
+    go m n j [] | j < n = error $ 
         printf ("setElems <matrix with dim (%d,%d>"
                 ++ "<list with length %d>: not enough elements)") m n (j*m)
-    go j es' =
+    go m n j es' =
         let (es1', es2') = splitAt m es'
         in do
             withSTColView a j (`V.setElems` es1')
-            go (j+1) es2'
+            go m n (j+1) es2'
 
 -- | Set the given values in the matrix.  If an index is repeated twice,
 -- the value is implementation-defined.
@@ -514,18 +400,19 @@ unsafeSetAssocs a ies =
 -- | Set the specified row of the matrix to the given vector.
 setRow :: (RVector v, Storable e)
        => STMatrix s e -> Int -> v e -> ST s ()
-setRow a i x
-    | i < 0 || i >= m = error $
+setRow a i x = do
+    (m,n) <- getDim a
+    nx <- V.getDim x
+    
+    when (i < 0 || i >= m) $ error $
         printf ("setRow <matrix with dim (%d,%d)> %d:"
                 ++ " index out of range") m n i
-    | V.dim x /= n = error $
+    when (nx /= n) $ error $
         printf ("setRow <matrix with dim (%d,%d)> _"
                 ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim x)
-    | otherwise =
-        unsafeSetRow a i x
-  where
-    (m,n) = dim a
+                ++ " dimension mismatch") m n nx
+
+    unsafeSetRow a i x
 {-# INLINE setRow #-}
 
 unsafeSetRow :: (RVector v, Storable e)
@@ -536,45 +423,51 @@ unsafeSetRow a i x = do
 {-# INLINE unsafeSetRow #-}
 
 -- | Copy the specified row of the matrix to the vector.
-getRow :: (RMatrix m, Storable e)
-       => m e -> Int -> STVector s e -> ST s ()
-getRow a i x
-    | i < 0 || i >= m = error $
-        printf ("getRow <matrix with dim (%d,%d)> %d:"
-                ++ " index out of range") m n i
-    | V.dim x /= n = error $
-        printf ("getRow <matrix with dim (%d,%d)> _"
-                ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim x)
-    | otherwise =
-        unsafeGetRow a i x
-  where
-    (m,n) = dim a
-{-# INLINE getRow #-}
+rowTo :: (RMatrix m, Storable e)
+         => STVector s e -> m e -> Int -> ST s ()
+rowTo x a i = do
+    (m,n) <- getDim a
+    nx <- V.getDim x
+    when (i < 0 || i >= m) $ error $
+        printf ("rowTo"
+               ++ " _"
+               ++ " <matrix with dim (%d,%d)>"
+               ++ " %d:"
+               ++ ": index out of range"
+               ) m n i
+    when (nx /= n) $ error $
+        printf ("rowTo"
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ " _"
+                ++ ": dimension mismatch") nx m n
 
-unsafeGetRow :: (RMatrix m, Storable e)
-             => m e -> Int -> STVector s e -> ST s ()
-unsafeGetRow a i x = 
+    unsafeRowTo x a i
+{-# INLINE rowTo #-}
+
+unsafeRowTo :: (RMatrix m, Storable e)
+             =>  STVector s e -> m e -> Int ->ST s ()
+unsafeRowTo x a i = do
+    (_,n) <- getDim a
     forM_ [ 0..n-1 ] $ \j -> do
         e <- unsafeRead a (i,j)
         V.unsafeWrite x j e
-  where
-    (_,n) = dim a
-{-# INLINE unsafeGetRow #-}
+{-# INLINE unsafeRowTo #-}
 
 -- | Set the diagonal of the matrix to the given vector.
 setDiag :: (RVector v, Storable e)
         => STMatrix s e -> v e -> ST s ()
-setDiag a x
-    | V.dim x /= mn = error $
+setDiag a x = do
+    (m,n) <- getDim a
+    nx <- V.getDim x
+    let mn = min m n
+    
+    when (nx /= mn) $ error $
         printf ("setRow <matrix with dim (%d,%d)>"
                 ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim x)
-    | otherwise =
-        unsafeSetDiag a x
-  where
-    (m,n) = dim a
-    mn = min m n
+                ++ " dimension mismatch") m n nx
+
+    unsafeSetDiag a x
 {-# INLINE setDiag #-}
 
 unsafeSetDiag :: (RVector v, Storable e)
@@ -587,39 +480,37 @@ unsafeSetDiag a x = do
 -- | Copy the diagonal of the matrix to the vector.
 getDiag :: (RMatrix m, Storable e)
         => m e -> STVector s e -> ST s ()
-getDiag a x
-    | V.dim x /= mn = error $
+getDiag a x = do
+    (m,n) <- getDim a
+    nx <- V.getDim x
+    let mn = min m n
+    
+    when (nx /= mn) $ error $
         printf ("getDiag <matrix with dim (%d,%d)>"
                 ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n (V.dim x)
-    | otherwise =
-        unsafeGetDiag a x
-  where
-    (m,n) = dim a
-    mn = min m n
+                ++ " dimension mismatch") m n nx
+
+    unsafeGetDiag a x
 {-# INLINE getDiag #-}
 
 unsafeGetDiag :: (RMatrix m, Storable e)
               => m e -> STVector s e -> ST s ()
-unsafeGetDiag a x = 
+unsafeGetDiag a x = do
+    (m,n) <- getDim a
+    let mn = min m n
     forM_ [ 0..mn-1 ] $ \i -> do
         e <- unsafeRead a (i,i)
         V.unsafeWrite x i e
-  where
-    (m,n) = dim a
-    mn = min m n
 {-# INLINE unsafeGetDiag #-}
 
 -- | Get the element stored at the given index.
 read :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
-read a (i,j)
-    | i < 0 || i >= m || j < 0 || j >= n = error $
+read a (i,j) = do
+    (m,n) <- getDim a
+    when (i < 0 || i >= m || j < 0 || j >= n) $ error $
         printf ("read <matrix with dim (%d,%d)> (%d,%d):"
                 ++ " index out of range") m n i j
-    | otherwise =
-        unsafeRead a (i,j)
-  where
-    (m,n) = dim a
+    unsafeRead a (i,j)
 {-# INLINE read #-}
 
 unsafeRead :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
@@ -631,14 +522,13 @@ unsafeRead a (i,j) = unsafeIOToST $
 -- | Set the element stored at the given index.
 write :: (Storable e)
       => STMatrix s e -> (Int,Int) -> e -> ST s ()
-write a (i,j)
-    | i < 0 || i >= m || j < 0 || j >= n = error $
+write a (i,j) e = do
+    (m,n) <- getDim a
+    when (i < 0 || i >= m || j < 0 || j >= n) $ error $
         printf ("write <matrix with dim (%d,%d)> (%d,%d):"
                 ++ " index out of range") m n i j
-    | otherwise =
-        unsafeWrite a (i,j)
-  where
-    (m,n) = dim a
+    unsafeWrite a (i,j) e
+    
 {-# INLINE write #-}
 
 unsafeWrite :: (Storable e)
@@ -651,14 +541,12 @@ unsafeWrite a (i,j) e = unsafeIOToST $
 -- | Modify the element stored at the given index.
 modify :: (Storable e)
        => STMatrix s e -> (Int,Int) -> (e -> e) -> ST s ()
-modify a (i,j)
-    | i < 0 || i >= m || j < 0 || j >= n = error $
+modify a (i,j) f = do
+    (m,n) <- getDim a
+    when (i < 0 || i >= m || j < 0 || j >= n) $ error $
         printf ("modify <matrix with dim (%d,%d)> (%d,%d):"
                 ++ " index out of range") m n i j
-    | otherwise =
-        unsafeModify a (i,j)
-  where
-    (m,n) = dim a
+    unsafeModify a (i,j) f
 {-# INLINE modify #-}
 
 unsafeModify :: (Storable e)
@@ -732,46 +620,51 @@ unsafeZipWithTo dst f x y =
 -- standard numeric types (including 'Double', 'Complex Double', and 'Int'),
 -- the default value is '0'.
 clear :: (Storable e) => STMatrix s e -> ST s ()
-clear a = case maybeSTVectorView a of
-    Just x  -> V.clear x
-    Nothing -> withSTColViews a $ mapM_ V.clear
+clear a = fromMaybe colwise $ maybeWithSTVectorView a V.clear
+  where
+    colwise = withSTColViews a $ mapM_ V.clear
 
 -- | Add a vector to the diagonal of a matrix.
 shiftDiagByM_ :: (RVector v, BLAS1 e)
               => v e -> STMatrix s e -> ST s ()
-shiftDiagByM_ s a
-    | V.dim s /= mn = error $
+shiftDiagByM_ s a = do
+    (m,n) <- getDim a
+    ns <- V.getDim s
+    let mn = min m n
+    
+    when (ns /= mn) $ error $
         printf ("shiftDiagByM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                (V.dim s)
+                ns
                 m n
-    | otherwise = shiftDiagByWithScaleM_ 1 s a
-  where
-    (m,n) = dim a
-    mn = min m n
+    
+    shiftDiagByWithScaleM_ 1 s a
+    
 
 -- | Add a scaled vector to the diagonal of a matrix.
 shiftDiagByWithScaleM_ :: (RVector v, BLAS1 e)
                        => e -> v e -> STMatrix s e -> ST s ()
-shiftDiagByWithScaleM_ e s a
-    | V.dim s /= mn = error $
+shiftDiagByWithScaleM_ e s a = do
+    (m,n) <- getDim a
+    ns <- V.getDim s
+    let mn = min m n
+
+    when (ns /= mn) $ error $
         printf ("shiftDiagByWithScaleM_"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                (V.dim s)
+                ns
                 m n
-    | otherwise = do
-        unsafeIOToST $
-            V.unsafeWith s $ \ps ->
-            unsafeWith a $ \pa lda ->
-                BLAS.axpy mn e ps 1 pa (lda+1)
-  where
-    (m,n) = dim a
-    mn = min m n
+
+    unsafeIOToST $
+        V.unsafeWith s $ \ps ->
+        unsafeWith a $ \pa lda ->
+            BLAS.axpy mn e ps 1 pa (lda+1)
+
 
 -- | Add two matrices.
 addTo :: (RMatrix m1, RMatrix m2, VNum e)
@@ -822,70 +715,76 @@ unsafeAddWithScaleM_ alpha x y =
 -- @a := diag(s) * a@.
 scaleRowsByM_ :: (RVector v, BLAS1 e)
               => v e -> STMatrix s e -> ST s ()
-scaleRowsByM_  s a
-    | V.dim s /= m = error $
+scaleRowsByM_  s a = do
+    (m,n) <- getDim a
+    ns <- V.getDim s
+    when (ns /= m) $ error $
         printf ("scaleRowsByM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
-                (V.dim s)
+                ns
                 m n
-    | otherwise =
-        unsafeIOToST $
+
+    unsafeIOToST $
         V.unsafeWith s $ \ps ->
         unsafeWith a   $ \pa lda ->
-            go lda pa ps 0
+            go m n lda pa ps 0
   where
-    (m,n) = dim a
-    go lda pa ps i | i == m = return ()
-                   | otherwise = do
-                         e <- peek ps
-                         BLAS.scal n e pa lda
-                         go lda (pa `advancePtr` 1) (ps `advancePtr` 1) (i+1)
+    go m n lda pa ps i | i == m    = return ()
+                       | otherwise = do
+                             e <- peek ps
+                             BLAS.scal n e pa lda
+                             go m n lda (pa `advancePtr` 1)
+                                        (ps `advancePtr` 1)
+                                        (i+1)
 
 -- | Scale the columns of a matrix; @scaleColBysM_ s a@ sets
 -- @a := a * diag(s)@.
 scaleColsByM_ :: (RVector v, BLAS1 e)
             => v e -> STMatrix s e -> ST s ()
-scaleColsByM_ s a
-    | V.dim s /= n  = error $
+scaleColsByM_ s a = do
+    (m,n) <- getDim a
+    ns <- V.getDim s
+    when (ns /= n) $ error $
         printf ("scaleColsByM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"        
                 ++ ": dimension mismatch") 
-                (V.dim s)
+                ns
                 m n
-    | otherwise =
-        V.getElems     s >>= \es ->
-        withSTColViews a $   \xs ->
-            sequence_ [ V.scaleByM_ e x
-                      | (e,x) <- zip es xs
-                      ]
-  where
-    (m,n) = dim a
+
+    es <- V.getElems s
+    withSTColViews a $ \xs ->
+        sequence_ [ V.scaleByM_ e x
+                  | (e,x) <- zip es xs
+                  ]
+
 
 -- | @rank1UpdateM_ alpha x y a@ sets @a := alpha * x * y^H + a@.
 rank1UpdateM_ :: (RVector v1, RVector v2, BLAS2 e)
               => e -> v1 e -> v2 e -> STMatrix s e -> ST s ()
-rank1UpdateM_ alpha x y a
-    | V.dim x /= m || V.dim y /= n = error $
+rank1UpdateM_ alpha x y a = do
+    (m,n) <- getDim a    
+    nx <- V.getDim x
+    ny <- V.getDim y
+    
+    when (nx /= m || ny /= n) $ error $
         printf ("rank1UpdateTo"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <vector with dim %d>"
                 ++ ": dimension mismatch"
                 ++ "<matrix with dim (%d,%d)>"                )
-                (V.dim x)
-                (V.dim y)
+                nx
+                ny
                 m n
-    | otherwise = do
-        unsafeIOToST $
-            V.unsafeWith x $ \px ->
-            V.unsafeWith y $ \py ->
-            unsafeWith a $ \pa lda ->
-                BLAS.gerc m n alpha px 1 py 1 pa lda
-  where
-    (m,n) = dim a
+    
+    unsafeIOToST $
+        V.unsafeWith x $ \px ->
+        V.unsafeWith y $ \py ->
+        unsafeWith a $ \pa lda ->
+            BLAS.gerc m n alpha px 1 py 1 pa lda
 
 
 -- | @transTo dst a@ sets @dst := trans(a)@.
@@ -893,8 +792,12 @@ transTo :: (RMatrix m, BLAS1 e)
         => STMatrix s e
         -> m e
         -> ST s ()
-transTo a' a
-    | (ma,na) /= (na',ma') = error $
+transTo a' a = do
+    (ma,na) <- getDim a
+    (ma',na') <- getDim a'
+    let (m,n) = (ma,na)
+
+    when ((ma,na) /= (na',ma')) $ error $
         printf ( "transTo"
                ++ " <matrix with dim (%d,%d)>"
                ++ " <matrix with dim (%d,%d)>"
@@ -902,7 +805,8 @@ transTo a' a
                )
                ma' na'
                ma na
-    | otherwise = unsafeIOToST $
+    
+    unsafeIOToST $
         unsafeWith a' $ \pa' lda' ->
         unsafeWith a $ \pa lda -> let
             go j px py | j == n = return ()
@@ -910,10 +814,7 @@ transTo a' a
                            BLAS.copy m px 1 py lda'
                            go (j+1) (px `advancePtr` lda) (py `advancePtr` 1)
             in go 0 pa pa'
-  where
-    (ma,na) = dim a
-    (ma',na') = dim a'
-    (m,n) = (ma,na)
+
 
 -- | @conjTransTo dst a@ sets @dst := conjugate(trans(a))@.
 conjTransTo :: (RMatrix m, BLAS1 e)
@@ -954,12 +855,17 @@ addMulVectorWithScalesM_ :: (RMatrix m, RVector v, BLAS2 e)
                          -> e
                          -> STVector s e
                          -> ST s ()
-addMulVectorWithScalesM_ alpha transa a x beta y
-    | (not . and) [ case transa of NoTrans -> (ma,na) == (m,n)
-                                   _       -> (ma,na) == (n,m)
-                  , nx == n
-                  , ny == m
-                  ] = error $
+addMulVectorWithScalesM_ alpha transa a x beta y = do
+    (ma,na) <- getDim a
+    nx <- V.getDim x
+    ny <- V.getDim y
+    let (m,n) = (ny,nx)
+
+    when ((not . and) [ case transa of NoTrans -> (ma,na) == (m,n)
+                                       _       -> (ma,na) == (n,m)
+                      , nx == n
+                      , ny == m
+                      ]) $ error $
         printf ("addMulVectorWithScalesTo"
                 ++ " _"
                 ++ " %s"
@@ -972,19 +878,14 @@ addMulVectorWithScalesM_ alpha transa a x beta y
                ma na
                nx
                ny
-    | otherwise = do
-        unsafeIOToST $
-            unsafeWith a $ \pa lda ->
-            V.unsafeWith x $ \px ->
-            V.unsafeWith y $ \py ->
-                if n == 0
-                    then BLAS.scal m beta py 1
-                    else BLAS.gemv transa ma na alpha pa lda px 1 beta py 1
-  where
-    (ma,na) = dim a
-    nx = V.dim x
-    ny = V.dim y
-    (m,n) = (ny,nx)
+
+    unsafeIOToST $
+        unsafeWith a $ \pa lda ->
+        V.unsafeWith x $ \px ->
+        V.unsafeWith y $ \py ->
+            if n == 0
+                then BLAS.scal m beta py 1
+                else BLAS.gemv transa ma na alpha pa lda px 1 beta py 1
 
 -- | @mulMatrixTo dst transa a transb b@
 -- sets @dst := op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
@@ -1018,13 +919,20 @@ addMulMatrixWithScalesM_ :: (RMatrix m1, RMatrix m2, BLAS3 e)
                          -> e
                          -> STMatrix s e
                          -> ST s ()
-addMulMatrixWithScalesM_ alpha transa a transb b beta c
-    | (not . and) [ case transa of NoTrans -> (ma,na) == (m,k)
-                                   _       -> (ma,na) == (k,m)
-                  , case transb of NoTrans -> (mb,nb) == (k,n)
-                                   _       -> (mb,nb) == (n,k)
-                  , (mc, nc) == (m,n)
-                  ] = error $
+addMulMatrixWithScalesM_ alpha transa a transb b beta c = do
+    (ma,na) <- getDim a
+    (mb,nb) <- getDim b
+    (mc,nc) <- getDim c
+    let (m,n) = (mc,nc)
+        k = case transa of NoTrans -> na
+                           _       -> ma
+
+    when ((not . and) [ case transa of NoTrans -> (ma,na) == (m,k)
+                                       _       -> (ma,na) == (k,m)
+                      , case transb of NoTrans -> (mb,nb) == (k,n)
+                                       _       -> (mb,nb) == (n,k)
+                      , (mc, nc) == (m,n)
+                      ]) $ error $
         printf ("addMulMatrixWithScalesM_"
                 ++ " _"
                 ++ " %s <matrix with dim (%d,%d)>" 
@@ -1035,56 +943,44 @@ addMulMatrixWithScalesM_ alpha transa a transb b beta c
                (show transa) ma na
                (show transb) mb nb
                mc nc
-    | otherwise = do
-        unsafeIOToST $
-            unsafeWith a $ \pa lda ->
-            unsafeWith b $ \pb ldb ->
-            unsafeWith c $ \pc ldc ->
-                BLAS.gemm transa transb m n k alpha pa lda pb ldb beta pc ldc
-  where
-    (ma,na) = dim a
-    (mb,nb) = dim b
-    (mc,nc) = dim c
-    (m,n) = dim c
-    k = case transa of NoTrans -> na
-                       _       -> ma
 
+    unsafeIOToST $
+        unsafeWith a $ \pa lda ->
+        unsafeWith b $ \pb ldb ->
+        unsafeWith c $ \pc ldc ->
+            BLAS.gemm transa transb m n k alpha pa lda pb ldb beta pc ldc
 
 checkOp2 :: (RMatrix x, RMatrix y, Storable e, Storable f)
          => String
-         -> (x e -> y f -> a)
+         -> (x e -> y f -> ST s a)
          -> x e
          -> y f
-         -> a
-checkOp2 str f x y
-    | (m1,n1) /= (m2,n2) = error $
+         -> ST s a
+checkOp2 str f x y = do
+    (m1,n1) <- getDim x
+    (m2,n2) <- getDim y
+    when ((m1,n1) /= (m2,n2)) $ error $
         printf ("%s <matrix with dim (%d,%d)> <matrix with dim (%d,%d)>:"
                 ++ " dimension mismatch") str m1 n1 m2 n2
-    | otherwise =
-        f x y
-  where
-    (m1,n1) = dim x
-    (m2,n2) = dim y        
+    f x y
 {-# INLINE checkOp2 #-}
 
 checkOp3 :: (RMatrix x, RMatrix y, RMatrix z, Storable e, Storable f, Storable g)
          => String
-         -> (x e -> y f -> z g -> a)
+         -> (x e -> y f -> z g -> ST s a)
          -> x e
          -> y f
          -> z g
-         -> a
-checkOp3 str f x y z
-    | (m1,n1) /= (m2,n2) || (m1,n1) /= (m3,n3) = error $
+         -> ST s a
+checkOp3 str f x y z = do
+    (m1,n1) <- getDim x
+    (m2,n2) <- getDim y
+    (m3,n3) <- getDim z
+    when((m1,n1) /= (m2,n2) || (m1,n1) /= (m3,n3)) $ error $
         printf ("%s <matrix with dim (%d,%d)> <matrix with dim (%d,%d)>:"
                 ++ " <matrix with dim (%d,%d)> dimension mismatch")
                str m1 n1 m2 n2 m3 n3
-    | otherwise =
-        f x y z
-  where
-    (m1,n1) = dim x
-    (m2,n2) = dim y
-    (m3,n3) = dim z
+    f x y z
 {-# INLINE checkOp3 #-}
 
 vectorOp :: (Storable e)
@@ -1125,24 +1021,3 @@ vectorOp3 f dst x y =
                   sequence_ [ f vdst vx vy
                             | (vdst,vx,vy) <- zip3 vdsts vxs vys ]
 {-# INLINE vectorOp3 #-}
-
-newResult :: (RMatrix m, Storable e, Storable f)
-          => (STMatrix s f -> m e -> ST s a)
-          -> m e
-          -> ST s (STMatrix s f)
-newResult f a = do
-    c <- new_ (dim a)
-    _ <- f c a
-    return c
-{-# INLINE newResult #-}
-
-newResult2 :: (RMatrix m1, RMatrix m2, Storable e, Storable f, Storable g)
-           => (STMatrix s g -> m1 e -> m2 f -> ST s a)
-           -> m1 e
-           -> m2 f
-           -> ST s (STMatrix s g)
-newResult2 f a1 a2 = do
-    c <- new_ (dim a1)
-    _ <- f c a1 a2
-    return c
-{-# INLINE newResult2 #-}

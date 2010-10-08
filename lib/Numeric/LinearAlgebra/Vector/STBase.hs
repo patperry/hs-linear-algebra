@@ -17,7 +17,6 @@ module Numeric.LinearAlgebra.Vector.STBase (
     
     create,
     freeze,
-    unsafeFreeze,
     
     new_,
     new,
@@ -148,15 +147,6 @@ freeze mv = do
     unsafeFreeze mv'
 {-# INLINE freeze #-}
 
--- | Converts a mutable vector into an immutable vector. This simply casts
--- the vector from one type to the other without copying the vector.
--- Note that because the vector is possibly not copied, any subsequent
--- modifications made to the mutable version of the vector may be shared with
--- the immutable version. It is safe to use, therefore, if the mutable
--- version is never modified after the freeze operation.
-unsafeFreeze :: (Storable e) => STVector s e -> ST s (Vector e)
-unsafeFreeze = return . unSTVector
-{-# NOINLINE unsafeFreeze #-}
 
 
 -- | Read-only vectors
@@ -174,6 +164,15 @@ class RVector v where
     -- vector.
     unsafeWith :: (Storable e) => v e -> (Ptr e -> IO a) -> IO a
 
+
+    -- | Converts a mutable vector into an immutable vector. This simply
+    -- casts the vector from one type to the other without copying the vector.
+    -- Note that because the vector is possibly not copied, any subsequent
+    -- modifications made to the mutable version of the vector may be shared
+    -- with the immutable version. It is safe to use, therefore, if the
+    -- mutable version is never modified after the freeze operation.
+    unsafeFreeze :: (Storable e) => v e -> ST s (Vector e)
+
     -- | Unsafe cast from a read-only vector to a mutable vector.
     unsafeThaw :: (Storable e)
                => v e -> ST s (STVector s e)
@@ -183,9 +182,6 @@ instance RVector Vector where
     getDim = return . dim
     {-# INLINE getDim #-}
 
-    unsafeThaw = return . STVector
-    {-# INLINE unsafeThaw #-}
-
     unsafeWith = V.unsafeWith
     {-# INLINE unsafeWith #-}
 
@@ -193,22 +189,32 @@ instance RVector Vector where
         f (V.unsafeSlice i n' v)
     {-# INLINE unsafeWithSliceView #-}
 
+    unsafeFreeze = return . id
+    {-# INLINE unsafeFreeze #-}
+
+    unsafeThaw = return . STVector
+    {-# INLINE unsafeThaw #-}
+
+
 instance RVector (STVector s) where
     getDim = return . dim . unSTVector
     {-# INLINE getDim #-}
+
+    unsafeWith v f = V.unsafeWith (unSTVector v) f
+    {-# INLINE unsafeWith #-}
+
+    unsafeWithSliceView i n' v f =
+        f $ unsafeSlice i n' (unSTVector v)
+    {-# INLINE unsafeWithSliceView #-}
+
+    unsafeFreeze = return . unSTVector
+    {-# INLINE unsafeFreeze #-}
 
     unsafeThaw v = return $ cast v
       where
         cast :: STVector s e -> STVector s' e
         cast = unsafeCoerce
     {-# INLINE unsafeThaw #-}
-
-    unsafeWith v f = V.unsafeWith (unSTVector v) f
-    {-# INLINE unsafeWith #-}
-
-    unsafeWithSliceView i n' v f =
-        f $ STVector $ unsafeSlice i n' (unSTVector v)
-    {-# INLINE unsafeWithSliceView #-}
 
 
 -- | @withSliceView i n v@ performs an action with a view of the

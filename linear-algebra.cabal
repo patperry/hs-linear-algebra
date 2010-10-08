@@ -46,12 +46,12 @@ Library
                         
                         -- Numeric.LinearAlgebra
 
-                        -- Numeric.LinearAlgebra.Matrix
-                        -- Numeric.LinearAlgebra.Matrix.Cholesky
-                        -- Numeric.LinearAlgebra.Matrix.Eigen
-                        -- Numeric.LinearAlgebra.Matrix.Herm
-                        -- Numeric.LinearAlgebra.Matrix.ST
-                        -- Numeric.LinearAlgebra.Matrix.Statistics
+                        Numeric.LinearAlgebra.Matrix
+                        Numeric.LinearAlgebra.Matrix.Cholesky
+                        Numeric.LinearAlgebra.Matrix.Eigen
+                        Numeric.LinearAlgebra.Matrix.Herm
+                        Numeric.LinearAlgebra.Matrix.ST
+                        Numeric.LinearAlgebra.Matrix.Statistics
                         -- 
                         -- Numeric.LinearAlgebra.Packed                     
                         -- Numeric.LinearAlgebra.Packed.Cholesky                        
@@ -87,8 +87,8 @@ Library
                         Numeric.LinearAlgebra.Internal
                         Numeric.LinearAlgebra.Vector.Base
                         Numeric.LinearAlgebra.Vector.STBase                        
-                        -- Numeric.LinearAlgebra.Matrix.Base
-                        -- Numeric.LinearAlgebra.Matrix.STBase
+                        Numeric.LinearAlgebra.Matrix.Base
+                        Numeric.LinearAlgebra.Matrix.STBase
                         -- Numeric.LinearAlgebra.Packed.Base
     
     includes:           cbits/config.h

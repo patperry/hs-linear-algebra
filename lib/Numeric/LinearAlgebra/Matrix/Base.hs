@@ -9,121 +9,122 @@
 -- Stability  : experimental
 --
 
-module Numeric.LinearAlgebra.Matrix.Base
-    where
+module Numeric.LinearAlgebra.Matrix.Base (
+    Matrix(..),
+    dim,
+    
+    fromList,
+    fromRow,
+    fromCol,
+    zero,
+    constant,
+    
+    at,
+    unsafeAt,
+
+    indices,
+    elems,
+    assocs,
+
+    col,
+    unsafeCol,
+    cols,
+
+    replace,
+    unsafeReplace,
+    accum,
+    unsafeAccum,
+
+    map,
+    zipWith,
+    unsafeZipWith,
+
+    
+    slice,
+    unsafeSlice,
+    
+    splitRowsAt,
+    dropRows,
+    takeRows,
+
+    splitColsAt,
+    dropCols,
+    takeCols,
+
+    fromVector,
+    toVector,
+
+    isContig,
+    unsafeFromForeignPtr,
+    unsafeToForeignPtr,
+    unsafeWith,
+
+    ) where
 
 import Prelude hiding ( read, map, zipWith )
 import qualified Prelude as P
 
-import Control.Monad( forM_, zipWithM_ )
-import Control.Monad.ST
 import Data.AEq( AEq(..) )
 import Data.Typeable( Typeable )
-import Foreign( peekElemOff )
+import Foreign( ForeignPtr, Ptr, Storable )
 import Text.Printf( printf )
-import Unsafe.Coerce( unsafeCoerce )
 
-import Numeric.LinearAlgebra.Internal( inlinePerformIO )
-
-import Numeric.LinearAlgebra.Types
-import Numeric.LinearAlgebra.Vector.Base( Vector, unVector, unSTVector )
+import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
-import Numeric.LinearAlgebra.Matrix.STBase
+-- | Immutable dense matrices.
+data Matrix e =
+      Matrix {-# UNPACK #-} !(Vector e) -- matrix data
+             {-# UNPACK #-} !Int        -- row dimension
+             {-# UNPACK #-} !Int        -- column dimension
+             {-# UNPACK #-} !Int        -- leading dimension
+  deriving (Typeable)
 
+-- | Get the matrix dimensions (number of rows and number of columns).
+dim :: (Storable e) => Matrix e -> (Int,Int)
+dim (Matrix _ m n _) = (m,n)
+{-# INLINE dim #-}
 
-infixl 7 `scaleBy`, `scaleRowsBy`, `scaleColsBy`
-infixl 6 `add`, `shiftDiagBy`, `sub`
-
-
--- | Immutable dense matrices. The type arguments are as follows:
---
---     * @e@: the element type of the matrix.
---
-newtype Matrix e = Matrix { unMatrix :: STMatrix RealWorld e }
-    deriving (RMatrix, Typeable)
-
-unSTMatrix :: STMatrix s e -> Matrix e
-unSTMatrix = Matrix . unsafeCoerce
-{-# INLINE unSTMatrix #-}
-
--- | A safe way to create and work with a mutable matrix before returning 
--- an immutable matrix for later perusal. This function avoids copying
--- the matrix before returning it - it uses 'unsafeFreeze' internally,
--- but this wrapper is a safe interface to that function. 
-create :: (Storable e) => (forall s . ST s (STMatrix s e)) -> Matrix e
-create mx = runST $ mx >>= unsafeFreeze
-{-# INLINE create #-}
-
--- | Converts a mutable matrix to an immutable one by taking a complete
--- copy of it.
-freeze :: (Storable e) => STMatrix s e -> ST s (Matrix e)
-freeze = fmap unSTMatrix . newCopy
-{-# INLINE freeze #-}
-
--- | Converts a mutable matrix into an immutable matrix. This simply casts
--- the matrix from one type to the other without copying the matrix.
--- Note that because the matrix is possibly not copied, any subsequent
--- modifications made to the mutable version of the matrix may be shared with
--- the immutable version. It is safe to use, therefore, if the mutable
--- version is never modified after the freeze operation.
-unsafeFreeze :: (Storable e) => STMatrix s e -> ST s (Matrix e)
-unsafeFreeze = return . unSTMatrix
-{-# INLINE unsafeFreeze #-}
-
-
--- | Create a matrix with the given dimension and elements.  The elements
--- given in the association list must all have unique indices, otherwise
--- the result is undefined.
---
--- Not every index within the bounds of the matrix need appear in the
--- association list, but the values associated with indices that do not
--- appear will be undefined.
-fromAssocs :: (Storable e) => (Int,Int) -> [((Int,Int), e)] -> Matrix e
-fromAssocs mn ies = create $ do
-    a <- new_ mn
-    setAssocs a ies
-    return a
-{-# INLINE fromAssocs #-}
-
--- | Same as 'fromAssocs', but does not range-check the indices.
-unsafeFromAssocs :: (Storable e) => (Int,Int) -> [((Int,Int), e)] -> Matrix e
-unsafeFromAssocs mn ies = create $ do
-    a <- new_ mn
-    unsafeSetAssocs a ies
-    return a
-{-# INLINE unsafeFromAssocs #-}
+-- | Indicates if the elements of the matrix are stored contigously
+isContig :: (Storable e) => Matrix e -> Bool
+isContig (Matrix _ m _ lda) = lda == m || m == 0
+{-# INLINE isContig #-}
 
 -- | Create a matrix of the given dimension with elements initialized
 -- to the values from the list, in column major order.
 fromList :: (Storable e) => (Int,Int) -> [e] -> Matrix e
-fromList mn es = create $ do
-    a <- new_ mn
-    setElems a es
-    return a
+fromList (m,n) es
+    | m < 0 || n < 0 = error $
+        printf "fromList (%d,%d): negative dimension" m n
+    | otherwise = let
+        v = V.fromList (m*n) es
+        lda = max 1 m
+        in Matrix v m n lda
 {-# INLINE fromList #-}
-
--- | Create a matrix of the given dimension with the given vectors as
--- columns.
-fromCols :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
-fromCols mn cs = create $ do
-    a <- new_ mn
-    withSTColViews a $ \cs' -> zipWithM_ V.copyTo cs' cs
-    return a
-
--- | Create a matrix of the given dimension with the given vectors as
--- rows.
-fromRows :: (Storable e) => (Int,Int) -> [Vector e] -> Matrix e
-fromRows (m,n) rs = create $ do
-    a <- new_ (m,n)
-    sequence_ [ setRow a i r | (i,r) <- zip [ 0..m-1 ] rs ]
-    return a
 
 -- | Create a matrix of the given dimension with all elements initialized
 -- to the given value
 constant :: (Storable e) => (Int,Int) -> e -> Matrix e
-constant mn e = create $ new mn e
+constant (m,n) e
+    | m < 0 || n < 0 = error $
+        printf "constant (%d,%d): negative dimension" m n
+    | otherwise = let
+        v = V.constant (m*n) e
+        lda = max 1 m
+        in Matrix v m n lda
 {-# INLINE constant #-}
+
+-- | Create a zero of the given dimension with all elements initialized
+-- to zero.
+zero :: (Storable e, Num e) => (Int,Int) -> Matrix e
+zero (m,n)
+    | m < 0 || n < 0 = error $
+        printf "zero (%d,%d): negative dimension" m n
+    | otherwise = let
+        v = V.zero (m*n)
+        lda = max 1 m
+        in Matrix v m n lda
+{-# INLINE zero #-}
 
 -- | Returns the element of a matrix at the specified index.
 at :: (Storable e) => Matrix e -> (Int,Int) -> e
@@ -138,15 +139,27 @@ at a ij@(i,j)
 {-# INLINE at #-}
 
 unsafeAt :: (Storable e) => Matrix e -> (Int,Int) -> e
-unsafeAt (Matrix (STMatrix a _ _ lda)) (i,j) = inlinePerformIO $ 
-    V.unsafeWith a $ \p ->
-        peekElemOff p (i + j * lda)
+unsafeAt (Matrix v _ _ lda) (i,j) = 
+    V.unsafeAt v (i + j * lda)
 {-# INLINE unsafeAt #-}
+
+-- | Get the indices of the elements in the matrix, in column-major order.
+indices :: (Storable e) => Matrix e -> [(Int,Int)]
+indices a = [ (i,j) | j <- [ 0..n-1 ], i <- [ 0..m-1 ] ]
+  where (m,n) = dim a
 
 -- | Returns a list of the elements of a matrix, in the same order as their
 -- indices.
 elems :: (Storable e) => Matrix e -> [e]
-elems a = concatMap V.elems (cols a)
+elems (Matrix v m _ lda)
+    | lda == m  = V.elems v
+    | otherwise = let
+        breakCols [] = []
+        breakCols es = let (c,es') = splitAt lda es in c:(breakCols es')
+
+        dropJunk c = take m c
+
+        in concatMap dropJunk $ breakCols (V.elems v)
 {-# INLINE elems #-}
 
 -- | Returns the contents of a matrix as a list of associations.
@@ -154,45 +167,64 @@ assocs :: (Storable e) => Matrix e -> [((Int,Int),e)]
 assocs x = zip (indices x) (elems x)
 {-# INLINE assocs #-}
 
+-- | Version of 'replace' that doesn't range-check indices.
 unsafeReplace :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
-unsafeReplace a ies = create $ do
-    a' <- newCopy a
-    unsafeSetAssocs a' ies
-    return a'
+unsafeReplace (Matrix v m n lda) ijes = let
+    ies = [ (i + j * lda, e) | ((i,j),e) <- ijes ]
+    v' = V.unsafeReplace v ies
+    lda' = max 1 m
+    in Matrix v' m n lda'
 
 -- | Create a new matrix by replacing the values at the specified indices.
 replace :: (Storable e) => Matrix e -> [((Int,Int),e)] -> Matrix e
-replace a ies = create $ do
-    a' <- newCopy a
-    setAssocs a' ies
-    return a'
+replace (Matrix v m n lda) ijes = let
+    ies = [ if i < 0 || i >= m || j < 0 || j >= n
+                then error $ printf
+                         ("replace"
+                         ++ " <matrix with dim (%d,%d)>"
+                         ++ " [ ..((%d,%d),_).. ]"
+                         ++ ": invalid index")
+                         m n i j
+                else (i + j * lda, e)
+          | ((i,j),e) <- ijes
+          ]
+    v' = V.unsafeReplace v ies
+    lda' = max 1 m
+    in Matrix v' m n lda'
+
+-- | Same as 'accum' but does not range-check indices.
+unsafeAccum :: (Storable e)
+            => (e -> e' -> e)
+            -> Matrix e
+            -> [((Int,Int), e')]
+            -> Matrix e
+unsafeAccum f (Matrix v m n lda) ijes = let
+    ies = [ (i + j * lda, e) | ((i,j),e) <- ijes ]
+    v' = V.unsafeAccum f v ies
+    lda' = max 1 m
+    in Matrix v' m n lda'
 
 -- | @accum f@ takes a matrix and an association list and accumulates
 -- pairs from the list into the matrix with the accumulating function @f@.
 accum :: (Storable e)
-            => (e -> e' -> e) 
-            -> Matrix e
-            -> [((Int,Int), e')]
-            -> Matrix e
-accum f a ies = create $ do
-    a' <- newCopy a
-    forM_ ies $ \(i,e') -> do
-        e <- read a' i
-        unsafeWrite a' i (f e e') -- index checked on prev. line
-    return a'
-
--- | Same as 'accum' but does not range-check indices.
-unsafeAccum :: (Storable e)
-                  => (e -> e' -> e)
-                  -> Matrix e
-                  -> [((Int,Int), e')]
-                  -> Matrix e
-unsafeAccum f a ies = create $ do
-    a' <- newCopy a
-    forM_ ies $ \(i,e') -> do
-        e <- unsafeRead a' i
-        unsafeWrite a' i (f e e')
-    return a'
+      => (e -> e' -> e) 
+      -> Matrix e
+      -> [((Int,Int), e')]
+      -> Matrix e
+accum f (Matrix v m n lda) ijes = let
+    ies = [ if i < 0 || i >= m || j < 0 || j >= n
+                then error $ printf
+                         ("accum"
+                         ++ " <matrix with dim (%d,%d)>"
+                         ++ " [ ..((%d,%d),_).. ]"
+                         ++ ": invalid index")
+                         m n i j
+                else (i + j * lda, e)
+          | ((i,j),e) <- ijes
+          ]
+    v' = V.unsafeAccum f v ies
+    lda' = max 1 m
+    in Matrix v' m n lda'
 
 -- | Construct a new matrix by applying a function to every element of
 -- a matrix.
@@ -200,10 +232,7 @@ map :: (Storable e, Storable e')
     => (e -> e')
     -> Matrix e
     -> Matrix e'
-map f a = create $ do
-    a' <- new_ (dim a)
-    unsafeMapTo a' f a
-    return a'
+map f a = fromList (dim a) $ P.map f (elems a)
 {-# INLINE map #-}
 
 -- | Construct a new matrix by applying a function to every pair of elements
@@ -214,15 +243,17 @@ zipWith :: (Storable e, Storable e', Storable f)
         -> Matrix e'
         -> Matrix f
 zipWith f a a'
-    | m /= m' || n /= n' = error $
-        printf ("zipWith <function> <matrix with dim (%d,%d)>"
-                ++ " <matrix with dim (%d,%d)>: dimension mismatch")
-                m n m' n'
+    | mn /= mn' = error $
+        printf ("zipWith"
+                ++ " <matrix with dim %s> "
+                ++ " <matrix with dim %s>"
+                ++ ": dimension mismatch"
+                ) (show mn) (show mn')
     | otherwise =
         unsafeZipWith f a a'
   where
-    (m,n) = dim a
-    (m',n') = dim a'
+    mn  = dim a
+    mn' = dim a'    
 {-# INLINE zipWith #-}
 
 -- | Version of 'zipWith' that does not check if the input matrices
@@ -248,75 +279,156 @@ col a j
     (m,n) = dim a
 {-# INLINE col #-}
 
+-- | Version of 'col' that doesn't range-check indices.
 unsafeCol :: (Storable e) => Matrix e -> Int -> Vector e
-unsafeCol a j = unSTVector $ unsafeSTColView (unMatrix a) j
+unsafeCol (Matrix v m _ lda) j = 
+    V.unsafeSlice (j*lda) m v
 {-# INLINE unsafeCol #-}
 
 -- | Get a list of the columns of the matrix.
 cols :: (Storable e) => Matrix e -> [Vector e]
-cols a = P.map unSTVector $ stCols (unMatrix a)
+cols a = P.map (unsafeCol a) [ 0..n-1 ]
+  where
+    (_,n) = dim a
 {-# INLINE cols #-}
 
--- | Get the given row of the matrix.
-row :: (Storable e) => Matrix e -> Int -> Vector e
-row a i = V.create $ do
-    x <- V.new_ n
-    getRow a i x
-    return x
-  where
-    (_,n) = dim a
-
-unsafeRow :: (Storable e) => Matrix e -> Int -> Vector e
-unsafeRow a i = V.create $ do
-    x <- V.new_ n
-    unsafeGetRow a i x
-    return x
-  where
-    (_,n) = dim a
-
--- | Get the diagonal of the matrix.
-diag :: (Storable e) => Matrix e -> Vector e
-diag a = V.create $ do
-    x <- V.new_ mn
-    getDiag a x
-    return x
+-- | @slice (i,j) (m,n) a@ creates a submatrix view of @a@ starting at
+-- element @(i,j)@ and having dimensions @(m,n)@.
+slice :: (Storable e)
+      => (Int,Int)
+      -> (Int,Int)
+      -> Matrix e
+      -> Matrix e
+slice (i,j) (m',n') a
+    | (i < 0 || m' < 0 || i + m' > m 
+       || j < 0 || n' < 0 || j + n' > n) = error $
+        printf ( "slice"
+               ++ " (%d,%d)"
+               ++ " (%d,%d)"
+               ++ " <matrix with dim (%d,%d)>"
+               ++ ": index out of range"
+               ) i j m' n' m n
+    | otherwise =
+        unsafeSlice (i,j) (m',n') a
   where
     (m,n) = dim a
-    mn = min m n
+{-# INLINE slice #-}
 
--- | Get a list of the rows of the matrix.
-rows :: (Storable e) => Matrix e -> [Vector e]
-rows a = [ unsafeRow a i | i <- [ 0..m-1 ] ]
+-- | Version of 'slice' that doesn't range-check indices.
+unsafeSlice :: (Storable e)
+            => (Int,Int) -> (Int,Int) -> Matrix e -> Matrix e
+unsafeSlice (i,j) (m',n') (Matrix v _ _ lda) = let
+    o = i + j*lda
+    l = if m' == 0 || n' == 0
+            then 0
+            else lda * (n' - 1) + m'
+    v' = V.unsafeSlice o l v
+    in Matrix v' m' n' lda
+{-# INLINE unsafeSlice #-}
+
+-- | Create a view of a matrix by taking the initial rows.
+takeRows :: (Storable e) => Int -> Matrix e -> Matrix e
+takeRows i a = slice (0,0) (i,n) a
+  where
+    (_,n) = dim a
+
+-- | Create a view of a matrix by dropping the initial rows.
+dropRows :: (Storable e) => Int -> Matrix e -> Matrix e
+dropRows i a = slice (i,0) (m-i,n) a
+  where
+    (m,n) = dim a
+
+-- | Split a matrix into two blocks and returns views into the blocks.  If
+-- @(a1, a2) = splitRowsAt i a@, then
+-- @a1 = slice (0,0) (i,n) a@ and
+-- @a2 = slice (i,0) (m-i,n) a@, where @(m,n)@ is the dimension of @a@.
+splitRowsAt :: (Storable e) => Int -> Matrix e -> (Matrix e, Matrix e)
+splitRowsAt i a
+    | i < 0 || i > m = error $
+        printf ("splitRowsAt %d <matrix with dim (%d,%d)>:"
+                ++ " invalid index") i m n
+    | otherwise = let
+        a1 = unsafeSlice (0,0) (i,n)   a
+        a2 = unsafeSlice (i,0) (m-i,n) a
+    in (a1,a2)
+  where
+    (m,n) = dim a
+{-# INLINE splitRowsAt #-}
+
+-- | Create a view of a matrix by taking the initial columns.
+takeCols :: (Storable e) => Int -> Matrix e -> Matrix e
+takeCols j a = slice (0,0) (m,j) a
   where
     (m,_) = dim a
-{-# INLINE rows #-}
+
+-- | Create a view of a matrix by dropping the initial columns.
+dropCols :: (Storable e) => Int -> Matrix e -> Matrix e
+dropCols j a = slice (0,j) (m,n-j) a
+  where
+    (m,n) = dim a
+
+-- | Split a matrix into two blocks and returns views into the blocks.  If
+-- @(a1, a2) = splitColsAt j a@, then
+-- @a1 = slice (0,0) (m,j) a@ and
+-- @a2 = slice (0,j) (m,n-j) a@, where @(m,n)@ is the dimension of @a@.
+splitColsAt :: (Storable e) => Int -> Matrix e -> (Matrix e, Matrix e)
+splitColsAt j a
+    | j < 0 || j > n = error $
+        printf ("splitColsAt %d <matrix with dim (%d,%d)>:"
+                ++ " invalid index") j m n
+    | otherwise = let
+        a1 = unsafeSlice (0,0) (m,j)   a
+        a2 = unsafeSlice (0,j) (m,n-j) a
+    in (a1,a2)
+  where
+    (m,n) = dim a
+{-# INLINE splitColsAt #-}
+
+
+
+      
 
 -- | Convert a matrix to a vector by stacking its columns.
 toVector :: (Storable e)
          => Matrix e
          -> Vector e
-toVector a = case maybeSTVectorView (unMatrix a) of
-    Just v  -> unSTVector v
-    Nothing -> V.concat $ cols a
+toVector a@(Matrix v m n _)
+    | isContig a = v
+    | otherwise  = V.fromList (m*n) $ elems a
 
 -- | Cast a vector to a matrix of the given shape.
 fromVector :: (Storable e)
            => (Int,Int)
            -> Vector e
            -> Matrix e
-fromVector mn v = unSTMatrix $ fromSTVector mn (unVector v)
+fromVector (m,n) v
+    | nv /= m * n = error $
+        printf ("fromVector"
+               ++ " (%d,%d)"
+               ++ " <vector with dim %d>"
+               ++ ": dimension mismatch"
+               ) m n nv
+    | otherwise =
+        Matrix v m n (max 1 m)
+  where
+    nv = V.dim v
+{-# INLINE fromVector #-}
 
 -- | Cast a vector to a matrix with one column.
 fromCol :: (Storable e)
-              => Vector e
-              -> Matrix e
-fromCol v = unSTMatrix $ fromSTCol (unVector v)
+        => Vector e
+        -> Matrix e
+fromCol v = Matrix v m 1 (max 1 m)
+  where
+    m = V.dim v
 
 -- | Cast a vector to a matrix with one row.
 fromRow :: (Storable e)
-              => Vector e
-              -> Matrix e
-fromRow v = unSTMatrix $ fromSTRow (unVector v)
+        => Vector e
+        -> Matrix e
+fromRow v = Matrix v 1 n 1
+  where
+    n = V.dim v
 
 instance (Storable e, Show e) => Show (Matrix e) where
     show x = "fromList " ++ show (dim x) ++ " " ++ show (elems x)
@@ -332,195 +444,6 @@ instance (Storable e, AEq e) => AEq (Matrix e) where
     (~==) = compareWith (~==)
     {-# INLINE (~==) #-}
 
--- | @shiftDiagBy d a@ returns @diag(d) + a@.
-shiftDiagBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-shiftDiagBy s a = create $ do
-    a' <- newCopy a
-    shiftDiagByM_ s a'
-    return a'
-
--- | @shiftDiagByWithScale alpha d a@ returns @alpha * diag(d) + a@.
-shiftDiagByWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
-shiftDiagByWithScale e s a = create $ do
-    a' <- newCopy a
-    shiftDiagByWithScaleM_ e s a'
-    return a'
-
--- | @add a b@ returns @a + b@.
-add :: (VNum e) => Matrix e -> Matrix e -> Matrix e
-add = result2 addTo
-
--- | @sub a b@ returns @a - b@.
-sub :: (VNum e) => Matrix e -> Matrix e -> Matrix e
-sub = result2 subTo
-
--- | @scaleBy k a@ returns @k * a@.
-scaleBy :: (BLAS1 e) => e -> Matrix e -> Matrix e
-scaleBy k a = create $ do
-    a' <- newCopy a
-    scaleByM_ k a'
-    return a'
-
--- | @addWithScale alpha x y@ returns @alpha * x + y@.
-addWithScale :: (BLAS1 e) => e -> Matrix e -> Matrix e -> Matrix e
-addWithScale alpha x y = create $ do
-    y' <- newCopy y
-    addWithScaleM_ alpha x y'
-    return y'
-
--- | @scaleRowsBy s a@ returns @diag(s) * a@.
-scaleRowsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-scaleRowsBy s a = create $ do
-    a' <- newCopy a
-    scaleRowsByM_ s a'
-    return a'
-
--- | @scaleColsBy s a@ returns @a * diag(s)@.
-scaleColsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-scaleColsBy s a = create $ do
-    a' <- newCopy a
-    scaleColsByM_ s a'
-    return a'
-
--- | @negate a@ returns @-a@.
-negate :: (VNum e) => Matrix e -> Matrix e
-negate = result negateTo
-
--- | @conjugate a@ returns @conjugate(a)@.
-conjugate :: (VNum e) => Matrix e -> Matrix e
-conjugate = result conjugateTo
-
--- | @trans a@ retunrs @trans(a)@.
-trans :: (BLAS1 e)
-      => Matrix e
-      -> Matrix e
-trans a = let
-    (m,n) = dim a
-    in create $ do
-        a' <- new_ (n,m)
-        transTo a' a
-        return a'
-
--- | @conjTrans a@ retunrs @conj(trans(a))@.
-conjTrans :: (BLAS1 e)
-          => Matrix e
-          -> Matrix e
-conjTrans a = let
-    (m,n) = dim a
-    in create $ do
-        a' <- new_ (n,m)
-        conjTransTo a' a
-        return a'
-
--- | @rank1Update alpha x y a@ returns @alpha * x * y^H + a@.
-rank1Update :: (BLAS2 e)
-            => e
-            -> Vector e
-            -> Vector e
-            -> Matrix e
-            -> Matrix e
-rank1Update alpha x y a =
-    create $ do
-        a' <- newCopy a
-        rank1UpdateM_ alpha x y a'
-        return a'
-
--- | @mulVector transa a x@
--- returns @op(a) * x@, where @op(a)@ is determined by @transa@.                   
-mulVector :: (BLAS2 e)
-          => Trans -> Matrix e
-          -> Vector e
-          -> Vector e
-mulVector transa a x = let
-    m = case transa of NoTrans -> (fst . dim) a
-                       _       -> (snd . dim) a
-    in V.create $ do
-        y <- V.new_ m
-        mulVectorTo y transa a x
-        return y
-
--- | @mulVectorWithScale alpha transa a x@
--- retunrs @alpha * op(a) * x@, where @op(a)@ is determined by @transa@.                   
-mulVectorWithScale :: (BLAS2 e)
-                   => e
-                   -> Trans -> Matrix e
-                   -> Vector e
-                   -> Vector e
-mulVectorWithScale alpha transa a x = let
-    m = case transa of NoTrans -> (fst . dim) a
-                       _       -> (snd . dim) a
-    in V.create $ do
-        y <- V.new_ m
-        mulVectorWithScaleTo y alpha transa a x
-        return y
-                       
--- | @addMulVectorWithScales alpha transa a x beta y@
--- returns @alpha * op(a) * x + beta * y@, where @op(a)@ is
--- determined by @transa@.
-addMulVectorWithScales :: (BLAS2 e)
-                       => e
-                       -> Trans -> Matrix e
-                       -> Vector e
-                       -> e
-                       -> Vector e
-                       -> Vector e
-addMulVectorWithScales alpha transa a x beta y =
-    V.create $ do
-        y' <- V.newCopy y
-        addMulVectorWithScalesM_ alpha transa a x beta y'
-        return y'
-
--- | @mulMatrix transa a transb b@
--- returns @op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
--- by @transa@ and @transb@.                   
-mulMatrix :: (BLAS3 e)
-          => Trans -> Matrix e
-          -> Trans -> Matrix e
-          -> Matrix e
-mulMatrix transa a transb b = let
-    m = case transa of NoTrans -> (fst . dim) a
-                       _       -> (snd . dim) a
-    n = case transb of NoTrans -> (snd . dim) b
-                       _       -> (fst . dim) b
-    in create $ do
-        c <- new_ (m,n)
-        mulMatrixTo c transa a transb b
-        return c
-
--- | @mulMatrixWithScale alpha transa a transb b@
--- returns @alpha * op(a) * op(b)@, where @op(a)@ and @op(b)@ are determined
--- by @transa@ and @transb@.                   
-mulMatrixWithScale :: (BLAS3 e)
-                   => e
-                   -> Trans -> Matrix e
-                   -> Trans -> Matrix e
-                   -> Matrix e
-mulMatrixWithScale alpha transa a transb b = let
-    m = case transa of NoTrans -> (fst . dim) a
-                       _       -> (snd . dim) a
-    n = case transb of NoTrans -> (snd . dim) b
-                       _       -> (fst . dim) b
-    in create $ do
-        c <- new_ (m,n)
-        mulMatrixWithScaleTo c alpha transa a transb b
-        return c
-
--- | @addMulMatrixWithScales alpha transa a transb b beta c@
--- returns @alpha * op(a) * op(b) + beta * c@, where @op(a)@ and
--- @op(b)@ are determined by @transa@ and @transb@.
-addMulMatrixWithScales :: (BLAS3 e)
-                       => e
-                       -> Trans -> Matrix e
-                       -> Trans -> Matrix e
-                       -> e
-                       -> Matrix e
-                       -> Matrix e
-addMulMatrixWithScales alpha transa a transb b beta c = 
-    create $ do
-        c' <- newCopy c
-        addMulMatrixWithScalesM_ alpha transa a transb b beta c'
-        return c'
-
 compareWith :: (Storable e, Storable e')
             => (e -> e' -> Bool)
             -> Matrix e
@@ -531,17 +454,33 @@ compareWith cmp a a' =
     && and (P.zipWith cmp (elems a) (elems a'))
 {-# INLINE compareWith #-}
 
-result :: (Storable e, Storable f)
-       => (forall s . STMatrix s f -> Matrix e -> ST s a)
-       -> Matrix e
-       -> Matrix f
-result f a = create $ newResult f a
-{-# INLINE result #-}
+-- | Create a matrix from a 'ForeignPtr' with offset, dimensions, and lda. The
+-- data may not be modified through the ForeignPtr afterwards.
+unsafeFromForeignPtr :: (Storable e)
+                     => ForeignPtr e -- ^ pointer
+                     -> Int	         -- ^ offset
+                     -> (Int,Int)    -- ^ dimensions
+                     -> Int          -- ^ leading dimension (lda)
+                     -> Matrix e
+unsafeFromForeignPtr p o (m,n) lda = let
+    v = V.unsafeFromForeignPtr p o (m*lda)
+    in Matrix v m n lda
+{-# INLINE unsafeFromForeignPtr #-}
 
-result2 :: (Storable e, Storable f, Storable g)
-        => (forall s . STMatrix s g -> Matrix e -> Matrix f -> ST s a)
-        -> Matrix e
-        -> Matrix f
-        -> Matrix g
-result2 f a1 a2 = create $ newResult2 f a1 a2
-{-# INLINE result2 #-}
+-- | Yield the underlying 'ForeignPtr' together with the offset to the data
+-- the matrix dimensions, and the lda. The data may not be modified through
+-- the 'ForeignPtr'.
+unsafeToForeignPtr :: (Storable e)
+                   => Matrix e
+                   -> (ForeignPtr e, Int, (Int,Int), Int)
+unsafeToForeignPtr (Matrix v m n lda) = let
+    (f,o,_) = V.unsafeToForeignPtr v
+    in (f, o, (m,n), lda)
+{-# INLINE unsafeToForeignPtr #-}
+
+-- | Execute an 'IO' action with a pointer to the first element in the
+-- matrix and the leading dimension (lda).
+unsafeWith :: (Storable e) => Matrix e -> (Ptr e -> Int -> IO a) -> IO a
+unsafeWith (Matrix v _ _ lda) f =
+    V.unsafeWith v $ \p -> f p lda
+{-# INLINE unsafeWith #-}
