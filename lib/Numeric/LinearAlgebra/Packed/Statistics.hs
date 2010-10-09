@@ -26,6 +26,7 @@ module Numeric.LinearAlgebra.Packed.Statistics (
 
     ) where
 
+import Control.Monad( when )
 import Control.Monad.ST( ST )
 import Data.List( foldl' )
 import Text.Printf( printf )
@@ -98,11 +99,11 @@ weightedCovWithMean mu t wxs = P.hermCreate $ do
 covTo :: (RVector v, BLAS2 e)
       => Herm (STPacked s) e -> CovMethod -> [v e] -> ST s ()
 covTo c@(Herm _ a) t xs = do
+    p <- P.getDim a
     mu <- V.new p 1
     V.meanTo mu xs
     covWithMeanTo c mu t xs
-  where
-    p = P.dim a
+
 
 -- | Given the pre-computed mean, computes and copies the sample covariance
 -- matrix (in packed form) to the given destination.
@@ -110,28 +111,31 @@ covWithMeanTo :: (RVector v1, RVector v2, BLAS2 e)
               => Herm (STPacked s) e
               -> v1 e -> CovMethod -> [v2 e]
               -> ST s ()
-covWithMeanTo c@(Herm _ a) mu t xs
-    | P.dim a /= p = error $
+covWithMeanTo c@(Herm _ a) mu t xs = do
+    pa <- P.getDim a
+    p <- V.getDim mu   
+     
+    when (pa /= p) $ error $
         printf ("covWithMeanTo"
                 ++ " (Herm _ <packed matrix with dim %d>)"
                 ++ " <vector with dim %d>"
                 ++ " _ _"
                 ++ ": dimension mismatch")
-               n (P.dim a)
-    | otherwise = do
-        xt <- M.new_ (p,n)
-        M.withSTColViews xt $ \xs' ->
-            sequence_ [ V.subTo x' mu x
-                      | (x,x') <- zip xs xs'
-                      ]
-        P.withSTVectorView a V.clear
-        M.withSTColViews xt $ \xs' ->
-            sequence_ [ P.hermRank1UpdateM_ scale x' c | x' <- xs' ]
+               pa p
+
+    xt <- M.new_ (p,n)
+    M.withColsM xt $ \xs' ->
+        sequence_ [ V.subTo x' mu x
+                  | (x,x') <- zip xs xs'
+                  ]
+    P.withVectorM a V.clear
+    M.withColsM xt $ \xs' ->
+        sequence_ [ P.hermRank1UpdateM_ scale x' c | x' <- xs' ]
   where
-    p = V.dim mu
     n = length xs
     df = fromIntegral $ case t of { MLCov -> n ; UnbiasedCov -> n - 1 }
     scale = 1/df
+
 
 -- | Computes and copies the weighed sample covariance matrix (in packed
 -- form) to the given destination.
@@ -140,11 +144,11 @@ weightedCovTo :: (RVector v, BLAS2 e)
               -> CovMethod -> [(Double, v e)] 
               -> ST s ()
 weightedCovTo c@(Herm _ a) t wxs = do
+    p <- P.getDim a
     mu <- V.new p 1
     V.weightedMeanTo mu wxs
     weightedCovWithMeanTo c mu t wxs
-  where
-    p = P.dim a
+
 
 -- | Given the pre-computed mean, computes and copies the weighed sample
 -- covariance matrix (in packed form) to the given destination.
@@ -152,24 +156,27 @@ weightedCovWithMeanTo :: (RVector v1, RVector v2, BLAS2 e)
                       => Herm (STPacked s) e
                       -> v1 e -> CovMethod -> [(Double, v2 e)]
                       -> ST s ()
-weightedCovWithMeanTo c@(Herm _ a) mu t wxs
-    | P.dim a /= p = error $
+weightedCovWithMeanTo c@(Herm _ a) mu t wxs = do
+    pa <- P.getDim a
+    p <- V.getDim mu
+    
+    when (pa /= p) $ error $
         printf ("weightedCovWithMeanTo"
                 ++ " (Herm _ <packed matrix with dim %d>)"
                 ++ " <vector with dim %d>"
                 ++ " _ _"
                 ++ ": dimension mismatch")
-               n (P.dim a)
-    | otherwise = do
-        xt <- M.new_ (p,n)
-        M.withSTColViews xt $ \xs' ->
-            sequence_ [  V.subTo x' mu x
-                      >> V.scaleByM_ (realToFrac $ sqrt (w / invscale)) x'
-                      |  (w,x,x') <- zip3 ws xs xs'
-                      ]
-        P.withSTVectorView a V.clear                      
-        M.withColViews xt $ \xs' ->
-            sequence_ [ P.hermRank1UpdateM_ 1 x' c | x' <- xs' ]
+               pa p
+
+    xt <- M.new_ (p,n)
+    M.withColsM xt $ \xs' ->
+        sequence_ [  V.subTo x' mu x
+                  >> V.scaleByM_ (realToFrac $ sqrt (w / invscale)) x'
+                  |  (w,x,x') <- zip3 ws xs xs'
+                  ]
+    P.withVectorM a V.clear                      
+    M.withCols xt $ \xs' ->
+        sequence_ [ P.hermRank1UpdateM_ 1 x' c | x' <- xs' ]
   where
     (ws0,xs) = unzip wxs
     w_sum = foldl' (+) 0 ws0
@@ -179,4 +186,3 @@ weightedCovWithMeanTo c@(Herm _ a) mu t wxs
                    MLCov -> 1
                    UnbiasedCov -> (1 - w2s_sum)
     n = length ws0
-    p = V.dim mu

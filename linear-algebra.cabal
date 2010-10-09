@@ -22,7 +22,7 @@ author:          Patrick Perry
 maintainer:      Patrick Perry <patperry@gmail.com>
 cabal-version:   >= 1.2.3
 build-type:      Configure
-tested-with:     GHC == 6.12.2
+tested-with:     GHC == 6.12.3
 
 extra-source-files:     NEWS README TODO configure.ac configure
                         aclocal.m4 m4/ax_check_blas.m4
@@ -53,11 +53,11 @@ Library
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Matrix.Statistics
 
-                        -- Numeric.LinearAlgebra.Packed                     
-                        -- Numeric.LinearAlgebra.Packed.Cholesky                        
-                        -- Numeric.LinearAlgebra.Packed.Herm
-                        -- Numeric.LinearAlgebra.Packed.ST                   
-                        -- Numeric.LinearAlgebra.Packed.Statistics
+                        Numeric.LinearAlgebra.Packed                     
+                        Numeric.LinearAlgebra.Packed.Cholesky                        
+                        Numeric.LinearAlgebra.Packed.Herm
+                        Numeric.LinearAlgebra.Packed.ST                   
+                        Numeric.LinearAlgebra.Packed.Statistics
 
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST
@@ -89,7 +89,7 @@ Library
                         Numeric.LinearAlgebra.Vector.STBase                        
                         Numeric.LinearAlgebra.Matrix.Base
                         Numeric.LinearAlgebra.Matrix.STBase
-                        -- Numeric.LinearAlgebra.Packed.Base
+                        Numeric.LinearAlgebra.Packed.Base
     
     includes:           cbits/config.h
                         cbits/f77_func-hsc.h
@@ -120,7 +120,7 @@ Executable test-hs-linear-algebra
                         STVector,
                         Matrix,
                         STMatrix,
---                         Statistics,
+                        Statistics,
                         Typed
                         Foreign.BLAS.Double
                         Foreign.BLAS.Zomplex

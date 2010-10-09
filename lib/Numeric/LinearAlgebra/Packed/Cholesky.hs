@@ -22,6 +22,7 @@ module Numeric.LinearAlgebra.Packed.Cholesky (
     cholSolveMatrixM_,
     ) where
 
+import Control.Monad( when )
 import Control.Monad.ST( ST, runST, unsafeIOToST )
 import Text.Printf( printf )
 
@@ -82,14 +83,13 @@ cholSolveMatrix a c = M.create $ do
 cholFactorM_ :: (LAPACK e)
              => Herm (STPacked s) e
              -> ST s (Either Int (Chol (STPacked s) e))
-cholFactorM_ (Herm uplo a) =
+cholFactorM_ (Herm uplo a) = do
+    n <- P.getDim a
     unsafeIOToST $
         P.unsafeWith a $ \pa -> do
             info <- LAPACK.pptrf uplo n pa
             return $ if info > 0 then Left info
                                  else Right (Chol uplo a)
-  where
-    n = P.dim a
 
 -- | @cholSolveVectorM_ a x@ sets @x := a \\ x@.
 cholSolveVectorM_ :: (LAPACK e, RPacked p)
@@ -97,7 +97,7 @@ cholSolveVectorM_ :: (LAPACK e, RPacked p)
                   -> STVector s e
                   -> ST s ()
 cholSolveVectorM_ a x =
-    M.withViewFromSTCol x $ \x' ->
+    M.withFromColM x $ \x' ->
         cholSolveMatrixM_ a x'
 
 -- | @cholSolveMatrixM_ a b@ sets @b := a \\ b@.
@@ -105,21 +105,21 @@ cholSolveMatrixM_ :: (LAPACK e, RPacked p)
                   => Chol p e
                   -> STMatrix s e
                   -> ST s ()
-cholSolveMatrixM_ (Chol uplo a) b
-    | (not . and) [ na == n
-                  , (mb,nb) == (n,nrhs)
-                  ] = error $
+cholSolveMatrixM_ (Chol uplo a) b = do
+    na <- P.getDim a
+    (mb,nb) <- M.getDim b
+    let (n,nrhs) = (mb,nb)
+
+    when ((not . and) [ na == n
+                      , (mb,nb) == (n,nrhs)
+                      ]) $ error $
         printf ("cholSolveMatrixM_"
                 ++ " (Chol _ <packed matrix with dim %d>)"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
                na mb nb
-    | otherwise = do
-        unsafeIOToST $
-            P.unsafeWith a $ \pa ->
-            M.unsafeWith b $ \pb ldb ->
-                LAPACK.pptrs uplo n nrhs pa pb ldb
-  where
-    na = P.dim a
-    (mb,nb) = M.dim b
-    (n,nrhs) = (mb,nb)
+
+    unsafeIOToST $
+        P.unsafeWith a $ \pa ->
+        M.unsafeWith b $ \pb ldb ->
+            LAPACK.pptrs uplo n nrhs pa pb ldb

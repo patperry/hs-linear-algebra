@@ -19,7 +19,6 @@ module Numeric.LinearAlgebra.Packed.ST (
 
     -- * Conversions between mutable and immutable packed matrices
     freeze,
-    unsafeFreeze,
 
     -- * Creating new packed matrices
     new_,
@@ -28,11 +27,11 @@ module Numeric.LinearAlgebra.Packed.ST (
     newCopy,
 
     -- * Vector views of packed matrices
-    withSTVectorView,
+    withVectorM,
     
     -- * Packed matrix views of vectors
-    withViewFromVector,
-    withViewFromSTVector,
+    withFromVector,
+    withFromVectorM,
     
     ) where
 

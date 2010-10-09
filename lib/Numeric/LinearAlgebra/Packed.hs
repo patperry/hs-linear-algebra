@@ -11,6 +11,7 @@
 module Numeric.LinearAlgebra.Packed (
     -- * Immutable packed matrices
     Packed,
+    dim,
     
     -- * Read-only packed matrices
     RPacked(..),

@@ -23,10 +23,10 @@ module Numeric.LinearAlgebra (
     IOMatrix,
     
     -- * Packed matrix types
-    -- Packed,
-    -- RPacked,
-    -- STPacked,
-    -- IOPacked,
+    Packed,
+    RPacked,
+    STPacked,
+    IOPacked,
     
     module Numeric.LinearAlgebra.Types,
     ) where
@@ -34,4 +34,4 @@ module Numeric.LinearAlgebra (
 import Numeric.LinearAlgebra.Types
 import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector, IOVector )
 import Numeric.LinearAlgebra.Matrix( Matrix, RMatrix, STMatrix, IOMatrix )
--- import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked, IOPacked )
+import Numeric.LinearAlgebra.Packed( Packed, RPacked, STPacked, IOPacked )

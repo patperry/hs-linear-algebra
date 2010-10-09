@@ -6,7 +6,7 @@ import Vector
 import STVector
 import Matrix
 import STMatrix
--- import Statistics
+import Statistics
 
 main :: IO ()
 main = defaultMain tests
@@ -15,5 +15,5 @@ main = defaultMain tests
             , tests_STVector
             , tests_Matrix
             , tests_STMatrix
-            -- , tests_Statistics
+            , tests_Statistics
             ]
