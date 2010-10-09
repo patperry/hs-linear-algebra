@@ -242,7 +242,7 @@ unsafeWithSliceM :: (Storable e)
 unsafeWithSliceM i n' v f =
     f $ STVector $ unsafeSlice i n' (unSTVector v)
 
--- | Like 'withSlice', but performs the action with a mutable view 
+-- | Like 'withSlice', but perform the action with a mutable view 
 -- of the vector.
 withSliceM :: (Storable e)
            => Int
@@ -257,7 +257,7 @@ withSliceM i n' v f = do
                i n' n
     unsafeWithSliceM i n' v f
 
--- | Like 'withDrop', but performs the action with a mutable view 
+-- | Like 'withDrop', but perform the action with a mutable view 
 -- of the vector.
 withDropM :: (Storable e)
           => Int
@@ -268,7 +268,7 @@ withDropM i v f = do
     n <- getDim v
     withSliceM i (n-i) v f
 
--- | Like 'withTake', but performs the action with a mutable view 
+-- | Like 'withTake', but perform the action with a mutable view 
 -- of the vector.
 withTakeM :: (Storable e)
           => Int
@@ -277,7 +277,7 @@ withTakeM :: (Storable e)
           -> ST s a
 withTakeM = withSliceM 0
 
--- | Like 'withSplitAt' but performs the action with mutable views
+-- | Like 'withSplitAt' but perform the action with mutable views
 -- of the vector.
 withSplitAtM :: (Storable e)
              => Int

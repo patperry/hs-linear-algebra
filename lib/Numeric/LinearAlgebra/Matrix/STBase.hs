@@ -57,11 +57,12 @@ class RMatrix m where
     -- | Get the dimensions of the matrix (number of rows and columns).
     getDim :: (Storable e) => m e -> ST s (Int,Int)
     
+    -- | Same as 'withCol' but does not range-check index.
     unsafeWithCol :: (Storable e)
-                      => m e
-                      -> Int 
-                      -> (forall v. RVector v => v e -> ST s a)
-                      -> ST s a
+                  => m e
+                  -> Int 
+                  -> (forall v. RVector v => v e -> ST s a)
+                  -> ST s a
 
     -- | Perform an action with a list of views of the matrix columns.
     withCols :: (Storable e)
@@ -69,12 +70,13 @@ class RMatrix m where
                  -> (forall v . RVector v => [v e] -> ST s a)
                  -> ST s a
 
+    -- | Same as 'withSlice' but does not range-check index.
     unsafeWithSlice :: (Storable e)
-                        => (Int,Int)
-                        -> (Int,Int)
-                        -> m e
-                        -> (forall m'. RMatrix m' => m' e -> ST s a)
-                        -> ST s a
+                    => (Int,Int)
+                    -> (Int,Int)
+                    -> m e
+                    -> (forall m'. RMatrix m' => m' e -> ST s a)
+                    -> ST s a
 
     -- | Possibly view a matrix as a vector and perform an action on the
     -- view.  This only succeeds if the matrix is stored contiguously in
@@ -191,7 +193,7 @@ maybeWithVectorM a f =
 {-# INLINE maybeWithVectorM #-}
 
 
--- |  a vector as a matrix of the given shape and pass it to
+-- | View a vector as a matrix of the given shape and pass it to
 -- the specified function.
 withFromVector :: (RVector v, Storable e)
                    => (Int,Int)
@@ -208,7 +210,7 @@ withFromVector mn@(m,n) v f = do
 {-# INLINE withFromVector #-}
 
 
--- |  a mutable vector as a mutable matrix of the given shape and pass it
+-- | View a mutable vector as a mutable matrix of the given shape and pass it
 -- to the specified function.
 withFromVectorM :: (Storable e)
                      => (Int,Int)
@@ -226,7 +228,7 @@ withFromVectorM mn@(m,n) v f = do
 {-# INLINE withFromVectorM #-}
 
 
--- |  a vector as a matrix with one column and pass it to
+-- | View a vector as a matrix with one column and pass it to
 -- the specified function.
 withFromCol :: (RVector v, Storable e)
                 => v e
@@ -238,7 +240,7 @@ withFromCol v f = do
 {-# INLINE withFromCol #-}
 
 
--- |  a mutable vector as a mutable matrix with one column and pass it to
+-- | View a mutable vector as a mutable matrix with one column and pass it to
 -- the specified function.
 withFromColM :: (Storable e)
                   => STVector s e
@@ -250,7 +252,7 @@ withFromColM v f = do
 {-# INLINE withFromColM #-}
 
 
--- |  a vector as a matrix with one row and pass it to
+-- | View a vector as a matrix with one row and pass it to
 -- the specified function.
 withFromRow :: (RVector v, Storable e)
                 => v e
@@ -261,7 +263,7 @@ withFromRow v f = do
     withFromVector (1,n) v f
 {-# INLINE withFromRow #-}
 
--- |  a mutable vector as a mutable matrix with one row and pass it to
+-- | View a mutable vector as a mutable matrix with one row and pass it to
 -- the specified function.
 withFromRowM :: (Storable e)
                   => STVector s e
@@ -287,7 +289,7 @@ withCol a j f = do
     unsafeWithCol a j f
 {-# INLINE withCol #-}
 
--- | Perform an action with a view of a mutable matrix column.
+-- | Like 'withCol', but perform the action with a mutable view.
 withColM :: (Storable e)
          => STMatrix s e
          -> Int
@@ -332,6 +334,7 @@ copyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
 copyTo = checkOp2 "copyTo" unsafeCopyTo
 {-# INLINE copyTo #-}
 
+-- | Same as 'copyTo' but does not range-check indices.
 unsafeCopyTo :: (RMatrix m, Storable e) => STMatrix s e -> m e -> ST s ()
 unsafeCopyTo = vectorOp2 V.unsafeCopyTo
 {-# INLINE unsafeCopyTo #-}
@@ -396,6 +399,7 @@ setAssocs :: (Storable e) => STMatrix s e -> [((Int,Int),e)] -> ST s ()
 setAssocs a ies =
     sequence_ [ write a i e | (i,e) <- ies ]
 
+-- | Same as 'setAssocs' but does not range-check indices.
 unsafeSetAssocs :: (Storable e) => STMatrix s e -> [((Int,Int),e)] -> ST s ()
 unsafeSetAssocs a ies =
     sequence_ [ unsafeWrite a i e | (i,e) <- ies ]
@@ -418,6 +422,8 @@ setRow a i x = do
     unsafeSetRow a i x
 {-# INLINE setRow #-}
 
+-- | Same as 'setRow' but does not range-check index or check
+-- vector dimension.
 unsafeSetRow :: (RVector v, Storable e)
              => STMatrix s e -> Int -> v e -> ST s ()
 unsafeSetRow a i x = do
@@ -448,8 +454,9 @@ rowTo x a i = do
     unsafeRowTo x a i
 {-# INLINE rowTo #-}
 
+-- | Same as 'rowTo' but does not range-check index or check dimension.
 unsafeRowTo :: (RMatrix m, Storable e)
-             =>  STVector s e -> m e -> Int ->ST s ()
+            =>  STVector s e -> m e -> Int ->ST s ()
 unsafeRowTo x a i = do
     (_,n) <- getDim a
     forM_ [ 0..n-1 ] $ \j -> do
@@ -473,6 +480,7 @@ setDiag a x = do
     unsafeSetDiag a x
 {-# INLINE setDiag #-}
 
+-- | Same as 'setDiag' but does not range-check index or check dimension.
 unsafeSetDiag :: (RVector v, Storable e)
               => STMatrix s e -> v e -> ST s ()
 unsafeSetDiag a x = do
@@ -481,30 +489,32 @@ unsafeSetDiag a x = do
 {-# INLINE unsafeSetDiag #-}
 
 -- | Copy the diagonal of the matrix to the vector.
-getDiag :: (RMatrix m, Storable e)
-        => m e -> STVector s e -> ST s ()
-getDiag a x = do
-    (m,n) <- getDim a
+diagTo :: (RMatrix m, Storable e)
+       => STVector s e -> m e -> ST s ()
+diagTo x a = do
     nx <- V.getDim x
+    (m,n) <- getDim a
     let mn = min m n
     
     when (nx /= mn) $ error $
-        printf ("getDiag <matrix with dim (%d,%d)>"
-                ++ " <vector with dim %d>:"
-                ++ " dimension mismatch") m n nx
+        printf ("diagTo"
+                ++ " <vector with dim %d>"
+                ++ " <matrix with dim (%d,%d)>"
+                ++ ": dimension mismatch") nx m n
 
-    unsafeGetDiag a x
-{-# INLINE getDiag #-}
+    unsafeDiagTo x a
+{-# INLINE diagTo #-}
 
-unsafeGetDiag :: (RMatrix m, Storable e)
-              => m e -> STVector s e -> ST s ()
-unsafeGetDiag a x = do
+-- | Same as 'diagTo' but does not range-check index or check dimensions.
+unsafeDiagTo :: (RMatrix m, Storable e)
+             => STVector s e -> m e -> ST s ()
+unsafeDiagTo x a = do
     (m,n) <- getDim a
     let mn = min m n
     forM_ [ 0..mn-1 ] $ \i -> do
         e <- unsafeRead a (i,i)
         V.unsafeWrite x i e
-{-# INLINE unsafeGetDiag #-}
+{-# INLINE unsafeDiagTo #-}
 
 -- | Get the element stored at the given index.
 read :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
@@ -516,6 +526,7 @@ read a (i,j) = do
     unsafeRead a (i,j)
 {-# INLINE read #-}
 
+-- | Same as 'read' but does not range-check index.
 unsafeRead :: (RMatrix m, Storable e) => m e -> (Int,Int) -> ST s e
 unsafeRead a (i,j) = unsafeIOToST $
     unsafeWith a $ \p lda ->
@@ -534,6 +545,7 @@ write a (i,j) e = do
     
 {-# INLINE write #-}
 
+-- | Same as 'write' but does not range-check index.
 unsafeWrite :: (Storable e)
             => STMatrix s e -> (Int,Int) -> e -> ST s ()
 unsafeWrite a (i,j) e = unsafeIOToST $
@@ -552,6 +564,7 @@ modify a (i,j) f = do
     unsafeModify a (i,j) f
 {-# INLINE modify #-}
 
+-- | Same as 'modify' but does not range-check index.
 unsafeModify :: (Storable e)
              => STMatrix s e -> (Int,Int) -> (e -> e) -> ST s ()
 unsafeModify a (i,j) f = unsafeIOToST $
@@ -570,7 +583,8 @@ mapTo :: (RMatrix m, Storable e, Storable f)
       -> ST s ()
 mapTo dst f src = (checkOp2 "mapTo _" $ \z x -> unsafeMapTo z f x) dst src
 {-# INLINE mapTo #-}
-                            
+             
+-- | Same as 'mapTo' but does not check dimensions.
 unsafeMapTo :: (RMatrix m, Storable e, Storable f)
             => STMatrix s f
             -> (e -> f)
@@ -599,6 +613,7 @@ zipWithTo dst f x y =
         dst x y
 {-# INLINE zipWithTo #-}
 
+-- | Same as 'zipWithTo' but does not check dimensions.
 unsafeZipWithTo :: (RMatrix m1, RMatrix m2, Storable e1, Storable e2, Storable f)
                 => STMatrix s f
                 -> (e1 -> e2 -> f)
@@ -627,6 +642,8 @@ clear a = fromMaybe colwise $ maybeWithVectorM a V.clear
   where
     colwise = withColsM a $ mapM_ V.clear
 
+-- | @withSlice (i,j) (m,n) a@ performs an action with a view of the
+-- submatrix of @a@ starting at index @(i,j)@ and having dimension @(m,n)@.
 withSlice :: (RMatrix m, Storable e)
           => (Int,Int)
           -> (Int,Int)
@@ -637,6 +654,7 @@ withSlice ij mn a f = do
     ia <- unsafeFreeze a
     f $ slice ij mn ia
 
+-- | Like 'withSlice', but perform the action with a mutable view.
 withSliceM :: (Storable e)
            => (Int,Int)
            -> (Int,Int)
@@ -648,6 +666,8 @@ withSliceM ij mn a f =
         ma <- unsafeThaw a'
         f ma
 
+-- | Perform an action with a view gotten from taking the given number of
+-- rows from the start of the matrix.
 withTakeRows :: (RMatrix m, Storable e)
              => Int
              -> m e
@@ -657,6 +677,7 @@ withTakeRows i a f = do
     ia <- unsafeFreeze a
     f $ takeRows i ia
 
+-- | Like 'withTakeRows', but perform the action with a mutable view.
 withTakeRowsM :: (Storable e)
               => Int
               -> STMatrix s e
@@ -667,6 +688,8 @@ withTakeRowsM i a f =
         ma <- unsafeThaw a'
         f ma
 
+-- | Perform an action with a view gotten from dropping the given number of
+-- rows from the start of the matrix.
 withDropRows :: (RMatrix m, Storable e)
              => Int
              -> m e
@@ -676,6 +699,7 @@ withDropRows n a f = do
     ia <- unsafeFreeze a
     f $ dropRows n ia
 
+-- | Like 'withDropRows', but perform the action with a mutable view.
 withDropRowsM :: (Storable e)
               => Int
               -> STMatrix s e
@@ -686,6 +710,8 @@ withDropRowsM i a f =
         ma <- unsafeThaw a'
         f ma
 
+-- | Perform an action with views from splitting the matrix rows at the given
+-- index.
 withSplitRowsAt :: (RMatrix m, Storable e)
                 => Int
                 -> m e
@@ -694,7 +720,8 @@ withSplitRowsAt :: (RMatrix m, Storable e)
 withSplitRowsAt i a f = do
     ia <- unsafeFreeze a
     uncurry f $ splitRowsAt i ia
-    
+
+-- | Like 'withSplitRowsAt', but perform the action with a mutable view.
 withSplitRowsAtM :: (Storable e)
                  => Int
                  -> STMatrix s e
@@ -706,6 +733,8 @@ withSplitRowsAtM i a f =
         ma2 <- unsafeThaw a2'        
         f ma1 ma2
     
+-- | Perform an action with a view gotten from taking the given number of
+-- columns from the start of the matrix.
 withTakeCols :: (RMatrix m, Storable e)
              => Int
              -> m e
@@ -715,6 +744,7 @@ withTakeCols i a f = do
     ia <- unsafeFreeze a
     f $ takeCols i ia
 
+-- | Like 'withTakeCols', but perform the action with a mutable view.
 withTakeColsM :: (Storable e)
               => Int
               -> STMatrix s e
@@ -725,6 +755,8 @@ withTakeColsM i a f =
         ma <- unsafeThaw a'
         f ma
 
+-- | Perform an action with a view gotten from dropping the given number of
+-- columns from the start of the matrix.
 withDropCols :: (RMatrix m, Storable e)
              => Int
              -> m e
@@ -734,6 +766,7 @@ withDropCols n a f = do
     ia <- unsafeFreeze a
     f $ dropCols n ia
 
+-- | Like 'withDropCols', but perform the action with a mutable view.
 withDropColsM :: (Storable e)
               => Int
               -> STMatrix s e
@@ -744,6 +777,8 @@ withDropColsM i a f =
         ma <- unsafeThaw a'
         f ma
 
+-- | Perform an action with views from splitting the matrix columns at the given
+-- index.
 withSplitColsAt :: (RMatrix m, Storable e)
                 => Int
                 -> m e
@@ -752,7 +787,8 @@ withSplitColsAt :: (RMatrix m, Storable e)
 withSplitColsAt i a f = do
     ia <- unsafeFreeze a
     uncurry f $ splitColsAt i ia
-    
+
+-- | Like 'withSplitColsAt', but perform the action with mutable views.    
 withSplitColsAtM :: (Storable e)
                  => Int
                  -> STMatrix s e

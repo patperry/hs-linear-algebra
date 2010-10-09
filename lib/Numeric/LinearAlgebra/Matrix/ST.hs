@@ -52,7 +52,7 @@ module Numeric.LinearAlgebra.Matrix.ST (
     withColsM,
 
     -- * Matrix diagonals
-    getDiag,
+    diagTo,
     setDiag,
 
     -- * Reading and writing matrix elements

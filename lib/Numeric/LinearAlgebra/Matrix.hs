@@ -183,7 +183,7 @@ rows a = [ unsafeRow a i | i <- [ 0..m-1 ] ]
 diag :: (Storable e) => Matrix e -> Vector e
 diag a = V.create $ do
     x <- V.new_ mn
-    getDiag a x
+    diagTo x a
     return x
   where
     (m,n) = dim a
