@@ -141,7 +141,7 @@ create stmv = runST $ do
 
 -- | Converts a mutable vector to an immutable one by taking a complete
 -- copy of it.
-freeze :: (Storable e) => STVector s e -> ST s (Vector e)
+freeze :: (RVector v, Storable e) => v e -> ST s (Vector e)
 freeze mv = do
     mv' <- newCopy mv
     unsafeFreeze mv'

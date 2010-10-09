@@ -47,8 +47,10 @@ create mx = runST $ mx >>= unsafeFreeze
 
 -- | Converts a mutable matrix to an immutable one by taking a complete
 -- copy of it.
-freeze :: (Storable e) => STMatrix s e -> ST s (Matrix e)
-freeze = fmap unSTMatrix . newCopy
+freeze :: (RMatrix m, Storable e) => m e -> ST s (Matrix e)
+freeze a = do
+    a' <- newCopy a
+    unsafeFreeze a'
 {-# INLINE freeze #-}
 
 
