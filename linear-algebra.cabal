@@ -52,6 +52,7 @@ Library
                         Numeric.LinearAlgebra.Matrix.Herm
                         Numeric.LinearAlgebra.Matrix.ST
                         Numeric.LinearAlgebra.Matrix.Statistics
+                        Numeric.LinearAlgebra.Matrix.Tri
 
                         Numeric.LinearAlgebra.Packed                     
                         Numeric.LinearAlgebra.Packed.Cholesky                        

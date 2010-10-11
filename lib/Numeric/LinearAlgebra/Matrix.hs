@@ -97,6 +97,9 @@ module Numeric.LinearAlgebra.Matrix (
     -- * Mutable interface
     module Numeric.LinearAlgebra.Matrix.ST,
     
+    -- * Triangular views
+    module Numeric.LinearAlgebra.Matrix.Tri,
+    
     -- * Hermitian views
     module Numeric.LinearAlgebra.Matrix.Herm,
     
@@ -122,6 +125,7 @@ import Foreign.VMath( VNum )
 
 
 import Numeric.LinearAlgebra.Matrix.Base
+import Numeric.LinearAlgebra.Matrix.Tri
 import Numeric.LinearAlgebra.Matrix.Herm
 import Numeric.LinearAlgebra.Matrix.ST
 import Numeric.LinearAlgebra.Matrix.Cholesky

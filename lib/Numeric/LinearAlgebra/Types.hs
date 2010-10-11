@@ -14,7 +14,7 @@ module Numeric.LinearAlgebra.Types (
 
     -- * Matrix views
     Herm(..),
-    withHerm,
+    Tri(..),
 
     -- * Matrix factorization views
     Chol(..),
@@ -65,9 +65,15 @@ import Foreign.Storable( Storable() )
 --
 data Herm m e = Herm Uplo (m e) deriving (Show)
 
--- | Apply a function to the unerlying 'Uplo' and matrix.
-withHerm :: Herm m e -> (Uplo -> m e -> a) -> a
-withHerm (Herm u m) f = f u m
+-- | A triangular view of an underlying matrix.  The view can either be
+-- upper or lower triangular, with a unit or non-unit diagonal.  The type
+-- arguments are as follows:
+--
+--     * @m@: the underlyting matrix type.
+--
+--     * @e@: the element type of the matrix.
+--
+data Tri m e = Tri Uplo Diag (m e) deriving (Show)
 
 -- | A Cholesky decomposition view of a matrix.
 data Chol m e = Chol Uplo (m e) deriving (Show)
