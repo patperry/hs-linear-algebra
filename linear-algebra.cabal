@@ -59,6 +59,7 @@ Library
                         Numeric.LinearAlgebra.Packed.Herm
                         Numeric.LinearAlgebra.Packed.ST                   
                         Numeric.LinearAlgebra.Packed.Statistics
+                        Numeric.LinearAlgebra.Packed.Tri
 
                         Numeric.LinearAlgebra.Vector
                         Numeric.LinearAlgebra.Vector.ST

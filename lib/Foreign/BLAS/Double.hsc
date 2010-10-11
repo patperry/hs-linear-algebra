@@ -68,6 +68,12 @@ foreign import ccall unsafe #f77_func dgbmv
 foreign import ccall unsafe #f77_func dtrmv
     dtrmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
 
+foreign import ccall unsafe #f77_func dtpmv
+    dtpmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
+
+foreign import ccall unsafe #f77_func dtpsv
+    dtpsv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()
+
 foreign import ccall unsafe #f77_func dtbmv
     dtbmv ::  BLASUplo -> BLASTrans -> BLASDiag -> Ptr LAInt -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO ()
                  

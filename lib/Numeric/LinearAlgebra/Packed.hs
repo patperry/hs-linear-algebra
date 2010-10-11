@@ -26,6 +26,9 @@ module Numeric.LinearAlgebra.Packed (
     -- * Hermitian views
     module Numeric.LinearAlgebra.Packed.Herm,
 
+    -- * Triangular views
+    module Numeric.LinearAlgebra.Packed.Tri,
+
     -- * Cholesky factorizations
     module Numeric.LinearAlgebra.Packed.Cholesky,
 
@@ -37,5 +40,6 @@ module Numeric.LinearAlgebra.Packed (
 import Numeric.LinearAlgebra.Packed.Base
 import Numeric.LinearAlgebra.Packed.ST hiding ( RPacked(..) )
 import Numeric.LinearAlgebra.Packed.Herm
+import Numeric.LinearAlgebra.Packed.Tri
 import Numeric.LinearAlgebra.Packed.Cholesky
 import Numeric.LinearAlgebra.Packed.Statistics

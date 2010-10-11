@@ -24,21 +24,25 @@ import Foreign.BLAS.Zomplex
    
 -- | Types with matrix-vector operations.
 class (BLAS1 a) => BLAS2 a where
-    gemv :: Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gbmv :: Trans -> Int -> Int -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    trmv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbmv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    trsv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    tbsv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
-    hemv :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
-    hbmv :: Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    gemv :: Trans -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     gerc :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     geru :: Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+
+    hbmv :: Uplo -> Int -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
+    hemv :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()
     her  :: Uplo -> Int -> Double -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     her2 :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
     hpmv :: Uplo -> Int -> a -> Ptr a -> Ptr a -> Int -> a -> Ptr a -> Int -> IO ()    
     hpr  :: Uplo -> Int -> Double -> Ptr a -> Int -> Ptr a -> IO ()
     hpr2 :: Uplo -> Int -> a -> Ptr a -> Int -> Ptr a -> Int -> Ptr a -> IO ()
+
+    tbmv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tbsv :: Uplo -> Trans -> Diag -> Int -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    tpmv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Ptr a -> Int -> IO ()    
+    tpsv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Ptr a -> Int -> IO ()        
+    trmv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
+    trsv :: Uplo -> Trans -> Diag -> Int -> Ptr a -> Int -> Ptr a -> Int -> IO ()
 
 
 withEnum :: (Enum a, Storable a) => Int -> (Ptr a -> IO b) -> IO b
@@ -81,6 +85,24 @@ instance BLAS2 Double where
         withEnum incx $ \pincx ->
             dtrmv puplo ptrans pdiag pn pa plda px pincx
     {-# INLINE trmv #-}
+
+    tpmv uplo trans diag n pap px incx =
+        withUplo uplo $ \puplo ->
+        withTrans trans $ \ptrans ->
+        withDiag diag $ \pdiag ->
+        withEnum n $ \pn ->
+        withEnum incx $ \pincx ->
+            dtpmv puplo ptrans pdiag pn pap px pincx
+    {-# INLINE tpmv #-}
+
+    tpsv uplo trans diag n pap px incx =
+        withUplo uplo $ \puplo ->
+        withTrans trans $ \ptrans ->
+        withDiag diag $ \pdiag ->
+        withEnum n $ \pn ->
+        withEnum incx $ \pincx ->
+            dtpsv puplo ptrans pdiag pn pap px pincx
+    {-# INLINE tpsv #-}
      
     tbmv uplo trans diag n k pa lda px incx =
         withUplo uplo $ \puplo ->
@@ -233,6 +255,24 @@ instance BLAS2 (Complex Double) where
         withEnum incx $ \pincx ->
             ztrmv puplo ptrans pdiag pn pa plda px pincx
     {-# INLINE trmv #-}
+
+    tpmv uplo trans diag n pap px incx =
+        withUplo uplo $ \puplo ->
+        withTrans trans $ \ptrans ->
+        withDiag diag $ \pdiag ->
+        withEnum n $ \pn ->
+        withEnum incx $ \pincx ->
+            ztpmv puplo ptrans pdiag pn pap px pincx
+    {-# INLINE tpmv #-}
+
+    tpsv uplo trans diag n pap px incx =
+        withUplo uplo $ \puplo ->
+        withTrans trans $ \ptrans ->
+        withDiag diag $ \pdiag ->
+        withEnum n $ \pn ->
+        withEnum incx $ \pincx ->
+            ztpsv puplo ptrans pdiag pn pap px pincx
+    {-# INLINE tpsv #-}
      
     tbmv uplo trans diag n k pa lda px incx =
         withUplo uplo $ \puplo ->
