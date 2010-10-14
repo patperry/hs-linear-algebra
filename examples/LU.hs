@@ -1,25 +1,21 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-module LU ( lu, luFactorize ) where
+module LU ( luFactor, luFactorM ) where
 
-import Data.Elem.BLAS( BLAS3 )
+import Control.Monad( zipWithM_ )
+import Control.Monad.ST( ST, runST )
 
-import Control.Monad
-import Control.Monad.ST
-
-import Data.Matrix.Dense
-import Data.Matrix.Dense.ST
-import Data.Matrix.Tri
-import Data.Vector.Dense.ST
+import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Matrix as M
+import qualified Numeric.LinearAlgebra.Vector as V
 
 
-lu :: (BLAS3 e) => Matrix e -> Either Int (Matrix e, [Int])
-lu (a :: Matrix e) = runST $ do
-    ma <- thawMatrix a :: ST s (STMatrix s e)
-    luFactorize ma >>=
+luFactor :: (BLAS3 e) => Matrix e -> Either Int (Matrix e, [Int])
+luFactor a = runST $ do
+    ma <- M.newCopy a
+    luFactorM ma >>=
         either (return . Left) (\pivots -> do
-            a' <- unsafeFreezeMatrix ma
+            a' <- M.unsafeFreeze ma
             return $ Right (a',pivots)
-            )
+        )
 
 {-
  - Recursive LU factorization with row pivoting.  Takes a matrix
@@ -29,38 +25,40 @@ lu (a :: Matrix e) = runST $ do
  - L and U are stored in A, and a list of the row swaps are returned.
  - On failure, the index of the failing column is returned.
  -}      
-{-# INLINE luFactorize #-}
-luFactorize :: (WriteMatrix a m, BLAS3 e) => a e -> m (Either Int [Int])
-luFactorize a
-    | mn > 1 =
-        let nleft = mn `div` 2
-            (a_1, a_2) = splitColsAt nleft a
-            (a11, a21) = splitRowsAt nleft a_1
-            (a12, a22) = splitRowsAt nleft a_2
-        in luFactorize a_1 >>=
-               either (return . Left) (\pivots -> do
-                   zipWithM_ (swapRows a_2) [0..] pivots
-                   doSolveMatrix_ (lowerU a11) a12
-                   doSApplyAddMatrix (-1) a21 a12 1 a22
-                   luFactorize a22 >>=
-                       either (return . Left . (nleft+)) (\pivots' -> do
-                           zipWithM_ (swapRows a21) [0..] pivots'
-                           return $ Right (pivots ++ map (nleft+) pivots')
-                       )
-               )
-    | mn == 1 = 
-        let x = colView a 0
-        in getWhichMaxAbs x >>= \(i,e) ->
-            if (e /= 0) 
-                then do
-                    scaleBy (1/e) x
-                    readElem x 0 >>= writeElem x i
-                    writeElem x 0 e
-                    return $ Right [i]
-                else
-                    return $ Left 0
-    | otherwise =
-        return $ Right []
-  where
-    (m,n) = shape a
-    mn    = min m n
+luFactorM :: (BLAS3 e) => STMatrix s e -> ST s (Either Int [Int])
+luFactorM a = do
+    (m,n) <- M.getDim a
+    let mn = min m n
+        nleft = mn `div` 2
+    
+    case undefined of
+        _ | mn > 1 ->     
+            M.withSplitColsAtM nleft a $ \a_1 a_2 ->
+            M.withSplitRowsAtM nleft a_1 $ \a11 a21 ->
+            M.withSplitRowsAtM nleft a_2 $ \a12 a22 ->
+            luFactorM a_1 >>=
+                either (return . Left) (\pivots -> do
+                    zipWithM_ (M.swapRows a_2) [ 0.. ] pivots
+                    M.triSolvMatrixM_ LeftSide NoTrans (Tri Lower Unit a11) a12
+                    M.addMulMatrixWithScalesM_ (-1) NoTrans a21 NoTrans a12 1 a22
+                    luFactorM a22 >>=
+                        either (return . Left . (nleft+)) (\pivots' -> do
+                            zipWithM_ (M.swapRows a21) [ 0.. ] pivots'
+                            return $ Right (pivots ++ map (nleft+) pivots')
+                        )
+                )
+        
+        _ | mn == 1 ->
+            M.withColM a 0 $ \x ->
+                V.getWhichMaxAbs x >>= \(i,e) ->
+                    if (e /= 0) 
+                        then do
+                            V.scaleByM_ (1/e) x
+                            V.read x 0 >>= V.write x i
+                            V.write x 0 e
+                            return $ Right [i]
+                        else
+                            return $ Left 0
+
+        _ | otherwise ->
+            return $ Right []
