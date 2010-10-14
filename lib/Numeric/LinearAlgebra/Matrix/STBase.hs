@@ -433,6 +433,54 @@ unsafeSetRow a i x = do
     sequence_ [ unsafeWrite a (i,j) e | (j,e) <- jes ]
 {-# INLINE unsafeSetRow #-}
 
+-- | Exchange corresponding elements in the given rows.
+swapRows :: (BLAS1 e)
+         => STMatrix s e -> Int -> Int -> ST s ()
+swapRows a i1 i2 = do
+    (m,n) <- getDim a
+    when (i1 < 0 || i1 >= m || i2 < 0 || i2 >= m) $ error $
+        printf ("swapRows <matrix with dim (%d,%d)> %d %d"
+                ++ ": index out of range") m n i1 i2
+    unsafeSwapRows a i1 i2
+
+-- | Same as 'swapRows' but does not range-check indices.
+unsafeSwapRows :: (BLAS1 e)
+               => STMatrix s e -> Int -> Int -> ST s ()
+unsafeSwapRows a i1 i2 = when (i1 /= i2) $ do
+    (_,n) <- getDim a
+    unsafeIOToST $
+        unsafeWith a $ \pa lda ->
+            let px = pa `advancePtr` i1
+                py = pa `advancePtr` i2
+                incx = lda
+                incy = lda
+            in
+                BLAS.swap n px incx py incy
+
+-- | Exchange corresponding elements in the given columns.
+swapCols :: (BLAS1 e)
+         => STMatrix s e -> Int -> Int -> ST s ()
+swapCols a j1 j2 = do
+    (m,n) <- getDim a
+    when (j1 < 0 || j1 >= n || j2 < 0 || j2 >= n) $ error $
+        printf ("swapCols <matrix with dim (%d,%d)> %d %d"
+                ++ ": index out of range") m n j1 j2
+    unsafeSwapCols a j1 j2
+
+-- | Same as 'swapCols' but does not range-check indices.
+unsafeSwapCols :: (BLAS1 e)
+               => STMatrix s e -> Int -> Int -> ST s ()
+unsafeSwapCols a j1 j2 = when (j1 /= j2) $ do
+    (m,_) <- getDim a
+    unsafeIOToST $
+        unsafeWith a $ \pa lda ->
+            let px = pa `advancePtr` (j1*lda)
+                py = pa `advancePtr` (j2*lda)
+                incx = 1
+                incy = 1
+            in
+                BLAS.swap m px incx py incy
+
 -- | Copy the specified row of the matrix to the vector.
 rowTo :: (RMatrix m, Storable e)
          => STVector s e -> m e -> Int -> ST s ()

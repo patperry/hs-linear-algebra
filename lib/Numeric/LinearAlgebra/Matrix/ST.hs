@@ -50,6 +50,11 @@ module Numeric.LinearAlgebra.Matrix.ST (
 
     withColM,
     withColsM,
+    
+    swapRows,
+    unsafeSwapRows,
+    swapCols,
+    unsafeSwapCols,
 
     -- * Matrix diagonals
     diagTo,

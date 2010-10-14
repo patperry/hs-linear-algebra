@@ -17,8 +17,8 @@ import Test.QuickCheck hiding ( vector )
 import qualified Test.QuickCheck as QC
 
 import Numeric.LinearAlgebra
+import qualified Numeric.LinearAlgebra.Vector as V
 import qualified Numeric.LinearAlgebra.Matrix as M
-import qualified Numeric.LinearAlgebra.Matrix.ST as M
 
 import Test.QuickCheck.LinearAlgebra( TestElem(..), Dim2(..), Index2(..),
     Assocs2(..), MatrixPair(..), MatrixTriple(..) )
@@ -55,6 +55,8 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyDZ "scaleColsByM_" prop_scaleColsByM_ prop_scaleColsByM_
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
+    , testPropertyDZ "swapRows" prop_swapRows prop_swapRows
+    , testPropertyDZ "swapCols" prop_swapCols prop_swapCols
     ]
     
     
@@ -208,6 +210,30 @@ prop_scaleColsByM_ t a =
 prop_negateTo t = binaryProp t M.negate M.negateTo
 
 prop_conjugateTo t = binaryProp t M.conjugate M.conjugateTo
+
+prop_swapRows t =
+    forAll arbitrary $ \(Index2 (m,n) (i1,_)) ->
+    forAll (choose (0,m-1)) $ \i2 ->
+    forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
+        let a' = M.update a $ [ ((i2,j),e) | (j,e) <- V.assocs (M.row a i1)
+                              ] ++
+                              [ ((i1,j),e) | (j,e) <- V.assocs (M.row a i2)
+                              ]
+        in runST $
+            a `mutatesToMatrix` a' $ \ma ->
+            M.swapRows ma i1 i2
+
+prop_swapCols t =
+    forAll arbitrary $ \(Index2 (m,n) (_,j1)) ->
+    forAll (choose (0,n-1)) $ \j2 ->
+    forAll (typed t `fmap` Test.matrix (m,n)) $ \a ->
+        let a' = M.update a $ [ ((i,j2),e) | (i,e) <- V.assocs (M.col a j1)
+                              ] ++
+                              [ ((i,j1),e) | (i,e) <- V.assocs (M.col a j2)
+                              ]
+        in runST $
+            a `mutatesToMatrix` a' $ \ma ->
+            M.swapCols ma j1 j2
 
 
 binaryProp :: (AEq e, Arbitrary e, Show e, Storable e, Testable a)
