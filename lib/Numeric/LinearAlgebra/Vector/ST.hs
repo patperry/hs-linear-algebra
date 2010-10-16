@@ -48,7 +48,7 @@ module Numeric.LinearAlgebra.Vector.ST (
     getNorm2,
     getWhichMaxAbs,
     getDot,
-    scaleByM_,
+    scaleM_,
     addWithScaleM_,
     kroneckerTo,
     

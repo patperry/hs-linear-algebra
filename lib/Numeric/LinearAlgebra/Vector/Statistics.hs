@@ -94,7 +94,7 @@ addWeightedSumTo s wxs = do
         V.unsafeCopyTo old_s s -- old_s := s
         
         V.unsafeCopyTo val x   -- val := w * x
-        V.scaleByM_ w val
+        V.scaleM_ w val
 
         V.addTo err err val    -- err := err + val
         V.addTo s s err        -- s := s + err

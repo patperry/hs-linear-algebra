@@ -44,15 +44,15 @@ tests_STMatrix = testGroup "STMatrix"
     , testPropertyI "setAssocs" prop_setAssocs
     , testPropertyI "mapTo" prop_mapTo
     , testPropertyI "zipWithTo" prop_zipWithTo
-    , testPropertyDZ "shiftDiagByM_" prop_shiftDiagByM_ prop_shiftDiagByM_
-    , testPropertyDZ "shiftDiagByWithScaleToM_"
-        prop_shiftDiagByWithScaleM_ prop_shiftDiagByWithScaleM_
+    , testPropertyDZ "shiftDiagM_" prop_shiftDiagM_ prop_shiftDiagM_
+    , testPropertyDZ "shiftDiagWithScaleToM_"
+        prop_shiftDiagWithScaleM_ prop_shiftDiagWithScaleM_
     , testPropertyDZ "addTo" prop_addTo prop_addTo
     , testPropertyDZ "subTo" prop_subTo prop_subTo
-    , testPropertyDZ "scaleByM_" prop_scaleByM_ prop_scaleByM_
+    , testPropertyDZ "scaleM_" prop_scaleM_ prop_scaleM_
     , testPropertyDZ "addWithScaleM_" prop_addWithScaleM_ prop_addWithScaleM_
-    , testPropertyDZ "scaleRowsByM" prop_scaleRowsByM_ prop_scaleRowsByM_
-    , testPropertyDZ "scaleColsByM_" prop_scaleColsByM_ prop_scaleColsByM_
+    , testPropertyDZ "scaleRowsM" prop_scaleRowsM_ prop_scaleRowsM_
+    , testPropertyDZ "scaleColsM_" prop_scaleColsM_ prop_scaleColsM_
     , testPropertyDZ "negateTo" prop_negateTo prop_negateTo
     , testPropertyDZ "conjugateTo" prop_conjugateTo prop_conjugateTo
     , testPropertyDZ "swapRows" prop_swapRows prop_swapRows
@@ -154,20 +154,20 @@ prop_zipWithTo t (Blind f) = ternaryProp t
     (\x y -> M.zipWith f x y)
     (\dst mx my -> M.zipWithTo dst f mx my)
 
-prop_shiftDiagByM_ t a =
+prop_shiftDiagM_ t a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.shiftDiagBy s a) $ \ma ->
-            M.shiftDiagByM_ ms ma
+        a `mutatesToMatrix` (M.shiftDiag s a) $ \ma ->
+            M.shiftDiagM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagByWithScaleM_ t e a =
+prop_shiftDiagWithScaleM_ t e a =
     forAll (Test.vector (min m n)) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.shiftDiagByWithScale e s a) $ \ma ->
-            M.shiftDiagByWithScaleM_ e ms ma
+        a `mutatesToMatrix` (M.shiftDiagWithScale e s a) $ \ma ->
+            M.shiftDiagWithScaleM_ e ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
@@ -176,9 +176,9 @@ prop_addTo t = ternaryProp t M.add M.addTo
 
 prop_subTo t = ternaryProp t M.sub M.subTo
 
-prop_scaleByM_ t e a = runST $
-    a `mutatesToMatrix` (M.scaleBy e a) $ \ma ->
-        M.scaleByM_ e ma
+prop_scaleM_ t e a = runST $
+    a `mutatesToMatrix` (M.scale e a) $ \ma ->
+        M.scaleM_ e ma
   where
     _ = typed t a
 
@@ -189,20 +189,20 @@ prop_addWithScaleM_ t alpha (MatrixPair x y) = runST $
   where
     _ = typed t x
 
-prop_scaleRowsByM_ t a =
+prop_scaleRowsM_ t a =
     forAll (Test.vector m) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.scaleRowsBy s a) $ \ma ->
-            M.scaleRowsByM_ ms ma
+        a `mutatesToMatrix` (M.scaleRows s a) $ \ma ->
+            M.scaleRowsM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_scaleColsByM_ t a =
+prop_scaleColsM_ t a =
     forAll (Test.vector n) $ \s -> runST $
         s `readOnlyVector` \ms ->
-        a `mutatesToMatrix` (M.scaleColsBy s a) $ \ma ->
-            M.scaleColsByM_ ms ma
+        a `mutatesToMatrix` (M.scaleCols s a) $ \ma ->
+            M.scaleColsM_ ms ma
   where
     (m,n) = M.dim a
     _ = typed t a

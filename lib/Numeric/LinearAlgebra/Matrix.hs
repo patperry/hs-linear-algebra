@@ -64,14 +64,14 @@ module Numeric.LinearAlgebra.Matrix (
     fromRow,
 
     -- * Matrix math operations
-    shiftDiagBy,
-    shiftDiagByWithScale,    
+    shiftDiag,
+    shiftDiagWithScale,    
     add,
     addWithScale,
     sub,
-    scaleBy,
-    scaleRowsBy,
-    scaleColsBy,
+    scale,
+    scaleRows,
+    scaleCols,
     negate,
     conjugate,
 
@@ -135,8 +135,8 @@ import Numeric.LinearAlgebra.Vector( Vector )
 import qualified Numeric.LinearAlgebra.Vector as V
 
 
-infixl 7 `scaleBy`, `scaleRowsBy`, `scaleColsBy`
-infixl 6 `add`, `shiftDiagBy`, `sub`
+infixl 7 `scale`, `scaleRows`, `scaleCols`
+infixl 6 `add`, `shiftDiag`, `sub`
 
 
 -- | Create a matrix of the given dimension with the given vectors as
@@ -193,18 +193,18 @@ diag a = V.create $ do
     (m,n) = dim a
     mn = min m n
 
--- | @shiftDiagBy d a@ returns @diag(d) + a@.
-shiftDiagBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-shiftDiagBy s a = create $ do
+-- | @shiftDiag d a@ returns @diag(d) + a@.
+shiftDiag :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+shiftDiag s a = create $ do
     a' <- newCopy a
-    shiftDiagByM_ s a'
+    shiftDiagM_ s a'
     return a'
 
--- | @shiftDiagByWithScale alpha d a@ returns @alpha * diag(d) + a@.
-shiftDiagByWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
-shiftDiagByWithScale e s a = create $ do
+-- | @shiftDiagWithScale alpha d a@ returns @alpha * diag(d) + a@.
+shiftDiagWithScale :: (BLAS1 e) => e -> Vector e -> Matrix e -> Matrix e
+shiftDiagWithScale e s a = create $ do
     a' <- newCopy a
-    shiftDiagByWithScaleM_ e s a'
+    shiftDiagWithScaleM_ e s a'
     return a'
 
 -- | @add a b@ returns @a + b@.
@@ -215,11 +215,11 @@ add = result2 addTo
 sub :: (VNum e) => Matrix e -> Matrix e -> Matrix e
 sub = result2 subTo
 
--- | @scaleBy k a@ returns @k * a@.
-scaleBy :: (BLAS1 e) => e -> Matrix e -> Matrix e
-scaleBy k a = create $ do
+-- | @scale k a@ returns @k * a@.
+scale :: (BLAS1 e) => e -> Matrix e -> Matrix e
+scale k a = create $ do
     a' <- newCopy a
-    scaleByM_ k a'
+    scaleM_ k a'
     return a'
 
 -- | @addWithScale alpha x y@ returns @alpha * x + y@.
@@ -229,18 +229,18 @@ addWithScale alpha x y = create $ do
     addWithScaleM_ alpha x y'
     return y'
 
--- | @scaleRowsBy s a@ returns @diag(s) * a@.
-scaleRowsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-scaleRowsBy s a = create $ do
+-- | @scaleRows s a@ returns @diag(s) * a@.
+scaleRows :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+scaleRows s a = create $ do
     a' <- newCopy a
-    scaleRowsByM_ s a'
+    scaleRowsM_ s a'
     return a'
 
--- | @scaleColsBy s a@ returns @a * diag(s)@.
-scaleColsBy :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
-scaleColsBy s a = create $ do
+-- | @scaleCols s a@ returns @a * diag(s)@.
+scaleCols :: (BLAS1 e) => Vector e -> Matrix e -> Matrix e
+scaleCols s a = create $ do
     a' <- newCopy a
-    scaleColsByM_ s a'
+    scaleColsM_ s a'
     return a'
 
 -- | @negate a@ returns @-a@.

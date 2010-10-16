@@ -53,7 +53,7 @@ luFactorM a = do
                 V.getWhichMaxAbs x >>= \(i,e) ->
                     if (e /= 0) 
                         then do
-                            V.scaleByM_ (1/e) x
+                            V.scaleM_ (1/e) x
                             V.read x 0 >>= V.write x i
                             V.write x 0 e
                             return $ Right [i]

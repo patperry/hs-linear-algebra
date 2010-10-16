@@ -852,34 +852,34 @@ withSplitColsAtM i a f =
 
 
 -- | Add a vector to the diagonal of a matrix.
-shiftDiagByM_ :: (RVector v, BLAS1 e)
+shiftDiagM_ :: (RVector v, BLAS1 e)
               => v e -> STMatrix s e -> ST s ()
-shiftDiagByM_ s a = do
+shiftDiagM_ s a = do
     (m,n) <- getDim a
     ns <- V.getDim s
     let mn = min m n
     
     when (ns /= mn) $ error $
-        printf ("shiftDiagByM_"
+        printf ("shiftDiagM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
                 ns
                 m n
     
-    shiftDiagByWithScaleM_ 1 s a
+    shiftDiagWithScaleM_ 1 s a
     
 
 -- | Add a scaled vector to the diagonal of a matrix.
-shiftDiagByWithScaleM_ :: (RVector v, BLAS1 e)
+shiftDiagWithScaleM_ :: (RVector v, BLAS1 e)
                        => e -> v e -> STMatrix s e -> ST s ()
-shiftDiagByWithScaleM_ e s a = do
+shiftDiagWithScaleM_ e s a = do
     (m,n) <- getDim a
     ns <- V.getDim s
     let mn = min m n
 
     when (ns /= mn) $ error $
-        printf ("shiftDiagByWithScaleM_"
+        printf ("shiftDiagWithScaleM_"
                 ++ " _"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
@@ -916,9 +916,9 @@ negateTo = checkOp2 "negateTo" $
     vectorOp2 V.negateTo
 
 -- | Scale the entries of a matrix by the given value.
-scaleByM_ :: (BLAS1 e)
+scaleM_ :: (BLAS1 e)
           => e -> STMatrix s e -> ST s ()
-scaleByM_ e = vectorOp (V.scaleByM_ e)
+scaleM_ e = vectorOp (V.scaleM_ e)
 
 -- | @addWithScaleM_ alpha x y@ sets @y := alpha * x + y@.
 addWithScaleM_ :: (RMatrix m, BLAS1 e)
@@ -938,15 +938,15 @@ unsafeAddWithScaleM_ alpha x y =
                   sequence_ [ V.unsafeAddWithScaleM_ alpha vx vy
                             | (vx,vy) <- zip vxs vys ]                
 
--- | Scale the rows of a matrix; @scaleRowsByM_ s a@ sets
+-- | Scale the rows of a matrix; @scaleRowsM_ s a@ sets
 -- @a := diag(s) * a@.
-scaleRowsByM_ :: (RVector v, BLAS1 e)
+scaleRowsM_ :: (RVector v, BLAS1 e)
               => v e -> STMatrix s e -> ST s ()
-scaleRowsByM_  s a = do
+scaleRowsM_  s a = do
     (m,n) <- getDim a
     ns <- V.getDim s
     when (ns /= m) $ error $
-        printf ("scaleRowsByM_"
+        printf ("scaleRowsM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"
                 ++ ": dimension mismatch")
@@ -968,13 +968,13 @@ scaleRowsByM_  s a = do
 
 -- | Scale the columns of a matrix; @scaleColBysM_ s a@ sets
 -- @a := a * diag(s)@.
-scaleColsByM_ :: (RVector v, BLAS1 e)
+scaleColsM_ :: (RVector v, BLAS1 e)
             => v e -> STMatrix s e -> ST s ()
-scaleColsByM_ s a = do
+scaleColsM_ s a = do
     (m,n) <- getDim a
     ns <- V.getDim s
     when (ns /= n) $ error $
-        printf ("scaleColsByM_"
+        printf ("scaleColsM_"
                 ++ " <vector with dim %d>"
                 ++ " <matrix with dim (%d,%d)>"        
                 ++ ": dimension mismatch") 
@@ -983,7 +983,7 @@ scaleColsByM_ s a = do
 
     es <- V.getElems s
     withColsM a $ \xs ->
-        sequence_ [ V.scaleByM_ e x
+        sequence_ [ V.scaleM_ e x
                   | (e,x) <- zip es xs
                   ]
 

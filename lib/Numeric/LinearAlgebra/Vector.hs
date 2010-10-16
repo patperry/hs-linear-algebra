@@ -58,7 +58,7 @@ module Numeric.LinearAlgebra.Vector (
     add,
     addWithScale,
     sub,
-    scaleBy,
+    scale,
     mul,
     negate,
     conjugate,
@@ -111,7 +111,7 @@ import Numeric.LinearAlgebra.Vector.Statistics
 
 infixr 8 `pow`
 infixl 7 `div`
-infixl 7 `mul`, `scaleBy`, `kronecker`
+infixl 7 `mul`, `scale`, `kronecker`
 infixl 6 `add`, `sub`
 
 
@@ -156,11 +156,11 @@ add = result2 addTo
 sub :: (VNum e) => Vector e -> Vector e -> Vector e
 sub = result2 subTo
 
--- | @scaleBy k x@ returns @k * x@.
-scaleBy :: (BLAS1 e) => e -> Vector e -> Vector e
-scaleBy k x = create $ do
+-- | @scale k x@ returns @k * x@.
+scale :: (BLAS1 e) => e -> Vector e -> Vector e
+scale k x = create $ do
     x' <- newCopy x
-    scaleByM_ k x'
+    scaleM_ k x'
     return x'
 
 -- | @addWithScale alpha x y@ return @alpha * x + y@.

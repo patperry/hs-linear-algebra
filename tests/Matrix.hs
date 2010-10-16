@@ -44,14 +44,14 @@ tests_Matrix = testGroup "Matrix"
     , testPropertyI "splitRowsAt" prop_splitRowsAt
     , testPropertyI "splitColsAt" prop_splitColsAt
     , testPropertyI "viewVector" prop_viewVector
-    , testPropertyDZ "shiftDiagBy" prop_shiftDiagBy prop_shiftDiagBy
-    , testPropertyDZ "shiftDiagByWithScale"
-        prop_shiftDiagByWithScale prop_shiftDiagByWithScale
+    , testPropertyDZ "shiftDiag" prop_shiftDiag prop_shiftDiag
+    , testPropertyDZ "shiftDiagWithScale"
+        prop_shiftDiagWithScale prop_shiftDiagWithScale
     , testPropertyDZ "add" prop_add prop_add
     , testPropertyDZ "sub" prop_sub prop_sub
     , testPropertyDZ "scale" prop_scale prop_scale
-    , testPropertyDZ "scaleRowsBy" prop_scaleRowsBy prop_scaleRowsBy
-    , testPropertyDZ "scaleColsBy" prop_scaleColsBy prop_scaleColsBy
+    , testPropertyDZ "scaleRows" prop_scaleRows prop_scaleRows
+    , testPropertyDZ "scaleCols" prop_scaleCols prop_scaleCols
     , testPropertyDZ "negate" prop_negate prop_negate
     , testPropertyDZ "conjugate" prop_conjugate prop_conjugate
     , testPropertyDZ "trans" prop_trans prop_trans
@@ -228,17 +228,17 @@ prop_viewVector t (Dim2 (m,n)) =
 
 -------------------------- Num Matrix Operations --------------------------
 
-prop_shiftDiagBy t a =
+prop_shiftDiag t a =
     forAll (Test.vector (min m n)) $ \d ->
-        M.shiftDiagBy d a
+        M.shiftDiag d a
             === M.accum (+) a [ ((i,i),e) | (i,e) <- V.assocs d ]
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_shiftDiagByWithScale t k a =
+prop_shiftDiagWithScale t k a =
     forAll (Test.vector (min m n)) $ \d ->
-        M.shiftDiagByWithScale k d a
+        M.shiftDiagWithScale k d a
             ~== M.accum (+) a [ ((i,i),k * e) | (i,e) <- V.assocs d ]
   where
     (m,n) = M.dim a
@@ -255,23 +255,23 @@ prop_sub t (MatrixPair x y) =
     _ = typed t x
 
 prop_scale t k x =
-    M.scaleBy k x ~== M.map (k*) x
+    M.scale k x ~== M.map (k*) x
   where
     _ = typed t x
 
-prop_scaleRowsBy t a =
+prop_scaleRows t a =
     forAll (Test.vector m) $ \s ->
-        M.scaleRowsBy s a
+        M.scaleRows s a
             ~== M.fromCols (m,n) [ V.mul s x | x <- M.cols a ]
   where
     (m,n) = M.dim a
     _ = typed t a
 
-prop_scaleColsBy t a =
+prop_scaleCols t a =
     forAll (Test.vector n) $ \s ->
-        M.scaleColsBy s a
+        M.scaleCols s a
             ~== M.fromCols (m,n)
-                    [ V.scaleBy e x
+                    [ V.scale e x
                     | (e,x) <- zip (V.elems s) (M.cols a) ]
   where
     (m,n) = M.dim a
@@ -358,7 +358,7 @@ prop_mulVector t (MulMatrixVector transa a x) =
 prop_mulVectorWithScale t alpha (MulMatrixVector transa a x) =
     M.mulVectorWithScale alpha transa a x
         ~==
-        M.mulVector transa a (V.scaleBy alpha x)
+        M.mulVector transa a (V.scale alpha x)
   where
     _ = typed t a
 
@@ -366,7 +366,7 @@ prop_addMulVectorWithScales t alpha beta (MulMatrixAddVector transa a x y) =
     M.addMulVectorWithScales alpha transa a x beta y
         ~==
         V.add (M.mulVectorWithScale alpha transa a x)
-              (V.scaleBy beta y)
+              (V.scale beta y)
   where
     _ = typed t a
 
@@ -414,15 +414,15 @@ prop_mulMatrix t (MulMatrixMatrix transa a transb b) =
 prop_mulMatrixWithScale t alpha (MulMatrixMatrix transa a transb b) =
     M.mulMatrixWithScale alpha transa a transb b
         ~==
-        M.scaleBy alpha (M.mulMatrix transa a transb b)
+        M.scale alpha (M.mulMatrix transa a transb b)
   where
     _ = typed t a
 
 prop_addMulMatrixWithScales t alpha beta (MulMatrixAddMatrix transa a transb b c) =
     M.addMulMatrixWithScales alpha transa a transb b beta c
         ~==
-        M.add (M.scaleBy alpha (M.mulMatrix transa a transb b))
-              (M.scaleBy beta c)
+        M.add (M.scale alpha (M.mulMatrix transa a transb b))
+              (M.scale beta c)
   where
     _ = typed t a
 

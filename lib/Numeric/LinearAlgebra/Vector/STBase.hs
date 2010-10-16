@@ -65,7 +65,7 @@ module Numeric.LinearAlgebra.Vector.STBase (
     getWhichMaxAbs,
     getDot,
     unsafeGetDot,
-    scaleByM_,
+    scaleM_,
     addWithScaleM_,
     unsafeAddWithScaleM_,
     kroneckerTo,
@@ -792,14 +792,14 @@ unsafeGetDot :: (RVector x, RVector y, BLAS1 e)
 unsafeGetDot x y = (strideCall2 BLAS.dotc) y x
 {-# INLINE unsafeGetDot #-}
 
--- | @scaleByM k x@ sets @x := k * x@.
-scaleByM_ :: (Storable e, BLAS1 e) => e -> STVector s e -> ST s ()
-scaleByM_ k x = do
+-- | @scaleM k x@ sets @x := k * x@.
+scaleM_ :: (Storable e, BLAS1 e) => e -> STVector s e -> ST s ()
+scaleM_ k x = do
     n <- getDim x
     unsafeIOToST $
         unsafeWith x $ \px ->
             BLAS.scal n k px 1
-{-# INLINE scaleByM_ #-}
+{-# INLINE scaleM_ #-}
 
 -- | @addWithScaleM_ alpha x y@ sets @y := alpha * x + y@.
 addWithScaleM_ :: (RVector v, BLAS1 e) => e -> v e -> STVector s e -> ST s ()
