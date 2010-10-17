@@ -17,7 +17,7 @@ module Numeric.LinearAlgebra.Packed.Cholesky (
     cholSolveMatrix,
 
     -- * Mutable interface
-    cholFactorM_,
+    cholFactorM,
     cholSolveVectorM_,
     cholSolveMatrixM_,
     ) where
@@ -48,7 +48,7 @@ cholFactor :: (LAPACK e)
                  -> Either Int (Chol Packed e)
 cholFactor (Herm uplo a) = runST $ do
     ma <- P.newCopy a
-    cholFactorM_ (Herm uplo ma)
+    cholFactorM (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
                 a' <- P.unsafeFreeze ma'
                 return $ Right (Chol uplo' a')
@@ -74,16 +74,16 @@ cholSolveMatrix a c = M.create $ do
     cholSolveMatrixM_ a c'
     return c'
 
--- | @cholFactorM_ a@ tries to compute the Cholesky
+-- | @cholFactorM a@ tries to compute the Cholesky
 -- factorization of @a@ in place.  If @a@ is positive-definite then the
 -- routine returns @Right@ with the factorization, stored in the same
 -- memory as @a@.  If the leading minor of order @i@ is not
 -- positive-definite then the routine returns @Left i@.
 -- In either case, the original storage of @a@ is destroyed.
-cholFactorM_ :: (LAPACK e)
+cholFactorM :: (LAPACK e)
              => Herm (STPacked s) e
              -> ST s (Either Int (Chol (STPacked s) e))
-cholFactorM_ (Herm uplo a) = do
+cholFactorM (Herm uplo a) = do
     n <- P.getDim a
     unsafeIOToST $
         P.unsafeWith a $ \pa -> do

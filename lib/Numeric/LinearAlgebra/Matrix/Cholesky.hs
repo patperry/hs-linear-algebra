@@ -17,7 +17,7 @@ module Numeric.LinearAlgebra.Matrix.Cholesky (
     cholSolveMatrix,
     
     -- * Mutable interface
-    cholFactorM_,
+    cholFactorM,
     cholSolveVectorM_,
     cholSolveMatrixM_,
     
@@ -48,7 +48,7 @@ cholFactor :: (LAPACK e)
                  -> Either Int (Chol Matrix e)
 cholFactor (Herm uplo a) = runST $ do
     ma <- M.newCopy a
-    cholFactorM_ (Herm uplo ma)
+    cholFactorM (Herm uplo ma)
         >>= either (return . Left) (\(Chol uplo' ma') -> do
                 a' <- M.unsafeFreeze ma'
                 return $ Right (Chol uplo' a')
@@ -74,21 +74,21 @@ cholSolveMatrix a c = M.create $ do
     cholSolveMatrixM_ a c'
     return c'
 
--- | @cholFactorM_ a@ tries to compute the Cholesky
+-- | @cholFactorM a@ tries to compute the Cholesky
 -- factorization of @a@ in place.  If @a@ is positive-definite then the
 -- routine returns @Right@ with the factorization, stored in the same
 -- memory as @a@.  If the leading minor of order @i@ is not
 -- positive-definite then the routine returns @Left i@.
 -- In either case, the original storage of @a@ is destroyed.
-cholFactorM_ :: (LAPACK e)
-             => Herm (STMatrix s) e
-             -> ST s (Either Int (Chol (STMatrix s) e))
-cholFactorM_ (Herm uplo a) = do
+cholFactorM :: (LAPACK e)
+            => Herm (STMatrix s) e
+            -> ST s (Either Int (Chol (STMatrix s) e))
+cholFactorM (Herm uplo a) = do
     (ma,na) <- M.getDim a
     let n = na
 
     when (not $ (ma,na) == (n,n)) $ error $
-        printf ("cholFactorM_"
+        printf ("cholFactorM"
                 ++ " (Herm _ <matrix with dim (%d,%d)>): nonsquare matrix"
                ) ma na
 
