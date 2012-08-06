@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# LANGUAGE CPP, ForeignFunctionInterface, MagicHash #-}
+
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------
 -- |
@@ -37,14 +37,14 @@ module Numeric.LinearAlgebra.Internal (
     diagLen,    
     ) where
 
-import Foreign                  ( Ptr, Storable, castPtr, sizeOf )
-import Foreign.C.Types          ( CSize )
+
+import Foreign                  ( Ptr, Storable(..), castPtr, sizeOf )
+import Foreign.C.Types          ( CSize(..) )
 import Text.Printf ( printf )
 
 
 #if defined(__GLASGOW_HASKELL__)
-import GHC.Base                 ( realWorld# )
-import GHC.IO                   ( IO(IO) )
+import GHC.IO                   ( unsafeDupablePerformIO )
 #else
 import System.IO.Unsafe         ( unsafePerformIO )
 #endif
@@ -73,7 +73,7 @@ foreign import ccall "strings.h bzero"
 
 inlinePerformIO :: IO a -> a
 #if defined(__GLASGOW_HASKELL__)
-inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
+inlinePerformIO a = unsafeDupablePerformIO a
 #else
 inlinePerformIO = unsafePerformIO
 #endif

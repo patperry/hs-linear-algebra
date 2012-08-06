@@ -8,11 +8,11 @@
 --
 
 module Foreign.LAPACK.Types (
-    LAEigJob,
+    LAEigJob(..),
     EigJob(..),
     withEigJob,
     
-    LAEigRange,
+    LAEigRange(..),
     EigRange(..),
     withEigRange,
     
