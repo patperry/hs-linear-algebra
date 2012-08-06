@@ -129,6 +129,9 @@ instance TestElem (Complex Double) where
     {-# INLINE isTestElem #-}
 -}
 
+minit:: Int ->Int
+minit  n=  n `mod` 20
+
 -- | Generate a random element.
 elem :: (Arbitrary e) => Gen e
 elem = arbitrary
@@ -149,7 +152,7 @@ elems n = replicateM n elem
 dim :: Gen Int
 dim = sized $ \s -> do
     (NonNegative n) <- resize (s `div` 4) $ arbitrary
-    return n
+    return (minit n)
  
 -- | Get an appropriate dimension for a random matrix
 dim2 :: Gen (Int,Int)
