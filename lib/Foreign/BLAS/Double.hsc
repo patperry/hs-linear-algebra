@@ -12,6 +12,7 @@ module Foreign.BLAS.Double
     where
     
 import Foreign
+import Foreign.C.Types 
 import Foreign.BLAS.Types
 
 #include "config.h"
@@ -30,7 +31,12 @@ foreign import ccall unsafe #f77_func dasum
     dasum  :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO Double
 
 foreign import ccall unsafe #f77_func idamax
-    idamax :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO LAInt
+    idamax_hidden :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO CInt 
+-- for some reason ffi stuff wasn't working with return type IO LAInt 
+idamax :: Ptr LAInt -> Ptr Double -> Ptr LAInt -> IO LAInt
+idamax a b c  =  do res <-  idamax_hidden a b c 
+                    return $! LAInt res 
+
 
 foreign import ccall unsafe #f77_func dscal
     dscal  :: Ptr LAInt -> Ptr Double -> Ptr Double -> Ptr LAInt -> IO ()

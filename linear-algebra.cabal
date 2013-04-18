@@ -1,8 +1,10 @@
-name:            linear-algebra
-version:         0.8.1
-homepage:        http://github.com/patperry/hs-linear-algebra
+name:            linear-algebra-cblas
+version:         0.1
+homepage:        http://github.com/cartazio/hs-cblas
 synopsis:        A linear algebra library with bindings to BLAS and LAPACK
 description:
+    Note There are some known bugs
+
     The BLAS (Basic Linear Algebra Subprograms) are routines that provide
     standard building blocks for performing basic vector and matrix operations. 
     The Level 1 BLAS perform scalar, vector and vector-vector operations, the 
@@ -101,7 +103,7 @@ Library
     c-sources:          cbits/vmath-double.c
                         cbits/vmath-zomplex.c
                         
-    ghc-options:        -Wall -O2 -funbox-strict-fields
+    ghc-options:        -Wall -O2 -funbox-strict-fields -fllvm -optlo "-O3"  -optlc "-O3" -w  -threaded
     
     extensions:         BangPatterns,
                         CPP,
@@ -138,5 +140,5 @@ Executable test-hs-linear-algebra
                         cbits/vmath-zomplex.c
 
     build-depends:      QuickCheck >= 2.1 && < 3,
-                        test-framework >= 0.3.1 && < 0.9,
-                        test-framework-quickcheck2 >= 0.2.7 && < 0.3
+                        test-framework >= 0.3.1,
+                        test-framework-quickcheck2 >= 0.2.7 

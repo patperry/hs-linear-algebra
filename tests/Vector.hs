@@ -70,6 +70,28 @@ tests_Vector = testGroup "Vector"
     ]
 
 
+{-
+abs and signum fail for complex doubles (NB, their ST Vector analogues dont!)
+
+  abs:
+
+    Double: [OK, passed 100 tests]
+
+    Complex Double: [Failed]
+*** Failed! Falsifiable (after 18 tests and 1 shrink): 
+fromList [(-6.7066276741258) :+ 6.89825617623592,(-11.603500174324518) :+ 62.02307490865834]
+(used seed -7536870184029858963)
+
+  signum:
+
+    Double: [OK, passed 100 tests]
+
+    Complex Double: [Failed]
+*** Failed! Falsifiable (after 2 tests): 
+fromList [6.727193397617394 :+ 2.38960475296862]
+(used seed -6373326149733724790)
+
+-}
 
 ------------------------- Vector Construction ------------------------------
 
