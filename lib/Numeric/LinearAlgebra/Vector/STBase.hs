@@ -100,7 +100,8 @@ module Numeric.LinearAlgebra.Vector.STBase (
 import Prelude hiding ( drop, read, splitAt, take )
 
 import Control.Monad( when, liftM2 )
-import Control.Monad.ST( RealWorld, ST, runST, stToIO, unsafeIOToST )
+import Control.Monad.ST( RealWorld, ST, runST, stToIO )
+import Control.Monad.ST.Unsafe( unsafeIOToST )
 import Data.Complex( Complex )
 import Data.Typeable( Typeable )
 import Foreign( Ptr, Storable, advancePtr, peek, poke, peekElemOff,

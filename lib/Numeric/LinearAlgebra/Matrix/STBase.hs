@@ -13,8 +13,8 @@ module Numeric.LinearAlgebra.Matrix.STBase
     where
       
 import Control.Monad( forM_, when )
-import Control.Monad.ST( ST, RealWorld, runST, unsafeInterleaveST,
-    unsafeIOToST )
+import Control.Monad.ST( ST, RealWorld, runST )
+import Control.Monad.ST.Unsafe( unsafeInterleaveST, unsafeIOToST )
 import Data.Maybe( fromMaybe )
 import Data.Typeable( Typeable )
 import Foreign( Ptr, advancePtr, peek, peekElemOff, pokeElemOff,
@@ -128,13 +128,13 @@ instance RMatrix Matrix where
 instance RMatrix (STMatrix s) where
     getDim = return . dim . unSTMatrix
     {-# INLINE getDim #-}
-    unsafeWithCol = unsafeWithCol . unSTMatrix
+    unsafeWithCol st = unsafeWithCol $ unSTMatrix st
     {-# INLINE unsafeWithCol #-}
-    withCols = withCols . unSTMatrix
+    withCols st = withCols $ unSTMatrix st
     {-# INLINE withCols #-}
-    unsafeWithSlice ij mn = unsafeWithSlice ij mn . unSTMatrix
+    unsafeWithSlice ij mn st = unsafeWithSlice ij mn $ unSTMatrix st
     {-# INLINE unsafeWithSlice #-}
-    maybeWithVector = maybeWithVector . unSTMatrix
+    maybeWithVector st = maybeWithVector $ unSTMatrix st
     {-# INLINE maybeWithVector #-}
     unsafeWith = unsafeWith . unSTMatrix
     {-# INLINE unsafeWith #-}
