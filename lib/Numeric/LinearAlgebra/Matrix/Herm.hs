@@ -52,7 +52,8 @@ module Numeric.LinearAlgebra.Matrix.Herm (
     ) where
 
 import Control.Monad( when )
-import Control.Monad.ST( ST, runST, unsafeIOToST )
+import Control.Monad.ST( ST, runST )
+import Control.Monad.ST.Unsafe( unsafeIOToST )
 import Text.Printf( printf )
 
 import Numeric.LinearAlgebra.Vector( Vector, RVector, STVector )

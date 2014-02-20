@@ -14,6 +14,7 @@ module Foreign.BLAS.Zomplex
 import Data.Complex( Complex )
 import Foreign
 import Foreign.BLAS.Types
+import Foreign.C.Types
 
 #include "config.h"
 #include "f77_func-hsc.h"
@@ -35,7 +36,12 @@ foreign import ccall unsafe #f77_func dzasum
     zasum  :: Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO Double
 
 foreign import ccall unsafe #f77_func izamax
-    izamax :: Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO LAInt
+    izamax_hidden :: Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO CInt 
+izamax :: Ptr LAInt -> Ptr (Complex Double) -> Ptr LAInt -> IO LAInt    
+izamax a b c = do 
+                res <- izamax_hidden a b c 
+                return $! LAInt res 
+
 
 foreign import ccall unsafe #f77_func zscal
     zscal  :: Ptr LAInt -> Ptr (Complex Double) -> Ptr (Complex Double) -> Ptr LAInt -> IO ()

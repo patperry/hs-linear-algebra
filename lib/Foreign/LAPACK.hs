@@ -97,7 +97,7 @@ callWithWorkRWorkIWork call =
                                 peek pinfo
 
 
-checkInfo :: (Num info) => info -> IO ()
+checkInfo :: (Num info,Eq info ) => info -> IO ()
 checkInfo info = assert (info == 0) $ return ()
 
 withEnum :: (Enum a, Storable a) => Int -> (Ptr a -> IO b) -> IO b
