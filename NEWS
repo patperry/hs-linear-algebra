@@ -1,3 +1,5 @@
+Changes in 0.8.0.1
+
 Changes in 0.8:
 
 * Use GADTs to and remove the element type from the typeclasses.  This

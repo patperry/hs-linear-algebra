@@ -16,7 +16,8 @@ module Numeric.LinearAlgebra.Matrix.Eigen (
     ) where
 
 import Control.Monad( when )
-import Control.Monad.ST( ST, runST, unsafeIOToST )
+import Control.Monad.ST( ST, runST )
+import Control.Monad.ST.Unsafe( unsafeIOToST )
 import Foreign( allocaArray, nullPtr )
 import Text.Printf( printf )
 

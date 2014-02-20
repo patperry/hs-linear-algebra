@@ -9,23 +9,23 @@
 --
 
 module Foreign.BLAS.Types (
-    BLASTrans,
+    BLASTrans(..),
     Trans(..),
     withTrans,
     
-    BLASUplo,
+    BLASUplo(..),
     Uplo(..),
     withUplo,
     
-    BLASDiag,
+    BLASDiag(..),
     Diag(..),
     withDiag,
     
-    BLASSide,
+    BLASSide(..),
     Side(..),
     withSide,
     
-    LAInt,
+    LAInt(..),
     ) where
 
 import Foreign

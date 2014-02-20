@@ -13,7 +13,8 @@ module Numeric.LinearAlgebra.Packed.Base
     where
 
 import Control.Monad( when )
-import Control.Monad.ST( ST, RealWorld, runST, unsafeIOToST )
+import Control.Monad.ST( ST, RealWorld, runST )
+import Control.Monad.ST.Unsafe( unsafeIOToST )
 import Data.Typeable( Typeable )
 import Foreign( Storable, Ptr )
 import Text.Printf( printf )
@@ -183,7 +184,7 @@ instance RPacked Packed where
 instance RPacked (STPacked s) where
     getDim = getDim . unSTPacked
     {-# INLINE getDim #-}
-    withVector = withVector . unSTPacked
+    withVector st = withVector $ unSTPacked st
     {-# INLINE withVector #-}
     unsafeWith = unsafeWith . unSTPacked
     {-# INLINE unsafeWith #-}
